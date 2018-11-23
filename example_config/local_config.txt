@@ -1,0 +1,7 @@
+; Configuration file used when executing distributed processing jobs locally.
+
+
+; Maximum amount of memory to use in megabytes.
+; Set to zero to determine the value automatically as 85 % of
+; physical RAM.
+max_memory = 32

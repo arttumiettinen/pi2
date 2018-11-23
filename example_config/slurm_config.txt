@@ -1,0 +1,20 @@
+; Configuration file used for SLURM to schedule distributed processing tasks.
+
+
+; Extra arguments that are passed to sinfo and sbatch
+; Use, e.g., to select partition or exclude some nodes.
+extra_args = --partition=day
+
+; Shell commands run on node before starting job.
+; Use, e.g., to load modules or mount disks.
+job_init_commands = module load gcc/7.3.0
+
+; Maximum amount of memory to use per node in megabytes.
+; Set to zero to determine the value automatically as 90 % of
+; the minimum value returned by command
+; sinfo --Node --Format=Memory {extra_args}
+; (effectively 90 % of memory in the node that has the least memory)
+; If the number of nodes is large, the sinfo call may be very slow.
+; In that case one should specify the value in this file so that
+; the sinfo call is never made.
+max_memory = 200000

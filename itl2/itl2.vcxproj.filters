@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\io">
+      <UniqueIdentifier>{14203f98-fb17-49c0-8edd-70b8df20e452}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\math">
+      <UniqueIdentifier>{de262b17-73b7-4ac6-b5e0-7824292619c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\math">
+      <UniqueIdentifier>{92840ad0-f6c4-4b97-860a-5debd57719c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\buffer">
+      <UniqueIdentifier>{eee8b01c-a320-4906-abfc-3852e0231855}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\io">
+      <UniqueIdentifier>{c7b5d4f1-9018-4113-96e4-0541b67da326}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="datatypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="itlexception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="raytrace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\raw.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="math\complex.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\conjugategradient.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\eig2.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\eig3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\geometry.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\mathutils.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\matrix.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\matrix3x3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\numberutils.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vec2.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vec3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vec4.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="pointprocess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="projections.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fft.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="conversions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="neighbourhood.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="misc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="itl2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="noise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="buildsettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="registration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stitching.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inpaint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vectoroperations.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer.h">
+      <Filter>Header Files\buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="diskmappedbuffer.h">
+      <Filter>Header Files\buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="memorybuffer.h">
+      <Filter>Header Files\buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="histogram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="interpolation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="boundarycondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="floodfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\itlpng.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\sequence.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\alphanum.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="particleanalysis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="regionremoval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hybridskeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lineskeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="neighbourhoodtype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="traceskeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="disjointsetforest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="structure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="generation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="network.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\imagedatatype.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\fileutils.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="math\eig3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="pointprocess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="projections.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fft.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="neighbourhood.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="misc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="registration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inpaint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="histogram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="floodfill.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="skeleton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\png.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="regionremoval.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="traceskeleton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="structure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="network.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\fileutils.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="raw.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\sequence.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

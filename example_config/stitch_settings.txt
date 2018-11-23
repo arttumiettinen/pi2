@@ -1,0 +1,180 @@
+[stitch]
+
+# Name of the sample
+sample_name = N0098_B
+
+
+# Dimensions of sub-images. All the sub-images must have the same dimensions.
+# Sub-image files must be named like [sample_name]_[width]x[height]x[depth].raw
+# Parameters whose values depend on size of sub-imageare marked below by sentence
+# "the value should scale with image size". If one wants to
+# e.g. try stitching with sub-images scaled to smaller size and then perform the exactly same
+# process with larger images, the marked parameters should be multiplied by the scaling ratio
+# between the images.
+width = 510
+height = 510
+depth = 512
+
+
+# Pixel data type. Can be uint8, uint16, or float32
+data_type = uint16
+
+
+# Counts of sub-images in each coordinate direction.
+grid_width = 9
+grid_height = 9
+grid_depth = 1
+
+
+# Direction of increasing image index in each coordinate direction with respect to sub-image coordinates.
+# If sub-image coordinates are like
+# ^ y
+# |
+# |
+# ----> x
+# and images are indexed like
+# 7 8 9
+# 4 5 6
+# 1 2 3
+# then xdir = 1 and ydir = 1 as image indices increase in the same direction as image coordinates.
+#
+# If images are indexed like
+# 1 2 3
+# 4 5 6
+# 7 8 9
+# then xdir = 1 and ydir = -1 as image index increases in the same direction where y decreases.
+#
+# Similarly, if images are placed like
+# 9 8 7
+# 6 5 4
+# 3 2 1
+# then xdir = -1 and ydir = 1
+# and if images are placed like
+# 3 2 1
+# 6 5 4
+# 9 8 7
+# then xdir = -1 and ydir = -1.
+xdir = 1
+ydir = 1
+zdir = 1
+
+
+# Approximate overlap between scans in each coordinate direction.
+# The value should scale with image size.
+overlap_x = 155
+overlap_y = 155
+overlap_z = 15
+
+
+# Space between points in the reference grid in the pairwise matching step.
+# Different value can be used when finding matches between images in different coordinate directions.
+# Specify such a value that the deformation is approximately linear between the grid points.
+# The value should scale with image size.
+point_spacing_x_stitch = 15
+point_spacing_y_stitch = 15
+point_spacing_z_stitch = 15
+
+
+# Size of image block in pairwise matching (coarse step).
+# Different value can be used when finding matches between images in different coordinate directions.
+# The block does not have to be cube, you can use syntax [a, b, c] to specify different dimension
+# for each coordinate direction.
+# The block radius is the maximal local shift that can be found between any two sub-images.
+# The value should scale with image size.
+coarse_block_radius_x_stitch = 30
+coarse_block_radius_y_stitch = 30
+coarse_block_radius_z_stitch = [35, 35, 15]
+
+
+# Amount of binning for coarse matching
+# If set to 1, no fine matching is performed.
+# Set to value greater than one to make a coarse match first and then a fine match using settings below.
+# The value should scale with image size.
+coarse_binning_x_stitch = 1
+coarse_binning_y_stitch = 1
+coarse_binning_z_stitch = 1
+
+
+# Size of image block in pairwise matching (fine step).
+# Different value can be used when stitching in different coordinate directions (see coarse_block_radius).
+# Indicates maximum shift on top of shift determined in coarse matching.
+# The value should scale with image size.
+fine_block_radius_x_stitch = 1
+fine_block_radius_y_stitch = 1
+fine_block_radius_z_stitch = 1
+
+
+# Amount of binning in fine matching.
+# If greater than one, the full resolution of the image is not used to find the shifts.
+# Sometimes the results seem to be very good although this value is greater than one.
+# The value should scale with image size.
+fine_binning_x_stitch = 1
+fine_binning_y_stitch = 1
+fine_binning_z_stitch = 1
+
+
+# Allow rigid body rotation?
+# Disallow if the rotations have not been determined accurately enough, or if
+# errors in rotations propagate through the sample in unwanted way (e.g. in the case
+# of long Nx1x1 mosaic)
+allow_rotation = False
+
+
+# Normalization of gray values in pairwise matching phase.
+# Set to true to make means of the images in the overlapping regions the same before pairwise
+# matching. The value does not have any effect on the gray levels of the final mosaic.
+normalize_in_blockmatch = True
+
+
+# Normalization of gray values in the final mosaic.
+# Set to true to make mean of the images in the overlapping regions the same before
+# assembly of the final mosaic. Enabling or disabling this option may cause global
+# or local gray-value gradients, respectively.
+normalize_while_stitching = False
+
+
+# Threshold value for displacement filtering.
+# This is the T value in the filtering process that is done before determination of
+# similarity transformations and before mosaic assembly.
+# The value should scale with image size.
+displacement_filter_threshold = 3
+
+
+# Set to true to re-do pairwise matching in some coordinate direction.
+# If output files exist, the pairwise matching process is skipped for those images.
+# Use this if parameters of pairwise matching process are changed and you don't want to
+# manually remove the relevant output files.
+redo_x = False
+redo_y = False
+redo_z = False
+
+
+# Indicates if the calculations should be performed on a cluster
+use_cluster = True
+
+
+# Indicates if the script should wait until submitted cluster jobs are finished, and then continue.
+# If set to false, the script will return after submitting jobs.
+wait_for_jobs = True
+
+
+# Maximum size of image block that is processed in one process is max_block_size^3.
+# Set to such a value that (2 * pixel_size_in_bytes + 4) * max_block_size^3 < available memory in bytes.
+max_block_size = 2500
+
+
+# Partition of cluster that should be used
+cluster_partition = day
+
+
+# Commands that are run before each calculation job. Use to e.g. load required modules.
+cluster_job_init_commands = module load gcc/7.3.0
+
+
+# Extra parameters for sbatch command
+#cluster_extra_params = --exclude=ra-c-[017-048]
+
+
+# Path to pi2 program
+#pipath = ./
+

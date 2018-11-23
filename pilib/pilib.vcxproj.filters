@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="argumentdatatype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commandargument.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commandmacros.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commandsbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="distributable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="distributedimage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="distributor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exeutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filtercommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ini.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inireader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="iocommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="localdistributor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="othercommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="overlapdistributable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parseexception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pilib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pisystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pointprocesscommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pstream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="slurmdistributor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="specialcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stringutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thinandskeletoncommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="transformcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trivialdistributable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="command.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="distributable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="distributedimage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="distributor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="exeutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filtercommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ini.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inireader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="iocommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="localdistributor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="othercommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pilib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pisystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pointprocesscommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="slurmdistributor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="specialcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="thinandskeletoncommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transformcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

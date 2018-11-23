@@ -1,0 +1,57 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>ba94b144-c555-4822-8258-53a8861b7dc7</ProjectGuid>
+    <ProjectHome>
+    </ProjectHome>
+    <StartupFile>generic\pi2py_examples.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>..\x64\Release</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>python_scripts</Name>
+    <RootNamespace>elastic_stitcher</RootNamespace>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <CommandLineArguments>-logs C:\mytemp\dev\itl2\testing\nr_stitcher_tomcat\logs1\10516_IC_F_B1_.log</CommandLineArguments>
+    <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
+    <PublishUrl>
+    </PublishUrl>
+    <Environment>
+    </Environment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Singlethreaded Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+    <OutputPath>bin\Singlethreaded Debug\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="generic\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="generic\nr_stitcher.py" />
+    <Compile Include="generic\pi2py.py" />
+    <Compile Include="generic\pi2py_examples.py" />
+    <Compile Include="generic\plot_network.py">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
