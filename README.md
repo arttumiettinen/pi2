@@ -3,7 +3,7 @@
 
 This repository contains
 - itl2 project, a C++ Image analysis Template Library (version 2). It contains a small number of parallelized algorithms for processing 3D volume images e.g. from computed tomography scanners.
-- pi2 program (Process Image) that exposes functinality of itl2 library for end users. It also adds the possibility to automatically distribute processing of large images to a computing cluster.
+- pi2 program (Process Image) that exposes functionality of itl2 library for end users. It also has the possibility to automatically distribute processing of large images to a computing cluster.
 - pi2py and pi2cs libraries that are used to access pi2 functionality from Python and C# environments.
 - nr_stitcher Python program that can be used for non-rigid stitching or terabyte-scale volume image mosaics.
 
