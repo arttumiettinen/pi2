@@ -12,12 +12,12 @@ Pi2 is not intended to be a replacement for huge libraries like ITK and VTK. Ins
 
 ## Binaries
 
-Pre-built binaries for Windows and CentOS Linux can be downloaded from the releases page. The linux binaries probably work on other Linux distributions, too, as long as library versions match.
+Pre-built binaries for Windows and CentOS Linux can be downloaded from the [releases page](https://github.com/arttumiettinen/pi2/releases/latest). The linux binaries probably work on other Linux distributions, too, as long as library versions match.
 
 
 ## Examples
 
-Examples including small test datasets can be downloaded along with binaries, see previous section.
+Examples including small test datasets can be downloaded from the [releases page](https://github.com/arttumiettinen/pi2/releases/latest).
 
 
 ## Getting help
@@ -38,18 +38,18 @@ pi2.help()
 
 ### Linux
 
-- Make sure that FFTW 3 library is installed (or place its source to fftw-3.3.7-src folder, modify paths in build_again.sh to point to correct folders and run it).
-- Make sure that libpng library is installed.
+- Make sure that FFTW 3 library and its development package is installed (or place its source to fftw-3.3.7-src folder, modify paths in build_again.sh to point to correct folders and run it).
+- Make sure that libpng library and its development package is installed.
 - Make sure that g++ 7.3 is installed.
 - For Python support make sure that Python 3 is installed.
 - Run make in the project root directory. The output is placed in folder bin-linux64/release.
 
-You can install the executable and libraries to any standard location, but often it is better to just copy the files along with your project. This guarantees that you know which version of the program you used to generate results.
+You can install the executable and libraries to any standard location, but often it is simpler to copy the files along with your image analysis project. This guarantees that you know which version of the program you used to generate your results.
 
 
 ### Windows
 
-- FFTW, libpng and zlib are required. It's easiest to download all these dependencies from the releases page, see above. Just unpack the .zip file to the project root directory. Another possibility is to build the dependencies from sources using default Release Library x64 build settings.
+- FFTW, libpng and zlib are required. It's easiest to download all these dependencies from the [releases page](https://github.com/arttumiettinen/pi2/releases/latest). Just unpack the .zip file to the project root directory. Another possibility is to build the dependencies from sources using default Release Library x64 build settings.
 - Build everything in itl2.sln solution file using Visual Studio. The output is placed to x64/Release folder.
 
 
