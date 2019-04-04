@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 #include "pilib.h"
 
@@ -35,7 +36,7 @@ Main entry point
 int main(int argc, char** argv)
 {
 	
-	void* handle = createPI();
+	auto handle = unique_ptr<void, decltype(destroyPI)*>(createPI(), destroyPI);
 	try
 	{
 		string code;
@@ -71,18 +72,20 @@ int main(int argc, char** argv)
 				code += string(argv[n]) + " ";
 		}
 
-		run(handle, "echo(true, false)");
+		run(handle.get(), "echo(true, false)");
 
-		if (!run(handle, code.c_str()))
+		if (!run(handle.get(), code.c_str()))
 		{
 			if (file)
-				cout << "Error(line " << lastErrorLine(handle) << "): ";
+				cout << "Error(line " << lastErrorLine(handle.get()) << "): ";
 			else
 				cout << "Error: ";
-			cout << lastErrorMessage(handle) << endl;
-			clearLastError(handle);
+			cout << lastErrorMessage(handle.get()) << endl;
+			clearLastError(handle.get());
+			return 1;
 		}
 
+		return 0;
 	}
 	catch (ArgumentException& e)
 	{
@@ -98,18 +101,25 @@ int main(int argc, char** argv)
 		cout << "Things to try:" << endl;
 		cout << "pi2 info" << endl;
 		cout << "pi2 help" << endl;
+
+		return 1;
 	}
 	catch (std::bad_alloc& e)
 	{
 		cout << "Error: Out of memory (" << e.what() << ")" << endl;
+		
+		return 2;
 	}
 	catch (std::exception& e)
 	{
 		cout << "Error: " << e.what() << endl;
+
+		return 3;
 	}
 	catch (...)
 	{
 		cout << "Error: Unknown error" << endl;
+
+		return 4;
 	}
-	destroyPI(handle);
 }

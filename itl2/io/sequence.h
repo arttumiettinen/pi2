@@ -3,6 +3,7 @@
 #include "image.h"
 #include "io/imagedatatype.h"
 #include "io/itlpng.h"
+#include "io/itltiff.h"
 #include "utilities.h"
 
 #include <cmath>
@@ -26,6 +27,11 @@ namespace itl2
 			vector<string> buildFileList(const string& templ);
 
 			/**
+			Works as buildFileList but removed non-image files from the list.
+			*/
+			vector<string> buildFilteredFileList(const string& templ);
+
+			/**
 			Separates directory and filename parts of a sequence template.
 			*/
 			void separatePathAndFileTemplate(const string& templ, fs::path& dir, string& fileTemplate);
@@ -36,7 +42,24 @@ namespace itl2
 			inline bool getInfo2D(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType)
 			{
 				// TODO: Add other formats here.
-				return png::getInfo(filename, width, height, dataType);
+
+
+				// All .png files that can be read are supported.
+				if (png::getInfo(filename, width, height, dataType))
+					return true;
+
+				// .tif files with single slice are supported.
+				math::Vec3c dimensions;
+				if (tiff::getInfo(filename, dimensions, dataType))
+				{
+					width = dimensions.x;
+					height = dimensions.y;
+					if (dimensions.z == 1)
+						return true;
+					return false;
+				}
+
+				return false;
 			}
 
 			/**
@@ -45,7 +68,17 @@ namespace itl2
 			template<typename pixel_t> void read2D(Image<pixel_t>& image, const string& filename, coord_t z)
 			{
 				// TODO: Add other formats here.
-				png::read(image, filename, z);
+
+				math::Vec3c dimensions;
+				coord_t width, height;
+				ImageDataType dataType;
+
+				if (png::getInfo(filename, width, height, dataType))
+					png::read(image, filename, z);
+				else if (tiff::getInfo(filename, dimensions, dataType))
+					tiff::read2D(image, filename, z);
+				else
+					throw ITLException("Unsupported sequence input file format.");
 			}
 
 			/**
@@ -54,9 +87,16 @@ namespace itl2
 			template<typename pixel_t> void write2D(const Image<pixel_t>& image, const string& filename, coord_t z)
 			{
 				// TODO: Add other formats here.
-				png::write(image, filename, z);
+
+				if (endsWith(filename, ".png"))
+					png::write(image, filename, z);
+				else if (endsWith(filename, ".tif"))
+					tiff::write2D(image, filename, z);
+				else
+					throw ITLException("Unsupported sequence output file format.");
 			}
 			
+
 		}
 
 		/**
@@ -71,9 +111,9 @@ namespace itl2
 			width = 0;
 			height = 0;
 			depth = 0;
-			dataType = Unknown;
+			dataType = ImageDataType::Unknown;
 
-			vector<string> files = internals::buildFileList(filename);
+			vector<string> files = internals::buildFilteredFileList(filename);
 
 			if (files.size() <= 0)
 				return false;
@@ -106,7 +146,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& img, const string& filename, size_t firstSlice = 0, size_t lastSlice = numeric_limits<size_t>::max())
 		{
-			vector<string> files = internals::buildFileList(filename);
+			vector<string> files = internals::buildFilteredFileList(filename);
 
 			if (files.size() <= 0)
 				throw ITLException("Sequence contains no images.");
@@ -122,11 +162,11 @@ namespace itl2
 			ImageDataType dataType;
 
 			if (!internals::getInfo2D(files[0], width, height, dataType))
-				throw ITLException("Unable to get basic information of the image sequence. Possibly image type cannot be opened.");
+				throw ITLException("Unable to read dimensions of the image sequence.");
 
 			// Check that image data type matches
 			if (dataType != imageDataType<pixel_t>())
-				throw ITLException("The data types of the image and the sequence do not match.");
+				throw ITLException(string("Expected data type is ") + toString(imageDataType<pixel_t>()) + " but the sequence contains data of type " + toString(dataType) + ".");
 
 			img.ensureSize(width, height, depth);
 
@@ -150,7 +190,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const math::Vec3c& start, bool showProgressInfo = false)
 		{
-			vector<string> files = internals::buildFileList(filename);
+			vector<string> files = internals::buildFilteredFileList(filename);
 
 			if (files.size() <= 0)
 				throw ITLException("Sequence contains no images.");
@@ -180,7 +220,6 @@ namespace itl2
 				// Read whole file
 				Image<pixel_t> slice(dimensions.x, dimensions.y, 1);
 				{
-					//FileLock lock(files[z]);
 					internals::read2D(slice, files[z], 0);
 				}
 
@@ -248,6 +287,10 @@ namespace itl2
 				{
 					fieldWidth = (int)std::log10(sliceCount + 1) + 1;
 				}
+
+				// No extension given => select .png
+				if (!endsWith(fileTempl, ".tif") && !endsWith(fileTempl, ".png"))
+					fileTempl += ".png";
 			}
 
 			inline string insertSliceNumber(const string& fileTempl, int fieldWidth, size_t atPos, size_t z)
@@ -299,7 +342,7 @@ namespace itl2
 
 				internals::write2D(img, (dir / filename).string(), z);
 
-				showThreadProgress(counter, img.depth());
+				showThreadProgress(counter, lastSlice - firstSlice + 1);
 			}
 
 		}
@@ -346,16 +389,27 @@ namespace itl2
 			const pixel_t* pBuffer = img.getData();
 
 			fs::create_directories(dir);
+			size_t counter = 0;
 			#pragma omp parallel for if(!omp_in_parallel())
 			for (coord_t z = cStart.z; z < cEnd.z; z++)
 			{
 				string filename = internals::insertSliceNumber(fileTempl, fieldWidth, atPos, z/* - cStart.z + imagePosition.z*/);
 				filename = (dir / filename).string();
 
-				Image<pixel_t> slice(fileDimensions.x, fileDimensions.y, 1);
 
+				if (cStart.x == 0 && cStart.y == 0 && cEnd.x == img.width() && cEnd.y == img.height() &&
+					imagePosition.x == 0 && imagePosition.y == 0)
 				{
+					// We are writing full slices. Reading phase can be skipped (see below).
+					internals::write2D(img, filename, z - cStart.z + imagePosition.z);
+				}
+				else
+				{
+					// We are writing only a part of each slice.
+
 					//FileLock lock(filename);
+
+					Image<pixel_t> slice(fileDimensions.x, fileDimensions.y, 1);
 
 					// Read existing data
 					if (fs::exists(filename))
@@ -411,7 +465,7 @@ namespace itl2
 				}
 
 				if (showProgressInfo)
-					showProgress(z - cStart.z, cEnd.z - cStart.z);
+					showThreadProgress(counter, cEnd.z - cStart.z);
 			}
 		}
 
@@ -463,7 +517,7 @@ namespace itl2
 				if (move)
 					fs::rename(infile, outfile);
 				else
-					fs::copy(infile, outfile);
+					fs::copy(infile, outfile, fs::copy_options::overwrite_existing);
 			}
 		}
 
@@ -482,6 +536,8 @@ namespace itl2
 			void match();
 			void sequence();
 			void readWriteBlock();
+			void readWriteBlockOptimization();
+			void fileFormats();
 		}
 	}
 

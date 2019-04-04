@@ -15,25 +15,25 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::readd(head16, "./t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "./t1-head_noisy_256x256x129.raw");
 
 			add(head16, 1);
 
 			Image<uint16_t> shifted(head16.dimensions());
 
-			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), NearestNeighbourInterpolator<uint16_t, uint16_t>(Zero));
+			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), NearestNeighbourInterpolator<uint16_t, uint16_t>(BoundaryCondition::Zero));
 			raw::writed(shifted, "./transform/shift_nearest");
 
-			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), LinearInterpolator<uint16_t, uint16_t>(Zero));
+			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), LinearInterpolator<uint16_t, uint16_t>(BoundaryCondition::Zero));
 			raw::writed(shifted, "./transform/shift_linear");
 
-			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), LinearInvalidValueInterpolator<uint16_t, uint16_t>(Zero, 0, 0));
+			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), LinearInvalidValueInterpolator<uint16_t, uint16_t>(BoundaryCondition::Zero, 0, 0));
 			raw::writed(shifted, "./transform/shift_linear_invalidvalue");
 
-			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), CubicInterpolator<uint16_t, uint16_t>(Zero));
+			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), CubicInterpolator<uint16_t, uint16_t>(BoundaryCondition::Zero));
 			raw::writed(shifted, "./transform/shift_cubic");
 
-			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), CubicInvalidValueInterpolator<uint16_t, uint16_t>(Zero, 0, 0));
+			translate(head16, shifted, Vec3d(10.5, 0.7, -3.2), CubicInvalidValueInterpolator<uint16_t, uint16_t>(BoundaryCondition::Zero, 0, 0));
 			raw::writed(shifted, "./transform/shift_cubic_invalidvalue");
 		}
 
@@ -42,7 +42,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::readd(head16, "./t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "./t1-head_noisy_256x256x129.raw");
 
 			Image<uint16_t> headb;
 			binning(head16, headb, 2);
@@ -60,7 +60,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16, headb;
-			raw::readd(head16, "./t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "./t1-head_noisy_256x256x129.raw");
 
 			vector<Vec3f> refPoints, defPoints;
 			defPoints.push_back(Vec3f(0, 0, 64));

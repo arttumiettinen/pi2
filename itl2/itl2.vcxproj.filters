@@ -26,7 +26,7 @@
       <UniqueIdentifier>{eee8b01c-a320-4906-abfc-3852e0231855}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\io">
-      <UniqueIdentifier>{c7b5d4f1-9018-4113-96e4-0541b67da326}</UniqueIdentifier>
+      <UniqueIdentifier>{69206810-3fa0-42b6-a3a3-fed176cb14d7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -54,13 +54,7 @@
     <ClInclude Include="math\complex.h">
       <Filter>Header Files\math</Filter>
     </ClInclude>
-    <ClInclude Include="math\conjugategradient.h">
-      <Filter>Header Files\math</Filter>
-    </ClInclude>
     <ClInclude Include="math\eig2.h">
-      <Filter>Header Files\math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\eig3.h">
       <Filter>Header Files\math</Filter>
     </ClInclude>
     <ClInclude Include="math\geometry.h">
@@ -106,9 +100,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="misc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="itl2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="transform.h">
@@ -183,9 +174,6 @@
     <ClInclude Include="traceskeleton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="disjointsetforest.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="box.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -210,13 +198,67 @@
     <ClInclude Include="io\fileutils.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
+    <ClInclude Include="math\dsyevc3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\dsyevh3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\dsyevq3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\dsytrd3.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="stringutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fastmaxminfilters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="testutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resultstable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="analyzers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="connectivity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="indexforest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="median.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\vol.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="danielsson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="interpolationmode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\io.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\itltiff.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="math\eig3.cpp">
-      <Filter>Source Files\math</Filter>
     </ClCompile>
     <ClCompile Include="pointprocess.cpp">
       <Filter>Source Files</Filter>
@@ -260,7 +302,7 @@
     <ClCompile Include="skeleton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="io\png.cpp">
+    <ClCompile Include="io\sequence.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="regionremoval.cpp">
@@ -275,13 +317,49 @@
     <ClCompile Include="network.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="io\fileutils.cpp">
+    <ClCompile Include="math\dsytrd3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\dsyevq3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\dsyevh3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\dsyevc3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\matrix3x3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="fastmaxminfilters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="particleanalysis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resultstable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="danielsson.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\png.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\vol.cpp">
       <Filter>Source Files\io</Filter>
     </ClCompile>
     <ClCompile Include="raw.cpp">
       <Filter>Source Files\io</Filter>
     </ClCompile>
-    <ClCompile Include="io\sequence.cpp">
+    <ClCompile Include="io\fileutils.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\io.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\tiff.cpp">
       <Filter>Source Files\io</Filter>
     </ClCompile>
   </ItemGroup>

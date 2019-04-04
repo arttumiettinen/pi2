@@ -25,8 +25,9 @@ namespace itl2
 	@param shift Shift vector.
 	@param interpolate Interpolation type.
 	*/
-	template<typename pixel_t, typename out_t> void translate(const Image<pixel_t>& in, Image<out_t>& out, const Vec3d& shift, const Interpolator<out_t, pixel_t>& interpolate = LinearInterpolator<out_t, pixel_t>(Zero))
+	template<typename pixel_t, typename out_t> void translate(const Image<pixel_t>& in, Image<out_t>& out, const Vec3d& shift, const Interpolator<out_t, pixel_t>& interpolate = LinearInterpolator<out_t, pixel_t>(BoundaryCondition::Zero))
 	{
+		out.mustNotBe(in);
 		out.ensureSize(in);
 
 		#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
@@ -51,6 +52,8 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t> void crop(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& outPos)
 	{
+		out.mustNotBe(in);
+
 		#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
 		{
@@ -74,29 +77,29 @@ namespace itl2
 	@param binSize Bin size. 2 makes the output image dimensions half of the input image dimensions, 3 makes them one third etc.
 	@param indicateProgress Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, size_t amount, bool indicateProgress = true)
+	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& binSize, bool indicateProgress = true)
 	{
-		coord_t binSize = (coord_t)amount;
-		if (binSize <= 0)
+		if (binSize.min() <= 0)
 			throw ITLException("Bins size must be positive.");
 
-		out.ensureSize(in.dimensions() / binSize);
+		out.mustNotBe(in);
+		out.ensureSize(in.dimensions().componentwiseDivide(binSize));
 
 		size_t counter = 0;
 		#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
 		{
-			coord_t inz = z * binSize;
+			coord_t inz = z * binSize.z;
 			coord_t iny = 0;
-			for (coord_t y = 0; y < out.height(); y++, iny += binSize)
+			for (coord_t y = 0; y < out.height(); y++, iny += binSize.y)
 			{
 				coord_t inx = 0;
-				for (coord_t x = 0; x < out.width(); x++, inx += binSize)
+				for (coord_t x = 0; x < out.width(); x++, inx += binSize.x)
 				{
 
-					coord_t inzEnd = math::min(inz + binSize, in.depth());
-					coord_t inyEnd = math::min(iny + binSize, in.height());
-					coord_t inxEnd = math::min(inx + binSize, in.width());
+					coord_t inzEnd = math::min(inz + binSize.x, in.depth());
+					coord_t inyEnd = math::min(iny + binSize.y, in.height());
+					coord_t inxEnd = math::min(inx + binSize.z, in.width());
 					typename NumberUtils<out_t>::FloatType M = 0;
 					for (coord_t zz = inz; zz < inzEnd; zz++)
 					{
@@ -121,6 +124,19 @@ namespace itl2
 
 	/**
 	Converts input image to smaller scale by averaging binSize^dimensionality blocks.
+	Does not use separable algorithm (that saves some memory).
+	@param in Input image.
+	@param out Output image. The image is automatically initialized to correct size.
+	@param binSize Bin size. 2 makes the output image dimensions half of the input image dimensions, 3 makes them one third etc.
+	@param indicateProgress Set to true to show a progress bar.
+	*/
+	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, size_t binSize, bool indicateProgress = true)
+	{
+		binning(in, out, Vec3c(binSize, binSize, binSize), indicateProgress);
+	}
+
+	/**
+	Converts input image to smaller scale by averaging binSize^dimensionality blocks.
 	Does not average value specified as argument.
 	@param in Input image.
 	@param out Output image. The image is automatically initialized to correct size.
@@ -130,6 +146,7 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t> void maskedBinning(const Image<pixel_t>& in, Image<out_t>& out, size_t amount, pixel_t badValue, out_t undefinedValue, bool indicateProgress = true)
 	{
+		out.mustNotBe(in);
 		coord_t binSize = (coord_t)amount;
 		out.ensureSize(round(Vec3d(in.dimensions()) / (double)binSize));
 
@@ -190,20 +207,28 @@ namespace itl2
 	@param out Output image.
 	@param interpolate Interpolation type.
 	@param indicateProgress Set to true to show a progress bar.
+	@param factor Scaling factor. If zero or negative, determined from dimensions of input and output image.
+	@param delta Shift that is added to coordinates of each input point. Used in distributed processing.
 	*/
-	template<typename in_t, typename out_t> void scale(const Image<in_t>& in, Image<out_t>& out, const Interpolator<out_t, in_t>& interpolate = LinearInterpolator<out_t, in_t>(Zero), bool indicateProgress = true)
+	template<typename in_t, typename out_t> void scale(const Image<in_t>& in, Image<out_t>& out, const Interpolator<out_t, in_t>& interpolate = LinearInterpolator<out_t, in_t>(BoundaryCondition::Zero), bool indicateProgress = true, Vec3d factor = Vec3d(0, 0, 0), const Vec3d& delta = Vec3d(0, 0, 0))
 	{
+
+		if (factor.max() <= 0)
+		{
+			factor = Vec3d(out.dimensions()).componentwiseDivide(Vec3d(in.dimensions()));
+		}
+
 		size_t counter = 0;
 		#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
 		{
-			typename NumberUtils<out_t>::RealFloatType sz = (typename NumberUtils<out_t>::RealFloatType)z / out.depth() * in.depth();
+			typename NumberUtils<out_t>::RealFloatType sz = (typename NumberUtils<out_t>::RealFloatType)(z / factor.z) + (typename NumberUtils<out_t>::RealFloatType)delta.z;
 			for (coord_t y = 0; y < out.height(); y++)
 			{
-				typename NumberUtils<out_t>::RealFloatType sy = (typename NumberUtils<out_t>::RealFloatType)y / out.height() * in.height();
+				typename NumberUtils<out_t>::RealFloatType sy = (typename NumberUtils<out_t>::RealFloatType)(y / factor.y) + (typename NumberUtils<out_t>::RealFloatType)delta.y;
 				for (coord_t x = 0; x < out.width(); x++)
 				{
-					typename NumberUtils<out_t>::RealFloatType sx = (typename NumberUtils<out_t>::RealFloatType)x / out.width() * in.width();
+					typename NumberUtils<out_t>::RealFloatType sx = (typename NumberUtils<out_t>::RealFloatType)(x / factor.x) + (typename NumberUtils<out_t>::RealFloatType)delta.x;
 					out(x, y, z) = interpolate(in, sx, sy, sz);
 				}
 			}
@@ -260,8 +285,10 @@ namespace itl2
 		const std::vector<Vec3f>& refPoints,
 		const std::vector<Vec3f>& defPoints,
 		float exponent = 2.5f,
-		const Interpolator<out_t, pixel_t>& interpolate = LinearInterpolator<out_t, pixel_t>(Zero))
+		const Interpolator<out_t, pixel_t>& interpolate = LinearInterpolator<out_t, pixel_t>(BoundaryCondition::Zero))
 	{
+		out.mustNotBe(img);
+
 		std::vector<Vec3f> shifts = defPoints - refPoints;
 
 		size_t counter = 0;

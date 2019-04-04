@@ -1,7 +1,7 @@
 
 CXXFLAGS+=-fPIC -I. -I../itl2 -I../fftw-3.3.7-linux64/include
 LDFLAGS+=-shared -L./../itl2/bin -L./../fftw-3.3.7-linux64/lib
-LDLIBS=-lfftw3f -litl2 -lstdc++fs -lpng
+LDLIBS=-lfftw3f -litl2 -lstdc++fs -lpng -ltiff
 
 all: bin/libpilib.so
 

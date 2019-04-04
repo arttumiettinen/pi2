@@ -5,6 +5,7 @@
 #include "hybridskeleton.h"
 #include "filters.h"
 #include "transform.h"
+#include "indexforest.h"
 
 using namespace math;
 
@@ -29,7 +30,7 @@ namespace itl2
 				for (size_t n = 0; n < points.size(); n++)
 					c(n) = points[n][dim];
 
-				gaussFilter(c, Vec3d(sigma, 0.0, 0.0), Nearest);
+				gaussFilter(c, Vec3d(sigma, 0.0, 0.0), BoundaryCondition::Nearest);
 
 				for (size_t n = 0; n < points.size(); n++)
 					smoothed[n][dim] = c(n);
@@ -61,7 +62,7 @@ namespace itl2
 				for (size_t n = 0; n < points.size(); n++)
 					c(n) = points[n][dim];
 
-				gaussFilter(c, Vec3d(sigma, 0.0, 0.0), Nearest);
+				gaussFilter(c, Vec3d(sigma, 0.0, 0.0), BoundaryCondition::Nearest);
 
 				for (size_t n = 0; n < points.size(); n++)
 				{
@@ -78,7 +79,7 @@ namespace itl2
 			*/
 		}
 
-		float32_t lineLength(vector<Vec3f>& points, double sigma)
+		float32_t lineLength(vector<Vec3f>& points, float32_t* pStraightLength, double sigma)
 		{
 			if (sigma > 0)
 			{
@@ -92,23 +93,26 @@ namespace itl2
 				l += (points[n] - points[n - 1]).norm();
 			}
 
+			if (pStraightLength)
+				(*pStraightLength) = (points[points.size() - 1] - points[0]).norm();
+
 			return l;
 		}
 
-		float32_t straightLineLength(const Vec3f& a, const Vec3f& b, double sigma)
-		{
-			vector<Vec3f> points;
-			points.push_back(a);
-			points.push_back(b);
-			return lineLength(points, sigma);
-		}
+		//float32_t straightLineLength(const Vec3f& a, const Vec3f& b, double sigma)
+		//{
+		//	vector<Vec3f> points;
+		//	points.push_back(a);
+		//	points.push_back(b);
+		//	return lineLength(points, sigma);
+		//}
 
 
 
 		/**
 		Finds out if there are any neighbouring points in v1 and v2.
 		*/
-		bool isNeighbour(const vector<Vec3c>& v1, const vector<Vec3c>& v2)
+		bool isNeighbour(const vector<Vec3sc>& v1, const vector<Vec3sc>& v2)
 		{
 			for (size_t n = 0; n < v1.size(); n++)
 			{
@@ -128,22 +132,21 @@ namespace itl2
 		Finds intersecting incomplete vertex regions and combines their indices in the forest.
 		At output the forest will contain all indices of vertices list, and indices of intersecting vertices belong to the same root.
 		*/
-		void findIntersectingRegions(const vector<IncompleteVertex>& vertices, DisjointSetForest<size_t>& forest)
+		void findIntersectingRegions(const vector<IncompleteVertex>& vertices, IndexForest& forest)
 		{
 			// Add all indices to the forest
 			cout << "Build forest..." << endl;
-			for (size_t n = 0; n < vertices.size(); n++)
-				forest.add_element(n);
+			forest.initialize(vertices.size());
 
 			// Calculate bounding boxes for incomplete vertex sets
 			cout << "Determine bounding boxes..." << endl;
-			vector<Box<coord_t> > boundingBoxes;
+			vector<Box<int32_t> > boundingBoxes;
 			boundingBoxes.reserve(vertices.size());
-			Vec3c m = Vec3c(numeric_limits<coord_t>::max(), numeric_limits<coord_t>::max(), numeric_limits<coord_t>::max());
-			Vec3c M = Vec3c(numeric_limits<coord_t>::lowest(), numeric_limits<coord_t>::lowest(), numeric_limits<coord_t>::lowest());
+			Vec3sc m = Vec3sc(numeric_limits<int32_t>::max(), numeric_limits<int32_t>::max(), numeric_limits<int32_t>::max());
+			Vec3sc M = Vec3sc(numeric_limits<int32_t>::lowest(), numeric_limits<int32_t>::lowest(), numeric_limits<int32_t>::lowest());
 			for (size_t n = 0; n < vertices.size(); n++)
 			{
-				Box<coord_t> b = Box<coord_t>::boundingBox(vertices[n].points);
+				Box<int32_t> b = Box<int32_t>::boundingBox(vertices[n].points);
 				b.inflate(1);
 				boundingBoxes.push_back(b);
 				m = min(m, b.minc);
@@ -189,20 +192,27 @@ namespace itl2
 				{
 					size_t n = list[ni];
 					const IncompleteVertex& v1 = vertices[n];
-					const Box<coord_t>& b1 = boundingBoxes[n];
+					const Box<int32_t>& b1 = boundingBoxes[n];
 
 					for (size_t mi = ni + 1; mi < list.size(); mi++)
 					{
 						size_t m = list[mi];
 						const IncompleteVertex& v2 = vertices[m];
-						const Box<coord_t>& b2 = boundingBoxes[m];
+						const Box<int32_t>& b2 = boundingBoxes[m];
 
-						if (b1.overlaps(b2) && isNeighbour(v1.points, v2.points))
+						// Only test if the vertices have not been connected yet.
+						// There is a race condition between union_sets below and find_sets on this line, but
+						// that may only result in the test below evaluating true even though it should be
+						// false, and in that case we just do some extra work.
+						if (forest.find_set(n) != forest.find_set(m))
 						{
-							// v1 and v2 are neighbours, so the intersection regions must be combined
-#pragma omp critical(forestInsert)
+							if (b1.overlaps(b2) && isNeighbour(v1.points, v2.points)) // TODO: This might be faster if we check for already done isNeighbour calls as in particle analysis.
 							{
-								forest.union_sets(n, m);
+								// v1 and v2 are neighbours, so the intersection regions must be combined
+#pragma omp critical(forestInsert)
+								{
+									forest.union_sets(n, m);
+								}
 							}
 						}
 					}
@@ -222,7 +232,7 @@ namespace itl2
 		{
 			// Find neighbouring incomplete vertices
 			// The forest contains indices into net.incompleteVertices list.
-			DisjointSetForest<size_t> forest;
+			IndexForest forest;
 			findIntersectingRegions(net.incompleteVertices, forest);
 
 			// Move all points to roots
@@ -252,7 +262,7 @@ namespace itl2
 				if (net.incompleteVertices[n].points.size() > 0)
 				{
 					math::Vec3f center(0, 0, 0);
-					for (const Vec3c& p : net.incompleteVertices[n].points)
+					for (const auto& p : net.incompleteVertices[n].points)
 						center += math::Vec3f(p);
 					center /= (float32_t)net.incompleteVertices[n].points.size();
 
@@ -436,7 +446,7 @@ namespace itl2
 		//	// NOTE: No asserts!
 		
 		//	Image<uint8_t> skele;
-		//	raw::readd(skele, "./skeleton/cavities/cavity_hybrid_skeleton");
+		//	raw::read(skele, "./skeleton/cavities/cavity_hybrid_skeleton");
 
 		//	classifySkeleton(skele, true, true, true);
 
@@ -452,15 +462,44 @@ namespace itl2
 			
 
 			Image<uint8_t> skele, orig;
-			raw::readd(skele, in);
-			raw::readd(orig, in);
+			raw::read(skele, in);
+			raw::read(orig, in);
 
 			hybridSkeleton(skele);
 			raw::writed(skele, skeleout);
 
 			Network net;
-			traceLineSkeleton(skele, orig, net);
+			traceLineSkeleton(skele, &orig, net);
 			cout << net;
+
+			Network net2;
+
+			raw::read(skele, in);
+			hybridSkeleton(skele);
+			traceLineSkeleton(skele, net2);
+			
+			vector<Vec3f> verts1 = net.vertices;
+			vector<Vec3f> verts2 = net2.vertices;
+			sort(verts1.begin(), verts1.end(), math::vecComparer<float>);
+			sort(verts2.begin(), verts2.end(), math::vecComparer<float>);
+			
+			if(!testAssert(verts1 == verts2, "with and without measurements"))
+			{
+			    cout << "With:" << endl;
+			    for(auto x : verts1)
+    			    cout << x << endl;
+			    cout << "Without:" << endl;
+			    for(auto x : verts2)
+    			    cout << x << endl;
+			}
+		}
+
+		void traceSkeletonRealData()
+		{
+			Image<uint8_t> skele, orig;
+			raw::read(skele, "real_skele_200x200x200.raw");
+			Network net;
+			traceLineSkeleton(skele, net);
 		}
 
 		void lineLength()
@@ -502,16 +541,19 @@ namespace itl2
 			
 			raw::writed(img, "./skeleton/line_length/line1");
 
-			float32_t L0 = internals::lineLength(points, 0);
-			float32_t L1 = internals::lineLength(points, 1.0);
-			cout << "Length (no smoothing) = " << L0 << endl;
-			cout << "Length (with smoothing) = " << L1 << endl;
-			cout << "Straight line length = " << (*points.begin() - *points.rbegin()).norm() << endl;
-			cout << "Adjusted straight line length = " << internals::straightLineLength(*points.begin(), *points.rbegin()) << endl;
+			float32_t L0straight, L1straight;
+			float32_t L0 = internals::lineLength(points, &L0straight, 0);
+			float32_t L1 = internals::lineLength(points, &L1straight, 1.0);
+			cout << "Line length (no smoothing) = " << L0 << endl;
+			cout << "Straight line length (no smoothing) = " << L0straight << endl;
+			cout << "Line length (with smoothing) = " << L1 << endl;
+			cout << "Straight line length (no smoothing) = " << L1straight << endl;
+			//cout << "Straight line length = " << (*points.begin() - *points.rbegin()).norm() << endl;
+			//cout << "Adjusted straight line length = " << internals::straightLineLength(*points.begin(), *points.rbegin()) << endl;
 
 			int S = 10;
 			Image<uint8_t> img2(S * img.width(), S * img.height());
-			scale(img, img2, NearestNeighbourInterpolator<uint8_t, uint8_t>(Zero));
+			scale(img, img2, NearestNeighbourInterpolator<uint8_t, uint8_t>(BoundaryCondition::Zero));
 
 			for (const auto& p : points)
 				img2((int)(S * p.x), (int)(S * p.y), (int)(S * p.z)) = 128;

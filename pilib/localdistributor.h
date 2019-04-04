@@ -17,7 +17,7 @@ namespace pilib
 		*/
 		vector<string> outputs;
 
-		virtual void submitJob(const string& piCode);
+		virtual void submitJob(const string& piCode, JobType jobType);
 
 		virtual vector<string> waitForJobs();
 

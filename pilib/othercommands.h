@@ -4,11 +4,20 @@
 #include "commandsbase.h"
 #include "overlapdistributable.h"
 #include "parseexception.h"
+#include "filtercommands.h"
+#include "pointprocesscommands.h"
+#include "structure.h"
+#include "pilibutilities.h"
+#include "io/io.h"
+#include "registration.h"
+#include "stitching.h"
+#include "noise.h"
+#include "misc.h"
+#include "particleanalysis.h"
+#include "histogram.h"
 
 #include <vector>
 #include <string>
-
-#include "itl2.h"
 
 using namespace std;
 using namespace itl2;
@@ -16,218 +25,26 @@ using namespace itl2;
 namespace pilib
 {
 
-	namespace internals
-	{
-		/*
-		Get value at the first line that reads "key = value".
-		*/
-		double getValue(const string& s, const string& key)
-		{
-			size_t startPos = s.find(key);
-			if (startPos != string::npos)
-			{
-				startPos += key.length();
-				size_t lineEnd = s.find('\n', startPos);
-				string number = s.substr(startPos, lineEnd - startPos - 1);
-				return fromString<double>(number);
-			}
-			else
-			{
-				throw ITLException("Key not found.");
-			}
-		}
-
-		double sumReducer(const vector<double> vals, const vector<double> counts)
-		{
-			return sum(vals);
-		}
-
-		double minReducer(const vector<double> vals, const vector<double> counts)
-		{
-			return min(vals);
-		}
-
-		double maxReducer(const vector<double> vals, const vector<double> counts)
-		{
-			return max(vals);
-		}
-
-		double meanReducer(const vector<double> vals, const vector<double> counts)
-		{
-			return mean(vals, counts);
-		}
-	}
-
-#define CONCAT(str1, str2) #str1 #str2
-#define DEF_PROJECT(classname, funcname, cmdname) \
-	template<typename in_t> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, float32_t>, public Distributable	\
-	{																										\
-	public:																									\
-		classname##AllPixelsCommand() : TwoImageInputOutputCommand<in_t, float32_t>(#cmdname, "Calculates " #funcname " of all pixels in the input image. The output is a 1x1x1 image.",	\
-			{																								\
-				CommandArgument<bool>(In, "print to log", "Set to true to print the results to the log.", false)	\
-			}) {}																							\
-																											\
-		virtual void run(Image<in_t>& in, Image<float32_t>& out, vector<ParamVariant>& args) const			\
-		{																									\
-			bool print = pop<bool>(args);																	\
-			double res = (double)funcname (in);																\
-			out.ensureSize(1, 1, 1);																		\
-			out(0) = (float32_t)res;																		\
-			if(print)																						\
-			{																								\
-				cout << #funcname << " = " << out(0) << endl;												\
-				cout << "count = " << in.pixelCount() << endl;												\
-			}																								\
-		}																									\
-																											\
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const				\
-		{																									\
-			DistributedImage<float32_t>& out = *get<DistributedImage<float32_t>* >(args[1]);				\
-			bool print = get<bool>(args[2]);																\
-			out.ensureSize(1, 1, 1);																		\
-																											\
-			vector<ParamVariant> args2;																		\
-			args2.push_back(args[0]);																		\
-			args2.push_back(args[1]);																		\
-			ParamVariant p;																					\
-			p.bval = true;																					\
-			args2.push_back(p);																				\
-																											\
-			vector<string> results = distributor.distribute(this, args2, 2, Vec3c(0, 0, 0), 0, 0);			\
-			vector<double> vals, counts;																	\
-			for (const string& s : results)																	\
-			{																								\
-				vals.push_back(internals::getValue(s, #funcname " = "));									\
-				counts.push_back(internals::getValue(s, "count = "));										\
-			}																								\
-																											\
-			Image<float32_t> tmp;																			\
-			out.readTo(tmp);																				\
-			tmp(0) = (float32_t)internals::funcname##Reducer(vals, counts);									\
-			out.setData(tmp);																				\
-																											\
-			if (print)																						\
-			{																								\
-				cout << #funcname << " = " << tmp(0) << endl;												\
-				cout << "count = " << sum(counts) << endl;													\
-			}																								\
-		}																									\
-																											\
-		virtual void getCorrespondingBlock(vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const	\
-		{																									\
-			if (argIndex == 1)																				\
-			{																								\
-				readStart = Vec3c(0, 0, 0);																	\
-				readSize = Vec3c(1, 1, 1);																	\
-				writeFilePos = Vec3c(0, 0, 0);																\
-				writeImPos = Vec3c(0, 0, 0);																\
-				writeSize = Vec3c(1, 1, 1);																	\
-			}																								\
-		}																									\
-	};																										\
-																											\
-	template<typename in_t> class classname##ProjectCommand : public TwoImageInputOutputCommand<in_t, float32_t>, public Distributable	\
-	{																										\
-	public:																									\
-		classname##ProjectCommand() : TwoImageInputOutputCommand<in_t, float32_t>(CONCAT(funcname, project), "Calculates projection of the input image. The dimensionality of the output image is the dimensionality of the input image subtracted by one.",	\
-		{ CommandArgument<size_t>(In, "dimension", "Dimension to project over, zero corresponding to x, one corresponding to y, and 2 corresponding to z.", 2) }) {}	\
-																											\
-		virtual void run(Image<in_t>& in, Image<float32_t>& out, vector<ParamVariant>& args) const			\
-		{																									\
-			size_t dim = pop<size_t>(args);																	\
-			if(dim < 0 || dim > 2)																			\
-				throw ITLException("Invalid dimension specification.");										\
-																											\
-			funcname (in, dim, out);																		\
-		}																									\
-																											\
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const				\
-		{																									\
-			DistributedImage<in_t>& in = *get<DistributedImage<in_t>* >(args[0]);							\
-			DistributedImage<float32_t>& out = *get<DistributedImage<float32_t>* >(args[1]);				\
-			size_t dim = get<size_t>(args[2]);																\
-																											\
-			size_t distrDim;																				\
-			if (dim == 2)																					\
-			{																								\
-				/* Z project */																				\
-				out.ensureSize(in.width(), in.height());													\
-				distrDim = 1;																				\
-			}																								\
-			else if (dim == 1)																				\
-			{																								\
-				/* Y project */																				\
-				out.ensureSize(in.width(), in.depth());														\
-				distrDim = 1;																				\
-			}																								\
-			else if (dim == 0)																				\
-			{																								\
-				/* X project. Swap z and y in output to make the image more logical (in some sense...) */	\
-				out.ensureSize(in.depth(), in.height());													\
-				distrDim = 1;																				\
-			}																								\
-			else																							\
-			{																								\
-				throw ITLException("Invalid dimension specification.");										\
-			}																								\
-																											\
-			distributor.distribute(this, args, distrDim, Vec3c(0, 0, 0));									\
-		}																									\
-																											\
-		virtual void getCorrespondingBlock(vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const	\
-		{																									\
-			if (argIndex == 0)																				\
-			{																								\
-				DistributedImage<in_t>& in = *get<DistributedImage<in_t>* >(args[0]);						\
-				size_t dim = get<size_t>(args[2]);															\
-				if(dim == 2)																				\
-				{																							\
-					readSize = Vec3c(readSize.x, readSize.y, in.depth());									\
-					readStart = Vec3c(readStart.x, readStart.y, 0);											\
-				}																							\
-				else if (dim == 1)																			\
-				{																							\
-					readSize = Vec3c(readSize.x, in.height(), readSize.y);									\
-					readStart = Vec3c(readStart.x, 0, readStart.y);											\
-				}																							\
-				else /* dim == 0 */																			\
-				{																							\
-					readSize = Vec3c(in.width(), readSize.y, readSize.x);									\
-					readStart = Vec3c(0, readStart.y, readStart.x);											\
-				}																							\
-			}																								\
-		}																									\
-	};
-
-#undef min
-#undef max
-	DEF_PROJECT(Sum, sum, sum)
-	DEF_PROJECT(Min, min, minval)
-	DEF_PROJECT(Max, max, maxval)
-	DEF_PROJECT(Mean, mean, mean)
-
-
 
 	template<typename pixel_t> class BlockMatchCommand : public Command
 	{
 	public:
 		BlockMatchCommand() : Command("blockmatch", "Calculates displacement field between two images.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "reference image", "Reference image (non-moving image)."),
-				CommandArgument<Image<pixel_t> >(In, "deformed image", "Deformed image (image to register to non-moving image)."),
-				CommandArgument<coord_t>(In, "xmin", "X-coordinate of the first calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "xmax", "X-coordinate of the last calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "xstep", "Step between calculation points in x-direction."),
-				CommandArgument<coord_t>(In, "ymin", "Y-coordinate of the first calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "ymax", "Y-coordinate of the last calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "ystep", "Step between calculation points in y-direction."),
-				CommandArgument<coord_t>(In, "zmin", "Z-coordinate of the first calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "zmax", "Z-coordinate of the last calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "zstep", "Step between calculation points in z-direction."),
-				CommandArgument<Vec3d>(In, "initial shift", "Initial shift between the images."),
-				CommandArgument<string>(In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
-				CommandArgument<Vec3c>(In, "comparison radius", "Radius of comparison region.", Vec3c(25, 25, 25))
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "reference image", "Reference image (non-moving image)."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "deformed image", "Deformed image (image to register to non-moving image)."),
+				CommandArgument<coord_t>(ParameterDirection::In, "xmin", "X-coordinate of the first calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "xmax", "X-coordinate of the last calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "xstep", "Step between calculation points in x-direction."),
+				CommandArgument<coord_t>(ParameterDirection::In, "ymin", "Y-coordinate of the first calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "ymax", "Y-coordinate of the last calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "ystep", "Step between calculation points in y-direction."),
+				CommandArgument<coord_t>(ParameterDirection::In, "zmin", "Z-coordinate of the first calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "zmax", "Z-coordinate of the last calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "zstep", "Step between calculation points in z-direction."),
+				CommandArgument<Vec3d>(ParameterDirection::In, "initial shift", "Initial shift between the images."),
+				CommandArgument<string>(ParameterDirection::In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "comparison radius", "Radius of comparison region.", Vec3c(25, 25, 25))
 			})
 		{
 		}
@@ -279,24 +96,24 @@ namespace pilib
 	public:
 		BlockMatchPartialLoadCommand() : Command("blockmatchmemsave", "Calculates displacement between two images, loads only overlapping region from disk.",
 			{
-				CommandArgument<string>(In, "reference image file", "Name of reference image file (non-moving image)."),
-				CommandArgument<string>(In, "deformed image file", "Name of deformed image file (image to register to non-moving image)."),
-				CommandArgument<coord_t>(In, "xmin", "X-coordinate of the first calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "xmax", "X-coordinate of the last calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "xstep", "Step between calculation points in x-direction."),
-				CommandArgument<coord_t>(In, "ymin", "Y-coordinate of the first calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "ymax", "Y-coordinate of the last calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "ystep", "Step between calculation points in y-direction."),
-				CommandArgument<coord_t>(In, "zmin", "Z-coordinate of the first calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "zmax", "Z-coordinate of the last calculation point in the reference image."),
-				CommandArgument<coord_t>(In, "zstep", "Step between calculation points in z-direction."),
-				CommandArgument<Vec3d>(In, "initial shift", "Initial shift between the images."),
-				CommandArgument<string>(In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
-				CommandArgument<Vec3c>(In, "coarse comparison radius", "Radius of comparison region for coarse matching.", Vec3c(25, 25, 25)),
-				CommandArgument<coord_t>(In, "coarse binning", "Amount of resolution reduction in coarse matching phase.", 2),
-				CommandArgument<Vec3c>(In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
-				CommandArgument<coord_t>(In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 2),
-				CommandArgument<bool>(In, "normalize", "Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.", true)
+				CommandArgument<string>(ParameterDirection::In, "reference image file", "Name of reference image file (non-moving image)."),
+				CommandArgument<string>(ParameterDirection::In, "deformed image file", "Name of deformed image file (image to register to non-moving image)."),
+				CommandArgument<coord_t>(ParameterDirection::In, "xmin", "X-coordinate of the first calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "xmax", "X-coordinate of the last calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "xstep", "Step between calculation points in x-direction."),
+				CommandArgument<coord_t>(ParameterDirection::In, "ymin", "Y-coordinate of the first calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "ymax", "Y-coordinate of the last calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "ystep", "Step between calculation points in y-direction."),
+				CommandArgument<coord_t>(ParameterDirection::In, "zmin", "Z-coordinate of the first calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "zmax", "Z-coordinate of the last calculation point in the reference image."),
+				CommandArgument<coord_t>(ParameterDirection::In, "zstep", "Step between calculation points in z-direction."),
+				CommandArgument<Vec3d>(ParameterDirection::In, "initial shift", "Initial shift between the images."),
+				CommandArgument<string>(ParameterDirection::In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "coarse comparison radius", "Radius of comparison region for coarse matching.", Vec3c(25, 25, 25)),
+				CommandArgument<coord_t>(ParameterDirection::In, "coarse binning", "Amount of resolution reduction in coarse matching phase.", 2),
+				CommandArgument<Vec3c>(ParameterDirection::In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
+				CommandArgument<coord_t>(ParameterDirection::In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 2),
+				CommandArgument<bool>(ParameterDirection::In, "normalize", "Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.", true)
 			})
 		{
 		}
@@ -324,16 +141,35 @@ namespace pilib
 
 			Vec3c refDimensions;
 			ImageDataType refDT;
-			if (!raw::internals::parseDimensions(refFile, refDimensions, refDT))
-				throw ITLException("Unable to parse dimensions of reference image from file name.");
+			if (!io::getInfo(refFile, refDimensions, refDT))
+				throw ITLException("Unable to find dimensions and data type of reference image file.");
+
+			//raw::expandRawFilename(refFile);
+			//if (!raw::internals::parseDimensions(refFile, refDimensions, refDT))
+			//	throw ITLException("Unable to parse dimensions of reference image from file name.");
 
 			Vec3c defDimensions;
 			ImageDataType defDT;
-			if (!raw::internals::parseDimensions(defFile, defDimensions, defDT))
-				throw ITLException("Unable to parse dimensions of deformed image from file name.");
+			if (!io::getInfo(defFile, defDimensions, defDT))
+				throw ITLException("Unable to find dimensions and data type of deformed image file.");
+
+			//raw::expandRawFilename(defFile);
+			//if (!raw::internals::parseDimensions(defFile, defDimensions, defDT))
+			//	throw ITLException("Unable to parse dimensions of deformed image from file name.");
 
 			if (refDT != defDT)
 				throw ITLException("Data types of reference and deformed images must be the same.");
+
+
+			if (coarseBinning < 1)
+				throw ITLException("Coarse binning must be greater than or equal to 1.");
+
+			if (fineBinning < 1)
+				throw ITLException("Fine binning must be greater than or equal to 1.");
+
+			if(xmin > xmax || ymin > ymax || zmin > zmax)
+				throw ITLException("Invalid reference grid definition.");
+
 
 			PointGrid3D<coord_t> refPoints(PointGrid1D<coord_t>(xmin, xmax, xstep), PointGrid1D<coord_t>(ymin, ymax, ystep), PointGrid1D<coord_t>(zmin, zmax, zstep));
 			Image<Vec3d> defPoints(refPoints.pointCounts());
@@ -352,17 +188,17 @@ namespace pilib
 				}
 			}
 
-			if (refDT == UInt8)
+			if (refDT == ImageDataType::UInt8)
 			{
-				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, refDimensions, defFile, defDimensions, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
+				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
 			}
-			else if (refDT == UInt16)
+			else if (refDT == ImageDataType::UInt16)
 			{
-				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, refDimensions, defFile, defDimensions, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
+				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
 			}
-			else if (refDT == Float32)
+			else if (refDT == ImageDataType::Float32)
 			{
-				blockMatchPartialLoad<float32_t, float32_t>(refFile, refDimensions, defFile, defDimensions, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
+				blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
 			}
 			else
 				throw ParseException("Unsupported image data type (Please add the data type to BlockMatchPartialLoadCommand in commands.h file).");
@@ -372,14 +208,18 @@ namespace pilib
 	};
 
 
+
+	/**
+	This version of pullback command reads arguments from disk.
+	*/
 	template<typename pixel_t> class PullbackCommand : public Command
 	{
 	public:
 		PullbackCommand() : Command("pullback", "Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than input image.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "image", "Image that will be pulled back."),
-				CommandArgument<Image<pixel_t> >(Out, "pullback image", "Will store the result of the pullback operation."),
-				CommandArgument<string>(In, "file name prefix", "File name prefix (and path) passed to blockmatch command."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image that will be pulled back."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "pullback image", "Will store the result of the pullback operation."),
+				CommandArgument<string>(ParameterDirection::In, "file name prefix", "File name prefix (and path) passed to blockmatch command."),
 			})
 		{
 		}
@@ -398,7 +238,61 @@ namespace pilib
 
 			pullback.ensureSize(deformed);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, CubicInterpolator<pixel_t, pixel_t, double, double>(Zero));
+			reverseDeformation(deformed, pullback, refPoints, defPoints, CubicInterpolator<pixel_t, pixel_t, double, double>(BoundaryCondition::Zero));
+		}
+	};
+
+	/**
+	This version of pullback command takes arguments as images.
+	*/
+	template<typename pixel_t> class PullbackNoDiskCommand : public Command
+	{
+	public:
+		PullbackNoDiskCommand() : Command("pullback", "Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than input image.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image that will be pulled back, i.e. the deformed image."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "pullback image", "Will store the result of the pullback operation, i.e. the deformed image transformed to coordinates of the reference image."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "grid start", "Start of reference point grid in the coordinates of the reference image."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "grid step", "Grid step in each coordinate direction."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "grid max", "End of reference point grid in the coordinates of the reference image. The grid will contain floor((max - start) / step) + 1 points in each coordinate direction. Difference between maximum and minimum does not need to be divisible by step."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "x", "X-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "y", "Y-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "z", "Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.")
+			})
+		{
+		}
+
+		virtual void run(vector<ParamVariant>& args) const
+		{
+			Image<pixel_t>& deformed = *pop<Image<pixel_t>* >(args);
+			Image<pixel_t>& pullback = *pop<Image<pixel_t>* >(args);
+			Vec3c gridStart = pop<Vec3c>(args);
+			Vec3c gridStep = pop<Vec3c>(args);
+			Vec3c gridEnd = pop<Vec3c>(args);
+			Image<float32_t>& x = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& y = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& z = *pop<Image<float32_t>*>(args);
+
+
+			PointGrid3D<coord_t> refPoints(
+				PointGrid1D<coord_t>(gridStart.x, gridEnd.x, gridStep.x),
+				PointGrid1D<coord_t>(gridStart.y, gridEnd.y, gridStep.y),
+				PointGrid1D<coord_t>(gridStart.z, gridEnd.z, gridStep.z));
+
+			if (x.dimensions() != refPoints.pointCounts())
+				throw ITLException("Point counts in the reference grid must match sizes of x, y, and z images that contain reference grid points in deformed coordinates.");
+			x.checkSize(y);
+			x.checkSize(z);
+
+			Image<Vec3d> defPoints;
+			defPoints.ensureSize(x);
+
+			for (coord_t n = 0; n < defPoints.pixelCount(); n++)
+				defPoints(n) = Vec3d(x(n), y(n), z(n));
+
+			pullback.ensureSize(deformed);
+
+			reverseDeformation(deformed, pullback, refPoints, defPoints, CubicInterpolator<pixel_t, pixel_t, double, double>(BoundaryCondition::Zero));
 		}
 	};
 
@@ -408,8 +302,8 @@ namespace pilib
 	public:
 		FilterDisplacementsCommand() : Command("filterdisplacements", "Helper for non-rigid stitching script. Filters displacements calculated by blockmatch commands.",
 			{
-				CommandArgument<string>(In, "file name prefix", "Value passed as file name prefix argument to blockmatch."),
-				CommandArgument<double>(In, "threshold", "Threshold value for filtering. Displacements whose some component differs more than this value from median filtered displacements are considered to be bad.", 3.0)
+				CommandArgument<string>(ParameterDirection::In, "file name prefix", "Value passed as file name prefix argument to blockmatch."),
+				CommandArgument<double>(ParameterDirection::In, "threshold", "Threshold value for filtering. Displacements whose some component differs more than this value from median filtered displacements are considered to be bad.", 3.0)
 			})
 		{
 		}
@@ -438,16 +332,16 @@ namespace pilib
 	//public:
 	//	StitchCommand() : Command("stitch", "Stitches subimages to one big image, given geometric transformation for each subimage. NOTE: The size of the output image does not need to be correct. Pass in image of size (1, 1, 1) to save memory during the process and to let the command allocate the image after processing.",
 	//		{
-	//			CommandArgument<Image<pixel_t> >(In, "output image", "Output image."),
-	//			//CommandArgument(In, ipt<uint8_t>(), "output weight image", "Output weight image."),
-	//			CommandArgument<string>(In, "file list", "File name of index file that lists the files to be stitched."),
-	//			CommandArgument<coord_t>(In, "x", "X-coordinate of the region of the stitched image that will be output."),
-	//			CommandArgument<coord_t>(In, "y", "Y-coordinate of the region of the stitched image that will be output."),
-	//			CommandArgument<coord_t>(In, "z", "Z-coordinate of the region of the stitched image that will be output."),
-	//			CommandArgument<coord_t>(In, "width", "Width of the output region."),
-	//			CommandArgument<coord_t>(In, "height", "Height of the output region."),
-	//			CommandArgument<coord_t>(In, "depth", "Depth of the output region."),
-	//			CommandArgument(In, Bool, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", "true")
+	//			CommandArgument<Image<pixel_t> >(ParameterDirection::In, "output image", "Output image."),
+	//			//CommandArgument(ParameterDirection::In, ipt<uint8_t>(), "output weight image", "Output weight image."),
+	//			CommandArgument<string>(ParameterDirection::In, "file list", "File name of index file that lists the files to be stitched."),
+	//			CommandArgument<coord_t>(ParameterDirection::In, "x", "X-coordinate of the region of the stitched image that will be output."),
+	//			CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-coordinate of the region of the stitched image that will be output."),
+	//			CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-coordinate of the region of the stitched image that will be output."),
+	//			CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output region."),
+	//			CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
+	//			CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
+	//			CommandArgument(ParameterDirection::In, Bool, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
 	//		})
 	//	{
 	//	}
@@ -501,9 +395,10 @@ namespace pilib
 	public:
 		DetermineWorldToLocalCommand() : Command("determine_world_to_local", "Helper for non-rigid stitching script. Used to run preprocessing for stitch_ver2 command by non-rigid stitcher script.",
 			{
-				CommandArgument<string>(In, "transformation file", "Name of transformation file to process."),
-				CommandArgument<Vec3c>(In, "image size", "Size of the source image."),
-				CommandArgument<string>(In, "world to local prefix", "Prefix for output files."),
+				CommandArgument<string>(ParameterDirection::In, "transformation file", "Name of transformation file to process."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "image size", "Size of the source image."),
+				CommandArgument<string>(ParameterDirection::In, "world to local prefix", "Prefix for output files."),
+				CommandArgument<bool>(ParameterDirection::In, "allow local shifts", "Set to true to allow non-rigid local deformations. Set to false to see the result without local deformations.")
 			})
 		{
 		}
@@ -513,8 +408,9 @@ namespace pilib
 			string transfFile = pop<string>(args);
 			Vec3c imageSize = pop<Vec3c>(args);
 			string prefix = pop<string>(args);
+			bool allowLocalShifts = pop<bool>(args);
 
-			determineWorldToLocal(transfFile, imageSize, prefix);
+			determineWorldToLocal(transfFile, imageSize, prefix, allowLocalShifts);
 		}
 	};
 
@@ -523,16 +419,16 @@ namespace pilib
 	public:
 		StitchVer2Command() : Command("stitch_ver2", "Helper for non-rigid stitching script. Stitches subimages to one big image, given geometric transformation for each subimage. NOTE: The size of the output image does not need to be correct. Pass in image of size (1, 1, 1) to save memory during the process and to let the command allocate the image after processing.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "output image", "Output image."),
-				//CommandArgument(In, ipt<uint8_t>(), "output weight image", "Output weight image."),
-				CommandArgument<string>(In, "file list", "File name of index file that lists the files to be stitched."),
-				CommandArgument<coord_t>(In, "x", "X-coordinate of the region of the stitched image that will be output."),
-				CommandArgument<coord_t>(In, "y", "Y-coordinate of the region of the stitched image that will be output."),
-				CommandArgument<coord_t>(In, "z", "Z-coordinate of the region of the stitched image that will be output."),
-				CommandArgument<coord_t>(In, "width", "Width of the output region."),
-				CommandArgument<coord_t>(In, "height", "Height of the output region."),
-				CommandArgument<coord_t>(In, "depth", "Depth of the output region."),
-				CommandArgument<bool>(In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "output image", "Output image."),
+				//CommandArgument(ParameterDirection::In, ipt<uint8_t>(), "output weight image", "Output weight image."),
+				CommandArgument<string>(ParameterDirection::In, "file list", "File name of index file that lists the files to be stitched."),
+				CommandArgument<coord_t>(ParameterDirection::In, "x", "X-coordinate of the region of the stitched image that will be output."),
+				CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-coordinate of the region of the stitched image that will be output."),
+				CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-coordinate of the region of the stitched image that will be output."),
+				CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output region."),
+				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
+				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
+				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
 			})
 		{
 		}
@@ -562,9 +458,9 @@ namespace pilib
 	public:
 		DistanceMapCommand() : Command("dmap", "Calculates distance transform.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "input image", "Input image where background is marked with background value given by the third argument."),
-				CommandArgument<Image<float32_t> >(Out, "output image", "Output image (distance map) where pixel value equals Euclidean distance to the nearest background pixel."),
-				CommandArgument<double>(In, "background value", "Pixels belonging to the background are marked with this value in the input image.", 0)
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Input image where background is marked with background value given by the third argument."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "output image", "Output image (distance map) where pixel value equals Euclidean distance to the nearest background pixel."),
+				CommandArgument<double>(ParameterDirection::In, "background value", "Pixels belonging to the background are marked with this value in the input image.", 0)
 			})
 		{
 		}
@@ -585,12 +481,12 @@ namespace pilib
 	public:
 		HistogramCommand() : Command("hist", "Calculate histogram of an image.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "input image", "Image whose histogram will be calculated."),
-				CommandArgument<Image<float32_t> >(Out, "histogram", "Image that will contain the histogram on output."),
-				CommandArgument<double>(In, "histogram minimum", "Minimum value to be included in the histogram.", 0),
-				CommandArgument<double>(In, "histogram maximum", "The end of the last bin. This is the smallest value above minimum that is not included in the histogram.", 256),
-				CommandArgument<coord_t>(In, "bin count", "Count of bins. The output image will be resized to contain this many pixels.", 256),
-				CommandArgument<string>(In, "output file", "Name of file where the histogram data is to be saved in CSV format. Specify empty string to disable saving as text file.", "")
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image whose histogram will be calculated."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "histogram", "Image that will contain the histogram on output."),
+				CommandArgument<double>(ParameterDirection::In, "histogram minimum", "Minimum value to be included in the histogram.", 0),
+				CommandArgument<double>(ParameterDirection::In, "histogram maximum", "The end of the last bin. This is the smallest value above minimum that is not included in the histogram.", 256),
+				CommandArgument<coord_t>(ParameterDirection::In, "bin count", "Count of bins. The output image will be resized to contain this many pixels.", 256),
+				CommandArgument<string>(ParameterDirection::In, "output file", "Name of file where the histogram data is to be saved in CSV format. Specify empty string to disable saving as text file.", "")
 			})
 		{
 		}
@@ -625,8 +521,8 @@ namespace pilib
 	public:
 		FloodFillCommand() : OneImageInPlaceCommand<pixel_t>("floodfill", "Performs flood fill. Fills start point and all its neighbours and their neighbours etc. recursively as long as the color of the pixel to be filled equals color of the start point.",
 			{
-				CommandArgument<Vec3c>(In, "start point", "Starting point for the fill."),
-				CommandArgument<double>(In, "fill value", "Fill color.")
+				CommandArgument<Vec3c>(ParameterDirection::In, "start point", "Starting point for the fill."),
+				CommandArgument<double>(ParameterDirection::In, "fill value", "Fill color.")
 			})
 		{
 		}
@@ -637,7 +533,25 @@ namespace pilib
 			pixel_t color = pixelRound<pixel_t>(pop<double>(args));
 
 
-			floodfill(in, startPoint, color, color, AllNeighbours);
+			floodfill(in, startPoint, color, color, Connectivity::AllNeighbours);
+		}
+	};
+
+	template<typename pixel_t> class LabelCommand : public OneImageInPlaceCommand<pixel_t>
+	{
+	public:
+		LabelCommand() : OneImageInPlaceCommand<pixel_t>("label", "Labels distinct regions in the image with individual colors.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "region color", "Current color of regions that should be labeled.", 0)
+			})
+		{
+		}
+
+		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const
+		{
+			pixel_t color = pixelRound<pixel_t>(pop<double>(args));
+
+			labelParticles(in, color);
 		}
 	};
 
@@ -661,7 +575,7 @@ namespace pilib
 	public:
 		NormalizeZCommand() : OneImageInPlaceCommand<pixel_t>("normalizez", "Makes sure that all z-slices of the image have the same mean value.",
 			{
-				CommandArgument<double>(In, "target mean", "Global mean that the image should have after normalization. Specify nothing or nan to retain global mean of the image.", numeric_limits<double>::signaling_NaN())
+				CommandArgument<double>(ParameterDirection::In, "target mean", "Global mean that the image should have after normalization. Specify nothing or nan to retain global mean of the image.", numeric_limits<double>::signaling_NaN())
 			})
 		{
 		}
@@ -673,39 +587,279 @@ namespace pilib
 		}
 	};
 
-	template<typename pixel_t> class RegionRemovalCommand : public OneImageInPlaceCommand<pixel_t>
+	
+
+
+
+
+	template<typename pixel_t> class CannyPart1Command : public OverlapDistributable<OneImageInPlaceCommand<pixel_t> >
 	{
 	public:
-		RegionRemovalCommand() : OneImageInPlaceCommand<pixel_t>("regionremoval", "Removes nonzero regions smaller than given threshold.",
+		CannyPart1Command() : OverlapDistributable<OneImageInPlaceCommand<pixel_t> >("cannyPart1", "Performs first part of Canny edge detection; to be more precise, everything except edge tracking and final thresholding. This command is used in the distributed implementation of Canny edge detection. You probably should use 'canny' command instead of this one. Skips the initial Gaussian blurring step, please perform it separately if you want to do it. Calculates image derivatives using convolution with derivative of Gaussian.",
 			{
-				CommandArgument<coord_t>(In, "volume threshold", "All nonzero regions smaller than this threshold are removed.", 600)
+				CommandArgument<double>(ParameterDirection::In, "derivative sigma", "Scale parameter for derivative calculation. Set to the preferred scale of edges that should be detected. Derivatives are calculated using convolutions with derivative of Gaussian function, and this parameter defines the standard deviation of the Gaussian.", 1.0),
+				CommandArgument<double>(ParameterDirection::In, "lower threshold", "Edges that have gradient magnitude below lower threshold value are discarded. Edges that have gradient magnitude between lower and upper thresholds are included in the result only if they touch some edge that has gradient magnitude above upper threshold."),
+				CommandArgument<double>(ParameterDirection::In, "upper threshold", "Edges that have gradient magnitude above upper threshold value are always included in the result. Edges that have gradient magnitude between lower and upper thresholds are included in the result only if they touch some edge that has gradient magnitude above upper threshold.")
 			})
 		{
 		}
 
 		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const
 		{
-			size_t volumeLimit = pop<size_t>(args);
-			regionRemoval(in, volumeLimit);
+			double derSigma = pop<double>(args);
+			double loThreshold = pop<double>(args);
+			double hiThreshold = pop<double>(args);
+
+			itl2::internals::cannyPart1(in, derSigma, loThreshold, hiThreshold);
+		}
+
+		virtual double calculateExtraMemory(vector<ParamVariant>& args) const
+		{
+			return 3.0 * sizeof(float32_t) / sizeof(pixel_t);
+		}
+
+		virtual Vec3c calculateOverlap(vector<ParamVariant>& args) const
+		{
+			double derSigma = get<double>(args[1]);
+
+			coord_t margin = math::round(3 * derSigma) + 4;
+
+			return Vec3c(margin, margin, margin);
+		}
+	};
+
+	template<typename pixel_t> class CannyPart2Command : public OverlapDistributable<OneImageInPlaceCommand<pixel_t> >
+	{
+	public:
+		CannyPart2Command() : OverlapDistributable<OneImageInPlaceCommand<pixel_t> >("cannyPart2", "Performs edge tracking part of Canny edge detection. This command is used in the distributed implementation of Canny edge detection. You probably should use 'canny' command instead of this one.",
+			{})
+		{
+		}
+
+		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const
+		{
+			itl2::internals::cannyPart2(in);
+		}
+
+		virtual Vec3c calculateOverlap(vector<ParamVariant>& args) const
+		{
+			coord_t margin = 3;
+
+			return Vec3c(margin, margin, margin);
+		}
+	};
+
+	template<typename pixel_t> class CannyCommand : public OneImageInPlaceCommand<pixel_t>, public Distributable
+	{
+	public:
+		CannyCommand() : OneImageInPlaceCommand<pixel_t>("canny", "Performs Canny edge detection. Skips the initial Gaussian blurring step, please perform it separately if you want to do it. Calculates image derivatives using convolution with derivative of Gaussian.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "derivative sigma", "Scale parameter for derivative calculation. Set to the preferred scale of edges that should be detected. Derivatives are calculated using convolutions with derivative of Gaussian function, and this parameter defines the standard deviation of the Gaussian.", 1.0),
+				CommandArgument<double>(ParameterDirection::In, "lower threshold", "Edges that have gradient magnitude below lower threshold value are discarded. Edges that have gradient magnitude between lower and upper thresholds are included in the result only if they touch some edge that has gradient magnitude above upper threshold."),
+				CommandArgument<double>(ParameterDirection::In, "upper threshold", "Edges that have gradient magnitude above upper threshold value are always included in the result. Edges that have gradient magnitude between lower and upper thresholds are included in the result only if they touch some edge that has gradient magnitude above upper threshold.")
+			})
+		{
+		}
+
+		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const
+		{
+			double derSigma = pop<double>(args);
+			double loThreshold= pop<double>(args);
+			double hiThreshold = pop<double>(args);
+
+			canny(in, derSigma, loThreshold, hiThreshold);
+		}
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		{
+			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
+			double derSigma = pop<double>(args);
+			double loThreshold = pop<double>(args);
+			double hiThreshold = pop<double>(args);
+
+			CannyPart1Command<pixel_t> part1;
+			part1.runDistributed(distributor, { &in, derSigma, loThreshold, hiThreshold });
+			
+			// Iterate edge tracking until there are no changes
+			CannyPart2Command<pixel_t> part2;
+			coord_t changed;
+			do
+			{
+				vector<string> output = part2.runDistributed(distributor, { &in });
+
+				changed = parseTotalCount(output, "pixels changed");
+			} while (changed > 0);
+
+			// Final thresholding to get rid of weak edges
+			ThresholdConstantCommand<pixel_t> th;
+			th.runDistributed(distributor, { &in, 1.0 });
+
+			return vector<string>();
 		}
 	};
 
 
-	template<typename pixel_t> class RampCommand : public OneImageInPlaceCommand<pixel_t>
+	template<typename pixel_t> class GrowCommand : public OneImageInPlaceCommand<pixel_t>, public Distributable
 	{
 	public:
-		RampCommand() : OneImageInPlaceCommand<pixel_t>("ramp", "Fills image with ramp in given dimension, i.e. performs img[r] = r[dimension].",
+		using Distributable::runDistributed;
+
+		GrowCommand() : OneImageInPlaceCommand<pixel_t>("grow", "Grows regions with source color to regions with target color as much as possible.",
 			{
-				CommandArgument<coord_t>(In, "dimension", "Dimension of the ramp.", 0)
+				CommandArgument<double>(ParameterDirection::In, "source color", "Color that defines regions that are going to be grown."),
+				CommandArgument<double>(ParameterDirection::In, "target color", "Color where the regions will grow.")
 			})
 		{
 		}
 
 		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const
 		{
-			size_t dim = pop<size_t>(args);
+			double src = pop<double>(args);
+			double target = pop<double>(args);
+			size_t changed = grow(in, pixelRound<pixel_t>(src), pixelRound<pixel_t>(target));
+			cout << changed << " pixels changed." << endl;
+		}
 
-			ramp(in, dim);
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		{
+			DistributedImage<pixel_t>& img = *get<DistributedImage<pixel_t>* >(args[0]);
+			double src = get<double>(args[1]);
+			double target = get<double>(args[2]);
+
+			coord_t changed;
+			do
+			{
+				vector<string> output = distributor.distribute(this, args, 2, Vec3c(3, 3, 3));
+
+				changed = parseTotalCount(output, "pixels changed.");
+				cout << changed << " pixels changed." << endl;
+			} while (changed > 0);
+
+			return vector<string>();
+		}
+	};
+
+
+	template<typename pixel_t> class DualThresholdCommand : public OneImageInPlaceCommand<pixel_t>, public Distributable
+	{
+	public:
+		DualThresholdCommand() : OneImageInPlaceCommand<pixel_t>("dualthreshold", "First sets all pixels with value over upper threshold to 1. Then sets all regions to 1 that have value over lower threshold and that are connected to region that has value over upperThreshold.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "lower threshold", "Regions that have value below lower threshold value are discarded. Regions that have value between lower and upper thresholds are included in the result only if they touch some region that has value above upper threshold."),
+				CommandArgument<double>(ParameterDirection::In, "upper threshold", "Regions that have value above upper threshold value are always included in the result. Regions that have value between lower and upper thresholds are included in the result only if they touch some regoin that has value above upper threshold.")
+			})
+		{
+		}
+
+		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const
+		{
+			double loThreshold = pop<double>(args);
+			double hiThreshold = pop<double>(args);
+
+			dualThreshold(in, pixelRound<pixel_t>(loThreshold), pixelRound<pixel_t>(hiThreshold));
+		}
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		{
+			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>* >(args);
+			double loThreshold = pop<double>(args);
+			double hiThreshold = pop<double>(args);
+
+			// Multi-threshold to two classes.
+			DoubleThresholdCommand<pixel_t> mt;
+			mt.runDistributed(distributor, { &img, loThreshold, hiThreshold });
+
+			// Convert all those structures to "sure" that touch a "sure" structure.
+			GrowCommand<pixel_t> grow;
+			grow.runDistributed(distributor, { &img, 2.0, 1.0 });
+
+			// Threshold so that only "sure" structures are left.
+			ThresholdConstantCommand<pixel_t> th;
+			th.runDistributed(distributor, { &img, 1.0 });
+
+			return vector<string>();
+		}
+	};
+
+
+	class CylindricalityCommand : public OverlapDistributable<OneImageInPlaceCommand<float32_t> >
+	{
+	public:
+		CylindricalityCommand() : OverlapDistributable<OneImageInPlaceCommand<float32_t> >("cylindricality", "Estimates likelihood of structures being cylinders, based on eigenvalues of the local structure tensor.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "derivative sigma", "Scale parameter for derivative calculation. Set to the preferred scale of edges that should be detected. Derivatives are calculated using convolutions with derivative of Gaussian function, and this parameter defines the standard deviation of the Gaussian.", 1.0),
+				CommandArgument<double>(ParameterDirection::In, "smoothing sigma", "The structure tensor is smoothed by convolution with Gaussian. This parameter defines the standard deviation of the smoothing Gaussian.", 1.0)
+			})
+		{
+		}
+
+		virtual Vec3c calculateOverlap(vector<ParamVariant>& args) const
+		{
+			double derSigma = get<double>(args[1]);
+			double smoothSigma = get<double>(args[2]);
+
+			coord_t margin = math::round(3 * (derSigma + smoothSigma)) + 4;
+
+			return Vec3c(margin, margin, margin);
+		}
+
+		virtual double calculateExtraMemory(vector<ParamVariant>& args) const
+		{
+			return 6.0;
+		}
+
+		virtual void run(Image<float32_t>& in, vector<ParamVariant>& args) const
+		{
+			double derSigma = pop<double>(args);
+			double smoothSigma = pop<double>(args);
+
+			structureTensor<float32_t>(in, derSigma, smoothSigma, 0, 0, 0, 0, 0, 0, 0, 0, 0, &in, 0, 0, 0.0);
+		}
+
+		virtual JobType getJobType() const
+		{
+			return JobType::Slow;
+		}
+	};
+
+	// Structure tensor planarity does not work very well so the command is disabled for now.
+	//class PlanarityCommand : public OneImageInPlaceCommand<float32_t>
+	//{
+	//public:
+	//	PlanarityCommand() : OneImageInPlaceCommand<float32_t>("planarity", "Estimates likelihood of structures being planar, based on eigenvalues of the local structure tensor.",
+	//		{
+	//			CommandArgument<double>(ParameterDirection::In, "derivative sigma", "Scale parameter for derivative calculation. Set to the preferred scale of edges that should be detected. Derivatives are calculated using convolutions with derivative of Gaussian function, and this parameter defines the standard deviation of the Gaussian.", 1.0),
+	//			CommandArgument<double>(ParameterDirection::In, "smoothing sigma", "The structure tensor is smoothed by convolution with Gaussian. This parameter defines the standard deviation of the smoothing Gaussian.", 1.0)
+	//		})
+	//	{
+	//	}
+
+	//	virtual void run(Image<float32_t>& in, vector<ParamVariant>& args) const
+	//	{
+	//		double derSigma = pop<double>(args);
+	//		double smoothSigma = pop<double>(args);
+
+	//		structureTensor<float32_t>(in, derSigma, smoothSigma, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &in, 0, 0.0);
+	//	}
+	//};
+
+
+	template<typename input_t> class NoiseCommand : public OneImageInPlaceCommand<input_t>
+	{
+	public:
+		NoiseCommand() : OneImageInPlaceCommand<input_t>("noise", "Adds Gaussian noise to the image.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "mean", "Mean value of the noise to add.", 0),
+				CommandArgument<double>(ParameterDirection::In, "standard deviation", "Standard deviation of the noise to add.", 0)
+			})
+		{
+		}
+
+		virtual void run(Image<input_t>& in, vector<ParamVariant>& args) const
+		{
+			double mean = pop<double>(args);
+			double std = pop<double>(args);
+			noise(in, mean, std);
 		}
 	};
 }

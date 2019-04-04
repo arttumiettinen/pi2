@@ -3,8 +3,6 @@
 #include <string>
 #include <sstream>
 
-#include "itl2.h"
-
 #include "argumentdatatype.h"
 
 using namespace std;
@@ -116,15 +114,15 @@ namespace pilib
 		{
 			stringstream msg;
 			msg << name() << " [";
-			if (direction() == In)
+			if (direction() == ParameterDirection::In)
 				msg << "input";
-			else if (direction() == Out)
+			else if (direction() == ParameterDirection::Out)
 				msg << "output";
 			else
 				msg << "input & output";
 			msg << ", " << pilib::toString(dataType());
 
-			if (direction() == In && defAllowed)
+			if (direction() == ParameterDirection::In && defAllowed)
 				msg << ", default value = " << defaultValue();
 
 			msg << "]";

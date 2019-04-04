@@ -5,12 +5,14 @@
 #include "utilities.h"
 #include "pisystem.h"
 #include "exeutils.h"
+#include "math/vectoroperations.h"
 
 #include <tuple>
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 
 using namespace std;
+using namespace math;
 
 namespace pilib
 {
@@ -45,97 +47,92 @@ namespace pilib
 		piCommand = findPi2().string();
 	}
 
-	/**
-	Determine block size for each parameter image.
-	The images should be divided to subDivisions[i] blocks in dimension i.
-	*/
-	vector<Vec3c> calcBlockSizes(const Command* command, const vector<ParamVariant>& args, const Vec3c& subDivisions)
-	{
-		vector<Vec3c> blocks;
-		for (size_t n = 0; n < args.size(); n++)
-		{
-			const CommandArgumentBase& def = command->args()[n];
-			size_t ps = pixelSize(def.dataType());
-			if (ps > 0)
-			{
-				const DistributedImageBase* img = args[n].dimgval;
-				Vec3c dims = img->dimensions();
-				blocks.push_back(Vec3c((coord_t)ceil((double)dims.x / (double)subDivisions.x), (coord_t)ceil((double)dims.y / (double)subDivisions.y), (coord_t)ceil((double)dims.z / (double)subDivisions.z)));
-			}
-		}
-		return blocks;
-	}
-
-	//Vec3c calcBlockSize(const Vec3c& imageDimensions, const Vec3c& subDivisions)
+	///**
+	//Determine block size for each parameter image.
+	//The images should be divided to subDivisions[i] blocks in dimension i.
+	//*/
+	//vector<Vec3c> calcBlockSizes(const Command* command, const vector<ParamVariant>& args, const Vec3c& subDivisions)
 	//{
-	//	return Vec3c((coord_t)ceil((double)imageDimensions.x / (double)subDivisions.x), (coord_t)ceil((double)imageDimensions.y / (double)subDivisions.y), (coord_t)ceil((double)imageDimensions.z / (double)subDivisions.z));
+	//	vector<Vec3c> blocks;
+	//	for (size_t n = 0; n < args.size(); n++)
+	//	{
+	//		const CommandArgumentBase& def = command->args()[n];
+	//		size_t ps = pixelSize(def.dataType());
+	//		if (ps > 0)
+	//		{
+	//			const DistributedImageBase* img = args[n].dimgval;
+	//			Vec3c dims = img->dimensions();
+	//			blocks.push_back(Vec3c((coord_t)ceil((double)dims.x / (double)subDivisions.x), (coord_t)ceil((double)dims.y / (double)subDivisions.y), (coord_t)ceil((double)dims.z / (double)subDivisions.z)));
+	//		}
+	//	}
+	//	return blocks;
 	//}
 
-	Vec3c getFirstImageDimensions(const Command* command, const vector<ParamVariant>& args)
-	{
-		for (size_t n = 0; n < args.size(); n++)
-		{
-			const CommandArgumentBase& def = command->args()[n];
-			size_t ps = pixelSize(def.dataType());
-			if (ps > 0)
-			{
-				const DistributedImageBase* img = args[n].dimgval;
-				Vec3c dims = img->dimensions();
-				return dims;
-			}
-		}
+	//Vec3c getFirstImageDimensions(const Command* command, const vector<ParamVariant>& args)
+	//{
+	//	for (size_t n = 0; n < args.size(); n++)
+	//	{
+	//		const CommandArgumentBase& def = command->args()[n];
+	//		size_t ps = pixelSize(def.dataType());
+	//		if (ps > 0)
+	//		{
+	//			const DistributedImageBase* img = args[n].dimgval;
+	//			Vec3c dims = img->dimensions();
+	//			return dims;
+	//		}
+	//	}
 
-		throw ITLException("Command parameters contain no images.");
-	}
+	//	throw ITLException("Command parameters contain no images.");
+	//}
 
-	/**
-	Calculates memory required by all images in the parameter list.
-	@param subDivisions Count of subdivisions in each coordinate direction.
-	*/
-	size_t calcRequiredMemory(const Command* command, const vector<ParamVariant>& args, const Vec3c& subDivisions, double extraMemFactor)
-	{
-		vector<Vec3c> blocks = calcBlockSizes(command, args, subDivisions);
+	///**
+	//Calculates memory required by all images in the parameter list.
+	//@param subDivisions Count of subdivisions in each coordinate direction.
+	//*/
+	//size_t calcRequiredMemory(const Command* command, const vector<ParamVariant>& args, const Vec3c& subDivisions, double extraMemFactor)
+	//{
+	//	vector<Vec3c> blocks = calcBlockSizes(command, args, subDivisions);
 
-		// Calculate pixel sizes
-		vector<size_t> pixelSizes;
-		for (size_t n = 0; n < args.size(); n++)
-		{
-			const CommandArgumentBase& def = command->args()[n];
-			size_t ps = pixelSize(def.dataType());
-			if (ps > 0)
-				pixelSizes.push_back(ps);
-		}
+	//	// Calculate pixel sizes
+	//	vector<size_t> pixelSizes;
+	//	for (size_t n = 0; n < args.size(); n++)
+	//	{
+	//		const CommandArgumentBase& def = command->args()[n];
+	//		size_t ps = pixelSize(def.dataType());
+	//		if (ps > 0)
+	//			pixelSizes.push_back(ps);
+	//	}
 
-		size_t totalSize = 0;
-		for (size_t n = 0; n < args.size(); n++)
-			totalSize += (size_t)blocks[n].x * (size_t)blocks[n].y * (size_t)blocks[n].z * pixelSizes[n];
+	//	size_t totalSize = 0;
+	//	for (size_t n = 0; n < args.size(); n++)
+	//		totalSize += (size_t)blocks[n].x * (size_t)blocks[n].y * (size_t)blocks[n].z * pixelSizes[n];
 
 
-		//// Find images from parameter list and calculate memory required to load them
-		//size_t totalSize = 0;
-		//for (size_t n = 0; n < args.size(); n++)
-		//{
-		//	const CommandArgumentBase& def = command->args()[n];
-		//	size_t ps = pixelSize(def.dataType());
-		//	if (ps > 0)
-		//	{
-		//		const DistributedImageBase* img = args[n].dimgval;
-		//		Vec3c dims = img->dimensions();
+	//	//// Find images from parameter list and calculate memory required to load them
+	//	//size_t totalSize = 0;
+	//	//for (size_t n = 0; n < args.size(); n++)
+	//	//{
+	//	//	const CommandArgumentBase& def = command->args()[n];
+	//	//	size_t ps = pixelSize(def.dataType());
+	//	//	if (ps > 0)
+	//	//	{
+	//	//		const DistributedImageBase* img = args[n].dimgval;
+	//	//		Vec3c dims = img->dimensions();
 
-		//		if (totalSize <= 0)
-		//			firstImDimensions = dims;
+	//	//		if (totalSize <= 0)
+	//	//			firstImDimensions = dims;
 
-		//		Vec3c blockDims = calcBlockSize(dims, subDivisions);
-		//		coord_t size = blockDims.x * blockDims.y * blockDims.z * ps;
-		//		totalSize += (size_t)size;
-		//	}
-		//}
+	//	//		Vec3c blockDims = calcBlockSize(dims, subDivisions);
+	//	//		coord_t size = blockDims.x * blockDims.y * blockDims.z * ps;
+	//	//		totalSize += (size_t)size;
+	//	//	}
+	//	//}
 
-		//if (totalSize <= 0)
-		//	throw ITLException("Command parameters contain no images.");
+	//	//if (totalSize <= 0)
+	//	//	throw ITLException("Command parameters contain no images.");
 
-		return (size_t)ceil(totalSize * (1 + extraMemFactor));
-	}
+	//	return (size_t)ceil(totalSize * (1 + extraMemFactor));
+	//}
 
 	void adjustBlockDimensions(coord_t start, coord_t size, coord_t margin, coord_t fullSize, coord_t& in_left, coord_t& in_width, coord_t& out_left, coord_t& out_width)
 	{
@@ -191,7 +188,7 @@ namespace pilib
 				if (firstImageIndex < 0)
 					firstImageIndex = n;
 
-				if (def.direction() == Out || def.direction() == InOut)
+				if (def.direction() == ParameterDirection::Out || def.direction() == ParameterDirection::InOut)
 					return n;
 			}
 		}
@@ -299,20 +296,48 @@ namespace pilib
 		}
 
 		// Return maximum data size
-		return max(blockMems);
+		return math::max(blockMems);
 	}
 
-	vector<string> Distributor::distribute(const Command* command, vector<ParamVariant>& args, size_t distributionDirection, const Vec3c& margin, const string* outputFile, size_t refIndex, vector<ParamVariant>* argsForGetCorrespondingBlock)
+    vector<string> Distributor::distribute(const Command* command, vector<ParamVariant>& args, size_t distributionDirection, const Vec3c& margin, size_t refIndex, vector<ParamVariant>* argsForGetCorrespondingBlock)
+    {
+        return distribute(command, args, distributionDirection, numeric_limits<size_t>::max(), margin, refIndex, argsForGetCorrespondingBlock);
+    }
+
+	vector<string> Distributor::distribute(const Command* command, vector<ParamVariant>& args, size_t distributionDirection1, size_t distributionDirection2, const Vec3c& margin, size_t refIndex, vector<ParamVariant>* argsForGetCorrespondingBlock)
 	{
-		if (distributionDirection > 2)
-			throw ITLException("Invalid distribution direction.");
+		if (distributionDirection1 > 2)
+			throw logic_error("Invalid distribution direction.");
 
 		if (args.size() != command->args().size())
 			throw logic_error("Invalid number of arguments.");
-
+			
+	    if(distributionDirection2 == distributionDirection1)
+	        throw logic_error("Both distribution directions can't be the same.");
+	        
+	    // If we need to distribute in two directions, check that all input images are (written to) .raw files.
+        // Otherwise distribution is not allowed as sequences can't be written to in parallel.
+        bool distributionDirection2Allowed = true;
+		if(distributionDirection2 <= 2)
+		{
+		    for (size_t n = 0; n < args.size(); n++)
+			{
+				const CommandArgumentBase& def = command->args()[n];
+				if (isImage(def.dataType()))
+				{
+					DistributedImageBase& img = *getDistributedImage(args[n]);
+					if(!img.isOutputRaw())
+					{
+					    distributionDirection2Allowed = false;
+					    break;
+					}
+				}
+			}
+		}
+			
 		if (!argsForGetCorrespondingBlock)
 			argsForGetCorrespondingBlock = &args;
-
+		
 		// Uh oh, it is not nice to cast... but I have not figured out how to use e.g. virtual inheritance and avoid writing messy constructor code
 		// in each and every Command class constructor.
 		const Distributable* distributable = dynamic_cast<const Distributable*>(command);
@@ -326,7 +351,7 @@ namespace pilib
 			refIndex = findReferenceImage(command);
 
 		// Determine blocks that must be loaded, given amount of subdivisions in each direction.
-		const DistributedImageBase* img = args[refIndex].dimgval;
+		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
 		Vec3c refDims = img->dimensions();
 		Vec3c subDivisions(1, 1, 1);
 		size_t memoryReq;
@@ -336,16 +361,35 @@ namespace pilib
 			blocks = determineBlocks(refIndex, refDims, margin, subDivisions, command, args, *argsForGetCorrespondingBlock);
 
 			memoryReq = calcRequiredMemory(blocks, command);
+			memoryReq = (size_t)ceil(memoryReq * (1 + extraMemFactor));
 
 			if (memoryReq <= allowedMemory())
 				break;
 
-			if (subDivisions[distributionDirection] >= img->dimensions()[distributionDirection])
+			if (subDivisions[distributionDirection1] >= img->dimensions()[distributionDirection1] ||
+    			(distributionDirection2 <= 2 && subDivisions[distributionDirection2] >= img->dimensions()[distributionDirection2]))
 				throw ITLException(string("Unable to find suitable subdivision. The smallest possible blocks of the input and output images require ") + bytesToString((double)memoryReq) + " of memory, but only " + bytesToString((double)allowedMemory()) + " is available for a single process. See also cluster configuration file max_memory setting.");
 
-			subDivisions[distributionDirection]++;
+            // TODO: Try replacing the subDivisions[distributionDirection1] < N condition by a condition that compares total pixel count in margins to total size of image.
+            if(distributionDirection2 > 2 || subDivisions[distributionDirection1] < 80)
+            {
+                // Distribution direction 2 is not available or there are only a few subdivisions in direction 1
+                // Favor direction 1 as it is often z and distributing in that direction is faster and more compatible than other directions.
+                subDivisions[distributionDirection1]++;
+            }
+            else
+            {
+                if(!distributionDirection2Allowed)
+                    throw ITLException("The input images are so large that they must be distributed in two coordinate directions. Distribution in two directions is currently not supported for non-.raw image files. Consider saving all the input images as .raw before calling this command.");
+                    
+                // Subdivide in 2 directions
+                if(subDivisions[distributionDirection2] < subDivisions[distributionDirection1])
+        			subDivisions[distributionDirection2]++;
+       			else
+       			    subDivisions[distributionDirection1]++;
+   			}
 		}
-
+		
 		// If overlap is nonzero, InOut images must be saved to different file from which they are loaded.
 		// Changing write targets should not cause bad state of image objects even if writeComplete() is not called.
 		if (margin != Vec3c(0, 0, 0))
@@ -353,9 +397,9 @@ namespace pilib
 			for (size_t n = 0; n < args.size(); n++)
 			{
 				const CommandArgumentBase& def = command->args()[n];
-				if (isImage(def.dataType()) && def.direction() == InOut)
+				if (isImage(def.dataType()) && def.direction() == ParameterDirection::InOut)
 				{
-					DistributedImageBase& img = *args[n].dimgval;
+					DistributedImageBase& img = *getDistributedImage(args[n]);
 					if (img.currentReadSource() == img.currentWriteTarget())
 					{
 						img.newWriteTarget();
@@ -363,95 +407,7 @@ namespace pilib
 				}
 			}
 		}
-
-		//size_t jobCount = 0;
-		//for (coord_t sz = 0; sz < firstDims.z; sz += blockSizes[0].z)
-		//{
-		//	for (coord_t sy = 0; sy < firstDims.y; sy += blockSizes[0].y)
-		//	{
-		//		for (coord_t sx = 0; sx < firstDims.x; sx += blockSizes[0].x)
-		//		{
-		//			
-
-		//			
-
-		//			// Build job script:
-		//			// readblock(Block of input image 1)
-		//			// readblock(Block of input image 2)
-		//			// ...(for all input images)
-		//			//
-		//			// command
-		//			//
-		//			// writeblock(Block of output image 1)
-		//			// writeblock(Block of output image 2)
-		//			// ...(for all output images)
-		//			//
-		//			stringstream script;
-		//			
-		//			// Init so that we always print something (required at least in SLURM distributor)
-		//			script << "echo(true, false);" << endl;
-
-		//			// Image read commands
-		//			for (size_t n = 0; n < args.size(); n++)
-		//			{
-		//				const CommandArgumentBase& def = command->args()[n];
-
-		//				// emitReadBlock is called for both input and output (and inout) images so that output images are created
-		//				// if they don't exist yet. Note that if an image doesn't exist and the corresponding file does not exist,
-		//				// emitReadBlock becomes newimage command.
-		//				// If image type is Out, it does not have to be read (even if the storage file exists).
-		//				if (isImage(def.dataType()))
-		//				{
-		//					bool dataNeeded = def.direction() == In || def.direction() == InOut;
-		//					script << args[n].dimgval->emitReadBlock(inPos, inSize, dataNeeded);
-		//				}
-		//			}
-
-		//			// Processing command
-		//			script << command->name() << "(";
-		//			for (size_t n = 0; n < args.size(); n++)
-		//			{
-		//				// Value of argument whose type is Vec3c and name is "block origin" is replaced by the origin of current calculation block.
-		//				// This functionality is needed at least in skeleton tracing command.
-		//				const CommandArgumentBase& argDef = command->args()[n];
-		//				ParamVariant argVal = args[n];
-		//				if (argDef.dataType() == parameterType<BLOCK_ORIGIN_ARG_TYPE>() && argDef.name() == BLOCK_ORIGIN_ARG_NAME)
-		//				{
-		//					argVal.vix = inPos.x;
-		//					argVal.viy = inPos.y;
-		//					argVal.viz = inPos.z;
-		//				}
-		//				else if (argDef.dataType() == parameterType<BLOCK_INDEX_ARG_TYPE>() && argDef.name() == BLOCK_INDEX_ARG_NAME)
-		//				{
-		//					argVal.ival = jobCount;
-		//				}
-
-		//				script << piSystem->argumentToString(argDef, argVal, true);
-		//				if (n < args.size() - 1)
-		//					script << ", ";
-		//			}
-		//			script << ");" << endl;
-
-		//			// Image write commands
-		//			for (size_t n = 0; n < args.size(); n++)
-		//			{
-		//				const CommandArgumentBase& def = command->args()[n];
-		//				// Only output images are saved.
-		//				if (isImage(def.dataType()) && (def.direction() == Out || def.direction() == InOut))
-		//				{
-		//					script << args[n].dimgval->emitWriteBlock(Vec3c(sx, sy, sz), outPos, outSize, outputFile);
-		//				}
-		//			}
-
-		//			//cout << "Submitting job script:" << endl;
-		//			//cout << script.str() << endl;
-
-		//			submitJob(script.str());
-		//			jobCount++;
-		//		}
-		//	}
-		//}
-
+		
 		cout << "Submitting " << blocks.size() << " jobs..." << endl;
 		for(size_t i = 0; i < blocks.size(); i++)
 		{
@@ -483,12 +439,12 @@ namespace pilib
 				// If image type is Out, it does not have to be read (even if the storage file exists).
 				if (isImage(def.dataType()))
 				{
-					bool dataNeeded = def.direction() == In || def.direction() == InOut;
+					bool dataNeeded = def.direction() == ParameterDirection::In || def.direction() == ParameterDirection::InOut;
 
 					Vec3c readStart = get<0>(blocks[i][n]);
 					Vec3c readSize = get<1>(blocks[i][n]);
 
-					script << args[n].dimgval->emitReadBlock(readStart, readSize, dataNeeded);
+					script << getDistributedImage(args[n])->emitReadBlock(readStart, readSize, dataNeeded);
 				}
 			}
 
@@ -504,13 +460,11 @@ namespace pilib
 				{
 					Vec3c readStart = get<0>(blocks[i][refIndex]);
 
-					argVal.vix = readStart.x;
-					argVal.viy = readStart.y;
-					argVal.viz = readStart.z;
+					argVal = readStart;
 				}
 				else if (argDef.dataType() == parameterType<BLOCK_INDEX_ARG_TYPE>() && argDef.name() == BLOCK_INDEX_ARG_NAME)
 				{
-					argVal.ival = i;
+					argVal = (coord_t)i;
 				}
 
 				script << piSystem->argumentToString(argDef, argVal, true);
@@ -524,19 +478,19 @@ namespace pilib
 			{
 				const CommandArgumentBase& def = command->args()[n];
 				// Only output images are saved.
-				if (isImage(def.dataType()) && (def.direction() == Out || def.direction() == InOut))
+				if (isImage(def.dataType()) && (def.direction() == ParameterDirection::Out || def.direction() == ParameterDirection::InOut))
 				{
 					Vec3c writeFilePos = get<2>(blocks[i][n]);
 					Vec3c writeImPos = get<3>(blocks[i][n]);
 					Vec3c writeSize = get<4>(blocks[i][n]);
-					script << args[n].dimgval->emitWriteBlock(writeFilePos, writeImPos, writeSize, outputFile);
+					script << getDistributedImage(args[n])->emitWriteBlock(writeFilePos, writeImPos, writeSize);
 				}
 			}
 
 			//cout << "Submitting job script:" << endl;
 			//cout << script.str() << endl;
 
-			submitJob(script.str());
+			submitJob(script.str(), distributable->getJobType());
 		}
 
         // Run jobs first and set writeComplete() only after the jobs have finished to make sure that
@@ -549,9 +503,9 @@ namespace pilib
 		for (size_t n = 0; n < args.size(); n++)
 		{
 			const CommandArgumentBase& def = command->args()[n];
-			if (isImage(def.dataType()) && (def.direction() == Out || def.direction() == InOut))
+			if (isImage(def.dataType()) && (def.direction() == ParameterDirection::Out || def.direction() == ParameterDirection::InOut))
 			{
-				args[n].dimgval->writeComplete();
+				getDistributedImage(args[n])->writeComplete();
 			}
 		}
 		

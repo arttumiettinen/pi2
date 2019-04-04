@@ -50,13 +50,15 @@ namespace itl2
 		}
 	}
 
-	void testAssert(bool condition, const string& assertName)
+	bool testAssert(bool condition, const string& assertName)
 	{
 		if(!condition)
 		{
 			testOk = false;
 			cout << "Assertion failed: " << assertName << endl;
 		}
+
+		return condition;
 	}
 
 	void testReport()

@@ -77,11 +77,11 @@ namespace itl2
 
 
 			// This is rect mean filtering without optimization
-			meanFilter(head, filtered, 3, Rectangular);
+			meanFilter(head, filtered, 3, NeighbourhoodType::Rectangular);
 			raw::writed(filtered, "./filters/mean_rect_filtered");
 
 			// This should use separable optimization (Rectangular neighbourhood and float image)
-			meanFilter(head32, filtered2, 3, Rectangular);
+			meanFilter(head32, filtered2, 3, NeighbourhoodType::Rectangular);
 			raw::writed(filtered2, "./filters/mean_rect_filtered_separable");
 
 			// The results should agree up to rounding error
@@ -121,7 +121,7 @@ namespace itl2
 			raw::writed(filtered, "./filters/min_filtered");
 
 			// This should use separable optimization
-			minFilter(head, filtered, 2, Rectangular);
+			minFilter(head, filtered, 2, NeighbourhoodType::Rectangular);
 			raw::writed(filtered, "./filters/min_rect_filtered");
 
 			maxFilter(head, filtered, 2);
@@ -137,7 +137,7 @@ namespace itl2
 			//min(filtered, head32, 2);
 
 			Image<float32_t> tr(100, 100);
-			raw::read(tr, "./filters/test_rect_100x100x1.raw");
+			raw::read(tr, "./test_rect_100x100x1.raw");
 
 			meanFilter(tr, filtered2, Vec3c(10, 10, 0));
 			raw::writed(filtered2, "./filters/test_rect_rect_filtered_xy");

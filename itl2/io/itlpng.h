@@ -5,6 +5,10 @@
 #include "image.h"
 #include "io/imagedatatype.h"
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 namespace itl2
 {
 
@@ -21,80 +25,15 @@ namespace itl2
 			return ret;
 		}
 #endif
-	
-		/*
-		Get information from .png image file.
-		Supports only 8- and 16-bit grayscale images.
-		@param width, height Dimensions of the image
-		@param dataType Pixel data type of the image.
-		@return True if the file seems to be an existing, valid .png file with supported pixel data type.
-		*/
-		inline bool getInfo(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType)
-		{
-			width = 0;
-			height = 0;
-			dataType = Unknown;
-
-			//FILE* f = fopen(filename.c_str(), "rb");
-			//if (!f)
-			//	return false;
-			FILE* f;
-			if (fopen_s(&f, filename.c_str(), "rb") != 0)
-				return false;
-
-			png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-			if (!png)
-			{
-				fclose(f);
-				return false;
-			}
-
-			png_infop pngInfo = png_create_info_struct(png);
-			if (!pngInfo)
-			{
-				fclose(f);
-				png_destroy_read_struct(&png, NULL, NULL);
-				return false;
-			}
-
-			if (setjmp(png_jmpbuf(png)) == 0)
-			{
-				png_init_io(png, f);
-				png_read_info(png, pngInfo);
-
-				png_uint_32 pngWidth, pngHeight;
-				int bitDepth;
-				int colorType;
-				png_get_IHDR(png, pngInfo, &pngWidth, &pngHeight, &bitDepth, &colorType, NULL, NULL, NULL);
-
-				width = pngWidth;
-				height = pngHeight;
-
-				if (bitDepth <= 8)
-					dataType = UInt8;
-				else
-					dataType = UInt16;
-
-				if (colorType != PNG_COLOR_TYPE_GRAY)
-					dataType = Unknown;
-			}
-			else
-			{
-				// libPng error
-				dataType = Unknown;
-			}
-
-			png_destroy_read_struct(&png, &pngInfo, NULL);
-			fclose(f);
-
-			if (dataType != Unknown)
-				return true;
-
-			return false;
-		}
 
 		namespace internals
 		{
+			void pngErrorFunc(png_structp png_ptr, png_const_charp error_msg);
+
+			void pngWarningFunc(png_structp png_ptr, png_const_charp error_msg);
+
+			string pngLastError();
+
 			/*
 			Reads .png file, does not throw exceptions but returns success/failure and error message.
 			*/
@@ -107,13 +46,6 @@ namespace itl2
 					return false;
 				}
 
-				//FILE* f = fopen(filename.c_str(), "rb");
-				//if (!f)
-				//{
-				//	errorMessage = string("Unable to open file ") + filename + ".";
-				//	return false;
-				//}
-
 				FILE* f;
 				if (fopen_s(&f, filename.c_str(), "rb") != 0)
 				{
@@ -121,7 +53,7 @@ namespace itl2
 					return false;
 				}
 
-				png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+				png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, internals::pngErrorFunc, internals::pngErrorFunc);
 				if (!png)
 				{
 					errorMessage = "Unable to create png support data structure.";
@@ -139,7 +71,7 @@ namespace itl2
 				}
 
 				volatile png_bytepp rowPointers = 0;
-				volatile ImageDataType dataType = Unknown;
+				volatile ImageDataType dataType = ImageDataType::Unknown;
 
 				if (setjmp(png_jmpbuf(png)) == 0)
 				{
@@ -159,8 +91,8 @@ namespace itl2
 						// Make sure that image data type and png file data type match.
 						if (colorType == PNG_COLOR_TYPE_GRAY)
 						{
-							if ((bitDepth <= 8 && imageDataType<pixel_t>() == UInt8)||
-								(bitDepth == 16 && imageDataType<pixel_t>() == UInt16))
+							if ((bitDepth <= 8 && imageDataType<pixel_t>() == ImageDataType::UInt8)||
+								(bitDepth == 16 && imageDataType<pixel_t>() == ImageDataType::UInt16))
 							{
 								// Expand < 8 bit depths to 8
 								if (bitDepth < 8)
@@ -186,9 +118,9 @@ namespace itl2
 
 									// Set dataType to signal succesful read.
 									if (bitDepth == 16)
-										dataType = UInt16;
+										dataType = ImageDataType::UInt16;
 									else
-										dataType = UInt8;
+										dataType = ImageDataType::UInt8;
 								}
 								else
 								{
@@ -212,7 +144,7 @@ namespace itl2
 				}
 				else
 				{
-					errorMessage = "libPng internal error.";
+					errorMessage = internals::pngLastError();
 				}
 
 				if(rowPointers)
@@ -220,7 +152,7 @@ namespace itl2
 				png_destroy_read_struct(&png, &pngInfo, NULL);
 				fclose(f);
 
-				if (dataType != Unknown)
+				if (dataType != ImageDataType::Unknown)
 					return true;
 
 				return false;
@@ -250,7 +182,7 @@ namespace itl2
 					return false;
 				}
 
-				png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+				png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, internals::pngErrorFunc, internals::pngErrorFunc);
 				if (!png)
 				{
 					fclose(f);
@@ -288,7 +220,7 @@ namespace itl2
 				}
 				else
 				{
-					errorMessage = "libPng internal error.";
+					errorMessage = internals::pngLastError();
 				}
 
 				if (rowPointers)
@@ -299,6 +231,15 @@ namespace itl2
 				return result;
 			}
 		}
+
+		/*
+		Get information from .png image file.
+		Supports only 8- and 16-bit grayscale images.
+		@param width, height Dimensions of the image
+		@param dataType Pixel data type of the image.
+		@return True if the file seems to be an existing, valid .png file with supported pixel data type.
+		*/
+		bool getInfo(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType);
 
 		/*
 		Read a .png file.

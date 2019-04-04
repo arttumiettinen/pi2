@@ -4,7 +4,6 @@
 
 #include <vector>
 
-#include "itl2.h"
 
 using namespace std;
 using namespace itl2;
@@ -31,7 +30,7 @@ namespace pilib
 		OneImageInPlaceCommand(const string& name, const string& help, const vector<CommandArgumentBase>& extraArgs = {}) :
 			Command(name, help,
 				concat({
-					CommandArgument<Image<input_t> >(InOut, "image", "Image to process.")
+					CommandArgument<Image<input_t> >(ParameterDirection::InOut, "image", "Image to process.")
 					}, extraArgs)
 			)
 		{
@@ -55,8 +54,8 @@ namespace pilib
 		TwoImageInputOutputCommand(const string& name, const string& help, const vector<CommandArgumentBase>& extraArgs = {}) :
 			Command(name, help,
 				concat({
-					CommandArgument<Image<input_t> >(In, "input image", "Input image."),
-					CommandArgument<Image<output_t> >(Out, "output image", "Output image.")
+					CommandArgument<Image<input_t> >(ParameterDirection::In, "input image", "Input image."),
+					CommandArgument<Image<output_t> >(ParameterDirection::Out, "output image", "Output image.")
 					}, extraArgs)
 				)
 		{
@@ -81,7 +80,7 @@ namespace pilib
 		TwoImageInputParamCommand(const string& name, const string& help, const vector<CommandArgumentBase>& extraArgs = {}) :
 			OneImageInPlaceCommand<input_t>(name, help,
 				concat({
-					CommandArgument<Image<param_t> >(In, "parameter image", "Parameter image.")
+					CommandArgument<Image<param_t> >(ParameterDirection::In, "parameter image", "Parameter image.")
 					}, extraArgs)
 				)
 		{
@@ -105,10 +104,10 @@ namespace pilib
 	public:
 		BasicOneImageNeighbourhoodCommand(const string& name, const string& help, vector<CommandArgumentBase> extraArgs = {}) :
 			OneImageInPlaceCommand<input_t>(name, help,
-				concat(concat({ CommandArgument<coord_t>(In, "radius", "Radius of neighbourhood. Diameter will be 2*r+1.", 1) },
+				concat(concat({ CommandArgument<coord_t>(ParameterDirection::In, "radius", "Radius of neighbourhood. Diameter will be 2*r+1.", 1) },
 					extraArgs),
-					{ CommandArgument<NeighbourhoodType>(In, "neighbourhood type", "Type of neighbourhood, either Ellipsoidal or Rectangular.", Ellipsoidal),
-					  CommandArgument<BoundaryCondition>(In, "boundary condition", "Type of boundary condition, either Zero or Nearest.", Zero) })
+					{ CommandArgument<NeighbourhoodType>(ParameterDirection::In, "neighbourhood type", "Type of neighbourhood, either Ellipsoidal or Rectangular.", NeighbourhoodType::Ellipsoidal),
+					  CommandArgument<BoundaryCondition>(ParameterDirection::In, "boundary condition", "Type of boundary condition, either Zero or Nearest.", BoundaryCondition::Nearest) })
 				)
 		{
 		}
@@ -116,8 +115,11 @@ namespace pilib
 		virtual void run(Image<input_t>& in, vector<ParamVariant>& args) const
 		{
 			coord_t r = pop<coord_t>(args);
-			NeighbourhoodType nbtype = pop<NeighbourhoodType>(args);
-			BoundaryCondition bc = pop<BoundaryCondition>(args);
+
+			NeighbourhoodType nbtype = get<NeighbourhoodType>(args[args.size() - 2]);
+			BoundaryCondition bc = get<BoundaryCondition>(args[args.size() - 1]);
+			args.erase(args.begin() + args.size() - 1);
+			args.erase(args.begin() + args.size() - 1);
 
 			run(in, r, nbtype, bc, args);
 		}

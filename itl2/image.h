@@ -22,9 +22,6 @@ namespace itl2
 	{
 	protected:
 
-		/*coord_t w;
-		coord_t h;
-		coord_t d;*/
 		math::Vec3c dims;
 
 	public:
@@ -134,19 +131,31 @@ namespace itl2
 		}
 	};
 
+	/*
+	Converts linear index to coordinates.
+	*/
+	inline math::Vec3c indexToCoords(coord_t ind, const math::Vec3c& size)
+	{
+		coord_t z = ind / (size[0] * size[1]);
+		coord_t y = (ind - z * size[0] * size[1]) / size[0];
+		coord_t x = ind - z * size[0] * size[1] - y * size[0];
+
+		return math::Vec3c(x, y, z);
+	}
+
 	/**
 	0-, 1-, 2- or 3-dimensional image.
 	*/
 	template<typename pixel_t> class Image : public ImageBase
 	{
 	private:
-		
 
 		/**
 		Pointer to storage for image data.
 		This points to a buffer managed by *pBufferObject and is used to access image data.
 		*/
 		pixel_t* pData;
+		const pixel_t* pDataConst;
 
 		/**
 		Pointer to buffer object.
@@ -180,6 +189,7 @@ namespace itl2
 			}
 
 			pData = pBufferObject->getBufferPointer();
+			pDataConst = pData;
 		}
 
 		/**
@@ -204,12 +214,6 @@ namespace itl2
 		Disable copy constructor
 		*/
 		Image(const Image<pixel_t>& right);
-		/*
-		{
-			initBuffer(right.width, right.height, right.depth);
-			memcpy(pData, right.pData, pixelCount() * sizeof(pixel_t));
-		}
-		*/
 
 		/**
 		Disable assignment operator.
@@ -258,14 +262,19 @@ namespace itl2
 		*/
 		Image(Image<pixel_t>& source, coord_t startZ, coord_t endZ)
 		{
-			if (startZ < 0 || endZ < 0 || startZ >= source.depth() || endZ >= source.depth() || startZ > endZ)
-				throw ITLException("Invalid z range passed to image view constructor.");
-
-			dims.x = source.width();
-			dims.y = source.height();
-			dims.z = endZ - startZ + 1;
 			pBufferObject = 0;
-			pData = &source(0, 0, startZ);
+			init(source, startZ, endZ);
+		}
+
+		/**
+		Constructor, creates image that points to a z-range in another image.
+		@param startZ z-coordinate of the first slice to include in the view.
+		@param endZ z-coordinate of the last slice to include in the view.
+		*/
+		Image(const Image<pixel_t>& source, coord_t startZ, coord_t endZ)
+		{
+			pBufferObject = 0;
+			init(source, startZ, endZ);
 		}
 
 		/**
@@ -300,6 +309,36 @@ namespace itl2
 			initBuffer(width, height, depth);
 		}
 
+		void init(Image<pixel_t>& source, coord_t startZ, coord_t endZ)
+		{
+			if (startZ < 0 || endZ < 0 || startZ >= source.depth() || endZ >= source.depth() || startZ > endZ)
+				throw ITLException("Invalid z range.");
+
+			deleteData();
+
+			dims.x = source.width();
+			dims.y = source.height();
+			dims.z = endZ - startZ + 1;
+			pBufferObject = 0;
+			pData = &source(0, 0, startZ);
+			pDataConst = pData;
+		}
+
+		void init(const Image<pixel_t>& source, coord_t startZ, coord_t endZ)
+		{
+			if (startZ < 0 || endZ < 0 || startZ >= source.depth() || endZ >= source.depth() || startZ > endZ)
+				throw ITLException("Invalid z range.");
+
+			deleteData();
+
+			dims.x = source.width();
+			dims.y = source.height();
+			dims.z = endZ - startZ + 1;
+			pBufferObject = 0;
+			pData = 0;
+			pDataConst = &source(0, 0, startZ);
+		}
+
 		/**
 		Delete image data resident in memory.
 		Use this to free large images before normal destruction (stack walk) takes place.
@@ -313,6 +352,7 @@ namespace itl2
 					pData[n].~pixel_t();
 
 				pData = 0;
+				pDataConst = 0;
 				delete pBufferObject;
 				pBufferObject = 0;
 				// Don't reset mapFile here so that init methods can re-init to same file.
@@ -358,7 +398,7 @@ namespace itl2
 
 		const pixel_t* getData() const
 		{
-			return pData;
+			return pDataConst;
 		}
 
 		/**
@@ -388,44 +428,47 @@ namespace itl2
 		*/
 		math::Vec3c getCoords(size_t linearIndex) const
 		{
-			math::Vec3c tempSpace;
-			math::Vec3c result;
-			math::Vec3c dims = dimensions();
+			return indexToCoords(linearIndex, dimensions());
 
-			size_t currVal = 1;
-			for (size_t n = 0; n < dims.size(); n++)
-			{
-				tempSpace[n] = currVal;
-				currVal *= dims[n];
-			}
+			// NOTE: This is a dimensionality-independent version (for use if Vec3 is replaced by dimensionality-independent vector)
+			//math::Vec3c tempSpace;
+			//math::Vec3c result;
+			//math::Vec3c dims = dimensions();
+
+			//size_t currVal = 1;
+			//for (size_t n = 0; n < dims.size(); n++)
+			//{
+			//	tempSpace[n] = currVal;
+			//	currVal *= dims[n];
+			//}
 
 
-			size_t mn1 = linearIndex;
-			for (size_t i = 0; i < dims.size(); i++)
-			{
-				size_t n = dims.size() - 1 - i;
+			//size_t mn1 = linearIndex;
+			//for (size_t i = 0; i < dims.size(); i++)
+			//{
+			//	size_t n = dims.size() - 1 - i;
 
-				size_t mn;
-				if (mn1 > 0)
-					mn = mn1 % tempSpace[n];
-				else
-					mn = 0;
-				size_t xn = (mn1 - mn) / tempSpace[n];
-				mn1 = mn;
+			//	size_t mn;
+			//	if (mn1 > 0)
+			//		mn = mn1 % tempSpace[n];
+			//	else
+			//		mn = 0;
+			//	size_t xn = (mn1 - mn) / tempSpace[n];
+			//	mn1 = mn;
 
-				result[n] = (coord_t)xn;
-			}
+			//	result[n] = (coord_t)xn;
+			//}
 
-			return result;
+			//return result;
 		}
 
 		/**
 		Get a pixel at specified location.
 		No bounds checking is performed.
 		*/
-		pixel_t& operator()(coord_t x, coord_t y = 0, coord_t z = 0) const
+		const pixel_t& operator()(coord_t x, coord_t y = 0, coord_t z = 0) const
 		{
-			return pData[getLinearIndex(x, y, z)];
+			return pDataConst[getLinearIndex(x, y, z)];
 		}
 
 		/**
@@ -441,7 +484,7 @@ namespace itl2
 		Get a pixel at specified location.
 		No bounds checking is performed.
 		*/
-		pixel_t& operator()(const math::Vec3c& p) const
+		const pixel_t& operator()(const math::Vec3c& p) const
 		{
 			return operator()(p.x, p.y, p.z);
 		}
@@ -451,6 +494,24 @@ namespace itl2
 		No bounds checking is performed.
 		*/
 		pixel_t& operator()(const math::Vec3c& p)
+		{
+			return operator()(p.x, p.y, p.z);
+		}
+		
+		/**
+		Get a pixel at specified location.
+		No bounds checking is performed.
+		*/
+		const pixel_t& operator()(const math::Vec3sc& p) const
+		{
+			return operator()(p.x, p.y, p.z);
+		}
+
+		/**
+		Get a reference to pixel at the specified location.
+		No bounds checking is performed.
+		*/
+		pixel_t& operator()(const math::Vec3sc& p)
 		{
 			return operator()(p.x, p.y, p.z);
 		}
@@ -482,10 +543,23 @@ namespace itl2
 			return dist;
 		}
 
+		inline coord_t edgeDistance(const math::Vec3sc& pos) const
+		{
+            return edgeDistance(math::Vec3c(pos));
+		}
+		
 		/**
 		Gets a value indicating whether the given position is on the edge of the image.
 		*/
 		inline bool isOnEdge(const math::Vec3c& pos) const
+		{
+			return edgeDistance(pos) <= 0;
+		}
+
+		/**
+		Gets a value indicating whether the given position is on the edge of the image.
+		*/
+		inline bool isOnEdge(const math::Vec3sc& pos) const
 		{
 			return edgeDistance(pos) <= 0;
 		}
@@ -555,10 +629,10 @@ namespace itl2
 		/**
 		Throws exception if the given image is the same than this image.
 		*/
-		template<typename pixel2_t> void mustNotBe(const Image<pixel2_t>& other)
+		template<typename pixel2_t> void mustNotBe(const Image<pixel2_t>& other) const
 		{
 			if ((void*)this == (void*)&other)
-				throw ITLException("This operation cannot be executed if source and destination images are the same.");
+				throw ITLException("This operation cannot be executed if the parameter images are the same.");
 		}
 	};
 

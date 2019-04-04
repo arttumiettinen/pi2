@@ -65,7 +65,7 @@ namespace math
 			/**
 			Constructs Vec4 from vector<T>. Throws exception if the vector does not contain 4 elements.
 			*/
-			Vec4(const vector<T>& other)
+			Vec4(const std::vector<T>& other)
 			{
 				if(other.size() != 4)
 					throw itl2::ITLException("Invalid vector in Vec3 constructor.");
@@ -295,13 +295,14 @@ namespace math
             /**
             Converts this object to string.
             */
-            friend ostream& operator<<(ostream& stream, const Vec4<T>& v)
+            friend std::ostream& operator<<(std::ostream& stream, const Vec4<T>& v)
             {
                 stream << "[" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << "]";
                 return stream;
             }
     };
 
+	typedef Vec4<float> Vec4f;
     typedef Vec4<double> Vec4d;
     typedef Vec4<int> Vec4i;
 

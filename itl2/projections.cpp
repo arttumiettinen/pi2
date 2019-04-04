@@ -34,7 +34,7 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dt;
 
-			raw::internals::parseDimensions(file, dimensions, dt);
+			raw::getInfo(file, dimensions, dt);
 
 			Image<float32_t> gt(dimensions);
 

@@ -4,6 +4,7 @@
 #if defined(__linux__)
 
 	#include <unistd.h>
+	#include <stdio.h>
 	#include <sys/sysinfo.h>
 
 	inline bool _isatty(int fileHandle)
@@ -35,7 +36,9 @@
 #include <iostream>
 #include "math/mathutils.h"
 #include "math/vec3.h"
+#include "math/vec2.h"
 #include "datatypes.h"
+#include "stringutils.h"
 
 using namespace std;
 
@@ -139,6 +142,7 @@ namespace itl2
 	/**
 	Showw progress information for multithreaded processes.
 	Call from each thread once in each iteration.
+
 	@param counter Reference to counter variable common to all threads.
 	@param max Total number of iterations all threads are going to make.
 	*/
@@ -147,45 +151,67 @@ namespace itl2
 		if (!show)
 			return;
 
-		#pragma omp critical(show_progress)
+		size_t localCounter;
+
+#if defined(_MSC_VER)
+		#pragma omp atomic
+		counter++;
+
+		localCounter = counter;
+#else
+		#pragma omp atomic capture
+		localCounter = ++counter;
+#endif
+
+		if (localCounter > 0)
+		{
+			if (isTerminal())
+			{
+				coord_t prevProgress = math::round((double)(localCounter - 1) / (double)(max - 1) * 100);
+				coord_t currProgress = math::round((double)(localCounter    ) / (double)(max - 1) * 100);
+				if (currProgress > prevProgress)
+				{
+					#pragma omp critical
+					{
+						if (currProgress < 100)
+							cout << currProgress << " %              \r" << flush;
+						else
+							cout << "                   \r" << flush;
+					}
+				}
+			}
+			else
+			{
+				coord_t prevProgress = math::round((double)(localCounter - 1) / (double)(max - 1) * 100 / 10);
+				coord_t currProgress = math::round((double)(localCounter    ) / (double)(max - 1) * 100 / 10);
+				if (currProgress > prevProgress)
+				{
+					#pragma omp critical
+					{
+						for (coord_t n = prevProgress; n < currProgress; n++)
+						{
+							cout << "=" << flush;
+						}
+
+						if (prevProgress < 10 && currProgress == 10)
+						{
+							cout << endl;
+						}
+					}
+				}
+			}
+		}
+
+		/*#pragma omp critical(show_progress)
 		{
 			showProgress(counter, max);
 			counter++;
-		}
-	}
-
-	/**
-	Returns size of given file.
-	*/
-	inline ifstream::pos_type filesize(const string& filename)
-	{
-		ifstream in(filename.c_str(), ifstream::ate | ifstream::binary);
-		return in.tellg();
+		}*/
 	}
 
 
 
 
-
-	/**
-	Tests if the given character is whitespace.
-	*/
-	inline bool isWhiteSpace(const char s)
-	{
-		return s == ' ' || s == '\t' || s == '\r' || s == '\n';
-	}
-
-	/**
-	Removes whitespace from the beginning and the end of the string.
-	*/
-	inline void trim(string& s)
-	{
-		while (s.length() > 0 && isWhiteSpace(s[0]))
-			s.erase(0, 1);
-
-		while (s.length() > 0 && isWhiteSpace(s[s.length() - 1]))
-			s.erase(s.length() - 1, 1);
-	}
 
 
 
@@ -280,7 +306,7 @@ namespace itl2
 	Convert from string to vector
 	*/
 	template<>
-	inline math::Vec3d fromString(const string& value)
+	inline math::Vec2f fromString(const string& value)
 	{
 		try
 		{
@@ -289,98 +315,128 @@ namespace itl2
 
 			if (value[0] == '[')
 			{
-				// Vector notation [1, 2, 3]
+				// Vector notation [1, 2]
 				std::stringstream parts;
 				parts << value;
-				std::string sx, sy, sz;
+				std::string sx, sy;
 				std::getline(parts, sx, '[');
 				std::getline(parts, sx, ',');
-				std::getline(parts, sy, ',');
-				std::getline(parts, sz, ']');
+				std::getline(parts, sy, ']');
 
 				trim(sx);
 				trim(sy);
-				trim(sz);
 
-				math::Vec3d result;
-				result.x = itl2::fromString<double>(sx);
-				result.y = itl2::fromString<double>(sy);
-				result.z = itl2::fromString<double>(sz);
+				math::Vec2f result;
+				result.x = itl2::fromString<float32_t>(sx);
+				result.y = itl2::fromString<float32_t>(sy);
 				return result;
 			}
 			else
 			{
 				// Single number
-			
-				double val = itl2::fromString<double>(value);
 
-				math::Vec3d result;
+				float32_t val = itl2::fromString<float32_t>(value);
+
+				math::Vec2f result;
 				result.x = val;
 				result.y = val;
-				result.z = val;
 				return result;
 			}
 		}
 		catch (ITLException)
 		{
 			ostringstream errstr;
-			errstr << "Value '" << value << "' is not a valid 3-component vector.";
+			errstr << "Value '" << value << "' is not a valid 2-component vector.";
 			throw ITLException(errstr.str());
 		}
 	}
 
+	namespace internals
+	{
+		/**
+		Helps to parse vec3 string to elements of generic type.
+		*/
+		template<typename T> void vec3ParseHelper(string value, T& x, T& y, T& z)
+		{
+			try
+			{
+				if (value.length() < 1)
+					throw ITLException("Empty string.");
+
+				trimStart(value, " [");
+				trimEnd(value, " ]");
+
+				if (contains(value, ",") || contains(value, " "))
+				{
+					// Vector notation "[1, 2, 3]", "[1 2 3]", "1,2,3", etc.
+
+					//std::stringstream parts;
+					//parts << value;
+					//std::string sx, sy, sz;
+					//std::getline(parts, sx, '[');
+					//std::getline(parts, sx, ',');
+					//std::getline(parts, sy, ',');
+					//std::getline(parts, sz, ']');
+					//trim(sx);
+					//trim(sy);
+					//trim(sz);
+
+					//x = itl2::fromString<T>(sx);
+					//y = itl2::fromString<T>(sy);
+					//z = itl2::fromString<T>(sz);
+					
+					vector<string> parts = split(value, false, ',', true);
+					if (parts.size() != 3)
+						parts = split(value, false, ' ', true);
+
+					if (parts.size() != 3)
+						throw ITLException("Invalid string.");
+
+					
+					x = itl2::fromString<T>(parts[0]);
+					y = itl2::fromString<T>(parts[1]);
+					z = itl2::fromString<T>(parts[2]);
+				}
+				else
+				{
+					// Single number, either 1 or [1]
+
+					T val = itl2::fromString<T>(value);
+
+					x = val;
+					y = val;
+					z = val;
+				}
+			}
+			catch (ITLException)
+			{
+				ostringstream errstr;
+				errstr << "Value '" << value << "' is not a valid 3-component vector.";
+				throw ITLException(errstr.str());
+			}
+		}
+	}
+
+	/**
+	Convert from string to vector
+	*/
+	template<>
+	inline math::Vec3d fromString(const string& value)
+	{
+		math::Vec3d v;
+		internals::vec3ParseHelper(value, v.x, v.y, v.z);
+		return v;
+	}
+
 	/**
 	Convert from string to vector.
-	TODO: This is repeat from above!
 	*/
 	template<>
 	inline math::Vec3<coord_t> fromString(const string& value)
 	{
-		try
-		{
-			if (value.length() < 1)
-				throw ITLException("Empty string.");
-
-			if (value[0] == '[')
-			{
-				// Vector notation [1, 2, 3]
-				std::stringstream parts;
-				parts << value;
-				std::string sx, sy, sz;
-				std::getline(parts, sx, '[');
-				std::getline(parts, sx, ',');
-				std::getline(parts, sy, ',');
-				std::getline(parts, sz, ']');
-
-				trim(sx);
-				trim(sy);
-				trim(sz);
-
-				math::Vec3<coord_t> result;
-				result.x = itl2::fromString<coord_t>(sx);
-				result.y = itl2::fromString<coord_t>(sy);
-				result.z = itl2::fromString<coord_t>(sz);
-				return result;
-			}
-			else
-			{
-				// Single number
-
-				coord_t val = itl2::fromString<coord_t>(value);
-
-				math::Vec3<coord_t> result;
-				result.x = val;
-				result.y = val;
-				result.z = val;
-				return result;
-			}
-		}
-		catch (ITLException)
-		{
-			ostringstream errstr;
-			errstr << "Value '" << value << "' is not a valid 3-component integer vector.";
-			throw ITLException(errstr.str());
-		}
+		math::Vec3c v;
+		internals::vec3ParseHelper(value, v.x, v.y, v.z);
+		return v;
 	}
 
 	/**
@@ -446,5 +502,37 @@ namespace itl2
 		if (x)
 			return "True";
 		return "False";
+	}
+
+
+	inline double sizeRound(double size)
+	{
+		return math::round(size * 100.0) / 100.0;
+	}
+
+	/**
+	Converts value in bytes to nice string.
+	*/
+	inline string bytesToString(double size)
+	{
+		double sizeBytes = sizeRound(size);
+		double sizeKilos = sizeRound(size / 1024.0);
+		double sizeMegas = sizeRound(size / (1024.0 * 1024.0));
+		double sizeGigas = sizeRound(size / (1024.0 * 1024.0 * 1024.0));
+		double sizeTeras = sizeRound(size / (1024.0 * 1024.0 * 1024.0 * 1024.0));
+
+		if (sizeKilos < 0.5)
+			return itl2::toString(sizeBytes) + " bytes";
+
+		if (sizeMegas < 0.5)
+			return itl2::toString(sizeKilos) + " kiB";
+
+		if (sizeGigas < 0.5)
+			return itl2::toString(sizeMegas) + " MiB";
+
+		if (sizeTeras < 0.5)
+			return itl2::toString(sizeGigas) + " GiB";
+
+		return itl2::toString(sizeTeras) + " TiB";
 	}
 }

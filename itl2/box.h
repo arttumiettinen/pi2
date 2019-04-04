@@ -2,7 +2,8 @@
 
 #include "math/vec3.h"
 
-using math::Vec3;
+#include <vector>
+#include <limits>
 
 namespace itl2
 {
@@ -14,9 +15,9 @@ namespace itl2
         /**
         Minimum and maximum coordinates of the box.
         */
-        Vec3<T> minc, maxc;
+        math::Vec3<T> minc, maxc;
         
-        Box(const Vec3<T>& minc, const Vec3<T>& maxc) :
+        Box(const math::Vec3<T>& minc, const math::Vec3<T>& maxc) :
             minc(minc),
             maxc(maxc)
         {
@@ -27,13 +28,13 @@ namespace itl2
         */
         void inflate(T amount)
         {
-            inflate(Vec3<T>(amount, amount, amount));
+            inflate(math::Vec3<T>(amount, amount, amount));
         }
         
         /**
         Enlarges the box in all directions by given amount.
         */
-        void inflate(const Vec3<T>& amount)
+        void inflate(const math::Vec3<T>& amount)
         {
             minc -= amount;
             maxc += amount;
@@ -48,16 +49,56 @@ namespace itl2
                     maxc.y >= r.minc.y && r.maxc.y >= minc.y &&
                     maxc.z >= r.minc.z && r.maxc.z >= minc.z;
         }
+
+		/**
+		Calculates intersection of this box and the given box.
+		*/
+		Box intersection(const Box<T>& r) const
+		{
+			return Box(componentwiseMax(minc, r.minc), componentwiseMin(maxc, r.maxc));
+		}
+
+		/**
+		Calculates width of the box.
+		*/
+		coord_t width() const
+		{
+			return maxc.x - minc.x;
+		}
+
+		/**
+		Calculates height of the box.
+		*/
+		coord_t height() const
+		{
+			return maxc.y - minc.y;
+		}
+
+		/**
+		Calculates depth of the box.
+		*/
+		coord_t depth() const
+		{
+			return maxc.z - minc.z;
+		}
+
+		/**
+		Calculates volume of the box.
+		*/
+		size_t volume() const
+		{
+			return (size_t)abs(width()) * (size_t)abs(height()) * (size_t)abs(depth());
+		}
         
         /**
         Calculates bounding box of points in the given list.
         */
-        static Box<T> boundingBox(const vector<Vec3<T> >& points)
+        static Box<T> boundingBox(const std::vector<math::Vec3<T> >& points)
         {
-            Vec3<T> minc(numeric_limits<T>::max(), numeric_limits<T>::max(), numeric_limits<T>::max());
-            Vec3<T> maxc(numeric_limits<T>::lowest(), numeric_limits<T>::lowest(), numeric_limits<T>::lowest());
+            math::Vec3<T> minc(std::numeric_limits<T>::max(), std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
+            math::Vec3<T> maxc(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
             
-            for(const Vec3<T>& p : points)
+            for(const math::Vec3<T>& p : points)
             {
                 minc = min(minc, p);
                 maxc = max(maxc, p);

@@ -2,6 +2,7 @@
 #include "distributedimage.h"
 #include "io/raw.h"
 #include "io/sequence.h"
+#include "io/io.h"
 
 #include <experimental/filesystem>
 
@@ -50,66 +51,73 @@ namespace pilib
 
 	void DistributedImageBase::setReadSource(const string& filename)
 	{
-	    //cout << "Set read source to " << filename << endl;
-	    
 		readSource = filename;
 
         if(filename != "")
         {
-		    if (endsWith(filename, ".raw"))
-		    {
-			    isNewImage = !fileExists(filename);
-		    }
-		    else
-		    {
-			    isNewImage = !sequence::isSequence(filename);
-		    }
+			ImageDataType dt;
+			isNewImage = io::getInfo(filename, dims, dt) == false;
+			if (!isNewImage)
+			{
+				if (dt != dataType())
+					throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
+			}
+		    //if (endsWith(filename, ".raw"))
+		    //{
+			   // isNewImage = !fileExists(filename);
+		    //}
+		    //else
+		    //{
+			   // isNewImage = !sequence::isSequence(filename);
+		    //}
 		}
 		else
 		{
 		    isNewImage = true;
 		}
-		
-		//cout << "Is new image = " << isNewImage << endl;
 	}
 	
 	string DistributedImageBase::emitReadBlock(const Vec3c& filePos, const Vec3c& blockSize, bool dataNeeded) const
 	{
-		string srcfile = currentReadSource();
 		stringstream s;
-		//cout << "is new = " << isNewImage << endl;
 		if (!isNewImage && dataNeeded)
 		{
-			if(endsWith(srcfile, ".raw"))
-				s << "readrawblock(" << name << ", " << srcfile << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ", " << dataTypeStr << ", " << dims.x << ", " << dims.y << ", " << dims.z << ");" << endl;
-			else
-				s << "readsequenceblock(" << name << ", " << srcfile << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+			s << "readblock(" << name << ", " << currentReadSource() << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+			//if(endsWith(srcfile, ".raw"))
+			//	s << "readrawblock(" << name << ", " << srcfile << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ", " << dataTypeStr << ", " << dims.x << ", " << dims.y << ", " << dims.z << ");" << endl;
+			//else
+			//	s << "readsequenceblock(" << name << ", " << srcfile << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
 		}
 		else
 		{
-			//s << "newimage(" << name << ", " << dataTypeStr << ", " << dims.x << ", " << dims.y << ", " << dims.z << ");" << endl;
 			s << "newimage(" << name << ", " << dataTypeStr << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
 		}
-		//cout << "Read command: " << s.str() << endl;
 		return s.str();
 	}
 
-	string DistributedImageBase::emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize, const string* outputFile)
+	string DistributedImageBase::emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize)
 	{
-		string outFile = currentWriteTarget();
-
-		// Override target file?
-		if (outputFile)
-			outFile = *outputFile;
-
 		stringstream s;
-		if(endsWith(outFile, ".raw"))
-			s << "writerawblock(" << name << ", " << outFile << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+		if(isOutputRaw())
+			s << "writerawblock(" << name << ", " << currentWriteTarget() << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
 		else
-			s << "writesequenceblock(" << name << ", " << outFile << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+			s << "writesequenceblock(" << name << ", " << currentWriteTarget() << ", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
 			
-		//cout << "Write command: " << s.str() << endl;
 		return s.str();
 	}
 
+    void DistributedImageBase::writeComplete()
+    {
+        // Temporary image corresponding to old read source is not needed anymore as it
+        // is not up to date (unless read source and write target are the same).
+        if(currentReadSource() != currentWriteTarget())
+        {
+            if(currentReadSource() == this->tempFilename1)
+                fs::remove_all(this->tempFilename1);
+            if(currentReadSource() == this->tempFilename2)
+                fs::remove_all(this->tempFilename2);
+        }
+        
+	    setReadSource(currentWriteTarget());
+    }
 }

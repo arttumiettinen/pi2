@@ -13,7 +13,7 @@ namespace pilib
 	private:
 		size_t allowedMem;
 
-		virtual void submitJob(const string& piCode);
+		virtual void submitJob(const string& piCode, JobType jobType);
 
 		virtual vector<string> waitForJobs();
 
@@ -22,15 +22,49 @@ namespace pilib
 			return allowedMem;
 		}
 
-		/**
-		Stores job ids of all submitted jobs since last call to waitForJobs.
-		*/
-		vector<size_t> submittedJobs;
+		void cancelAll();
+
+		string getErrorMessage(size_t jobIndex) const;
 
 		/**
-		Extra arguments for sbatch and sinfo.
+		Stores (job slurm id, queue type, submission count) of all submitted jobs since last call to waitForJobs.
 		*/
-		string extraArgs;
+		vector<tuple<size_t, JobType, size_t> > submittedJobs;
+
+		/**
+		Extra arguments for sbatch and sinfo, for fast jobs
+		*/
+		string extraArgsFastJobs;
+
+		/**
+		Extra arguments for sbatch and sinfo, for normal jobs
+		*/
+		string extraArgsNormalJobs;
+
+		/**
+		Extra arguments for sbatch and sinfo, for slow jobs
+		*/
+		string extraArgsSlowJobs;
+
+		/**
+		Returns suitable sbatch arguments given type of job.
+		*/
+		string extraArgs(JobType jobType) const
+		{
+			switch (jobType)
+			{
+			case JobType::Fast: return extraArgsFastJobs;
+			case JobType::Normal: return extraArgsNormalJobs;
+			case JobType::Slow: return extraArgsSlowJobs;
+			default: throw logic_error("Invalid JobType value.");
+			}
+		}
+
+		/**
+		Maximum number of submissions per job.
+		This limits the count of re-submissions if jobs fail.
+		*/
+		size_t maxSubmissions;
 
 		/**
 		Commands run on each node before pi.
@@ -53,6 +87,11 @@ namespace pilib
 		string getLog(size_t jobIndex, bool flush = false) const;
 
 		/**
+		Gets SLURM error log of given job.
+		*/
+		string getSlurmErrorLog(size_t jobIndex, bool flush = false) const;
+
+		/**
 		Gets job progress from log file.
 		*/
 		int getJobProgressFromLog(size_t jobIndex) const;
@@ -61,6 +100,16 @@ namespace pilib
 		Get character that is used to report progress of a task.
 		*/
 		char getProgressChar(int progress) const;
+
+		/**
+		Create a progress bar string.
+		*/
+		string createProgressBar(const vector<int>& progress);
+
+		/**
+		Submits job with given index again.
+		*/
+		void resubmit(size_t jobIndex);
 
 	public:
 		SLURMDistributor(PISystem* system);

@@ -3,22 +3,21 @@
 #include "command.h"
 #include "trivialdistributable.h"
 #include "parseexception.h"
+#include "io/io.h"
 
 #include <vector>
-
-#include "itl2.h"
 
 using namespace std;
 using namespace itl2;
 
 namespace pilib
 {
-	class RawInfoCommand : virtual public Command, public TrivialDistributable
+	class FileInfoCommand : virtual public Command, public TrivialDistributable
 	{
 	public:
-		RawInfoCommand() : Command("rawinfo", "Displays metadata of .raw file.",
+		FileInfoCommand() : Command("fileinfo", "Displays metadata of given image file.",
 			{
-				CommandArgument<string>(In, "filename", "Name of .raw file.")
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name of image file.")
 			})
 		{
 
@@ -30,13 +29,44 @@ namespace pilib
 
 			Vec3c dims;
 			ImageDataType dt;
-			if (!raw::internals::parseDimensions(fname, dims, dt))
-				throw ITLException(string("Unable to parse file name ") + fname);
+			if (io::getInfo(fname, dims, dt))
+			{
+				cout << dims << endl;
+				cout << itl2::toString(dt) << endl;
+			}
+			else
+			{
+				cout << "Not an image file: " << fname << endl;
+			}
+		}
+	};
 
-			cout << itl2::toString(dt) << endl;
-			cout << dims.x << endl;
-			cout << dims.y << endl;
-			cout << dims.z << endl;
+	class RawInfoCommand : virtual public Command, public TrivialDistributable
+	{
+	public:
+		RawInfoCommand() : Command("rawinfo", "Displays metadata of .raw file.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name of .raw file.")
+			})
+		{
+
+		}
+
+		virtual void run(vector<ParamVariant>& args) const
+		{
+			string fname = pop<string>(args);
+
+			Vec3c dims;
+			ImageDataType dt;
+			if (raw::getInfo(fname, dims, dt))
+			{
+				cout << dims << endl;
+				cout << itl2::toString(dt) << endl;
+			}
+			else
+			{
+				cout << "Not a .raw file: " << fname << endl;
+			}
 		}
 	};
 
@@ -45,7 +75,7 @@ namespace pilib
 	public:
 		SequenceInfoCommand() : Command("sequenceinfo", "Displays metadata of image sequence.",
 			{
-				CommandArgument<string>(In, "filename template", "Filename template corresponding to the sequence, as described in readsequence command documentation.")
+				CommandArgument<string>(ParameterDirection::In, "filename template", "Filename template corresponding to the sequence, as described in readsequence command documentation.")
 			})
 		{
 
@@ -58,13 +88,15 @@ namespace pilib
 			Vec3c dims;
 			ImageDataType dt;
 
-			if (!sequence::getInfo(fname, dims, dt))
-				throw ITLException(string("Unable to parse sequence ") + fname);
-
-			cout << itl2::toString(dt) << endl;
-			cout << dims.x << endl;
-			cout << dims.y << endl;
-			cout << dims.z << endl;
+			if (sequence::getInfo(fname, dims, dt))
+			{
+				cout << dims << endl;
+				cout << itl2::toString(dt) << endl;
+			}
+			else
+			{
+				cout << "Unable to parse sequence: " << fname << endl;
+			}
 		}
 	};
 
@@ -73,7 +105,7 @@ namespace pilib
 	public:
 		NopSingleImageCommand() : Command("nop", "Does nothing. This command is used internally as a helper that tags image that must be saved but not processed.",
 			{
-				CommandArgument<Image<pixel_t> >(InOut, "image", "Name of image that is not processed.")
+				CommandArgument<Image<pixel_t> >(ParameterDirection::InOut, "image", "Name of image that is not processed.")
 			})
 		{
 
@@ -89,8 +121,8 @@ namespace pilib
 	public:
 		WriteRawCommand() : Command("writeraw", "Write an image to .raw file. The dimensions of the image are automatically appended to the file name. If distributed processing is enabled, uses optimized implementation that does not need to copy or write any image data if the image is saved to a temporary image storage location and that location is on the same partition than the file being written.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "input image", "Name of image to save."),
-				CommandArgument<string>(In, "filename", "Name (and path) of file to write. If the file exists, its current contents are erased.")
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Name of image to save."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to write. If the file exists, its current contents are erased.")
 			})
 		{
 		}
@@ -103,14 +135,16 @@ namespace pilib
 			raw::writed(in, fname);
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
 			string fname = pop<string>(args);
 
 			fname = raw::internals::concatDimensions(fname, in.dimensions());
 
-			if (in.isRaw())
+			if (in.isSavedToDisk() && in.isRaw())
 			{
 				// Effectively copy data from input image to output image.
 				// First move input image current data source file to output file.
@@ -154,15 +188,18 @@ namespace pilib
 			else
 			{
 				// The input is not stored as .raw file so actual copying must be made.
-				//distributor.distributeReadWrite(in, &WriteRawBlockCommand(), fname);
+				
+				in.setWriteTarget(fname);
+				
 				vector<ParamVariant> args2;
 				ParamVariant p;
-				p.dimgval = &in;
+				p = &in;
 				args2.push_back(p);
 				NopSingleImageCommand<pixel_t> cmd;
-				distributor.distribute(&cmd, args2, 2, Vec3c(0, 0, 0), &fname);
+				distributor.distribute(&cmd, args2, 2, Vec3c(0, 0, 0));
 			}
 
+			return vector<string>();
 		}
 	};
 
@@ -171,8 +208,8 @@ namespace pilib
 	public:
 		WriteSequenceCommand() : Command("writesequence", "Write an image sequence to disk.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "input image", "Name of image to save."),
-				CommandArgument<string>(In, "filename", "Name (and path) of file to write. Existing files are overwritten. Specify file name as a template where @ signifies the location where the slice number should be added. Use @(n) to specify field width, e.g., if n = 4, slice number 7 would be labeled 0007. Specify @(-) to select suitable field width automatically. Specify empty file name to save using default template '@.png' that corresponds to file names 0.png, 1.png, 2.png etc.")
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Name of image to save."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to write. Existing files are overwritten. Specify file name as a template where @ signifies the location where the slice number should be added. Use @(n) to specify field width, e.g., if n = 4, slice number 7 would be labeled 0007. Specify @(-) to select suitable field width automatically. Specify empty file name to save using default template '@.png' that corresponds to file names 0.png, 1.png, 2.png etc.")
 			})
 		{
 		}
@@ -184,12 +221,12 @@ namespace pilib
 			sequence::write(in, fname);
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
 			string fname = pop<string>(args);
 
-			if (in.isSequence())
+			if (in.isSavedToDisk() && in.isSequence())
 			{
 				if (in.savedToTemp())
 				{
@@ -199,7 +236,7 @@ namespace pilib
 						// Just move the temporary files to new location (and name) and set read source to that file.
 						sequence::moveSequence(in.currentReadSource(), fname);
 						in.setReadSource(fname);
-						return;
+						return vector<string>();
 					}
 					else
 					{
@@ -213,7 +250,7 @@ namespace pilib
 						// The image has been saved to non-temporary files, so we cannot just move them.
 						// The files must be copied.
 						sequence::copySequence(in.currentReadSource(), fname);
-						return;
+						return vector<string>();
 					}
 					else
 					{
@@ -223,13 +260,15 @@ namespace pilib
 					}
 				}
 			}
+			
+			in.setWriteTarget(fname);
 
 			vector<ParamVariant> args2;
 			ParamVariant p;
-			p.dimgval = &in;
+			p = &in;
 			args2.push_back(p);
 			NopSingleImageCommand<pixel_t> cmd;
-			distributor.distribute(&cmd, args2, 2, Vec3c(0, 0, 0), &fname);
+			return distributor.distribute(&cmd, args2, 2, Vec3c(0, 0, 0));
 		}
 	};
 
@@ -238,20 +277,20 @@ namespace pilib
 	public:
 		WriteRawBlockCommand() : Command("writerawblock", "Write an image to a specified position in a .raw file. Optionally can write only a block of the source image.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "input image", "Name of image file. If the file does not exist, it is created. If the size of the file is incorrect, its size is changed but the contents are not erased."),
-				CommandArgument<string>(In, "filename", "Name (and path) of file to write."),
-				CommandArgument<coord_t>(In, "x", "X-position of the image in the target file."),
-				CommandArgument<coord_t>(In, "y", "Y-position of the image in the target file."),
-				CommandArgument<coord_t>(In, "z", "Z-position of the image in the target file."),
-				CommandArgument<coord_t>(In, "width", "Width of the output file. Specify zero to parse dimensions from the file name.", 0),
-				CommandArgument<coord_t>(In, "height", "Height of the output file. Specify zero to parse dimensions from the file name.", 0),
-				CommandArgument<coord_t>(In, "depth", "Depth of the output file. Specify zero to parse dimensions from the file name.", 0),
-				CommandArgument<coord_t>(In, "ix", "X-position of the block of the source image to write.", 0),
-				CommandArgument<coord_t>(In, "iy", "Y-position of the block of the source image to write.", 0),
-				CommandArgument<coord_t>(In, "iz", "Z-position of the block of the source image to write.", 0),
-				CommandArgument<coord_t>(In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
-				CommandArgument<coord_t>(In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
-				CommandArgument<coord_t>(In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Name of image file. If the file does not exist, it is created. If the size of the file is incorrect, its size is changed but the contents are not erased."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to write."),
+				CommandArgument<coord_t>(ParameterDirection::In, "x", "X-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output file. Specify zero to parse dimensions from the file name.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output file. Specify zero to parse dimensions from the file name.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output file. Specify zero to parse dimensions from the file name.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "ix", "X-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iy", "Y-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iz", "Z-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<coord_t>(ParameterDirection::In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<coord_t>(ParameterDirection::In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
 			})
 		{
 		}
@@ -288,8 +327,7 @@ namespace pilib
 			if (w <= 0 || h <= 0 || d <= 0)
 			{
 				Vec3c dims;
-				itl2::ImageDataType dt2;
-				if (!raw::internals::parseDimensions(fname, dims, dt2))
+				if (!raw::internals::parseDimensions(fname, dims))
 					throw ParseException(string("Unable to find dimensions from file name: ") + fname);
 				w = dims.x;
 				h = dims.y;
@@ -305,20 +343,20 @@ namespace pilib
 	public:
 		WriteSequenceBlockCommand() : Command("writesequenceblock", "Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "input image", "Name of image file. If the file does not exist, it is created. If the size of the file is incorrect, its size is changed but the contents are not erased."),
-				CommandArgument<string>(In, "filename", "Name (and path) of file to write."),
-				CommandArgument<coord_t>(In, "x", "X-position of the image in the target file."),
-				CommandArgument<coord_t>(In, "y", "Y-position of the image in the target file."),
-				CommandArgument<coord_t>(In, "z", "Z-position of the image in the target file."),
-				CommandArgument<coord_t>(In, "width", "Width of the output file. Specify zero to parse dimensions from the files.", 0),
-				CommandArgument<coord_t>(In, "height", "Height of the output file. Specify zero to parse dimensions from the files.", 0),
-				CommandArgument<coord_t>(In, "depth", "Depth of the output file. Specify zero to parse dimensions from the files.", 0),
-				CommandArgument<coord_t>(In, "ix", "X-position of the block of the source image to write.", 0),
-				CommandArgument<coord_t>(In, "iy", "Y-position of the block of the source image to write.", 0),
-				CommandArgument<coord_t>(In, "iz", "Z-position of the block of the source image to write.", 0),
-				CommandArgument<coord_t>(In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
-				CommandArgument<coord_t>(In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
-				CommandArgument<coord_t>(In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Name of image file. If the file does not exist, it is created. If the size of the file is incorrect, its size is changed but the contents are not erased."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to write."),
+				CommandArgument<coord_t>(ParameterDirection::In, "x", "X-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output file. Specify zero to parse dimensions from the files.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output file. Specify zero to parse dimensions from the files.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output file. Specify zero to parse dimensions from the files.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "ix", "X-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iy", "Y-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iz", "Z-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<coord_t>(ParameterDirection::In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<coord_t>(ParameterDirection::In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
 			})
 		{
 		}

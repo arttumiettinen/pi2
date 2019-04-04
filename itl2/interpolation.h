@@ -1,10 +1,13 @@
 #pragma once
 
+#include <memory>
+
 #include "image.h"
 #include "boundarycondition.h"
 #include "math/mathutils.h"
 #include "math/vec3.h"
 #include "math/numberutils.h"
+#include "interpolationmode.h"
 
 using math::Vec3;
 using math::pixelRound;
@@ -12,6 +15,24 @@ using math::NumberUtils;
 
 namespace itl2
 {
+
+	/*
+	Gets a pixel value from the image, obeys boundary conditions.
+	*/
+	template<typename input_t> input_t getPixelSafe(const Image<input_t>& img, coord_t x, coord_t y, coord_t z, BoundaryCondition bc)
+	{
+		if (img.isInImage(x, y, z))
+			return img(x, y, z);
+
+		if (bc == BoundaryCondition::Zero)
+			return input_t();
+
+		// bc == Nearest
+		math::clamp<coord_t>(x, 0, img.width() - 1);
+		math::clamp<coord_t>(y, 0, img.height() - 1);
+		math::clamp<coord_t>(z, 0, img.depth() - 1);
+		return img(x, y, z);
+	}
 
 	/**
 	Base class for interpolator functors.
@@ -27,17 +48,7 @@ namespace itl2
 		*/
 		input_t getPixelSafe(const Image<input_t>& img, coord_t x, coord_t y, coord_t z) const
 		{
-			if (img.isInImage(x, y, z))
-				return img(x, y, z);
-
-			if (bc == Zero)
-				return input_t();
-			
-			// bc == Nearest
-			math::clamp<coord_t>(x, 0, img.width() - 1);
-			math::clamp<coord_t>(y, 0, img.height() - 1);
-			math::clamp<coord_t>(z, 0, img.depth() - 1);
-			return img(x, y, z);
+			return itl2::getPixelSafe(img, x, y, z, bc);
 		}
 
 	public:
@@ -81,7 +92,7 @@ namespace itl2
 			coord_t ix = (coord_t)::round(x);
 			coord_t iy = (coord_t)::round(y);
 			coord_t iz = (coord_t)::round(z);
-			return this->getPixelSafe(img, ix, iy, iz);
+			return pixelRound<output_t>(this->getPixelSafe(img, ix, iy, iz));
 		}
 	};
 
@@ -387,4 +398,17 @@ namespace itl2
 		}
 	};
 
+	/**
+	Create Interpolator object from interpolation mode and boundary condition.
+	*/
+	template<typename output_t, typename input_t, typename real_t = typename NumberUtils<output_t>::RealFloatType> std::shared_ptr<Interpolator<output_t, input_t, real_t> > createInterpolator(InterpolationMode mode, BoundaryCondition bc)
+	{
+		switch (mode)
+		{
+			case InterpolationMode::Nearest: return std::make_shared<NearestNeighbourInterpolator<output_t, input_t, real_t> >(bc);
+			case InterpolationMode::Linear: return std::make_shared<LinearInterpolator<output_t, input_t, real_t> >(bc);
+			case InterpolationMode::Cubic: return std::make_shared<CubicInterpolator<output_t, input_t, real_t>>(bc);
+		}
+		throw ITLException("Unsupported interpolation mode.");
+	}
 }

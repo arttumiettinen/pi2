@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utilities.h"
+
 namespace itl2
 {
 	/*
@@ -9,7 +11,7 @@ namespace itl2
 	separable filtering functions
 	interpolation
 	*/
-	enum BoundaryCondition
+	enum class BoundaryCondition
 	{
 		/**
 		Boundary condition where zero is returned for locations outside the image.
@@ -20,4 +22,15 @@ namespace itl2
 		*/
 		Nearest
 	};
+
+	template<>
+	inline string toString(const BoundaryCondition& x)
+	{
+		switch (x)
+		{
+		case BoundaryCondition::Zero: return "BoundaryCondition::Zero";
+		case BoundaryCondition::Nearest: return "Nearest";
+		}
+		throw ITLException("Invalid boundary condition.");
+	}
 }

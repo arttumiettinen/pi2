@@ -2,7 +2,6 @@
 #include "network.h"
 #include "io/raw.h"
 #include "traceskeleton.h"
-#include "disjointsetforest.h"
 
 #include <fstream>
 #include <iostream>
@@ -254,7 +253,16 @@ namespace itl2
 				combined.area = (p1.length * p1.area + p2.length * p2.area) / (p1.length + p2.length);
 
 				combined.distance = (vertices[a] - vertices[b]).norm();
-				combined.adjustedDistance = internals::straightLineLength(vertices[a], vertices[b]);
+				//combined.adjustedDistance = internals::straightLineLength(vertices[a], vertices[b]);
+				if ((p1.adjustedStart - vertices[a]).norm() < (p1.adjustedEnd - vertices[a]).norm())
+					combined.adjustedStart = p1.adjustedStart;
+				else
+					combined.adjustedStart = p1.adjustedEnd;
+				if ((p2.adjustedStart - vertices[b]).norm() < (p2.adjustedEnd - vertices[b]).norm())
+					combined.adjustedEnd = p2.adjustedStart;
+				else
+					combined.adjustedEnd = p2.adjustedEnd;
+
 
 				/*float32_t L1 = get<1>(net[n][0]);
 				float32_t L2 = get<1>(net[n][1]);
@@ -353,7 +361,7 @@ namespace itl2
 
 		if (pEdgeMeasurements)
 		{
-			pEdgeMeasurements->ensureSize(5, this->edges.size());
+			pEdgeMeasurements->ensureSize(4+3+3, this->edges.size());
 			#pragma omp parallel for if(!omp_in_parallel())
 			for (coord_t n = 0; n < (coord_t)this->edges.size(); n++)
 			{
@@ -362,7 +370,12 @@ namespace itl2
 				(*pEdgeMeasurements)(1, n) = p.properties.length;
 				(*pEdgeMeasurements)(2, n) = p.properties.area;
 				(*pEdgeMeasurements)(3, n) = p.properties.distance;
-				(*pEdgeMeasurements)(4, n) = p.properties.adjustedDistance;
+				(*pEdgeMeasurements)(4, n) = p.properties.adjustedStart.x;
+				(*pEdgeMeasurements)(5, n) = p.properties.adjustedStart.y;
+				(*pEdgeMeasurements)(6, n) = p.properties.adjustedStart.z;
+				(*pEdgeMeasurements)(7, n) = p.properties.adjustedEnd.x;
+				(*pEdgeMeasurements)(8, n) = p.properties.adjustedEnd.y;
+				(*pEdgeMeasurements)(9, n) = p.properties.adjustedEnd.z;
 			}
 		}
 	}
@@ -399,7 +412,8 @@ namespace itl2
 				edges[n].properties.length = (*pEdgeMeasurements)(1, n);
 				edges[n].properties.area = (*pEdgeMeasurements)(2, n);
 				edges[n].properties.distance = (*pEdgeMeasurements)(3, n);
-				edges[n].properties.adjustedDistance = (*pEdgeMeasurements)(4, n);
+				edges[n].properties.adjustedStart = Vec3f((*pEdgeMeasurements)(4, n), (*pEdgeMeasurements)(5, n), (*pEdgeMeasurements)(6, n));
+				edges[n].properties.adjustedEnd = Vec3f((*pEdgeMeasurements)(7, n), (*pEdgeMeasurements)(8, n), (*pEdgeMeasurements)(9, n));
 			}
 		}
 	}
@@ -467,7 +481,13 @@ namespace itl2
 			out.write((const char*)&edges[n].properties.length, sizeof(float32_t));
 			out.write((const char*)&edges[n].properties.area, sizeof(float32_t));
 			out.write((const char*)&edges[n].properties.distance, sizeof(float32_t));
-			out.write((const char*)&edges[n].properties.adjustedDistance, sizeof(float32_t));
+			//out.write((const char*)&edges[n].properties.adjustedDistance, sizeof(float32_t));
+			out.write((const char*)&edges[n].properties.adjustedStart.x, sizeof(float32_t));
+			out.write((const char*)&edges[n].properties.adjustedStart.y, sizeof(float32_t));
+			out.write((const char*)&edges[n].properties.adjustedStart.z, sizeof(float32_t));
+			out.write((const char*)&edges[n].properties.adjustedEnd.x, sizeof(float32_t));
+			out.write((const char*)&edges[n].properties.adjustedEnd.y, sizeof(float32_t));
+			out.write((const char*)&edges[n].properties.adjustedEnd.z, sizeof(float32_t));
 		}
 
 		count = incompleteVertices.size();
@@ -481,8 +501,8 @@ namespace itl2
 			out.write((char*)&count, sizeof(size_t));
 			for (size_t m = 0; m < v.points.size(); m++)
 			{
-				const Vec3c& p = v.points[m];
-				out.write((const char*)&p.components[0], sizeof(Vec3c));
+				const Vec3sc& p = v.points[m];
+				out.write((const char*)&p.components[0], sizeof(Vec3sc));
 			}
 		}
 	}
@@ -526,7 +546,12 @@ namespace itl2
 				in.read((char*)&p.length, sizeof(float32_t));
 				in.read((char*)&p.area, sizeof(float32_t));
 				in.read((char*)&p.distance, sizeof(float32_t));
-				in.read((char*)&p.adjustedDistance, sizeof(float32_t));
+				in.read((char*)&p.adjustedStart.x, sizeof(float32_t));
+				in.read((char*)&p.adjustedStart.y, sizeof(float32_t));
+				in.read((char*)&p.adjustedStart.z, sizeof(float32_t));
+				in.read((char*)&p.adjustedEnd.x, sizeof(float32_t));
+				in.read((char*)&p.adjustedEnd.y, sizeof(float32_t));
+				in.read((char*)&p.adjustedEnd.z, sizeof(float32_t));
 				net.edges.push_back(Edge(v.x, v.y, p));
 			}
 
@@ -542,8 +567,8 @@ namespace itl2
 				v.points.reserve(vcount);
 				for (size_t m = 0; m < vcount; m++)
 				{
-					Vec3c p;
-					in.read((char*)&p.components[0], sizeof(Vec3c));
+					Vec3sc p;
+					in.read((char*)&p.components[0], sizeof(Vec3sc));
 					v.points.push_back(p);
 				}
 
@@ -571,15 +596,15 @@ namespace itl2
 
 			net.vertices.push_back(Vec3f(5, 0, 0));
 
-			net.edges.push_back(Edge(0, 3, EdgeMeasurements(2, 2, 1, 0, 0)));
-			net.edges.push_back(Edge(1, 3, EdgeMeasurements(2, 1, 1, 0, 0)));
-			net.edges.push_back(Edge(2, 3, EdgeMeasurements(2, 2, 1, 0, 0)));
+			net.edges.push_back(Edge(0, 3, EdgeMeasurements(2, 2, 1, 0, net.vertices[0], net.vertices[3])));
+			net.edges.push_back(Edge(1, 3, EdgeMeasurements(2, 1, 1, 0, net.vertices[1], net.vertices[3])));
+			net.edges.push_back(Edge(2, 3, EdgeMeasurements(2, 2, 1, 0, net.vertices[2], net.vertices[3])));
 
-			net.edges.push_back(Edge(3, 4, EdgeMeasurements(2, 1, 1, 0, 0)));
-			net.edges.push_back(Edge(5, 4, EdgeMeasurements(2, 1, 1, 0, 0)));
-			net.edges.push_back(Edge(5, 6, EdgeMeasurements(2, 1, 1, 0, 0)));
+			net.edges.push_back(Edge(3, 4, EdgeMeasurements(2, 1, 1, 0, net.vertices[3], net.vertices[4])));
+			net.edges.push_back(Edge(5, 4, EdgeMeasurements(2, 1, 1, 0, net.vertices[5], net.vertices[4])));
+			net.edges.push_back(Edge(5, 6, EdgeMeasurements(2, 1, 1, 0, net.vertices[5], net.vertices[6])));
 
-			net.edges.push_back(Edge(7, 7, EdgeMeasurements(2, 1, 1, 0, 0)));
+			net.edges.push_back(Edge(7, 7, EdgeMeasurements(2, 1, 1, 0, net.vertices[7], net.vertices[7])));
 
 			vector<size_t> deg;
 			net.degree(deg, true);
@@ -638,7 +663,7 @@ namespace itl2
 				size_t start = dice();
 				size_t end = dice();
 				if(start != end)
-					net.edges.push_back(Edge(start, end, EdgeMeasurements(2, 1, 1, 0, 0)));
+					net.edges.push_back(Edge(start, end, EdgeMeasurements(2, 1, 1, 0, net.vertices[start], net.vertices[end])));
 			}
 
 			net.disconnectStraightThroughNodes(true);
@@ -655,14 +680,14 @@ namespace itl2
 			orig.vertices.push_back(Vec3f(1.1f, 2.2f, 3.3f));
 			orig.vertices.push_back(Vec3f(4.4f, 5.5f, 6.6f));
 
-			orig.edges.push_back(Edge(0, 1, EdgeMeasurements(7, 3.14f, 5, 1, 2)));
-			orig.edges.push_back(Edge(1, 0, EdgeMeasurements(7, 2*3.14f, 6, 3, 4)));
-			orig.edges.push_back(Edge(1, 1, EdgeMeasurements(7, 3*3.14f, 7, 3, 4)));
+			orig.edges.push_back(Edge(0, 1, EdgeMeasurements(7, 3.14f, 5, 1, orig.vertices[0], orig.vertices[1])));
+			orig.edges.push_back(Edge(1, 0, EdgeMeasurements(7, 2*3.14f, 6, 3, orig.vertices[1], orig.vertices[0])));
+			orig.edges.push_back(Edge(1, 1, EdgeMeasurements(7, 3*3.14f, 7, 3, orig.vertices[1], orig.vertices[1])));
 
 			IncompleteVertex iv;
 			iv.vertexIndex = 1;
-			iv.points.push_back(Vec3c(1, 2, 3));
-			iv.points.push_back(Vec3c(4, 5, 6));
+			iv.points.push_back(Vec3sc(1, 2, 3));
+			iv.points.push_back(Vec3sc(4, 5, 6));
 			orig.incompleteVertices.push_back(iv);
 
 			orig.write("./network/original.dat", false);

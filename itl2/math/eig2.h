@@ -71,9 +71,9 @@ namespace math
 
 		if(L[0] > L[1])
 		{
-			itl2::swap(L[0], L[1]);
-			itl2::swap(V[0][0], V[0][1]);
-			itl2::swap(V[1][0], V[1][1]);
+			std::swap(L[0], L[1]);
+			std::swap(V[0][0], V[0][1]);
+			std::swap(V[1][0], V[1][1]);
 		}
 
 		return true;

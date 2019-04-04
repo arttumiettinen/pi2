@@ -540,7 +540,7 @@ namespace itl2
 						{
 							if (internals::isBorderPoint(direction, img, x, y, z))
 							{
-								getNeighbourhood(img, Vec3c(x, y, z), Vec3c(1, 1, 1), nbPrivate, Zero);
+								getNeighbourhood(img, Vec3c(x, y, z), Vec3c(1, 1, 1), nbPrivate, BoundaryCondition::Zero);
 
 								// Note: This uses the same isEndPoint than hybridSkeleton!
 								if (!internals::isEndPoint(nbPrivate) &&
@@ -558,8 +558,7 @@ namespace itl2
 
 			// This is required to make the result exactly the same than in Fiji (non-threaded version)
 			// Otherwise, the point removal order may change the skeleton points.
-			// NOTE: This uses the same pointSorter than hybridSkeleton
-			std::sort(points.begin(), points.end(), internals::pointSorter);
+			std::sort(points.begin(), points.end(), math::vecComparer<coord_t>);
 
 			// Process all points
 			size_t counter = 0;
@@ -578,7 +577,7 @@ namespace itl2
 					points.pop_back();
 				}
 
-				getNeighbourhood(img, p, Vec3c(1, 1, 1), nb, Zero);
+				getNeighbourhood(img, p, Vec3c(1, 1, 1), nb, BoundaryCondition::Zero);
 				if (!internals::isEndPoint(nb) &&
 					internals::isSimplePointLine(nb))
 				{

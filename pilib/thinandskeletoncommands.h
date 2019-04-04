@@ -2,6 +2,12 @@
 
 #include "commandsbase.h"
 #include "overlapdistributable.h"
+#include "pilibutilities.h"
+#include "network.h"
+#include "traceskeleton.h"
+#include "lineskeleton.h"
+
+#include <random>
 
 namespace pilib
 {
@@ -43,9 +49,6 @@ namespace pilib
 		}
 	};
 
-
-
-
 	template<typename command_t, typename base_t> class IterableDistributable : public base_t, public Distributable
 	{
 	public:
@@ -53,7 +56,7 @@ namespace pilib
 		{
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			size_t lastTotalChanged = 0;
 			size_t n = 0;
@@ -66,27 +69,8 @@ namespace pilib
 				vector<string> output = distributor.distribute(&cmd, args, 2, Vec3c(10, 10, 10));
 
 				// Calculate total number of changed pixels
-				size_t totalChanged = 0;
-				for(size_t n = 0; n < output.size(); n++)
-				{
-    				string out = output[n];
-    				
-					size_t startPos = out.find("pixels removed.");
-					if (startPos != string::npos)
-					{
-						size_t lineStart = out.rfind('\n', startPos);
-						if (lineStart == string::npos)
-							lineStart = 0;
-						string number = out.substr(lineStart + 1, startPos - lineStart - 1);
-						size_t val = fromString<size_t>(number);
-						totalChanged += val;
-					}
-					else
-					{
-						throw ITLException(string("Invalid output from distributed thin command (job ") + itl2::toString(n) + string(", removed pixel count not found):\n") + out);
-					}
-				}
-
+				size_t totalChanged = parseTotalCount(output, "pixels removed");
+				
 				cout << totalChanged << " pixels removed." << endl;
 
 				if (totalChanged == lastTotalChanged)
@@ -106,6 +90,7 @@ namespace pilib
 				n++;
 			}
 
+			return vector<string>();
 		}
 	};
 
@@ -158,11 +143,11 @@ namespace pilib
 	public:
 		TraceLineSkeletonBlockCommand() : Command("tracelineskeletonblock", "This is an internal command used by the tracelineskeleton command to trace a block of a line skeleton when distributed processing is enabled.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "skeleton", "Image containing the skeleton. The pixels of the image will be set to zero."),
-				CommandArgument<Image<pixel_t> >(In, "original", "Original image from which the skeleton has been calculated. This image is used for branch shape measurements."),
-				CommandArgument<string>(In, "filename", "Name template for file where the resulting network will be saved."),
-				CommandArgument<Distributor::BLOCK_INDEX_ARG_TYPE>(In, Distributor::BLOCK_INDEX_ARG_NAME, "Index of image block that we are currently processing."),
-				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Origin of current block in coordinates of the full image."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "skeleton", "Image containing the skeleton. The pixels of the image will be set to zero."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "original", "Original image from which the skeleton has been calculated. This image is used for branch shape measurements."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name template for file where the resulting network will be saved."),
+				CommandArgument<Distributor::BLOCK_INDEX_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_INDEX_ARG_NAME, "Index of image block that we are currently processing."),
+				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Origin of current block in coordinates of the full image."),
 			})
 		{
 		}
@@ -170,7 +155,7 @@ namespace pilib
 		virtual void run(vector<ParamVariant>& args) const
 		{
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
-			Image<pixel_t>& orig = *pop<Image<pixel_t>* >(args);
+			Image<pixel_t>* pOrig = pop<Image<pixel_t>* >(args);
 			string filename = pop<string>(args);
 			Distributor::BLOCK_INDEX_ARG_TYPE index = pop<Distributor::BLOCK_INDEX_ARG_TYPE>(args);
 			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
@@ -179,7 +164,7 @@ namespace pilib
 
 			// Trace (in multithreaded manner)
 			vector<Network> nets;
-			internals::traceLineSkeletonBlocks(in, orig, nets, origin);
+			internals::traceLineSkeletonBlocks(in, pOrig, nets, Vec3sc(origin));
 
 			// Write all networks to the output file
 			cout << "Writing " << nets.size() << " graphs to " << filename << endl;
@@ -187,9 +172,38 @@ namespace pilib
 				net.write(filename, true);
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
-			throw ITLException("Don't use this command directly - use tracelineskeleton instead.");
+			return distributor.distribute(this, args, 2, Vec3c(0, 0, 0));
+		}
+	};
+
+	template<typename pixel_t> class TraceLineSkeletonBlock2Command : public Command, public Distributable
+	{
+	public:
+		TraceLineSkeletonBlock2Command() : Command("tracelineskeletonblock", "This is an internal command used by the tracelineskeleton command to trace a block of a line skeleton when distributed processing is enabled.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "skeleton", "Image containing the skeleton. The pixels of the image will be set to zero."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name template for file where the resulting network will be saved."),
+				CommandArgument<Distributor::BLOCK_INDEX_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_INDEX_ARG_NAME, "Index of image block that we are currently processing."),
+				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Origin of current block in coordinates of the full image."),
+			})
+		{
+		}
+
+		virtual void run(vector<ParamVariant>& args) const
+		{
+			args.insert(args.begin() + 1, (Image<pixel_t>*)0);
+			TraceLineSkeletonBlockCommand<pixel_t>().run(args);
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		{
+			return distributor.distribute(this, args, 2, Vec3c(0, 0, 0));
 		}
 	};
 
@@ -199,11 +213,11 @@ namespace pilib
 	public:
 		TraceLineSkeletonCommand() : Command("tracelineskeleton", "Traces a line skeleton into a graph structure. Each branch intersection point becomes a vertex in the graph and each branch becomes an edge.",
 			{
-				CommandArgument<Image<pixel_t> >(In, "skeleton", "Image containing the skeleton. The pixels of the image will be set to zero."),
-				CommandArgument<Image<pixel_t> >(In, "original", "Original image from which the skeleton has been calculated. This image is used for branch shape measurements."),
-				CommandArgument<Image<float32_t> >(Out, "vertices", "Image where vertex coordinates are stored. The size of the image is set to 3xN during processing, where N is the number of vertices in the graph."),
-				CommandArgument<Image<uint64_t> >(Out, "edges", "Image where vertex indices corresponding to each edge will be set. The size of the image is set to 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array."),
-				CommandArgument<Image<float32_t> >(Out, "edge measurements", "Image that stores (pointCount, length, cross-sectional area, end distance, adjusted end distance) for each edge. The size of the image is set to 5xN during processing, where N is the number of edges in the graph. Each row contains properties of edge at corresponding row in the edges image."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "skeleton", "Image containing the skeleton. The pixels of the image will be set to zero."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "original", "Original image from which the skeleton has been calculated. This image is used for branch shape measurements."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "vertices", "Image where vertex coordinates are stored. The size of the image is set to 3xN during processing, where N is the number of vertices in the graph."),
+				CommandArgument<Image<uint64_t> >(ParameterDirection::Out, "edges", "Image where vertex indices corresponding to each edge will be set. The size of the image is set to 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "edge measurements", "Image that stores (pointCount, length, cross-sectional area, end distance, adjusted start x, y, z, adjusted end x, y, z) for each edge. The size of the image is set to 5xN during processing, where N is the number of edges in the graph. Each row contains properties of edge at corresponding row in the edges image."),
 			})
 		{
 		}
@@ -211,27 +225,24 @@ namespace pilib
 		virtual void run(vector<ParamVariant>& args) const
 		{
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
-			Image<pixel_t>& orig = *pop<Image<pixel_t>* >(args);
+			Image<pixel_t>* pOrig = pop<Image<pixel_t>* >(args);
 			Image<float32_t>& vertices = *pop<Image<float32_t>* >(args);
 			Image<uint64_t>& edges = *pop<Image<uint64_t>* >(args);
 			Image<float32_t>& measurements = *pop<Image<float32_t>* >(args);
 			
 			Network net;
-			traceLineSkeleton(in, orig, net);
+			traceLineSkeleton(in, pOrig, net);
 			net.toImage(vertices, edges, &measurements);
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
-			DistributedImage<pixel_t>& orig = *pop<DistributedImage<pixel_t>* >(args);
+			DistributedImage<pixel_t>* pOrig = pop<DistributedImage<pixel_t>* >(args);
 			DistributedImage<float32_t>& vertices = *pop<DistributedImage<float32_t>* >(args);
 			DistributedImage<uint64_t>& edges = *pop<DistributedImage<uint64_t>* >(args);
 			DistributedImage<float32_t>& measurements = *pop<DistributedImage<float32_t>* >(args);
 
-			// Command that traces skeleton without combining incomplete vertices, and saves every subnetwork to given file
-			TraceLineSkeletonBlockCommand<pixel_t> cmd;
-			
 			
 			// Create temp file path
 			unsigned int seed = (unsigned int)std::chrono::system_clock::now().time_since_epoch().count();
@@ -239,38 +250,37 @@ namespace pilib
 			string tempFilename = string("./tmp_images/skeleton_data_") + itl2::toString(gen());
 			fs::remove(tempFilename);
 
-			vector<ParamVariant> args2;
-			ParamVariant p1;		// The source image
-			p1.dimgval = &in;
-			ParamVariant p11;		// The original image
-			p11.dimgval = &orig;
-			ParamVariant p2;		// Name of target file where all the graphs are saved
-			p2.sval = &tempFilename;
-			ParamVariant p3;		// Placeholder for block index (will be filled by the distributor)
-			p3.ival = 0;
-			ParamVariant p4;		// Placeholder for block origin (will be filled by the distributor)
-			p4.vix = 0;
-			p4.viy = 0;
-			p4.viz = 0;
-			args2.push_back(p1);
-			args2.push_back(p11);
-			args2.push_back(p2);
-			args2.push_back(p3);
-			args2.push_back(p4);
+			//vector<ParamVariant> args2;
+			//ParamVariant p1;		// The source image
+			//p1 = &in;
+			//ParamVariant p11;		// The original image
+			//p11 = &orig;
+			//ParamVariant p2;		// Name of target file where all the graphs are saved
+			//p2 = tempFilename;
+			//ParamVariant p3;		// Placeholder for block index (will be filled by the distributor)
+			//p3 = (coord_t)0;
+			//ParamVariant p4;		// Placeholder for block origin (will be filled by the distributor)
+			//p4 = Vec3c(0, 0, 0);
+			//args2.push_back(p1);
+			//args2.push_back(p11);
+			//args2.push_back(p2);
+			//args2.push_back(p3);
+			//args2.push_back(p4);
 
-            cout << "Distributed tracing..." << endl;
-			vector<string> output = distributor.distribute(&cmd, args2, 2, Vec3c(0, 0, 0));
-            
-            /*
-            vector<string> output;
-            output.push_back("abc1");
-            output.push_back("abc2");
-            output.push_back("abc3");
-            output.push_back("abc4");
-            output.push_back("abc5");
-            output.push_back("abc6");
-			string tempFilename = "./tmp_images/skeleton_data_2076255946";
-			*/
+   //         cout << "Distributed tracing..." << endl;
+			//vector<string> output = distributor.distribute(&cmd, args2, 2, Vec3c(0, 0, 0));
+			// Command that traces skeleton without combining incomplete vertices, and saves every subnetwork to given file
+			vector<string> output;
+			if (pOrig)
+			{
+				TraceLineSkeletonBlockCommand<pixel_t> cmd;
+				output = cmd.runDistributed(distributor, { &in, pOrig, tempFilename, Distributor::BLOCK_INDEX_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() });
+			}
+			else
+			{
+				TraceLineSkeletonBlock2Command<pixel_t> cmd;
+				output = cmd.runDistributed(distributor, { &in, tempFilename, Distributor::BLOCK_INDEX_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() });
+			}
             
             cout << "Loading data..." << endl;
 			// Load the data files and combine all the graphs
@@ -306,6 +316,34 @@ namespace pilib
 			vertices.setData(verticesLocal);
 			edges.setData(edgesLocal);
 			measurements.setData(measurementsLocal);
+
+			return vector<string>();
+		}
+	};
+
+	template<typename pixel_t> class TraceLineSkeleton2Command : public Command, public Distributable
+	{
+	public:
+		TraceLineSkeleton2Command() : Command("tracelineskeleton", "Traces a line skeleton into a graph structure. Each branch intersection point becomes a vertex in the graph and each branch becomes an edge.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "skeleton", "Image containing the skeleton. The pixels of the image will be set to zero."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "vertices", "Image where vertex coordinates are stored. The size of the image is set to 3xN during processing, where N is the number of vertices in the graph."),
+				CommandArgument<Image<uint64_t> >(ParameterDirection::Out, "edges", "Image where vertex indices corresponding to each edge will be set. The size of the image is set to 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "edge measurements", "Image that stores (pointCount, length, cross-sectional area, end distance, adjusted end distance) for each edge. The size of the image is set to 5xN during processing, where N is the number of edges in the graph. Each row contains properties of edge at corresponding row in the edges image."),
+			})
+		{
+		}
+
+		virtual void run(vector<ParamVariant>& args) const
+		{
+			args.insert(args.begin() + 1, (Image<pixel_t>*)0);
+			TraceLineSkeletonCommand<pixel_t>().run(args);
+		}
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		{
+			args.insert(args.begin() + 1, (DistributedImage<pixel_t>*)0);
+			return TraceLineSkeletonCommand<pixel_t>().runDistributed(distributor, args);
 		}
 	};
 
@@ -314,9 +352,9 @@ namespace pilib
 	public:
 		CleanSkeletonCommand() : Command("cleanskeleton", "Removes straight-through and isolated nodes from the network (i.e. all nodes that have either 0 or 2 neighbours, i.e. all nodes whose degree is 0 or 2).",
 			{
-				CommandArgument<Image<float32_t> >(InOut, "vertices", "Image where vertex coordinates are stored."),
-				CommandArgument<Image<uint64_t> >(InOut, "edges", "Image where vertex indices corresponding to each edge are stored."),
-				CommandArgument<Image<float32_t> >(InOut, "edge measurements", "Image where length and cross-sectional area of each edge is stored."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::InOut, "vertices", "Image where vertex coordinates are stored."),
+				CommandArgument<Image<uint64_t> >(ParameterDirection::InOut, "edges", "Image where vertex indices corresponding to each edge are stored."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::InOut, "edge measurements", "Image where length and cross-sectional area of each edge is stored."),
 			})
 		{
 		}

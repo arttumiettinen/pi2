@@ -7,6 +7,7 @@
 #include "stringutils.h"
 #include "image.h"
 #include "io/raw.h"
+#include "io/io.h"
 
 using std::string;
 using math::Vec3c;
@@ -65,14 +66,16 @@ namespace pilib
 		*/
 		void createTempFilenames();
 
-	protected:
+	public:
 
+        /**
+        Returns true if the image has been saved to disk (it is not just created
+        unprocessed new image)
+        */
 		bool isSavedToDisk() const
 		{
 			return !isNewImage;
 		}
-
-	public:
 
 		/**
 		Creates distributed image that points to given file.
@@ -133,7 +136,7 @@ namespace pilib
 		*/
 		ImageDataType dataType() const
 		{
-			return fromString(dataTypeStr);
+			return fromString<ImageDataType>(dataTypeStr);
 		}
 
 		/**
@@ -144,17 +147,13 @@ namespace pilib
 
 		/**
 		Gets piece of pi2 code to write a block of this image.
-		@param outputFile Name of file to write. Set to null to indicate writing to internally determined (temporary) image.
 		*/
-		string emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize, const string* outputFile);
+		string emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize);
 
 		/**
 		Call when all blocks of this image have been written.
 		*/
-		void writeComplete()
-		{
-			setReadSource(writeTarget);
-		}
+		void writeComplete();
 
 		/**
 		Gets the file path where the image data should be read.
@@ -193,9 +192,17 @@ namespace pilib
 		}
 
 		/**
-		Changes the location where the image is currently stored.
+		Changes the location where the image is read from.
 		*/
 		void setReadSource(const string& filename);
+		
+		/**
+		Changes the file or location where the image is saved to.
+		*/
+		void setWriteTarget(const string& filename)
+		{
+		    writeTarget = filename;   
+		}
 
 		/**
 		Gets name of variable that stores this image.
@@ -205,22 +212,54 @@ namespace pilib
 			return name;
 		}
 
+		/**
+		Creates new Image<pixel_t> object and reads the distributed image data to that image.
+		*/
+		virtual ImageBase* toNormalImage() const = 0;
+
+		/**
+		Set data of this distributed image from given normal image.
+		*/
+		virtual void setData(const ImageBase* pImage) = 0;
+
 		void ensureSize(const Vec3c& newDimensions);
 		
 		void ensureSize(coord_t w, coord_t h = 1, coord_t d = 1)
 		{
 			ensureSize(Vec3c(w, h, d));
 		}
-
-
-		bool isRaw() const
+		
+		/**
+		Tests if output file is .raw.
+		*/
+		bool isOutputRaw() const
 		{
-			return endsWith(currentReadSource(), ".raw");
+		    return endsWith(currentWriteTarget(), ".raw"); // The file does not need to exist, and write target is always .raw or sequence.
+			//Vec3c dims;
+			//ImageDataType dt;
+			//return raw::getInfo(currentWriteTarget(), dims, dt);
 		}
 
+        /**
+        Tests if input file is raw.
+        */
+		bool isRaw() const
+		{
+			//return endsWith(currentReadSource(), ".raw");
+			Vec3c dims;
+			ImageDataType dt;
+			return raw::getInfo(currentReadSource(), dims, dt);
+		}
+
+        /**
+        Tests if input file is sequence.
+        */
 		bool isSequence() const
 		{
-			return !isRaw();
+			//return !isRaw();
+			Vec3c dims;
+			ImageDataType dt;
+			return sequence::getInfo(currentReadSource(), dims, dt);
 		}
 
 	};
@@ -237,6 +276,12 @@ namespace pilib
 
 		}
 
+		DistributedImage(const string& name, const Vec3c& dimensions, const string& filename) :
+			DistributedImageBase(name, dimensions.x, dimensions.y, dimensions.z, toString(imageDataType<pixel_t>()), filename)
+		{
+
+		}
+
 		/**
 		Creates distributed image without source file.
 		*/
@@ -246,23 +291,40 @@ namespace pilib
 
 		}
 
+		virtual ImageBase* toNormalImage() const
+		{
+			unique_ptr<itl2::Image<pixel_t>> pNormalImg = unique_ptr<itl2::Image<pixel_t>>(new itl2::Image<pixel_t>(dimensions()));
+			readTo(*pNormalImg);
+			return pNormalImg.release();
+		}
+
+		virtual void setData(const ImageBase* pImage)
+		{
+			const Image<pixel_t>* pi = dynamic_cast<const Image<pixel_t>*>(pImage);
+			if (!pi)
+				throw ITLException("The data type of the normal image is not the same than the data type of the distributed image.");
+
+			setData(*pi);
+		}
+
 		/**
 		Reads the data of this distributed image to the given normal image.
 		*/
-		void readTo(itl2::Image<pixel_t>& img)
+		void readTo(itl2::Image<pixel_t>& img) const
 		{
 			img.ensureSize(dimensions());
 
 			if (isSavedToDisk())
 			{
-				if (endsWith(currentReadSource(), ".raw"))
-				{
-					raw::read(img, currentReadSource());
-				}
-				else
-				{
-					sequence::read(img, currentReadSource());
-				}
+				io::read(img, currentReadSource());
+				//if (endsWith(currentReadSource(), ".raw"))
+				//{
+				//	raw::readNoParse(img, currentReadSource());
+				//}
+				//else
+				//{
+				//	sequence::read(img, currentReadSource());
+				//}
 			}
 		}
 
@@ -273,7 +335,7 @@ namespace pilib
 		{
 			ensureSize(img.dimensions());
 
-			if (endsWith(currentWriteTarget(), ".raw"))
+			if (isOutputRaw())
 			{
 				raw::write(img, currentWriteTarget());
 			}

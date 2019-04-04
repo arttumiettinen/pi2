@@ -11,7 +11,7 @@
 #include "transform.h"
 #include "registration.h"
 #include "conversions.h"
-#include "io/raw.h"
+#include "io/io.h"
 
 using namespace math;
 using std::tuple;
@@ -75,7 +75,7 @@ namespace itl2
 			c(c),
 			R(R),
 			normFactor(normFact),
-			shiftInterpolator(Nearest)
+			shiftInterpolator(BoundaryCondition::Nearest)
 		{
 			if (!R.inverse(Rinv))
 				throw ITLException("Rotation matrix is not invertible.");
@@ -530,16 +530,23 @@ namespace itl2
 			/*
 			Populate world to local transformation from (c, a, R) and parent-to-me transformations.
 			*/
-			void convertToWorld(Vec3c imageDimensions)
+			void convertToWorld(Vec3c imageDimensions, bool allowLocalShifts)
 			{
-				//LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> > shiftInterpolator = LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(Nearest);
-				CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> > shiftInterpolator = CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(Nearest);
+				//LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> > shiftInterpolator = LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
+				CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> > shiftInterpolator = CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
 				
+				// Set to true to average shifts where there are multiple overlapping parent images.
+				// Set to false to take shifts from the first (oldest) encountered parent image.
+				// TODO: Make this a parameter?
+				constexpr bool average = false;
+
+				imageDimensions = componentwiseMax(imageDimensions, Vec3c(1, 1, 1));
 
 				Vec3c cc;
 				Vec3c cd;
 				boundsInWorldCoordinates(imageDimensions, cc, cd);
 				
+				// TODO: Make this step parameter or calculate it from grid step used in local phase correlation
 				constexpr size_t step = 10;
 
                 // Add step to the end so that we really fill the whole image region.
@@ -556,97 +563,113 @@ namespace itl2
 				for (coord_t n = 0; n < worldShifts->pixelCount(); n++)
 					(*worldShifts)(n) = FLAG;
 
-				// Fill shifts with values derived from parent to me displacement fields, where available.
-				size_t counter = 0;
-				#pragma omp parallel for if(worldShifts->pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-				for (coord_t z = 0; z < worldShifts->depth(); z++)
+				if (allowLocalShifts)
 				{
-					for (coord_t y = 0; y < worldShifts->height(); y++)
+					// Fill shifts with values derived from parent to me displacement fields, where available.
+					size_t counter = 0;
+#pragma omp parallel for if(worldShifts->pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
+					for (coord_t z = 0; z < worldShifts->depth(); z++)
 					{
-						for (coord_t x = 0; x < worldShifts->width(); x++)
+						for (coord_t y = 0; y < worldShifts->height(); y++)
 						{
-							Vec3<real_t> worldP = Vec3<real_t>(worldGrid(x, y, z));
-								
-							// Convert worldP to parent coordinates using parent world to me grid,
-							// resulting in parentP.
-							// Convert parentP to own coordinates using parent to me fields. 
-							// Average over all parents
-
-							Vec3<real_t> avgP(0, 0, 0);
-							real_t count = 0;
-
-							for (size_t k = 0; k < parentToMeGrids.size(); k++)
+							for (coord_t x = 0; x < worldShifts->width(); x++)
 							{
-								PointGrid3D<coord_t>& worldToParentRefPoints = get<0>(parentToMeGrids[k]);
-								Image<Vec3<real_t> >& worldToParentShifts = *get<1>(parentToMeGrids[k]);
+								Vec3<real_t> worldP = Vec3<real_t>(worldGrid(x, y, z));
 
-								PointGrid3D<coord_t>& parentToMeRefPoints = get<2>(parentToMeGrids[k]);
-								Image<Vec3<real_t> >& parentToMeShifts = *get<3>(parentToMeGrids[k]);
+								// Convert worldP to parent coordinates using parent world to me grid,
+								// resulting in parentP.
+								// Convert parentP to own coordinates using parent to me fields. 
+								// Average over all parents
 
+								Vec3<real_t> avgP(0, 0, 0);
+								real_t count = 0;
 
-								if (worldToParentRefPoints.contains(worldP))
+								for (size_t k = 0; k < parentToMeGrids.size(); k++)
 								{
-									// Convert from world to parent coordinates
-									Vec3<real_t> parentP = worldP + internals::projectPointToDeformed<real_t>(worldP, worldToParentRefPoints, worldToParentShifts, shiftInterpolator);
 
-									if (parentToMeRefPoints.contains(parentP))
+									PointGrid3D<coord_t>& worldToParentRefPoints = get<0>(parentToMeGrids[k]);
+									Image<Vec3<real_t> >& worldToParentShifts = *get<1>(parentToMeGrids[k]);
+
+									PointGrid3D<coord_t>& parentToMeRefPoints = get<2>(parentToMeGrids[k]);
+									Image<Vec3<real_t> >& parentToMeShifts = *get<3>(parentToMeGrids[k]);
+
+
+									if (worldToParentRefPoints.contains(worldP))
 									{
-										Vec3<real_t> myP = parentP + internals::projectPointToDeformed<real_t>(parentP, parentToMeRefPoints, parentToMeShifts, shiftInterpolator);
-										avgP += myP;
-										count++;
+										// Convert from world to parent coordinates
+										Vec3<real_t> parentP = worldP + internals::projectPointToDeformed<real_t>(worldP, worldToParentRefPoints, worldToParentShifts, shiftInterpolator);
+
+										if (parentToMeRefPoints.contains(parentP))
+										{
+											if (average || (!average && count <= 0))
+											{
+												Vec3<real_t> myP = parentP + internals::projectPointToDeformed<real_t>(parentP, parentToMeRefPoints, parentToMeShifts, shiftInterpolator);
+												avgP += myP;
+												count++;
+											}
+										}
+										else
+										{
+											// Parent to me displacement field does not contain the point.
+										}
 									}
 									else
 									{
-										// Parent to me displacement field does not contain the point.
+										// World to parent transformation is not valid at this point.
+										// The world point does not overlap with parent image.
 									}
 								}
-								else
+
+								if (count > 0)
 								{
-									// World to parent transformation is not valid at this point.
-									// The world point does not overlap with parent image.
+									avgP /= count;
+
+									(*worldShifts)(x, y, z) = avgP - worldP;
 								}
+
+
 							}
+						}
 
-							if (count > 0)
+						showThreadProgress(counter, worldShifts->depth());
+					}
+
+					// Set shifts near to valid values to nan to create a border of nans around values set from parent to me transformations.
+					coord_t r = math::max<coord_t>(1, pixelRound<coord_t>(0.1 * worldShifts->dimensions().min()));
+					#pragma omp parallel for if(worldShifts->pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
+					for (coord_t z = 0; z < worldShifts->depth(); z++)
+					{
+						for (coord_t y = 0; y < worldShifts->height(); y++)
+						{
+							for (coord_t x = 0; x < worldShifts->width(); x++)
 							{
-								avgP /= count;
-
-								(*worldShifts)(x, y, z) = avgP - worldP;
-
-								// Set nearby shifts to nan to create a border of nans around values set from parent to me transformations.
-								coord_t r = math::max<coord_t>(1, pixelRound<coord_t>(0.1 * worldShifts->dimensions().min()));
-								coord_t zmin = math::max<coord_t>(0, z - r);
-								coord_t ymin = math::max<coord_t>(0, y - r);
-								coord_t xmin = math::max<coord_t>(0, x - r);
-								coord_t zmax = math::min<coord_t>(worldShifts->depth() - 1, z + r);
-								coord_t ymax = math::min<coord_t>(worldShifts->height() - 1, y + r);
-								coord_t xmax = math::min<coord_t>(worldShifts->width() - 1, x + r);
-								for (coord_t z = zmin; z <= zmax; z++)
+								Vec3<real_t> v = (*worldShifts)(x, y, z);
+								if (v != FLAG && !math::isnan(v.x))
 								{
-									for (coord_t y = ymin; y <= ymax; y++)
+
+									coord_t zmin = math::max<coord_t>(0, z - r);
+									coord_t ymin = math::max<coord_t>(0, y - r);
+									coord_t xmin = math::max<coord_t>(0, x - r);
+									coord_t zmax = math::min<coord_t>(worldShifts->depth() - 1, z + r);
+									coord_t ymax = math::min<coord_t>(worldShifts->height() - 1, y + r);
+									coord_t xmax = math::min<coord_t>(worldShifts->width() - 1, x + r);
+									for (coord_t zz = zmin; zz <= zmax; zz++)
 									{
-										for (coord_t x = xmin; x <= xmax; x++)
+										for (coord_t yy = ymin; yy <= ymax; yy++)
 										{
-											// This should not cause erroneous output although it is a race condition
-											if((*worldShifts)(x, y, z) == FLAG)
-												(*worldShifts)(x, y, z) = Vec3<real_t>(numeric_limits<real_t>::signaling_NaN(), numeric_limits<real_t>::signaling_NaN(), numeric_limits<real_t>::signaling_NaN());
+											for (coord_t xx = xmin; xx <= xmax; xx++)
+											{
+												// This should not cause erroneous output although it is a race condition
+												Vec3<real_t>& p = (*worldShifts)(xx, yy, zz);
+												if (p == FLAG)
+													p = Vec3<real_t>(numeric_limits<real_t>::signaling_NaN(), numeric_limits<real_t>::signaling_NaN(), numeric_limits<real_t>::signaling_NaN());
+											}
 										}
 									}
 								}
-
 							}
-							else
-							{
-								// No parent world to local field was found.
-								// Use pre-determined similarity transformation
-								//avgP = 1 / a * (Rinv * worldP) + c;
-							}
-
-								
 						}
 					}
-
-					showThreadProgress(counter, worldShifts->depth());
 				}
 
 				// Fill unset shifts with similarity transformation
@@ -698,12 +721,12 @@ namespace itl2
 			const Vec3c& outPos, Image<output_t>& output, Image<real_t>& weight,
 			bool normalize)
 		{
-			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(Zero);
-			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(Zero, 0, 0);
-			//const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(Zero, 0, 0);
-			const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInterpolator<real_t, pixel_t, real_t>(Zero);
-			//const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(Nearest);
-			const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(Nearest);
+			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
+			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
+			//const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
+			const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
+			//const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
+			const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
 
 			Vec3c cc(refPoints.xg.first, refPoints.yg.first, refPoints.zg.first);
 			Vec3c cd(refPoints.xg.maximum, refPoints.yg.maximum, refPoints.zg.maximum);
@@ -797,12 +820,12 @@ namespace itl2
 	/*
 	Use to determine world to local transformation to one image.
 	*/
-	inline void determineWorldToLocal(const string& transfFile, const Vec3c& imageSize, const string& worldToLocalPrefix)
+	inline void determineWorldToLocal(const string& transfFile, const Vec3c& imageSize, const string& worldToLocalPrefix, bool allowLocalShifts)
 	{
 		internals::TransformationVer2<float32_t> transformation;
 		transformation.readFromFile(transfFile);
 		transformation.fixMissingValues();
-		transformation.convertToWorld(imageSize);
+		transformation.convertToWorld(imageSize, allowLocalShifts);
 		transformation.save(worldToLocalPrefix);
 	}
 
@@ -834,12 +857,16 @@ namespace itl2
 			string imgFile = get<0>(*it);
 			string wlPrefix = get<1>(*it);
 
+			//raw::expandRawFilename(imgFile);
 			cout << "Stitching " << imgFile << endl;
 
 			Vec3c srcDimensions;
 			ImageDataType dt;
-			if (!raw::internals::parseDimensions(imgFile, srcDimensions, dt))
-				throw ITLException("Unable to parse dimensions from source image file name.");
+			if (!io::getInfo(imgFile, srcDimensions, dt))
+				throw ITLException("Unable to find dimensions of source image.");
+
+			if(dt != imageDataType<pixel_t>())
+				throw ITLException(string("Data type of input image ") + imgFile + " is " + toString(dt) + " but " + toString(imageDataType<pixel_t>()) + " was expected.");
 
 			PointGrid3D<coord_t> refPoints;
 			float32_t normFact;
@@ -881,7 +908,8 @@ namespace itl2
 				internals::readShifts(wlPrefix, refPoints, shifts);
 
 				Image<pixel_t> src(srcDimensions);
-				raw::read(src, imgFile);
+				//raw::read(src, imgFile);
+				io::read(src, imgFile);
 				internals::stitchOneVer2<pixel_t, float32_t, float32_t>(src, refPoints, shifts, pixelRound<pixel_t>(normFact), outputPos, out, weight, normalize);
 			}
 		}

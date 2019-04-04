@@ -780,15 +780,6 @@ namespace itl2
 			// label-2 is the number of connected compontents
 			return true;
 		}
-
-		inline bool pointSorter(const math::Vec3c& a, const math::Vec3c& b)
-		{
-			if (a.z != b.z)
-				return a.z < b.z;
-			if (a.y != b.y)
-				return a.y < b.y;
-			return a.x < b.x;
-		}
 	}
 
 	/*
@@ -836,7 +827,7 @@ namespace itl2
 
 								if (isBorderPoint)
 								{
-									getNeighbourhood(img, math::Vec3c(x, y, z), math::Vec3c(1, 1, 1), nbPrivate, Zero);
+									getNeighbourhood(img, math::Vec3c(x, y, z), math::Vec3c(1, 1, 1), nbPrivate, BoundaryCondition::Zero);
 
 									if (!internals::isEndPoint(nbPrivate) &&
 										internals::isEulerInvariant(nbPrivate) &&
@@ -857,7 +848,7 @@ namespace itl2
 
 			// This is required to make the result exactly the same than in Fiji (non-threaded version)
 			// Otherwise, the point removal order may change the skeleton points.
-			std::sort(pointsToRemove.begin(), pointsToRemove.end(), internals::pointSorter);
+			std::sort(pointsToRemove.begin(), pointsToRemove.end(), math::vecComparer<coord_t>);
 
 			// Re-check while removing points so that connectivity is preserved.
 			Image<pixel_t> nb(3, 3, 3);
@@ -865,7 +856,7 @@ namespace itl2
 			{
 				math::Vec3c p = pointsToRemove[n];
 
-				getNeighbourhood(img, p, math::Vec3c(1, 1, 1), nb, Zero);
+				getNeighbourhood(img, p, math::Vec3c(1, 1, 1), nb, BoundaryCondition::Zero);
 				//nb(1, 1, 1) = 0; // This is redundant as isSimplePointHybrid does not consider the center pixel anyway.
 
 				if (internals::isSimplePointHybrid(nb))
@@ -906,6 +897,6 @@ namespace itl2
 	namespace tests
 	{
 		void hybridSkeleton();
-		void cavities();
+		//void cavities();
 	}
 }

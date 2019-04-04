@@ -12,7 +12,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head;
-			raw::readd(head, "./t1-head_256x256x129.raw");
+			raw::read(head, "./t1-head_256x256x129.raw");
 
 			inpaintNearest(head);
 
@@ -24,7 +24,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint8_t> img;
-			raw::readd(img, "./orig_20x20x1.raw");
+			raw::read(img, "./orig_20x20x1.raw");
 
 			for (coord_t y = 5; y < 10; y++)
 			{
@@ -46,7 +46,7 @@ namespace itl2
 		{
 			Image<float32_t> img;
 			Image<float32_t> inpaintedZeroTolerance;
-			raw::readd(img, "./" + imgname + "_53x53x53.raw");
+			raw::read(img, "./" + imgname + "_53x53x53.raw");
 
 			for (coord_t z = 0; z < img.depth(); z++)
 			{

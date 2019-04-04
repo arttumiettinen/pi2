@@ -9,6 +9,7 @@ namespace pilib
 		commands.insert(commands.end(),
 			{
 			ADD_ALL(NopSingleImageCommand),
+			new FileInfoCommand(),
 			new RawInfoCommand(),
 			new SequenceInfoCommand(),
 			ADD_ALL(WriteRawCommand),

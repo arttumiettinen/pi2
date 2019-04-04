@@ -286,7 +286,7 @@ namespace math
             /**
             Converts this object to string.
             */
-            friend ostream& operator<<(ostream& stream, const Vec2<T>& v)
+            friend std::ostream& operator<<(std::ostream& stream, const Vec2<T>& v)
             {
                 stream << "[" << v.x << ", " << v.y << "]";
                 return stream;

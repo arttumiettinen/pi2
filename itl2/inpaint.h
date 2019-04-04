@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <omp.h>
+#include <limits>
 
 #include "image.h"
 #include "dmap.h"
@@ -17,17 +18,52 @@ using math::pixelRound;
 namespace itl2
 {
 
+	template<typename pixel_t> bool isFlag(pixel_t pix, pixel_t val)
+	{
+		return pix == val;
+	}
+
+	template<> inline bool isFlag(float32_t pix, float32_t val)
+	{
+		if (math::isnan(val))
+		{
+			return math::isnan(pix);
+		}
+
+		if (math::isinf(val))
+		{
+			return math::isinf(pix);
+		}
+
+		return pix == val;
+	}
+
+	template<> inline bool isFlag(double pix, double val)
+	{
+		if (math::isnan(val))
+		{
+			return math::isnan(pix);
+		}
+
+		if (math::isinf(val))
+		{
+			return math::isinf(pix);
+		}
+
+		return pix == val;
+	}
+
 	/**
 	Replaces val in the img by nearest non-val value.
 	@param image Image to process.
-	@param val Value that marks missing pixels. This value cannot be NaN or Inf.
+	@param val Value that marks missing pixels.
 	*/
 	template<typename pixel_t> void inpaintNearest(Image<pixel_t>& image, pixel_t val = 0)
 	{
 		bool process = false;
 		for (coord_t n = 0; n < image.pixelCount(); n++)
 		{
-			if (image(n) == val)
+			if (isFlag(image(n), val))
 			{
 				process = true;
 				break;
@@ -42,7 +78,7 @@ namespace itl2
 
 			for (coord_t n = 0; n < image.pixelCount(); n++)
 			{
-				if (image(n) == val)
+				if (isFlag(image(n), val))
 				{
 					distance(n) = numeric_limits<float32_t>::max();
 				}
@@ -75,7 +111,7 @@ namespace itl2
     The implementation is based on the reference implementation in Matlab.
 
 	@param x Image that is to be inpainted.
-	@param val Value that marks missing pixels. This value cannot be NaN or Inf.
+	@param val Value that marks missing pixels.
 	@param indicateProgress Set to true to show progress indicator.
 	@param n Number of iterations.
 	@param RF Relaxation factor.
@@ -87,7 +123,7 @@ namespace itl2
 		bool process = false;
 		for (coord_t m = 0; m < img.pixelCount(); m++)
 		{
-			if (img(m) == val)
+			if (isFlag(img(m), val))
 			{
 				process = true;
 				break;
@@ -123,7 +159,7 @@ namespace itl2
 		// Initial guess
 		Image<float32_t> y(img.dimensions());
 		convert(img, y);
-		inpaintNearest<float32_t>(y, pixelRound<float32_t>(val));
+		inpaintNearest<float32_t>(y, pixelRound<float32_t>(val)); // TODO: This might not work for all data types and val values.
 
 		// Inpainting iterations
 		Image<float32_t> tmp(img.dimensions());
@@ -138,7 +174,7 @@ namespace itl2
 			for (coord_t m = 0; m < img.pixelCount(); m++)
 			{
 				tmp(m) = y(m);
-				if (img(m) != val)
+				if (!isFlag(img(m), val))
 				{
 					tmp(m) += (float32_t)(img(m) - y(m));
 				}
@@ -175,7 +211,7 @@ namespace itl2
 					float32_t diff = ::abs(y(m) - y_new);
 					y(m) = y_new;
 
-					if (img(m) == val && diff > res_private)
+					if (isFlag(img(m), val) && diff > res_private)
 						res_private = diff;
 				}
 
@@ -191,7 +227,7 @@ namespace itl2
 			if (maxDiff <= tolerance)
 			{ 
 				if (indicateProgress)
-					cout << endl;
+					cout << "\r" << flush;
 				break;
 			}
 
@@ -203,7 +239,7 @@ namespace itl2
 		#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t m = 0; m < img.pixelCount(); m++)
 		{
-			if (img(m) == val)
+			if (isFlag(img(m), val))
 				img(m) = pixelRound<pixel_t>(y(m));
 		}
 	}
@@ -215,3 +251,4 @@ namespace itl2
 		void inpaintGarcia2();
 	}
 }
+

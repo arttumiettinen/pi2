@@ -84,9 +84,6 @@
     <ClInclude Include="specialcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stringutils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="thinandskeletoncommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -94,6 +91,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="trivialdistributable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pilibutilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="particlescommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="generationcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jobtype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="projectioncommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -153,6 +165,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="transformcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pilibutilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="particlescommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="generationcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="projectioncommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

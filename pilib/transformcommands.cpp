@@ -10,8 +10,9 @@ namespace pilib
 			{
 			ADD_ALL(BinCommand),
 			ADD_ALL(CropCommand),
-			ADD_ALL2(ScaleCommand),
-			ADD_ALL(GenericTransformCommand)
+			ADD_ALL(ScaleCommand),
+			ADD_ALL(GenericTransformCommand),
+			ADD_ALL(TranslateCommand)
 			}
 		);
 	}

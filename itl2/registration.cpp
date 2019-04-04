@@ -77,9 +77,9 @@ namespace itl2
 			}
 		}
 
-		maskedMedianFilter(u, uMed, filterRadius, MEDIAN_FLAG, Rectangular, Nearest);
-		maskedMedianFilter(v, vMed, filterRadius, MEDIAN_FLAG, Rectangular, Nearest);
-		maskedMedianFilter(w, wMed, filterRadius, MEDIAN_FLAG, Rectangular, Nearest);
+		maskedMedianFilter(u, uMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
+		maskedMedianFilter(v, vMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
+		maskedMedianFilter(w, wMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
 
 		//raw::writed(gof, "gof");
 		//raw::writed(uMed, "u_med");
@@ -96,6 +96,7 @@ namespace itl2
 		//raw::writed(v, "v_cond");
 		//raw::writed(w, "w_cond");
 
+		coord_t badCount = 0;
 		constexpr double FLAG = numeric_limits<double>::signaling_NaN();
 		for (coord_t n = 0; n < u.pixelCount(); n++)
 		{
@@ -105,6 +106,7 @@ namespace itl2
 						(gof(n) <= 0);
 			if (bad)
 			{
+				badCount++;
 				u(n) = FLAG;
 				v(n) = FLAG;
 				w(n) = FLAG;
@@ -112,10 +114,19 @@ namespace itl2
 			}
 		}
 
+		// If there are only bad values, replace everything with zeroes to produce a smooth field without any details.
+		if (badCount >= u.pixelCount())
+		{
+			setValue(u, 0);
+			setValue(v, 0);
+			setValue(w, 0);
+		}
+
+
 		// Calculate values that will replace the bad ones
-		//inpaintGarcia(u, FLAG, true);
-		//inpaintGarcia(v, FLAG, true);
-		//inpaintGarcia(w, FLAG, true);
+		inpaintGarcia(u, FLAG, true);
+		inpaintGarcia(v, FLAG, true);
+		inpaintGarcia(w, FLAG, true);
 
 		// Add mean displacement back
 		add(u, Mu);
@@ -192,8 +203,8 @@ namespace itl2
 		getline(in, line);
 		normFact = fromString<double>(line);
 
-		raw::readd(defPoints, filenamePrefix + "_defpoints_" + toString(g1.pointCount()) + "x" + toString(g2.pointCount()) + "x" + toString(g3.pointCount()) + ".raw");
-		raw::readd(gof, filenamePrefix + "_gof_" + toString(g1.pointCount()) + "x" + toString(g2.pointCount()) + "x" + toString(g3.pointCount()) + ".raw");
+		raw::read(defPoints, filenamePrefix + "_defpoints_" + toString(g1.pointCount()) + "x" + toString(g2.pointCount()) + "x" + toString(g3.pointCount()) + ".raw");
+		raw::read(gof, filenamePrefix + "_gof_" + toString(g1.pointCount()) + "x" + toString(g2.pointCount()) + "x" + toString(g3.pointCount()) + ".raw");
 	}
 
 
@@ -270,13 +281,13 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::readd(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./t1-head_256x256x129.raw");
 
 			Image<float32_t> reference(head16.dimensions());
 			convert(head16, reference);
 
 			Image<uint16_t> deformed16;
-			raw::readd(deformed16, "./t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "./t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -345,7 +356,7 @@ namespace itl2
 			Vec3c referenceDimensions(256, 256, 129);
 
 			Image<uint16_t> deformed16;
-			raw::readd(deformed16, "./t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "./t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -360,12 +371,58 @@ namespace itl2
 			raw::writed(pullback, "./registration/blockmatch2_head_pullback");
 		}
 
+
+		/*
+		Calculates translation between two 3D images by Maximum Intensity projecting them in two planes
+		and by using phase correlation on the projections.
+		*/
+		template<typename pixel_t> Vec3d mipMatch(const Image<pixel_t>& ref, const Image<pixel_t>& def)
+		{
+			// XY
+			Image<float32_t> refP, defP;
+			max(ref, 0, refP);
+			max(def, 0, defP);
+
+			raw::writed(refP, "./registration/mipmatch_xy_ref");
+			raw::writed(defP, "./registration/mipmatch_xy_def");
+
+			double goodness;
+			Vec3c maxXY;
+			maxXY.x = refP.width() / 2;
+			maxXY.y = refP.height() / 2;
+			maxXY.z = 0;
+			Vec3d shiftXY = phaseCorrelation(refP, defP, maxXY, goodness);
+
+			raw::writed(refP, "./registration/mipmatch_xy_correlation");
+
+			// YZ
+			max(ref, 1, refP);
+			max(def, 1, defP);
+
+			raw::writed(refP, "./registration/mipmatch_yz_ref");
+			raw::writed(defP, "./registration/mipmatch_yz_def");
+
+			Vec3c maxYZ;
+			maxYZ.x = refP.width() / 2;
+			maxYZ.y = refP.height() / 2;
+			maxYZ.z = 0;
+			Vec3d shiftYZ = phaseCorrelation(refP, defP, maxYZ, goodness);
+
+			raw::writed(refP, "./registration/mipmatch_yz_correlation");
+
+			// Total shift
+			Vec3d shift(shiftYZ.x, shiftXY.y, -(shiftXY.x - shiftYZ.y) / 2.0);
+
+			return shift;
+		}
+
+
 		void blockMatch1()
 		{
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::readd(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -375,7 +432,7 @@ namespace itl2
 			Vec3d shiftGT(-10.75, 8.5, -12.02);
 
 			Image<float32_t> headShifted(head.dimensions());
-			itl2::translate(head, headShifted, shiftGT, LinearInterpolator<float32_t, float32_t>(Zero));
+			itl2::translate(head, headShifted, shiftGT, LinearInterpolator<float32_t, float32_t>(BoundaryCondition::Zero));
 
 			raw::writed(headShifted, "./registration/blockmatch1_head_shifted_gt");
 
@@ -438,7 +495,7 @@ namespace itl2
 
 			cout << "average shift = " << avg << endl;
 
-			Vec3d shiftMIP = itl2::mipMatch(head, headShifted);
+			Vec3d shiftMIP = mipMatch<float32_t>(head, headShifted);
 			cout << "mipMatch shift = " << shiftMIP << endl;
 
 
@@ -456,10 +513,11 @@ namespace itl2
 			raw::writed(headPullback, "./registration/blockmatch1_head_pullback");
 		}
 
+
 		void mipMatch()
 		{
 			Image<uint16_t> head16;
-			raw::readd(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -467,11 +525,11 @@ namespace itl2
 			Vec3d shiftGT(-10.75, 8.5, -12.02);
 
 			Image<float32_t> headShifted(head.dimensions());
-			itl2::translate(head, headShifted, shiftGT, LinearInterpolator<float32_t, float32_t>(Zero));
+			itl2::translate(head, headShifted, shiftGT, LinearInterpolator<float32_t, float32_t>(BoundaryCondition::Zero));
 
 			raw::writed(headShifted, "./registration/mipmatch_head_shifted_GT");
 
-			Vec3d shift = -itl2::mipMatch(head, headShifted);
+			Vec3d shift = -mipMatch<float32_t>(head, headShifted);
 
 			cout << "GT = " << shiftGT << endl;
 			cout << "meas = " << shift << endl;

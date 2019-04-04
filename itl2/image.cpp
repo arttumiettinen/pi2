@@ -31,7 +31,7 @@ namespace itl2
 				distanceTransform(head, dmap);
 
 				Image<float32_t> gt;
-				raw::readd(gt, "./t1-head_bin_dmap_256x256x129.raw");
+				raw::read(gt, "./t1-head_bin_dmap_256x256x129.raw");
 
 				subtract(gt, dmap);
 				abs(gt);
@@ -45,7 +45,7 @@ namespace itl2
 				Image<float32_t> dmap("./buffers/head_dmap_256x256x129.raw", 256, 256, 129);
 
 				Image<float32_t> gt;
-				raw::readd(gt, "./t1-head_bin_dmap_256x256x129.raw");
+				raw::read(gt, "./t1-head_bin_dmap_256x256x129.raw");
 
 				subtract(gt, dmap);
 				abs(gt);

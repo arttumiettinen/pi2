@@ -63,7 +63,7 @@ void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, i
 		*width = 0;
 		*height = 0;
 		*depth = 0;
-		*dataType = Unknown;
+		*dataType = (int32_t)ImageDataType::Unknown;
 		return 0;
 	}
 
@@ -73,4 +73,9 @@ void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, i
 	*dataType = (int)img->dataType();
 
 	return img->getRawData();
+}
+
+uint8_t finishUpdate(void* pi, const char* imgName)
+{
+	return ((PISystem*)pi)->flushIfDistributedNoThrow(imgName) ? 1 : 0;
 }

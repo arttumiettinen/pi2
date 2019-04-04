@@ -3,6 +3,7 @@
 #include <random>
 #include <cmath>
 #include <iomanip>
+#include <atomic>
 
 #include "io/raw.h"
 #include "pointprocess.h"
@@ -18,23 +19,32 @@ using namespace std;
 
 namespace itl2
 {
-	/*
-	Initializes FFTW if it has not been initialized.
-	*/
 	void initFFTW()
 	{
-		static bool isFFTWInit = false;
+		static atomic<bool> isFFTWInit(false);
 
-		#pragma omp critical
+		if (!isFFTWInit)
 		{
-			if (!isFFTWInit)
+			#pragma omp critical
 			{
-				isFFTWInit = true;
-				// NOTE: Enabling threading here makes things REALLY slow.
-				//fftwf_init_threads();
-				fftwf_import_system_wisdom();
+				if (!isFFTWInit)
+				{
+					isFFTWInit = true;
+					fftwf_import_system_wisdom();
+				}
 			}
 		}
+
+		//#pragma omp critical
+		//{
+		//	if (!isFFTWInit)
+		//	{
+		//		isFFTWInit = true;
+		//		// NOTE: Enabling threading here makes things REALLY slow.
+		//		//fftwf_init_threads();
+		//		fftwf_import_system_wisdom();
+		//	}
+		//}
 	}
 
 	void setThreads()
@@ -420,11 +430,11 @@ namespace itl2
 	namespace internals
 	{
 		/**
-		Calculates x mod period as positive number.
+		Calculates x mod period as a positive number.
 		*/
 		template<typename T> T modulo(T x, T period)
 		{
-			while (x > period)
+			while (x >= period)
 				x -= period;
 			while (x < 0)
 				x += period;
@@ -432,28 +442,44 @@ namespace itl2
 			return x;
 		}
 
-		/*
-		Helper function for Foroosh method.
-		*/
-		//inline double forooshHelper(double C0, double C1, double x0, double x1)
+		///*
+		//Helper function for Foroosh method.
+		//*/
+		//inline float32_t forooshHelper2(float32_t C0, float32_t Cp1, float32_t Cm1)
 		//{
-		//	double dx1 = C1 / (C1 + C0);
-		//	double dx2 = C1 / (C1 - C0);
-		//	double dx = dx1;
+		//	float32_t C1 = Cp1;
+		//	float32_t sign = 1;
+		//	if (Cm1 > Cp1)
+		//	{
+		//		C1 = Cm1;
+		//		sign = -1;
+		//	}
 
-		//	bool dx1Good = -1 < dx1 && dx1 < 1 && copysign(1.0, dx1) == copysign(1.0, x1 - x0);
-		//	bool dx2Good = -1 < dx2 && dx2 < 1 && copysign(1.0, dx2) == copysign(1.0, x1 - x0);
-		//	
-		//	if(dx1Good && dx2Good)
+		//	float32_t dx1 = C1 / (C1 + C0);
+		//	float32_t dx2 = C1 / (C1 - C0);
+
+		//	bool dx1Good = -1 < dx1 && dx1 < 1 && copysign(1.0f, dx1) == sign;
+		//	bool dx2Good = -1 < dx2 && dx2 < 1 && copysign(1.0f, dx2) == sign;
+
+		//	if (dx1Good && dx2Good)
 		//	{
 		//		cout << "Logic :(" << endl;
 		//		return dx1;
 		//	}
 
-		//	if (dx1Good)
+		//	if (dx1Good && !dx2Good)
 		//		return dx1;
 
-		//	return dx2;
+		//	if (dx2Good && !dx1Good)
+		//		return dx2;
+
+		//	// Both estimates are bad, return the "better" one
+		//	if (-1 < dx1 && dx1 < 1)
+		//		return dx1;
+		//	if (-1 < dx2 && dx2 < 1)
+		//		return dx2;
+
+		//	return 0;
 		//}
 
 		/**
@@ -474,9 +500,6 @@ namespace itl2
 					{
 						coord_t xx = modulo(x, img.width());
 
-						//if(zz < 0 || zz >= img.depth() || yy < 0 || yy >= img.height() || xx < 0 || xx >= img.width())
-						//	throw runtime_error("logical error");
-
 						float32_t p = img(xx, yy, zz);
 						if (p > maxVal)
 						{
@@ -487,53 +510,21 @@ namespace itl2
 				}
 			}
 
+			Vec3d fullPixelMaxPos((double)maxPos.x, (double)maxPos.y, (double)maxPos.z);
+
 			// No subpixel accuracy
-
-			return Vec3d((double)maxPos.x, (double)maxPos.y, (double)maxPos.z);
-			
-			/*
-			// This approach is wrong: each coordinate direction must be "moduloed" independently
-			Vec3c maxPos(0, 0, 0);
-			maxVal = img(maxPos);
-			for (coord_t z = 0; z < img.depth(); z++)
-			{
-				for (coord_t y = 0; y < img.width(); y++)
-				{
-					for (coord_t x = 0; x < img.depth(); x++)
-					{
-						float32_t p = img(x, y, z);
-						if (p > maxVal)
-						{
-							maxVal = p;
-							maxPos = Vec3c(x, y, z);
-						}
-					}
-				}
-			}
-
-			Vec3c s1 = maxPos - Vec3c(0, 0, 0);
-			Vec3c s2 = maxPos - Vec3c(0, img.height() - 1, 0);
-			Vec3c s3 = maxPos - Vec3c(0, 0, img.depth() - 1);
-			Vec3c s4 = maxPos - Vec3c(0, img.height() - 1, img.depth() - 1);
-
-			Vec3c mins = s1;
-			if (s2.normSquared() < mins.normSquared())
-				mins = s2;
-			if (s3.normSquared() < mins.normSquared())
-				mins = s3;
-			if (s4.normSquared() < mins.normSquared())
-				mins = s4;
-
-			return Vec3d(mins);
-			*/
-
+			//return fullPixelShift;
 			
 			// Centroid method for subpixel accuracy
-			/*
+			// See Song Feng, Linhua Deng, Guofeng Shu, Feng Wang, Hui Deng and Kaifan Ji - A Subpixel Registration Algorithm for Low PSNR Images
 			// Get data around the maximum (periodically) and calculate mean position of the peak.
 			// This sould work as the peak should resemble a delta-peak. The center of mass of the peak should lie
 			// at the exact location of the shift.
 			const coord_t r = 8;
+
+			// Selection of this threshold value could affect results a lot.
+			float32_t b = 0.1f * maxVal;
+
 			coord_t x0 = maxPos.x;
 			coord_t y0 = maxPos.y;
 			coord_t z0 = maxPos.z;
@@ -560,49 +551,53 @@ namespace itl2
 						// to positive weight values.
 						//float p = abs(img[yy * w + xx]);
 						float32_t p = img(xx, yy, zz);
-						if (p < 0)
-							p = 0;
+						if (p > b)
+						{
+							p -= b;
 
-						xsum += p * x;
-						ysum += p * y;
-						zsum += p * z;
-						wsum += p;
+							xsum += p * x;
+							ysum += p * y;
+							zsum += p * z;
+							wsum += p;
+						}
 					}
 				}
 			}
 
 			if (wsum > 0.00001)
 			{
-				Vec3d shift = Vec3d(xsum, ysum, zsum) / wsum;// -Vec3d(0.5, 0.5, 0.5);
-				return shift;
+				Vec3d subPixelMaxPos = Vec3d(xsum, ysum, zsum) / wsum;
+
+				// Sanity check: use sub-pixel estimate only if it is near full-pixel maximum position
+				if((subPixelMaxPos - fullPixelMaxPos).abs().max() <= 2)
+					return subPixelMaxPos;
+				
+				return fullPixelMaxPos;
 			}
 			else
 			{
-				if (maxVal > 0)
-					return Vec3d(maxPos.x, maxPos.y, maxPos.z);// -Vec3d(0.5, 0.5, 0.5);
-				else
-					return Vec3d(maxPos.x, maxPos.y, maxPos.z);
+				return fullPixelMaxPos;
 			}
-			*/
-
-			/*
+			
+			
 			// Foroosh method for subpixel accuracy
-			// Centroid method seems to give similar results but without a couple of outliers
-			// Additionally, this method has bias towards small x, y, and z values.
-			// There is probably some problem in the implementation.
-			coord_t x0 = maxPos.x;
-			coord_t y0 = maxPos.y;
-			coord_t z0 = maxPos.z;
-			float32_t C000 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
-			float32_t C100 = img(modulo(x0 + 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
-			float32_t C010 = img(modulo(x0, img.width()), modulo(y0 + 1, img.height()), modulo(z0, img.depth()));
-			float32_t C001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 + 1, img.depth()));
-			double dx = forooshHelper(C000, C100, modulo(x0, img.width()), modulo(x0 + 1, img.width()));
-			double dy = forooshHelper(C000, C010, modulo(y0, img.height()), modulo(y0 + 1, img.height()));
-			double dz = forooshHelper(C000, C001, modulo(z0, img.depth()), modulo(z0 + 1, img.depth()));
+			// This seems to give mostly quite accurate results but sometimes it fails big resulting in bad outliers.
+			//coord_t x0 = maxPos.x;
+			//coord_t y0 = maxPos.y;
+			//coord_t z0 = maxPos.z;
 
-			return Vec3d(x0 + dx, y0 + dy, z0 + dz);
-			*/
+			//float32_t C000 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
+			//float32_t Cp100 = img(modulo(x0 + 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
+			//float32_t Cm100 = img(modulo(x0 - 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
+			//float32_t Cp010 = img(modulo(x0, img.width()), modulo(y0 + 1, img.height()), modulo(z0, img.depth()));
+			//float32_t Cm010 = img(modulo(x0, img.width()), modulo(y0 - 1, img.height()), modulo(z0, img.depth()));
+			//float32_t Cp001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 + 1, img.depth()));
+			//float32_t Cm001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 - 1, img.depth()));
+
+			//float32_t dx = forooshHelper2(C000, Cp100, Cm100);
+			//float32_t dy = forooshHelper2(C000, Cp010, Cm010);
+			//float32_t dz = forooshHelper2(C000, Cp001, Cm001);
+			//return Vec3d(x0 + dx, y0 + dy, z0 + dz);
 		}
 
 		
@@ -614,10 +609,15 @@ namespace itl2
 	*/
 	Vec3d phaseCorrelation(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, double& goodness)
 	{
+		//raw::writed(img1, "img1");
+		//raw::writed(img2, "img2");
+
+
 		Image<complex32_t> img1FFT;
 		Image<complex32_t> img2FFT;
 
 		fft(img1, img1FFT);
+		//raw::writed(img1FFT, "img1fft");
 
 		//Image<complex32_t> tmp;
 		//set(tmp, img1FFT);
@@ -626,6 +626,7 @@ namespace itl2
 
 
 		fft(img2, img2FFT);
+		//raw::writed(img2FFT, "img2fft");
 
 		//set(tmp, img2FFT);
 		//normSquared(tmp);
@@ -633,16 +634,16 @@ namespace itl2
 
 		// This works but does not (possibly) produce correct goodness of fit estimate
 		conjugate(img2FFT);
+		//raw::writed(img2FFT, "img2_fft_conjugate");
+
 		multiply(img1FFT, img2FFT);
+		//raw::writed(img1FFT, "correlation_fft_before_normalization");
+
 		normalize(img1FFT);
+		//raw::writed(img1FFT, "correlation_fft");
+
 		ifft(img1FFT, img1);
-
-
-		// TODO: Should this be here or not? (Probably not!)
-		//abs(img1);
-
-		// For testing
-		//raw::writed(img1, "./correlation");
+		//raw::writed(img1, "correlation");
 
 		// Now img1 contains a peak at the location of the shift.
 		float32_t maxVal;
@@ -682,12 +683,12 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> tmp;
-			raw::readd(tmp, "./t1-head_256x256x129.raw");
+			raw::read(tmp, "./t1-head_256x256x129.raw");
 
 			Image<float32_t> reference;
 			convert(tmp, reference);
 
-			raw::readd(tmp, "./t1-head_rot_trans_256x256x129.raw");
+			raw::read(tmp, "./t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed;
 			convert(tmp, deformed);
@@ -706,14 +707,14 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::readd(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
 			
 			std::default_random_engine generator;
 
-			int maxShift = 64;
+			int maxShift = 2;
 			std::uniform_real_distribution<double> distribution(-maxShift, maxShift);
 
 			ofstream out;
@@ -726,6 +727,8 @@ namespace itl2
 			for (coord_t n = 0; n < 100; n++)
 			{
 				Vec3d shiftGT(distribution(generator), distribution(generator), distribution(generator));
+				//Vec3d shiftGT(distribution(generator), 0, 0);
+				//Vec3d shiftGT(-0.76, 0, 0);
 
 				Image<float32_t> headShifted(head.dimensions());
 				translate(head, headShifted, shiftGT);
@@ -738,9 +741,9 @@ namespace itl2
 				Vec3d shift = phaseCorrelation(headShifted, head, maxShift * Vec3c(1, 1, 1), goodness);
 
 
-				cout << (int)math::round(shiftGT.x) << ",\t" << shift.x << ",\t" << (shift.x - shiftGT.x)  << endl;
-				cout << (int)math::round(shiftGT.y) << ",\t" << shift.y << ",\t" << (shift.y - shiftGT.y) << endl;
-				cout << (int)math::round(shiftGT.z) << ",\t" << shift.z << ",\t" << (shift.z - shiftGT.z) << endl;
+				cout << shiftGT.x << ",\t" << shift.x << ",\t" << (shift.x - shiftGT.x)  << endl;
+				cout << shiftGT.y << ",\t" << shift.y << ",\t" << (shift.y - shiftGT.y) << endl;
+				cout << shiftGT.z << ",\t" << shift.z << ",\t" << (shift.z - shiftGT.z) << endl;
 				cout << goodness << endl;
 				
 				out << shiftGT.x << ", " << shiftGT.y << ", " << shiftGT.z << ", " << shift.x << ", " << shift.y << ", " << shift.z << ", " << goodness << endl;
@@ -812,12 +815,20 @@ namespace itl2
 			convert(head16, head);
 			gaussFilter(head, 4);
 			raw::writed(head, "./fourier/gauss");
+		}
 
-			//head.init(128, 128, 64);
-			//raw::read(head, "./t1-head_noisy_32_128x128x64.raw");
 
-			//gauss(head, 4);
-			//raw::writed(head, "./fourier/gauss");
+		void modulo()
+		{
+			coord_t end = 10;
+			for (coord_t x = -20; x < 20; x++)
+			{
+				coord_t mx = itl2::internals::modulo(x, end);
+				cout << x << " modulo [0, " << end << "[ = " << mx << endl;
+
+				testAssert(0 <= mx && mx < end, "modulo output range");
+			}
+
 		}
 	}
 }

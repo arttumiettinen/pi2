@@ -1,6 +1,7 @@
 #pragma once
 
 #include "argumentdatatype.h"
+#include "jobtype.h"
 #include <string>
 #include <vector>
 
@@ -34,7 +35,7 @@ namespace pilib
 		Submits a job with the given pi2 code.
 		May block until the job is finished (the case with local processing).
 		*/
-		virtual void submitJob(const string& piCode) = 0;
+		virtual void submitJob(const string& piCode, JobType jobType) = 0;
 
 		/**
 		Waits until all jobs have completed.
@@ -70,16 +71,25 @@ namespace pilib
 		static const string BLOCK_INDEX_ARG_NAME;
 
 		/**
+		Gets pointer to PISystem object.
+		*/
+		PISystem* getSystem()
+		{
+			return piSystem;
+		}
+
+		/**
 		Run the given command in the distributed framework.
 		@param commands Commands to run on each block of the input image, and their arguments.
 		@param args Command arguments. (Images must be of type DistributedImage)
 		@param distributionDirection Set to 0 to distribute in x-direction, 1 to distribute in y-direction, or 2 to distribute in z-direction (preferred).
 		@param margin Distributed blocks must overlap this many pixels.
-		@param outputFile File where the output of the command must be saved. This is used to override default behaviour of saving to temporary location in write* commands.
 		@param refIndex Index of argument that is the reference image for determination of distribution block sizes. Set to maximum possible value to use the first output image or the first input image if there are no outputs as reference.
 		@return Output written by each subprocess.
 		*/
-		vector<string> distribute(const Command* command, vector<ParamVariant>& args, size_t distributionDirection, const Vec3c& margin, const string* outputFile = 0, size_t refIndex = numeric_limits<size_t>::max(), vector<ParamVariant>* argsForGetCorrespondingBlock = 0);
+		vector<string> distribute(const Command* command, vector<ParamVariant>& args, size_t distributionDirection, const Vec3c& margin, size_t refIndex = numeric_limits<size_t>::max(), vector<ParamVariant>* argsForGetCorrespondingBlock = 0);
+		
+		vector<string> distribute(const Command* command, vector<ParamVariant>& args, size_t distributionDirection1, size_t distributionDirection2, const Vec3c& margin, size_t refIndex = numeric_limits<size_t>::max(), vector<ParamVariant>* argsForGetCorrespondingBlock = 0);
 	};
 
 }

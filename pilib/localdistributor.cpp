@@ -28,7 +28,7 @@ namespace pilib
 		cout << "Using " << bytesToString((double)allowedMem) << " RAM per task." << endl;
 	}
 
-	void LocalDistributor::submitJob(const string& piCode)
+	void LocalDistributor::submitJob(const string& piCode, JobType jobType)
 	{
 		// Write the code to (temporary) file
 		{
@@ -36,7 +36,7 @@ namespace pilib
 			f << piCode;
 		}
 
-		string output = execute(getPiCommand(), "pi2_local_job.txt");
+		string output = execute(getPiCommand(), "pi2_local_job.txt", true);
 
 		outputs.push_back(output);
 	}

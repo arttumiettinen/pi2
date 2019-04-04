@@ -1,26 +1,22 @@
 [stitch]
 
-# Name of the sample
-sample_name = N0098_B
+# Prefix for output and temporary files
+sample_name = N0098
 
 
-# Dimensions of sub-images. All the sub-images must have the same dimensions.
-# Sub-image files must be named like [sample_name]_[width]x[height]x[depth].raw
-# Parameters whose values depend on size of sub-imageare marked below by sentence
-# "the value should scale with image size". If one wants to
-# e.g. try stitching with sub-images scaled to smaller size and then perform the exactly same
-# process with larger images, the marked parameters should be multiplied by the scaling ratio
-# between the images.
-width = 510
-height = 510
-depth = 512
+# Binning (downscaling) applied to inputs before stitching.
+# Binning 1 corresponds to original input image size, binnin 2 to half of that, etc.
+# Use e.g. to test with smaller images before running stitching for full-scale data.
+binning = 1
 
 
-# Pixel data type. Can be uint8, uint16, or float32
-data_type = uint16
+# Filename template that is used to construct the names of the input files.
+# {index} resolves to index of the image in the grid (see xdir, ydir, and zdir),
+# {x}, {y}, and {z} resolve to the (zero-based) position of the image in the grid.
+input_file_template = N0098_B{index}_512x512x510.raw
 
 
-# Counts of sub-images in each coordinate direction.
+# Count of sub-images in each coordinate direction.
 grid_width = 9
 grid_height = 9
 grid_depth = 1
@@ -54,6 +50,8 @@ grid_depth = 1
 # 6 5 4
 # 9 8 7
 # then xdir = -1 and ydir = -1.
+#
+# For "snake" style and more general patterns consider using nr_stitcher_nongrid.py.
 xdir = 1
 ydir = 1
 zdir = 1
@@ -111,6 +109,12 @@ fine_block_radius_z_stitch = 1
 fine_binning_x_stitch = 1
 fine_binning_y_stitch = 1
 fine_binning_z_stitch = 1
+
+
+# Set to true to try to optimize locations and orientations of the sub-images so that
+# any discrepancies in overlapping regions are as small as possible before correcting
+# them with non-rigid displacements.
+global_optimization = True
 
 
 # Allow rigid body rotation?

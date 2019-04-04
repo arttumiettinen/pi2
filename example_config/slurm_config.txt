@@ -2,19 +2,37 @@
 
 
 ; Extra arguments that are passed to sinfo and sbatch
-; Use, e.g., to select partition or exclude some nodes.
-extra_args = --partition=day
+; This item is used for fast jobs only.
+; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
+extra_args_fast_jobs = --partition=hour
+
+; Extra arguments that are passed to sinfo and sbatch
+; This item is used for normal jobs only.
+; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
+extra_args_normal_jobs = --partition=day --time=1440
+
+; Extra arguments that are passed to sinfo and sbatch
+; This item is used for slow jobs only.
+; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
+extra_args_slow_jobs = --partition=week --time=10080
 
 ; Shell commands run on node before starting job.
 ; Use, e.g., to load modules or mount disks.
-job_init_commands = module load gcc/7.3.0
+job_init_commands = hostname; module load gcc/7.3.0
 
 ; Maximum amount of memory to use per node in megabytes.
 ; Set to zero to determine the value automatically as 90 % of
 ; the minimum value returned by command
-; sinfo --Node --Format=Memory {extra_args}
+; sinfo --Node --Format=freemem {extra_args}
 ; (effectively 90 % of memory in the node that has the least memory)
 ; If the number of nodes is large, the sinfo call may be very slow.
 ; In that case one should specify the value in this file so that
 ; the sinfo call is never made.
-max_memory = 200000
+max_memory = 180000
+
+; Maximum number of re-tries that are done if a job fails.
+; The job may fail, e.g., due to node failure, memory problems, or time limits.
+; If you have specified different queues for different types of jobs (see
+; extra_args_*_jobs settings), specify here at least the number of different
+; queues.
+max_resubmit_count = 5

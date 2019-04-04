@@ -14,7 +14,9 @@ namespace pilib
 			ADD_REAL(LineSkeletonCommand),
 			ADD_REAL(ClassifySkeletonCommand),
 			ADD_REAL(TraceLineSkeletonCommand),
+			ADD_REAL(TraceLineSkeleton2Command),
 			ADD_REAL(TraceLineSkeletonBlockCommand),
+			ADD_REAL(TraceLineSkeletonBlock2Command),
 			new CleanSkeletonCommand()
 			}
 		);

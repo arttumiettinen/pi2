@@ -3,9 +3,13 @@
 #include <stdexcept>
 #include <string>
 
+#include <variant>
+
 #include "datatypes.h"
 #include "neighbourhoodtype.h"
 #include "boundarycondition.h"
+#include "connectivity.h"
+#include "interpolationmode.h"
 #include "image.h"
 #include "distributedimage.h"
 #include "math/vec3.h"
@@ -18,6 +22,7 @@ using itl2::float32_t;
 using itl2::coord_t;
 using itl2::NeighbourhoodType;
 using itl2::BoundaryCondition;
+using itl2::Connectivity;
 using itl2::Image;
 using math::Vec3c;
 using math::Vec3d;
@@ -30,15 +35,17 @@ namespace pilib
 	toString, ParamVariant, and PISystem::tryConvert.
 	If you add an image data type, change also parameterType specializations.
 	*/
-	enum ArgumentDataType
+	enum class ArgumentDataType
 	{
 		String,
 		Double,
 		Int,
 		Size,
+		Bool,
 		NBType,
 		BoundaryCond,
-		Bool,
+		Connectiv,
+		InterpolationMode,
 		ImageUInt8,
 		ImageUInt16,
 		ImageUInt32,
@@ -62,107 +69,117 @@ namespace pilib
 
 	template<> inline ArgumentDataType parameterType<string>()
 	{
-		return String;
+		return ArgumentDataType::String;
 	}
 
 	template<> inline ArgumentDataType parameterType<double>()
 	{
-		return Double;
+		return ArgumentDataType::Double;
 	}
 
 	template<> inline ArgumentDataType parameterType<coord_t>()
 	{
-		return Int;
+		return ArgumentDataType::Int;
 	}
 
 	template<> inline ArgumentDataType parameterType<size_t>()
 	{
-		return Size;
+		return ArgumentDataType::Size;
 	}
 
 	template<> inline ArgumentDataType parameterType<NeighbourhoodType>()
 	{
-		return NBType;
+		return ArgumentDataType::NBType;
 	}
 
 	template<> inline ArgumentDataType parameterType<BoundaryCondition>()
 	{
-		return BoundaryCond;
+		return ArgumentDataType::BoundaryCond;
+	}
+
+	template<> inline ArgumentDataType parameterType<Connectivity>()
+	{
+		return ArgumentDataType::Connectiv;
+	}
+
+	template<> inline ArgumentDataType parameterType<InterpolationMode>()
+	{
+		return ArgumentDataType::InterpolationMode;
 	}
 
 	template<> inline ArgumentDataType parameterType<bool>()
 	{
-		return Bool;
+		return ArgumentDataType::Bool;
 	}
 
 	template<> inline ArgumentDataType parameterType<Image<uint8_t> >()
 	{
-		return ImageUInt8;
+		return ArgumentDataType::ImageUInt8;
 	}
 
 	template<> inline ArgumentDataType parameterType<Image<uint16_t> >()
 	{
-		return ImageUInt16;
+		return ArgumentDataType::ImageUInt16;
 	}
 
 	template<> inline ArgumentDataType parameterType<Image<uint32_t> >()
 	{
-		return ImageUInt32;
+		return ArgumentDataType::ImageUInt32;
 	}
 
 	template<> inline ArgumentDataType parameterType<Image<uint64_t> >()
 	{
-		return ImageUInt64;
+		return ArgumentDataType::ImageUInt64;
 	}
 
 	template<> inline ArgumentDataType parameterType<Image<float32_t> >()
 	{
-		return ImageFloat32;
+		return ArgumentDataType::ImageFloat32;
 	}
 
 	template<> inline ArgumentDataType parameterType<Image<complex32_t> >()
 	{
-		return ImageComplex32;
+		return ArgumentDataType::ImageComplex32;
 	}
 
 	template<> inline ArgumentDataType parameterType<Vec3d>()
 	{
-		return Vect3d;
+		return ArgumentDataType::Vect3d;
 	}
 
 	template<> inline ArgumentDataType parameterType<Vec3c>()
 	{
-		return Vect3c;
+		return ArgumentDataType::Vect3c;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<uint8_t> >()
 	{
-		return DImageUInt8;
+		return ArgumentDataType::DImageUInt8;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<uint16_t> >()
 	{
-		return DImageUInt16;
+		return ArgumentDataType::DImageUInt16;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<uint32_t> >()
 	{
-		return DImageUInt32;
+		return ArgumentDataType::DImageUInt32;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<uint64_t> >()
 	{
-		return DImageUInt64;
+		return ArgumentDataType::DImageUInt64;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<float32_t> >()
 	{
-		return DImageFloat32;
+		return ArgumentDataType::DImageFloat32;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<complex32_t> >()
 	{
-		return DImageComplex32;
+		return ArgumentDataType::DImageComplex32;
 	}
 
 	/*
@@ -170,47 +187,51 @@ namespace pilib
 	*/
 	static inline string toString(ArgumentDataType t)
 	{
-		if (t == String)
+		if (t == ArgumentDataType::String)
 			return "string";
-		if (t == Double)
+		if (t == ArgumentDataType::Double)
 			return "real";
-		if (t == Int)
+		if (t == ArgumentDataType::Int)
 			return "integer";
-		if (t == Size)
+		if (t == ArgumentDataType::Size)
 			return "positive integer";
-		if (t == NBType)
+		if (t == ArgumentDataType::NBType)
 			return "neighbourhood type";
-		if (t == BoundaryCond)
+		if (t == ArgumentDataType::BoundaryCond)
 			return "boundary condition";
-		if (t == Bool)
+		if (t == ArgumentDataType::Connectiv)
+			return "connectivity";
+		if (t == ArgumentDataType::InterpolationMode)
+			return "interpolation mode";
+		if (t == ArgumentDataType::Bool)
 			return "boolean";
-		if (t == ImageUInt8)
+		if (t == ArgumentDataType::ImageUInt8)
 			return "uint8 image";
-		if (t == ImageUInt16)
+		if (t == ArgumentDataType::ImageUInt16)
 			return "uint16 image";
-		if (t == ImageUInt32)
+		if (t == ArgumentDataType::ImageUInt32)
 			return "uint32 image";
-		if (t == ImageUInt64)
+		if (t == ArgumentDataType::ImageUInt64)
 			return "uint64 image";
-		if (t == ImageFloat32)
+		if (t == ArgumentDataType::ImageFloat32)
 			return "float32 image";
-		if (t == ImageComplex32)
+		if (t == ArgumentDataType::ImageComplex32)
 			return "complex32 image";
-		if (t == Vect3d)
+		if (t == ArgumentDataType::Vect3d)
 			return "3-component real vector";
-		if (t == Vect3c)
+		if (t == ArgumentDataType::Vect3c)
 			return "3-component integer vector";
-		if (t == DImageUInt8)
+		if (t == ArgumentDataType::DImageUInt8)
 			return "distributed uint8 image";
-		if (t == DImageUInt16)
+		if (t == ArgumentDataType::DImageUInt16)
 			return "distributed uint16 image";
-		if (t == DImageUInt32)
+		if (t == ArgumentDataType::DImageUInt32)
 			return "distributed uint32 image";
-		if (t == DImageUInt64)
+		if (t == ArgumentDataType::DImageUInt64)
 			return "distributed uint64 image";
-		if (t == DImageFloat32)
+		if (t == ArgumentDataType::DImageFloat32)
 			return "distributed float32 image";
-		if (t == DImageComplex32)
+		if (t == ArgumentDataType::DImageComplex32)
 			return "distributed complex32 image";
 		throw runtime_error("Not implemented");
 	}
@@ -221,17 +242,17 @@ namespace pilib
 	*/
 	static inline size_t pixelSize(ArgumentDataType t)
 	{
-		if (t == ImageUInt8 || t == DImageUInt8)
+		if (t == ArgumentDataType::ImageUInt8 || t == ArgumentDataType::DImageUInt8)
 			return 1;
-		if (t == ImageUInt16 || t == DImageUInt16)
+		if (t == ArgumentDataType::ImageUInt16 || t == ArgumentDataType::DImageUInt16)
 			return 2;
-		if (t == ImageUInt32)
+		if (t == ArgumentDataType::ImageUInt32)
 			return 4;
-		if (t == ImageUInt64)
+		if (t == ArgumentDataType::ImageUInt64)
 			return 8;
-		if (t == ImageFloat32 || t == DImageFloat32)
+		if (t == ArgumentDataType::ImageFloat32 || t == ArgumentDataType::DImageFloat32)
 			return 4;
-		if (t == ImageComplex32 || t == DImageComplex32)
+		if (t == ArgumentDataType::ImageComplex32 || t == ArgumentDataType::DImageComplex32)
 			return 2*4;
 
 		return 0;
@@ -245,268 +266,43 @@ namespace pilib
 		return pixelSize(t) > 0;
 	}
 
-	/*
-	Encapsulates value of an argument.
+	typedef std::variant<coord_t,
+		size_t,
+		double,
+		bool,
+		string,
+		NeighbourhoodType,
+		BoundaryCondition,
+		Connectivity,
+		InterpolationMode,
+		Vec3d,
+		Vec3c,
+		Image<uint8_t>*, Image<uint16_t>*, Image<uint32_t>*, Image<uint64_t>*, Image<float32_t>*, Image<complex32_t>*,
+		DistributedImage<uint8_t>*, DistributedImage<uint16_t>*, DistributedImage<uint32_t>*, DistributedImage<uint64_t>*, DistributedImage<float32_t>*, DistributedImage<complex32_t>*>
+		ParamVariant;
+
+	/**
+	Gets DistributedImage* from ParamVariant. Throws ITLException if the variant does not contain any DistributedImage*.
 	*/
-	struct ParamVariant
+	static inline DistributedImageBase* getDistributedImage(ParamVariant& v)
 	{
-		string userPassedString;
-		union
-		{
-			string* sval;
-			double dval;
-			coord_t ival;
-			bool bval;
-			ImageBase* imgval;
-			Image<uint8_t>* img8;
-			Image<uint16_t>* img16;
-			Image<uint32_t>* img32;
-			Image<uint64_t>* img64;
-			Image<float32_t>* imgf32;
-			Image<complex32_t>* imgc32;
-			DistributedImageBase* dimgval;
-			DistributedImage<uint8_t>* dimg8;
-			DistributedImage<uint16_t>* dimg16;
-			DistributedImage<uint32_t>* dimg32;
-			DistributedImage<uint64_t>* dimg64;
-			DistributedImage<float32_t>* dimgf32;
-			DistributedImage<complex32_t>* dimgc32;
-			NeighbourhoodType nbtval;
-			BoundaryCondition bcval;
-			struct
+		DistributedImageBase* p = 0;
+
+		std::visit(
+			[&p](auto& item)
 			{
-				double vx, vy, vz;
-			};
-			struct
-			{
-				coord_t vix, viy, viz;
-			};
-		};
+				using T = std::decay_t<decltype(item)>;
+				if constexpr (std::is_convertible_v<T, DistributedImageBase*>)
+				{
+					p = (DistributedImageBase*)item;
+				}
+			},
+			v);
 
-	};
-
-	template<typename out_t> out_t get(ParamVariant& v)
-	{
-		out_t::this_data_type_is_not_implemented_in_ParamVariant_get;
-	}
-
-	template<typename out_t> const out_t get(const ParamVariant& v)
-	{
-		out_t::this_data_type_is_not_implemented_in_ParamVariant_get;
-	}
-
-	template<> inline string get(ParamVariant& v)
-	{
-		return *v.sval;
-	}
-
-	template<> inline const string get(const ParamVariant& v)
-	{
-		return *v.sval;
-	}
-
-	template<> inline coord_t get(ParamVariant& v)
-	{
-		return v.ival;
-	}
-
-	template<> inline const coord_t get(const ParamVariant& v)
-	{
-		return v.ival;
-	}
-
-	template<> inline double get(ParamVariant& v)
-	{
-		return v.dval;
-	}
-
-	template<> inline const double get(const ParamVariant& v)
-	{
-		return v.dval;
-	}
-
-	template<> inline bool get(ParamVariant& v)
-	{
-		return v.bval;
-	}
-
-	template<> inline const bool get(const ParamVariant& v)
-	{
-		return v.bval;
-	}
-
-	template<> inline NeighbourhoodType get(ParamVariant& v)
-	{
-		return v.nbtval;
-	}
-
-	template<> inline const NeighbourhoodType get(const ParamVariant& v)
-	{
-		return v.nbtval;
-	}
-
-	template<> inline BoundaryCondition get(ParamVariant& v)
-	{
-		return v.bcval;
-	}
-
-	template<> inline const BoundaryCondition get(const ParamVariant& v)
-	{
-		return v.bcval;
-	}
-
-	template<> inline Image<uint8_t>* get(ParamVariant& v)
-	{
-		return v.img8;
-	}
-
-	template<> inline Image<uint8_t>* const get(const ParamVariant& v)
-	{
-		return v.img8;
-	}
-
-	template<> inline Image<uint16_t>* get(ParamVariant& v)
-	{
-		return v.img16;
-	}
-
-	template<> inline Image<uint16_t>* const get(const ParamVariant& v)
-	{
-		return v.img16;
-	}
-
-	template<> inline Image<uint32_t>* get(ParamVariant& v)
-	{
-		return v.img32;
-	}
-
-	template<> inline Image<uint32_t>* const get(const ParamVariant& v)
-	{
-		return v.img32;
-	}
-
-	template<> inline Image<uint64_t>* get(ParamVariant& v)
-	{
-		return v.img64;
-	}
-
-	template<> inline Image<uint64_t>* const get(const ParamVariant& v)
-	{
-		return v.img64;
-	}
-
-	template<> inline Image<float32_t>* get(ParamVariant& v)
-	{
-		return v.imgf32;
-	}
-	
-	template<> inline Image<float32_t>* const get(const ParamVariant& v)
-	{
-		return v.imgf32;
-	}
-
-	template<> inline Image<complex32_t>* get(ParamVariant& v)
-	{
-		return v.imgc32;
-	}
-
-	template<> inline Image<complex32_t>* const get(const ParamVariant& v)
-	{
-		return v.imgc32;
-	}
-
-	template<> inline DistributedImage<uint8_t>* get(ParamVariant& v)
-	{
-		return v.dimg8;
-	}
-
-	template<> inline DistributedImage<uint8_t>* const get(const ParamVariant& v)
-	{
-		return v.dimg8;
-	}
-
-	template<> inline DistributedImage<uint16_t>* get(ParamVariant& v)
-	{
-		return v.dimg16;
-	}
-
-	template<> inline DistributedImage<uint16_t>* const get(const ParamVariant& v)
-	{
-		return v.dimg16;
-	}
-
-	template<> inline DistributedImage<uint32_t>* get(ParamVariant& v)
-	{
-		return v.dimg32;
-	}
-
-	template<> inline DistributedImage<uint32_t>* const get(const ParamVariant& v)
-	{
-		return v.dimg32;
-	}
-
-	template<> inline DistributedImage<uint64_t>* get(ParamVariant& v)
-	{
-		return v.dimg64;
-	}
-
-	template<> inline DistributedImage<uint64_t>* const get(const ParamVariant& v)
-	{
-		return v.dimg64;
-	}
-
-	template<> inline DistributedImage<float32_t>* get(ParamVariant& v)
-	{
-		return v.dimgf32;
-	}
-
-	template<> inline DistributedImage<float32_t>* const get(const ParamVariant& v)
-	{
-		return v.dimgf32;
-	}
-
-	template<> inline DistributedImage<complex32_t>* get(ParamVariant& v)
-	{
-		return v.dimgc32;
-	}
-
-	template<> inline DistributedImage<complex32_t>* const get(const ParamVariant& v)
-	{
-		return v.dimgc32;
-	}
-
-	template<> inline Vec3d get(ParamVariant& v)
-	{
-		return Vec3d(v.vx, v.vy, v.vz);
-	}
-
-	template<> inline const Vec3d get(const ParamVariant& v)
-	{
-		return Vec3d(v.vx, v.vy, v.vz);
-	}
-
-	template<> inline Vec3c get(ParamVariant& v)
-	{
-		return Vec3c(v.vix, v.viy, v.viz);
-	}
-
-	template<> inline const Vec3c get(const ParamVariant& v)
-	{
-		return Vec3c(v.vix, v.viy, v.viz);
-	}
-
-	// Extra getters
-	template<> inline size_t get(ParamVariant& v)
-	{
-		if (v.ival < 0)
-			return 0;
-		return (size_t)v.ival;
-	}
-	template<> inline const size_t get(const ParamVariant& v)
-	{
-		if (v.ival < 0)
-			return 0;
-		return (size_t)v.ival;
+		if (p == 0)
+			throw ITLException("No DistributedImage found in variant.");
+		
+		return p;
 	}
 
 	/*
@@ -514,7 +310,7 @@ namespace pilib
 	Input images must exist before call to the function.
 	If output image does not exist, it is created before call to the function (with size 1 x 1 x 1).
 	*/
-	enum ParameterDirection
+	enum class ParameterDirection
 	{
 		/**
 		The value of the corresponding argument is used as input data for the command.
@@ -532,9 +328,9 @@ namespace pilib
 
 	static inline string toString(ParameterDirection dir)
 	{
-		if (dir == In)
+		if (dir == ParameterDirection::In)
 			return "in";
-		else if (dir == Out)
+		else if (dir == ParameterDirection::Out)
 			return "out";
 		else
 			return "in & out";

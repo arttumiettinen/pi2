@@ -12,20 +12,20 @@ namespace itl2
 	@param img Image to process.
 	@param volumeLimit Nonzero regions smaller than this value are removed.
 	@param preserveEdges Set to true to skip processing of regions that touch image edge.
-	@param connectivity Connectivity of pixels (NearestNeighbours or AllNeighbours).
+	@param connectivity Connectivity of pixels.
 	*/
-	template<typename pixel_t> void regionRemoval(Image<pixel_t>& img, size_t volumeLimit, bool preserveEdges = false, Connectivity connectivity = NearestNeighbours)
+	template<typename pixel_t> void regionRemoval(Image<pixel_t>& img, size_t volumeLimit, bool preserveEdges = false, Connectivity connectivity = Connectivity::NearestNeighbours)
 	{
 		// Analyze particles
-		vector<vector<double> > results;
-		AnalyzerVector<Vec3c, pixel_t> analyzers;
-		analyzers.push_back(new analyzers::PointCoords3D<Vec3c, pixel_t>());
-		analyzers.push_back(new analyzers::Volume<Vec3c, pixel_t>());
+		Results results;
+		AnalyzerSet<Vec3sc, pixel_t> analyzers;
+		analyzers.push_back(new analyzers::Coordinates<Vec3sc, pixel_t>());
+		analyzers.push_back(new analyzers::Volume<Vec3sc, pixel_t>());
 		if (preserveEdges)
-			analyzers.push_back(new analyzers::IsOnEdge<Vec3c, pixel_t>(img.dimensions()));
+			analyzers.push_back(new analyzers::IsOnEdge<Vec3sc, pixel_t>(img.dimensions()));
 
 		cout << "Searching for particles..." << endl;
-		analyzeParticles3D<pixel_t>(img, analyzers, results, connectivity, volumeLimit);
+		analyzeParticles<pixel_t>(img, analyzers, results, connectivity, volumeLimit);
 
 		if (preserveEdges)
 		{
@@ -44,7 +44,8 @@ namespace itl2
 
 		// Fill those with too small volume
 		cout << "Filling small particles..." << endl;
-		fillParticles3D<pixel_t>(img, analyzers.getHeaders(), results, 0, 3, (double)volumeLimit, connectivity, false);
+		//fillParticles<pixel_t>(img, results, 0, 3, (double)volumeLimit, connectivity, false);
+		fillParticles<pixel_t>(img, results, 0, connectivity);
 
 		threshold(img, (pixel_t)0);
 	}

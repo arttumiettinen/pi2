@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cstring>
+
 #include "math/numberutils.h"
 #include "test.h"
+#include "itlexception.h"
 
 namespace math
 {
@@ -28,7 +31,7 @@ namespace math
 		size_t getIndex(const size_t row, const size_t column) const
 		{
 			if (row >= rows || column >= columns)
-				throw ITLException("Index out of bounds.");
+				throw itl2::ITLException("Index out of bounds.");
 
 			return column * rows + row;
 		}
@@ -39,14 +42,14 @@ namespace math
 		void checkDimensions(const Matrix<real_t>& r) const
 		{
 			if (!isSameSize(r))
-				throw ITLException("Matrix size mismatch.");
+				throw itl2::ITLException("Matrix size mismatch.");
 		}
 
 	public:
 		Matrix(const size_t rows = 1, const size_t columns = 1)
 		{
 			if (rows == 0 || columns == 0)
-				throw ITLException("Invalid initialization of matrix with zero rows or columns.");
+				throw itl2::ITLException("Invalid initialization of matrix with zero rows or columns.");
 
 			this->rows = rows;
 			this->columns = columns;
@@ -90,7 +93,7 @@ namespace math
 		operator real_t() const
 		{
 			if (count() != 1)
-				throw ITLException("Invalid conversion to number from matrix with more than one element.");
+				throw itl2::ITLException("Invalid conversion to number from matrix with more than one element.");
 
 			return pElem[0];
 		}
@@ -250,7 +253,7 @@ namespace math
 		const Matrix<real_t> operator*(const Matrix<real_t>& r) const
 		{
 			if (columns != r.rows)
-				throw ITLException("Incompatible size of multiplicant matrices.");
+				throw itl2::ITLException("Incompatible size of multiplicant matrices.");
 
 			Matrix<real_t> result(rows, r.columns);
 

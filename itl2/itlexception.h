@@ -2,8 +2,6 @@
 
 #include <string>
 
-using std::string;
-
 namespace itl2
 {
 	/**
@@ -12,13 +10,13 @@ namespace itl2
 	class ITLException
 	{
 	private:
-		string m_message;
+		std::string m_message;
 
 	public:
 		/**
 		* Constructor
 		*/
-		ITLException(const string& msg) :
+		ITLException(const std::string& msg) :
 			m_message(msg)
 		{
 		}
@@ -26,7 +24,7 @@ namespace itl2
 		/**
 		* Gets the error message.
 		*/
-		const string& message() const
+		const std::string& message() const
 		{
 			return m_message;
 		}

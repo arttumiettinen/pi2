@@ -16,7 +16,7 @@ namespace itl2
 	*/
 	inline bool isInNeighbourhood(const math::Vec3c& relPos, NeighbourhoodType nbType, const math::Vec3c& nbRadius)
 	{
-		if (nbType == Rectangular)
+		if (nbType == NeighbourhoodType::Rectangular)
 		{
 			size_t size = nbRadius.size();
 			for (size_t n = 0; n < size; n++)
@@ -26,7 +26,7 @@ namespace itl2
 			}
 			return true;
 		}
-		else if (nbType == Ellipsoidal)
+		else if (nbType == NeighbourhoodType::Ellipsoidal)
 		{
 			double sum = 0;
 			size_t size = nbRadius.size();
@@ -183,7 +183,7 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = pixel_t> void getNeighbourhood(const Image<pixel_t>& img, const math::Vec3c& nbCenter, const math::Vec3c& nbRadius, Image<out_t>& nb, BoundaryCondition bc)
 	{
-		if (bc == Zero)
+		if (bc == BoundaryCondition::Zero)
 			internals::getNeighbourhoodZero<pixel_t, out_t>(img, nbCenter, nbRadius, nb);
 		else // if bc == Nearest
 			internals::getNeighbourhoodClamp<pixel_t, out_t>(img, nbCenter, nbRadius, nb);

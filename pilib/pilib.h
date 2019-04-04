@@ -82,5 +82,11 @@ extern "C"
 	@param dataType The system sets this int to 1 to signify uint8 image, 2 for uint16 image, 3 for float32 image and 4 for complex32 image.
 	*/
 	PILIB_API void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, int64_t* depth, int32_t* dataType);
+
+	/**
+	In distributed computing mode, flushes changes made to image data through pointers returned by getData to files.
+	Does nothing in normal mode.
+	*/
+	PILIB_API uint8_t finishUpdate(void* pi, const char* imgName);
 }
 

@@ -8,18 +8,20 @@
 #include "pointprocess.h"
 #include "projections.h"
 #include "neighbourhood.h"
+#include "testutils.h"
 
 using namespace std;
 
 namespace itl2
 {
 	
+
 	namespace tests
 	{
-		void dmap(const string& binFile, const string& dmapOutFile, const string& dmapGTFile, const string& dmapErrFile)
+		void dmap(const string& binFile, const string& dmapOutFile, const string& dmapGTFile)
 		{
 			Image<uint8_t> head;
-			raw::readd(head, binFile);
+			raw::read(head, binFile);
 
 			//raw::writed(head, "./dmap/head_bin");
 
@@ -31,24 +33,18 @@ namespace itl2
 
 
 			Image<float32_t> gt;
-			raw::readd(gt, dmapGTFile);
+			raw::read(gt, dmapGTFile);
 
-			subtract(dmap, gt);
-			abs(dmap);
-			double err = sum(dmap);
-			cout << "sum|dmap - gt| = " << err << endl;
-
-			raw::writed(dmap, dmapErrFile);
-
-			testAssert(NumberUtils<double>::equals(err, 0), "Difference between ground truth and distance map.");
+			checkDifference(dmap, gt, "Difference between ground truth and distance map.");
 		}
 
 		void dmap1()
 		{
-			dmap("./t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./t1-head_bin_dmap_256x256x129.raw", "./dmap/head_dmap_err");
-			dmap("./test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./test_piece_dmap_GT_256x256x256.raw", "./dmap/test_piece_err");
+			dmap("./t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./t1-head_bin_dmap_256x256x129.raw");
+			dmap("./test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./test_piece_dmap_GT_256x256x256.raw");
+			dmap("./test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./test_piece_dmap_GT_512x512x512.raw");
 		}
-
+		
 	}
 
 }

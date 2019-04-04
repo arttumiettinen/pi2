@@ -38,7 +38,9 @@
     <Folder Include="generic\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="generic\nr_stitcher.py" />
+    <Compile Include="generic\base.py" />
+    <Compile Include="generic\nr_stitcher_grid.py" />
+    <Compile Include="generic\nr_stitcher_nongrid.py" />
     <Compile Include="generic\pi2py.py" />
     <Compile Include="generic\pi2py_examples.py" />
     <Compile Include="generic\plot_network.py">

@@ -84,16 +84,41 @@ namespace itl2
 
 	/**
 	Similar to siddonLine method above but clips the line to the [0, 0, 0] x dimensions.
-	The clipped line is returned in start and end vectors. If the line does not intersect the region, start and end will be undefined.
+	The clipped line is returned in start and end vectors. If the line does not intersect the region, start and end will be undefined and
+	the line is not drawn at all.
 	*/
 	template<typename real_t, typename op> void siddonLineClip(Vec3<real_t>& start, Vec3<real_t>& end, op& operation, const Vec3<real_t>& dimensions)
 	{
-		if (clipLine(start, end, Vec3<real_t>(0, 0, 0), Vec3<real_t>(dimensions)))
+		if (clipLine(start, end, Vec3<real_t>(0, 0, 0), Vec3<real_t>(dimensions) - Vec3<real_t>(1, 1, 1)))
 			siddonLine(start, end, operation);
 	}
 
 	/**
-	* Plots in-pixel line lengths to given image.
+	Plots constant color value to image
+	*/
+	template<typename pixel_t, typename real_t> struct LineColorPlotter
+	{
+	private:
+		Image<pixel_t> & img;
+		pixel_t color;
+
+	public:
+		LineColorPlotter(Image<pixel_t>& img, pixel_t color) : img(img), color(color)
+		{
+
+		}
+
+		void operator()(const Vec3c& pos, const real_t length, const real_t totalLength)
+		{
+			if (!img.isInImage(pos))
+				throw ITLException("Point outside image.");
+
+			img(pos) = color;
+		}
+	};
+
+	/**
+	Plots in-pixel line lengths to given image.
 	*/
 	template<typename pixel_t, typename real_t> struct LinePlotter
 	{

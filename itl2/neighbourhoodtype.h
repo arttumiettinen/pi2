@@ -7,7 +7,7 @@ namespace itl2
 	/*
 	Enumerates possible neighbourhood types.
 	*/
-	enum NeighbourhoodType
+	enum class NeighbourhoodType
 	{
 		/**
 		Indicates rectangular neighbourhood with different radius in all dimensions.
@@ -25,8 +25,8 @@ namespace itl2
 	{
 		switch (x)
 		{
-		case Rectangular: return "Rectangular";
-		case Ellipsoidal: return "Ellipsoidal";
+		case NeighbourhoodType::Rectangular: return "Rectangular";
+		case NeighbourhoodType::Ellipsoidal: return "Ellipsoidal";
 		}
 		throw ITLException("Invalid neighbourhood type value.");
 	}

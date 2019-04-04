@@ -74,7 +74,7 @@ namespace math
 			/**
 			Constructs Vec3 from vector<T>. Throws exception if the vector does not contain 3 elements.
 			*/
-			Vec3(const vector<T>& other)
+			Vec3(const std::vector<T>& other)
 			{
 				if(other.size() != 3)
 					throw itl2::ITLException("Invalid vector in Vec3 constructor.");
@@ -316,10 +316,10 @@ namespace math
 			*/
 			Vec3 normalized(real_t& length) const
 			{
-				length = normSquared();
+				length = norm();
 				if (!NumberUtils<real_t>::equals(length, 0.0))
 				{
-					real_t m = 1 / sqrt(length);
+					real_t m = 1 / length;
 					return Vec3(pixelRound<T, real_t>(x * m), pixelRound<T, real_t>(y * m), pixelRound<T, real_t>(z * m));
 				}
 				else
@@ -375,10 +375,28 @@ namespace math
 				return math::min(x, math::min(y, z));
 			}
 
+			/**
+			Returns sum of all elements.
+			*/
+			T sum() const
+			{
+				return x + y + z;
+			}
+
+			Vec3<T> componentwiseMultiply(const Vec3<T>& r) const
+			{
+				return Vec3<T>(x * r.x, y * r.y, z * r.z);
+			}
+
+			Vec3<T> componentwiseDivide(const Vec3<T>& r) const
+			{
+				return Vec3<T>(x / r.x, y / r.y, z / r.z);
+			}
+
             /**
             Converts this object to string.
             */
-            friend ostream& operator<<(ostream& stream, const Vec3<T, real_t>& v)
+            friend std::ostream& operator<<(std::ostream& stream, const Vec3<T, real_t>& v)
             {
                 stream << "[" << v.x << ", " << v.y << ", " << v.z << "]";
                 return stream;
@@ -389,6 +407,7 @@ namespace math
     typedef Vec3<double> Vec3d;
     typedef Vec3<int> Vec3i;
 	typedef Vec3<coord_t> Vec3c;
+	typedef Vec3<int32_t> Vec3sc; // This is for use in situations where signed coordinate vector is needed and Vec3<coord_t> requires too much memory.
 
 	/**
 	Clamps the given value to range [lower, upper].
@@ -522,6 +541,19 @@ namespace math
 	inline void toSpherical(const Vec3d& v, double& r, double& azimuthal, double& polar)
 	{
 		toSpherical(v.x, v.y, v.z, r, azimuthal, polar);
+	}
+
+	/**
+	Compares two vectors to establish order so that containers containing vectors can be sorted.
+	Uses exact comparisons even for floating point types.
+	*/
+	template<typename T> bool vecComparer(const Vec3<T>& a, const Vec3<T>& b)
+	{
+		if (a.z != b.z)
+			return a.z < b.z;
+		if (a.y != b.y)
+			return a.y < b.y;
+		return a.x < b.x;
 	}
 }
 

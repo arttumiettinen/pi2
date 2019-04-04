@@ -5,6 +5,8 @@
 
 namespace fs = std::experimental::filesystem;
 
+#include <iostream>
+
 #if defined(__linux__)
 
 	#include "pstream.h"
@@ -33,7 +35,7 @@ namespace pilib
 	/**
 	Execute a program and return all output.
 	*/
-	string execute(const string& cmd)
+	string execute(const string& cmd, bool showOutput)
 	{
 		redi::ipstream proc(cmd, redi::pstreams::pstdout | redi::pstreams::pstderr);
 		string line;
@@ -48,6 +50,8 @@ namespace pilib
             if(std::getline(proc.err(), line))
             {
                 output << line << endl;
+                if(showOutput)
+                    cout << line << endl;
                 hasErr = true;
             }
                 
@@ -56,6 +60,8 @@ namespace pilib
             if(std::getline(proc.out(), line))
             {
                 output << line << endl;
+                if(showOutput)
+                    cout << line << endl;
                 hasOut = true;
             }
                 
@@ -94,7 +100,7 @@ namespace pilib
 	This code is mostly from
 	https://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c-using-posix
 	*/
-	string execute(const string& cmd)
+	string execute(const string& cmd, bool showOutput)
 	{
 		HANDLE hPipeRead, hPipeWrite;
 
@@ -148,6 +154,10 @@ namespace pilib
 
 				buf[dwRead] = 0;
 				strResult += buf;
+
+				// Echo output to screen
+				if(showOutput)
+    				cout << buf << flush;
 			}
 		}
 
@@ -186,8 +196,8 @@ namespace pilib
 	/**
 	Execute the given program with given arguments and return all output that was generated.
 	*/
-	string execute(const string& cmd, const string& args)
+	string execute(const string& cmd, const string& args, bool showOutput)
 	{
-		return execute(cmd + " " + args);
+		return execute(cmd + " " + args, showOutput);
 	}
 }

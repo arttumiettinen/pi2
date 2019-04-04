@@ -86,7 +86,7 @@ namespace math
 		real_t newtmax = (max - start) / vel;
 
 		if (newtmin > newtmax)
-			itl2::swap(newtmin, newtmax);
+			std::swap(newtmin, newtmax);
 
 		if (newtmax < tmin || newtmin > tmax)
 			return false;
@@ -145,10 +145,12 @@ namespace math
 
 	namespace tests
 	{
-		void geometry()
+		inline void geometry()
 		{
-			Vec3d start(-1, -1, -1);
-			Vec3d end(2, 2, 2);
+			Vec3d start, end;
+
+			start = Vec3d(-1, -1, -1);
+			end = Vec3d(2, 2, 2);
 			testAssert(clipLine(start, end, Vec3d(0, 0, 0), Vec3d(1, 1, 1)) == true, "clipLine return value");
 			testAssert(start == Vec3d(0, 0, 0), "start point");
 			testAssert(end == Vec3d(1, 1, 1), "end point");

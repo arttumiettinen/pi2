@@ -1,10 +1,13 @@
 #pragma once
 
 #include <string>
+#include <sstream>
 #include <cstring>
 
 #include "math/vec3.h"
-#include "math/eig3.h"
+//#include "math/eig3.h"
+#include "math/dsyevh3.h"
+
 
 namespace math
 {
@@ -145,10 +148,10 @@ namespace math
 		*/
 		void transpose()
 		{
-			itl2::swap(a01, a10);
-			itl2::swap(a02, a20);
+			std::swap(a01, a10);
+			std::swap(a02, a20);
 			
-			itl2::swap(a12, a21);
+			std::swap(a12, a21);
 		}
 
 		/**
@@ -189,11 +192,11 @@ namespace math
 		}
 
 		/**
-		Calculates eigendecomposition of this matrix and stores sorted eigenvalues in
+		Calculates eigendecomposition of this matrix, assuming it is symmetric, and stores sorted eigenvalues in
 		lambda1, lambda2 and lambda3, lambda1 corresponding to the largest eigenvalue.
 		The corresponding eigenvectors are stored in v1, v2 and v3.
 		*/
-		void eig(Vec3<T>& v1, Vec3<T>& v2, Vec3<T>& v3, T& lambda1, T& lambda2, T& lambda3) const
+		void eigsym(Vec3<T>& v1, Vec3<T>& v2, Vec3<T>& v3, T& lambda1, T& lambda2, T& lambda3) const
 		{
 			double A[3][3];
 			double V[3][3];
@@ -203,28 +206,56 @@ namespace math
 				for (size_t j = 0; j < 3; j++)
 					A[i][j] = t[i][j];
 
-			eigen_decomposition(A, V, d);
+			dsyevh3(A, V, d);
+			
+			// Sort eigenvalues and eigenvectors
+			constexpr int n = 3;
+			for (int i = 0; i < n - 1; i++)
+			{
+				int k = i;
+				double p = d[i];
+				for (int j = i + 1; j < n; j++)
+				{
+					if (d[j] < p)
+					{
+						k = j;
+						p = d[j];
+					}
+				}
+				if (k != i)
+				{
+					d[k] = d[i];
+					d[i] = p;
+					for (int j = 0; j < n; j++)
+					{
+						p = V[j][i];
+						V[j][i] = V[j][k];
+						V[j][k] = p;
+					}
+				}
+			}
 
-			lambda1 = d[2];
-			lambda2 = d[1];
-			lambda3 = d[0];
+			lambda1 = (T)d[2];
+			lambda2 = (T)d[1];
+			lambda3 = (T)d[0];
 
+			// Sanity check
 			if (lambda1 < lambda2 || lambda2 < lambda3 || lambda1 < lambda3)
 				throw ITLException("Eigenvalues are unsorted.");
 
-			double V1mult = V[0][2] < 0 ? -1 : 1;
-			double V2mult = V[0][1] < 0 ? -1 : 1;
-			double V3mult = V[0][0] < 0 ? -1 : 1;
+			T V1mult = V[0][2] < 0 ? (T)-1 : (T)1;
+			T V2mult = V[0][1] < 0 ? (T)-1 : (T)1;
+			T V3mult = V[0][0] < 0 ? (T)-1 : (T)1;
 			
-			v1 = Vec3<T>(V[0][2], V[1][2], V[2][2]) * V1mult;
-			v2 = Vec3<T>(V[0][1], V[1][1], V[2][1]) * V2mult;
-			v3 = Vec3<T>(V[0][0], V[1][0], V[2][0]) * V3mult;
+			v1 = Vec3<T>((T)V[0][2], (T)V[1][2], (T)V[2][2]) * V1mult;
+			v2 = Vec3<T>((T)V[0][1], (T)V[1][1], (T)V[2][1]) * V2mult;
+			v3 = Vec3<T>((T)V[0][0], (T)V[1][0], (T)V[2][0]) * V3mult;
 		}
 
 		/**
         Converts this object to string.
         */
-        friend ostream& operator<<(ostream& stream, const Matrix3x3<T>& v)
+        friend std::ostream& operator<<(std::ostream& stream, const Matrix3x3<T>& v)
         {
             stream << "[ [" << v.a00 << ", " << v.a01 << ", " << v.a02 << "] [" <<
 				               v.a10 << ", " << v.a11 << ", " << v.a12 << "] [" <<
@@ -237,6 +268,9 @@ namespace math
 	typedef Matrix3x3<float> Matrix3x3f;
 	typedef Matrix3x3<double> Matrix3x3d;
 
-
+	namespace tests
+	{
+		void matrix3x3();
+	}
 }
 

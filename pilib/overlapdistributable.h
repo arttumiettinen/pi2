@@ -24,12 +24,14 @@ namespace pilib
 		*/
 		virtual Vec3c calculateOverlap(vector<ParamVariant>& args) const = 0;
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			Vec3c margin = calculateOverlap(args);
 
 			// distribute in z, use overlap
-			distributor.distribute(this, args, 2, margin, 0);
+			return distributor.distribute(this, args, 2, 1, margin);
 		}
 	};
 

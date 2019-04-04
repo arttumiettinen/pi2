@@ -7,7 +7,6 @@
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "utilities.h"
-#include "disjointsetforest.h"
 #include "network.h"
 #include "box.h"
 #include "math/matrix3x3.h"
@@ -61,7 +60,7 @@ namespace itl2
 						{
 							if (img(x, y, z) == UNCLASSIFIED) // Background pixels do not need to be classified.
 							{
-								getNeighbourhood(img, math::Vec3c(x, y, z), math::Vec3c(1, 1, 1), nb, Zero);
+								getNeighbourhood(img, math::Vec3c(x, y, z), math::Vec3c(1, 1, 1), nb, BoundaryCondition::Zero);
 
 								if(test(nb))
 									img(x, y, z) = (pixel_t)value;
@@ -98,7 +97,7 @@ namespace itl2
 						if (nb(x, y, z) != (pixel_t)0)
 						{
 							pixel_t fillColor = (pixel_t)(count + 2);
-							floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, AllNeighbours);
+							floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::AllNeighbours);
 							count++;
 						}
 					}
@@ -193,7 +192,7 @@ namespace itl2
 						if (nb(x, y, z) == 0)
 						{
 							pixel_t fillColor = (pixel_t)(count + 2);
-							floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, NearestNeighbours);
+							floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::NearestNeighbours);
 							count++;
 						}
 					}
@@ -244,7 +243,7 @@ namespace itl2
 			if (nb(x, y, z) == 0)
 			{
 				pixel_t fillColor = (pixel_t)(count + 2);
-				floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, NearestNeighbours);
+				floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::NearestNeighbours);
 				return count + 1;
 			}
 
@@ -373,15 +372,15 @@ namespace itl2
 		class BranchStartInfo
 		{
 		public:
-			Vec3c start;
+			Vec3sc start;
 			size_t startVertexIndex;
 		};
 
-		template<typename pixel_t> vector<BranchStartInfo> addIntersection(Image<pixel_t>& img, const Vec3c& pos, Network& network)
+		template<typename pixel_t> vector<BranchStartInfo> addIntersection(Image<pixel_t>& img, const Vec3sc& pos, Network& network)
 		{
 			// Find all points in the intersection region
-			vector<Vec3c> filledPoints;
-			floodfill<pixel_t>(img, pos, 0, 0, AllNeighbours, &filledPoints);
+			vector<Vec3sc> filledPoints;
+			floodfill<pixel_t>(img, Vec3c(pos), 0, 0, Connectivity::AllNeighbours, 0, &filledPoints);
 
 			if (filledPoints.size() <= 0)
 				throw ITLException("Invalid position passed to intersection tracer. There is no intersection at that location.");
@@ -389,7 +388,7 @@ namespace itl2
 			// Calculate average position of the intersection
 			bool isOnEdge = false;
 			math::Vec3f center(0, 0, 0);
-			for (const Vec3c& p : filledPoints)
+			for (const Vec3sc& p : filledPoints)
 			{
 				center += math::Vec3f(p);
 				if (img.isOnEdge(p))
@@ -408,15 +407,15 @@ namespace itl2
 			// Find all branches that start in point neighbouring the intersection region.
 			// Add them to processing list.
 			vector<BranchStartInfo> branchStarts;
-			for (const Vec3c& p : filledPoints)
+			for (const Vec3sc& p : filledPoints)
 			{
-				for (coord_t z = -1; z <= 1; z++)
+				for (int32_t z = -1; z <= 1; z++)
 				{
-					for (coord_t y = -1; y <= 1; y++)
+					for (int32_t y = -1; y <= 1; y++)
 					{
-						for (coord_t x = -1; x <= 1; x++)
+						for (int32_t x = -1; x <= 1; x++)
 						{
-							Vec3c pp = p + Vec3c(x, y, z);
+							Vec3sc pp = p + Vec3sc(x, y, z);
 							if (img.isInImage(pp) && img(pp) != 0)
 							{
 								// pp is a start of branch
@@ -437,17 +436,17 @@ namespace itl2
 		/**
 		Finds the next point on a curve starting at given start location.
 		*/
-		template<typename pixel_t> Vec3c findNextOnCurve(Image<pixel_t>& img, Vec3c start)
+		template<typename pixel_t> Vec3sc findNextOnCurve(Image<pixel_t>& img, Vec3sc start)
 		{
 			
 			// Find if there is unique point where we could continue
-			for (coord_t z = -1; z <= 1; z++)
+			for (int32_t z = -1; z <= 1; z++)
 			{
-				for (coord_t y = -1; y <= 1; y++)
+				for (int32_t y = -1; y <= 1; y++)
 				{
-					for (coord_t x = -1; x <= 1; x++)
+					for (int32_t x = -1; x <= 1; x++)
 					{
-						Vec3c pp = start + Vec3c(x, y, z);
+						Vec3sc pp = start + Vec3sc(x, y, z);
 						if (img.isInImage(pp) && img(pp) == CURVE)
 						{
 							return pp;
@@ -464,7 +463,7 @@ namespace itl2
 		Trace single branch of the skeleton and return the other end point of the branch, and erases it from the image.
 		@param count The count of pixels traversed is stored in this variable on output.
 		*/
-		template<typename pixel_t> tuple<vector<Vec3f>, Vec3c> traceBranch(Image<pixel_t>& img, Vec3c start, size_t& count)
+		template<typename pixel_t> tuple<vector<Vec3f>, Vec3sc> traceBranch(Image<pixel_t>& img, Vec3sc start, size_t& count)
 		{
 			vector<Vec3f> points;
 			
@@ -475,7 +474,7 @@ namespace itl2
 				img(start) = 0;
 				count++;
 
-				Vec3c next = findNextOnCurve(img, start);
+				Vec3sc next = findNextOnCurve(img, start);
 				if(next == start)
 					return make_tuple(points, next);
 				start = next;
@@ -487,15 +486,16 @@ namespace itl2
 		Uses anchored convolution approach from
 		Suhadolnik - An anchored discrete convolution algorithm for measuring length in digital images
 		@param points Positions of pixels through which the line goes. At output, contains smoothed (and anchored) points that can be used, e.g., to calculate tangent of the line using finite differences.
+		@param pStraightLength Pointer to float where distance between smoothed and anchored end points of the line will be stored.
 		@param sigma Amount of smoothing. Set to zero to calculate point-to-point polygon length.
 		@return Length estimate.
 		*/
-		float32_t lineLength(vector<Vec3f>& points, double sigma = 1);
+		float32_t lineLength(vector<Vec3f>& points, float32_t* pStraightLength, double sigma = 1);
 
 		/**
 		Estimates length of straight line between a and b using same method than lineLength function.
 		*/
-		float32_t straightLineLength(const Vec3f& a, const Vec3f& b, double sigma = 1);
+		//float32_t straightLineLength(const Vec3f& a, const Vec3f& b, double sigma = 1);
 
 		/**
 		Extracts 2D slice from 3D image.
@@ -506,7 +506,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void getSlice(const Image<pixel_t>& img, const Vec3d& pos, Vec3d dir, Image<pixel_t>& slice)
 		{
-			const Interpolator<pixel_t, pixel_t, double>& interpolator = LinearInterpolator<pixel_t, pixel_t, double, double>(Zero);
+			const Interpolator<pixel_t, pixel_t, double>& interpolator = LinearInterpolator<pixel_t, pixel_t, double, double>(BoundaryCondition::Zero);
 
 			// Create orthogonal base by choosing two more directions
 			dir = dir.normalized();
@@ -552,31 +552,27 @@ namespace itl2
 		}
 
 		/**
-		Estimates properties of skeleton edge.
-		@param pointCount Count of pixels on the edge.
-		@param length Length of the branch calculated with anchored convolution.
-		@param area Area of the branch calculated as in the CSA algorithm.
-		@param distance Euclidean distance between the first and the last points on the edge.
-		@param adjustedDistance Distance between the first and the last points of the edge calculated using anchored convolution. This value can be compared with value of length argument.
+		Estimates properties of skeleton edge from the points that belong to the edge.
 		*/
-		template<typename orig_t> EdgeMeasurements measureEdge(const Image<orig_t>& original, vector<Vec3f> edgePoints)
+		template<typename orig_t> EdgeMeasurements measureEdge(const Image<orig_t>* pOriginal, vector<Vec3f> edgePoints)
 		{
 			EdgeMeasurements result;
 
 			result.pointCount = (float32_t)edgePoints.size();
 
-			// Calculate length and smoothed point list
-			result.length = lineLength(edgePoints);
-			
 			if (edgePoints.size() > 0)
 			{
 				result.distance = (edgePoints[0] - edgePoints[edgePoints.size() - 1]).norm();
-				result.adjustedDistance = straightLineLength(edgePoints[0], edgePoints[edgePoints.size() - 1]);
+
+				// Calculate length and smoothed point list
+				result.length = lineLength(edgePoints, 0);
+
+				result.adjustedStart = edgePoints[0];
+				result.adjustedEnd = edgePoints[edgePoints.size() - 1];
 			}
 			else
 			{
 				result.distance = numeric_limits<float32_t>::signaling_NaN();
-				result.adjustedDistance = numeric_limits<float32_t>::signaling_NaN();
 			}
 
 			// Default value for area used if area measurements fail.
@@ -584,7 +580,7 @@ namespace itl2
 
 			// Calculate area by extracting a slice through each point on the path
 			// If there are less than three points, we cannot measure area. (two points would be possible but a special case)
-			if (edgePoints.size() >= 3 && original.pixelCount() > 1)
+			if (edgePoints.size() >= 3 && pOriginal)
 			{
 				vector<size_t> areaSamples;
 				areaSamples.reserve(edgePoints.size());
@@ -593,7 +589,7 @@ namespace itl2
 					Vec3d center = Vec3d(edgePoints[n]);
 					Vec3d tangent = Vec3d(edgePoints[n + 1] - edgePoints[n - 1]);
 					Image<orig_t> slice(75, 75, 0); // TODO: Hardcoded slice size
-					getSlice(original, center, tangent, slice);
+					getSlice(*pOriginal, center, tangent, slice);
 
 					//raw::writed(slice, "./skeleton/tracing/slice");
 
@@ -602,8 +598,8 @@ namespace itl2
 
 					//raw::writed(slice, "./skeleton/tracing/slice_th");
 
-					vector<Vec3c> filledPoints;
-					floodfill<orig_t>(slice, slice.dimensions() / 2, (orig_t)0, (orig_t)0, AllNeighbours, &filledPoints);
+					vector<Vec3sc> filledPoints;
+					floodfill<orig_t>(slice, slice.dimensions() / 2, (orig_t)0, (orig_t)0, Connectivity::AllNeighbours, 0, &filledPoints);
 
 					//raw::writed(slice, "./skeleton/tracing/slice_fill");
 
@@ -626,7 +622,7 @@ namespace itl2
 		@param img Classified skeleton image.
 		@param orig Original (non-skeletonized) image that is used for branch area and shape measurements.
 		*/
-		template<typename pixel_t, typename orig_t> void trace(Image<pixel_t>& img, const Image<orig_t>& original, const vector<BranchStartInfo>& seeds, Network& net)
+		template<typename pixel_t, typename orig_t> void trace(Image<pixel_t>& img, const Image<orig_t>* pOriginal, const vector<BranchStartInfo>& seeds, Network& net)
 		{
 			// Add branches to the tracing list
 			deque<internals::BranchStartInfo> tracingList;
@@ -640,19 +636,19 @@ namespace itl2
 				tracingList.pop_front();
 
 				size_t count = 0;
-				tuple<vector<Vec3f>, Vec3c> result = traceBranch(img, info.start, count);
+				tuple<vector<Vec3f>, Vec3sc> result = traceBranch(img, info.start, count);
 				vector<Vec3f> edgePoints = get<0>(result);
-				Vec3c end = get<1>(result);
+				Vec3sc end = get<1>(result);
 				edgePoints.insert(edgePoints.begin(), net.vertices[info.startVertexIndex]);
 
 				// Find untraced intersections around the end point (there might be many of them)
-				for (coord_t z = -1; z <= 1; z++)
+				for (int32_t z = -1; z <= 1; z++)
 				{
-					for (coord_t y = -1; y <= 1; y++)
+					for (int32_t y = -1; y <= 1; y++)
 					{
-						for (coord_t x = -1; x <= 1; x++)
+						for (int32_t x = -1; x <= 1; x++)
 						{
-							Vec3c pp = end + Vec3c(x, y, z);
+							Vec3sc pp = end + Vec3sc(x, y, z);
 							//if (img.isInImage(pp) && (img(pp) == BRANCHING || img(pp) == internals::ENDPOINT))
 							if (img.isInImage(pp) && img(pp) != 0 && img(pp) != internals::CURVE)
 							{
@@ -672,7 +668,7 @@ namespace itl2
 								currEdge.push_back(net.vertices[endVertexIndex]);
 								if (*currEdge.begin() != *currEdge.rbegin())
 								{
-									Edge e(info.startVertexIndex, endVertexIndex, internals::measureEdge(original, currEdge));
+									Edge e(info.startVertexIndex, endVertexIndex, internals::measureEdge(pOriginal, currEdge));
 									net.edges.push_back(e);
 								}
 							}
@@ -692,7 +688,7 @@ namespace itl2
 						currEdge.push_back(net.vertices[tracingList[n].startVertexIndex]);
 						if (*currEdge.begin() != *currEdge.rbegin())
 						{
-							Edge e(info.startVertexIndex, tracingList[n].startVertexIndex, internals::measureEdge(original, currEdge));
+							Edge e(info.startVertexIndex, tracingList[n].startVertexIndex, internals::measureEdge(pOriginal, currEdge));
 							net.edges.push_back(e);
 						}
 
@@ -711,9 +707,13 @@ namespace itl2
 		@param original Original non-skeletonized image used for shape measurements.
 		@net The network is inserted to this object.
 		*/
-		template<typename pixel_t, typename orig_t> void traceLineSkeleton(Image<pixel_t>& img, const Image<orig_t>& original, Network& net, size_t& counter, size_t progressMax)
+		template<typename pixel_t, typename orig_t> void traceLineSkeleton(Image<pixel_t>& img, const Image<orig_t>* pOriginal, Network& net, size_t& counter, size_t progressMax)
 		{
-			img.mustNotBe(original);
+			if (pOriginal)
+			{
+				img.mustNotBe(*pOriginal);
+				img.checkSize(*pOriginal);
+			}
 
 			classifySkeleton(img, true, false, false);
 
@@ -728,10 +728,10 @@ namespace itl2
 						if (label == internals::ENDPOINT || label == internals::BRANCHING)
 						{
 							// Find fibres that start from this intersection area or end point
-							vector<internals::BranchStartInfo> branches = internals::addIntersection(img, Vec3c(x, y, z), net);
+							vector<internals::BranchStartInfo> branches = internals::addIntersection(img, Vec3sc((int32_t)x, (int32_t)y, (int32_t)z), net);
 
 							// Follow all branches and process the found intersection areas
-							internals::trace(img, original, branches, net);
+							internals::trace(img, pOriginal, branches, net);
 						}
 					}
 				}
@@ -744,13 +744,17 @@ namespace itl2
 		Traces line skeleton in blocks, and adds the network resulting from each block trace to subNets vector.
 		@param origin If processing a block of larger image, set this to the origin of the block in full image coordinates. This value is added to all the vertex coordinates.
 		*/
-		template<typename pixel_t, typename orig_t> void traceLineSkeletonBlocks(Image<pixel_t>& img, Image<orig_t>& original, vector<Network>& subNets, const Vec3c& origin = Vec3c())
+		template<typename pixel_t, typename orig_t> void traceLineSkeletonBlocks(Image<pixel_t>& img, Image<orig_t>* pOriginal, vector<Network>& subNets, const Vec3sc& origin = Vec3sc())
 		{
-			img.mustNotBe(original);
+			if (pOriginal)
+			{
+				img.mustNotBe(*pOriginal);
+				img.checkSize(*pOriginal);
+			}
 
 			size_t counter = 0;
 			cout << "Tracing skeleton..." << endl;
-#pragma omp parallel
+#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
 				int idx = omp_get_thread_num();
 				int count = omp_get_num_threads();
@@ -777,22 +781,30 @@ namespace itl2
 					if (maxZ >= img.depth())
 						maxZ = img.depth() - 1;
 
+					if (idx == count - 1)
+					{
+						// The last thread processes possible "rounding error" slices
+						maxZ = img.depth() - 1;
+					}
+
 					// Get view of part of the image
 					Image<pixel_t> block(img, minZ, maxZ);
-					Image<orig_t> origBlock(original, minZ, maxZ);
+					Image<orig_t> origBlock;
+					if(pOriginal)
+						origBlock.init(*pOriginal, minZ, maxZ);
 
 					//raw::writed(block, string("./skeleton/tracing/block") + toString(idx));
 
 					// Trace the region
 					Network subNet;
-					internals::traceLineSkeleton(block, origBlock, subNet, counter, img.depth());
+					internals::traceLineSkeleton(block, pOriginal ? &origBlock : 0, subNet, counter, img.depth());
 
 					// Convert vertices to global coordinates (they are in block coordinates)
 					for (size_t n = 0; n < subNet.vertices.size(); n++)
 						subNet.vertices[n] += math::Vec3f(origin) + math::Vec3f(0, 0, (float)minZ);
 					for (size_t n = 0; n < subNet.incompleteVertices.size(); n++)
 						for (size_t m = 0; m < subNet.incompleteVertices[n].points.size(); m++)
-							subNet.incompleteVertices[n].points[m] += origin + math::Vec3c(0, 0, minZ);
+							subNet.incompleteVertices[n].points[m] += origin + math::Vec3sc(0, 0, (int32_t)minZ);
 
 #pragma omp critical(traceLineSkeleton)
 					{
@@ -819,21 +831,32 @@ namespace itl2
 	@param img Skeletonized image. Will be set to zero at output.
 	@param original Original non-skeletonized image used for measurements. This image is not modified.
 	*/
-	template<typename pixel_t, typename orig_t> void traceLineSkeleton(Image<pixel_t>& img, Image<orig_t>& original, Network& net)
+	template<typename pixel_t, typename orig_t> void traceLineSkeleton(Image<pixel_t>& img, Image<orig_t>* pOriginal, Network& net)
 	{
 		vector<Network> subNets;
-		internals::traceLineSkeletonBlocks(img, original, subNets, Vec3c(0, 0, 0));
+		internals::traceLineSkeletonBlocks(img, pOriginal, subNets, Vec3sc(0, 0, 0));
 
 		internals::combineTracedBlocks(subNets, net, true);
 	}
 
-
+	/**
+	Converts line skeleton into a graph.
+	Divides the image into blocks and processes one block per thread.
+	All pixels in the image are set to zero.
+	@param net The graph is inserted into this object.
+	@param img Skeletonized image. Will be set to zero at output.
+	*/
+	template<typename pixel_t> void traceLineSkeleton(Image<pixel_t>& img, Network& net)
+	{
+		traceLineSkeleton<pixel_t, pixel_t>(img, 0, net);
+	}
 	
 
 	namespace tests
 	{
-		void classifySkeleton();
+		//void classifySkeleton();
 		void traceSkeleton();
+		void traceSkeletonRealData();
 		void lineLength();
 	}
 }

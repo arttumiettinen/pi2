@@ -9,6 +9,12 @@
 
 namespace itl2
 {
+	/*
+	Initializes FFTW if it has not been initialized.
+	There is no need to call this function unless you make calls to FFTW library yourself.
+	*/
+	void initFFTW();
+
 	/**
 	Calculates Discrete Cosine Transform of the input image.
 	Calculates 1D DCT if img is 1-dimensional, 2D DCT if img is 2-dimensional etc.
@@ -91,5 +97,6 @@ namespace itl2
 		void bandpass();
 		void phaseCorrelation();
 		void phaseCorrelation2();
+		void modulo();
 	}
 }

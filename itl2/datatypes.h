@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <stdint.h>
 #include <complex>
+#include <utility>
 
 using namespace std::literals;
 using namespace std::complex_literals;
@@ -58,12 +59,12 @@ namespace itl2
     /**
     Swap the two given values.
     */
-    template<typename T> void swap(T& a, T& b)
-    {
-        T temp = a;
-        a = b;
-        b = temp;
-    }
+    //template<typename T> void swap(T& a, T& b)
+    //{
+    //    T temp = a;
+    //    a = b;
+    //    b = temp;
+    //}
 
 	/**
      * Swaps byte order of 16-bit value.
@@ -82,7 +83,7 @@ namespace itl2
 
         Be conv;
         conv.word = value;
-        swap(conv.b0, conv.b1);
+        std::swap(conv.b0, conv.b1);
         return conv.word;
     }
 
@@ -105,8 +106,8 @@ namespace itl2
 
         Be conv;
         conv.flo = value;
-        swap(conv.b0, conv.b3);
-        swap(conv.b1, conv.b2);
+		std::swap(conv.b0, conv.b3);
+		std::swap(conv.b1, conv.b2);
         return conv.flo;
     }
 
@@ -129,8 +130,8 @@ namespace itl2
 
         Be conv;
         conv.flo = value;
-        swap(conv.b0, conv.b3);
-        swap(conv.b1, conv.b2);
+		std::swap(conv.b0, conv.b3);
+		std::swap(conv.b1, conv.b2);
         return conv.flo;
     }
 

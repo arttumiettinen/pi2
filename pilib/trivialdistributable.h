@@ -18,13 +18,12 @@ namespace pilib
 
 		}
 
-		virtual void runDistributedInternal(PISystem* system, Distributor& distributor, vector<ParamVariant>& args) const
-		{
-			runInternal(system, args);
-		}
+		using Distributable::runDistributed;
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
+			runInternal(distributor.getSystem(), args);
+			return vector<string>();
 		}
 	};
 }

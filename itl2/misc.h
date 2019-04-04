@@ -2,9 +2,29 @@
 
 #include "image.h"
 #include "projections.h"
+#include "pointprocess.h"
 
 namespace itl2
 {
+	/**
+	Dual thresholding with tracking.
+	Results in an image where all regions that have value over upperThreshold are white, and additionally
+	those regions that have value over lowerThreshold and are connected to a region with value over upperThreshold.
+	*/
+	template<typename pixel_t> void dualThreshold(Image<pixel_t>& img, pixel_t lowerThreshold, pixel_t upperThreshold)
+	{
+		// Multi-threshold to two classes.
+		vector<pixel_t> th = { lowerThreshold, upperThreshold };
+		multiThreshold(img, th);
+
+		// Convert all those structures to "sure" that touch a "sure" structure.
+		grow(img, pixelRound<pixel_t>(2), pixelRound<pixel_t>(1));
+
+		// Threshold so that only "sure" structures are left.
+		threshold<pixel_t>(img, 1);
+	}
+
+
 	/**
 	Sets edge pixels to given value.
 	@param img Image whose edges are to be set.
@@ -17,6 +37,7 @@ namespace itl2
 		
 		r = componentwiseMax(r, Vec3c(1, 1, 1));
 
+		// NOTE: This algorithm sets some pixels multiple times, beware if you use it for something else than setting pixel values!
 		for (size_t skip = 0; skip < img.dimensionality(); skip++)
 		{
 			Vec3c reducedsize = img.dimensions();

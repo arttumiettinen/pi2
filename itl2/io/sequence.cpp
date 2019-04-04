@@ -3,6 +3,7 @@
 #include "io/alphanum.h"
 #include "io/raw.h"
 #include "pointprocess.h"
+#include "testutils.h"
 #include <iostream>
 #include <algorithm>
 
@@ -111,6 +112,9 @@ namespace itl2
 				fs::path dir;
 				separatePathAndFileTemplate(templ, dir, fileTemplate);
 
+				if (dir == "")
+					dir = ".";
+
 				if(fileTemplate == "")
 					fileTemplate = "*";
 				
@@ -134,7 +138,28 @@ namespace itl2
 				return filenames;
 			}
 
-			
+			vector<string> buildFilteredFileList(const string& templ)
+			{
+				vector<string> results = buildFileList(templ);
+
+				// Remove non-images
+				//coord_t w, h;
+				//ImageDataType dt;
+				for (size_t n = 0; n < results.size(); n++)
+				{
+					// This is too slow!
+					//if (!getInfo2D(result[n], w, h, dt))
+					fs::path p(results[n]);
+					fs::path ext = p.extension();
+					if(ext != ".tif" && ext != ".png")
+					{
+						results.erase(results.begin() + n);
+						n--;
+					}
+				}
+
+				return results;
+			}
 		}
 
 		namespace tests
@@ -206,6 +231,14 @@ namespace itl2
 				Image<uint8_t> img2;
 				sequence::read(img2, "./test_seq/t1-head_bin@.png");
 				raw::writed(img2, "./sequence/test_sequence");
+				sequence::write(img2, "./sequence/test_sequence");
+
+				// Read folder containing bad file
+				writeText("./sequence/test_sequence/BAD_FILE", "");
+				Image<uint8_t> withbad;
+				sequence::read(withbad, "./sequence/test_sequence");
+				testAssert(equals(withbad, img2), "sequence with non-image file");
+
 
 				sequence::write(img2, "./sequence/save_test/auto_@(-).png");
 				sequence::write(img2, "./sequence/save_test/zero_@.png");
@@ -224,6 +257,23 @@ namespace itl2
 
 			}
 
+			void fileFormats()
+			{
+				Image<uint16_t> head(256, 256, 129);
+				raw::read(head, "./t1-head_256x256x129.raw");
+
+				sequence::write(head, "./sequence/formats/@.png");
+				sequence::write(head, "./sequence/formats/@.tif");
+
+				Image<uint16_t> out1;
+				sequence::read(out1, "./sequence/formats/@.png");
+				testAssert(equals(head, out1), "png sequence");
+
+				Image<uint16_t> out2;
+				sequence::read(out2, "./sequence/formats/@.tif");
+				testAssert(equals(head, out2), "tif sequence");
+			}
+
 			void readWriteBlock()
 			{
 				// NOTE: No asserts!
@@ -233,7 +283,7 @@ namespace itl2
 				sequence::write(head, "./sequence/readwriteblock/write_normal/");
 
 				Image<uint16_t> block(100, 100, 100);
-				
+
 
 				Vec3c outputDimensions = round(1.5 * Vec3d(head.dimensions()));
 				string outFile = "./sequence/readwriteblock/head_3D_montage";
@@ -254,6 +304,22 @@ namespace itl2
 					}
 				}
 
+			}
+
+			void readWriteBlockOptimization()
+			{
+				Image<uint16_t> head(256, 256, 129);
+				raw::read(head, "./t1-head_256x256x129.raw");
+
+				sequence::write(head, "./sequence/readwriteblock/write_normal/");
+				sequence::writeBlock(head, "./sequence/readwriteblock/write_block/", Vec3c(0, 0, 0), head.dimensions());
+
+				Image<uint16_t> comp1, comp2;
+				sequence::read(comp1, "./sequence/readwriteblock/write_normal/");
+				sequence::read(comp2, "./sequence/readwriteblock/write_block/");
+
+				checkDifference(comp1, head, "normal writing and original");
+				checkDifference(comp2, head, "optimized block writing and original");
 			}
 		}
 	}

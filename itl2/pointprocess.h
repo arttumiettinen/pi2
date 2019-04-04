@@ -125,6 +125,11 @@ namespace itl2
 			return std::log((intermediate_t)val);
 		}
 
+		template<typename pixel_t, typename intermediate_t> intermediate_t negLogOp(pixel_t val)
+		{
+			return -std::log((intermediate_t)val);
+		}
+
 		template<typename pixel_t, typename intermediate_t> intermediate_t log10Op(pixel_t val)
 		{
 			return std::log10((intermediate_t)val);
@@ -175,12 +180,11 @@ namespace itl2
 
 		template<typename pixel_t, typename intermediate_t> intermediate_t normalizeOp(pixel_t val)
 		{
-			// NOTE: stl norm for complex type returns squared norm.
-			intermediate_t L = norm(val);
+			intermediate_t L = std::abs((intermediate_t)val);
 			if (!math::NumberUtils<intermediate_t>::equals(L, 0))
-				return val / sqrt(L);
+				return (intermediate_t)val / L;
 			else
-				return val;
+				return (intermediate_t)val;
 		}
 
 		template<typename pixel_t, typename intermediate_t> intermediate_t realOp(pixel_t val)
@@ -297,6 +301,25 @@ namespace itl2
 		}
 
 		/**
+		Thresholds pixels to multiple classes.
+		Returns 0 if pixel value is less than the first threshold.
+		Returns 1 if pixel value is larger than or equal to the first threshold and less than the second threshold (if any)
+		Returns 2 if pixel value is larger than or equal to the second threshold and less than the third threshold (if any)
+		etc.
+		*/
+		template<typename pixel_t> pixel_t multiThresholdOp(pixel_t a, const std::vector<pixel_t>& thresholds)
+		{
+			size_t n = 0;
+			for (; n < thresholds.size(); n++)
+			{
+				if (a < thresholds[n])
+					break;
+			}
+
+			return math::pixelRound<pixel_t>(n);
+		}
+
+		/**
 		Performs periodic thresholding.
 		@param x The value to threshold.
 		@param inputs 4-component vector containing (period start, period end, threshold range start, threshold range end).
@@ -355,6 +378,16 @@ namespace itl2
 			return newmin + (a - min) / (max - min) * (newmax - newmin);
 		}
 
+		/**
+		Replaces color data.x by data.y.
+		*/
+		template<typename pixel_t> pixel_t replaceOp(pixel_t a, const math::Vec2<pixel_t> data)
+		{
+			if (math::NumberUtils<pixel_t>::equals(a, data.x))
+				return data.y;
+
+			return a;
+		}
 	}
 
 
@@ -386,6 +419,7 @@ namespace itl2
 	DEF_OPERATION_ALL(squareRoot, "Calculates square root of pixel values.")
 	DEF_OPERATION_ALL(abs, "Calculates absolute value of pixel values.")
 	DEF_OPERATION_ALL(log, "Calculates natural logarithm of pixel values.")
+	DEF_OPERATION_ALL(negLog, "Calculates negative of natural logarithm of pixel values.")
 	DEF_OPERATION_ALL(log10, "Calculates base-10 logarithm of pixel values.")
 	DEF_OPERATION_ALL(sin, "Calculates sine of pixel values.")
 	DEF_OPERATION_ALL(cos, "Calculates cosine of pixel values.")
@@ -407,6 +441,14 @@ namespace itl2
 	using std::floor;
 	using std::ceil;
 	using std::round;
+	using std::abs;
+	using std::log;
+	using std::sin;
+	using std::cos;
+	using std::tan;
+	using std::real;
+	using std::imag;
+	using std::arg;
 	
 
 
@@ -462,6 +504,8 @@ namespace itl2
 	{
 		maskedPointProcessImageParam<pixel_t, param_t, typename math::NumberUtils<pixel_t>::FloatType, internals::addOp<pixel_t, param_t, typename math::NumberUtils<pixel_t>::FloatType> >(l, r, badValue);
 	}
+
+
 
 
 	/**
@@ -640,6 +684,18 @@ namespace itl2
 	}
 
 	/**
+	Thresholds img by set of thresholds.
+	Sets pixel to 0 if its value is less than the first threshold.
+	Sets pixel to 1 if pixel its is larger than or equal to the first threshold and less than the second threshold (if any).
+	Sets pixel to 2 if pixel its is larger than or equal to the second threshold and less than the third threshold (if any).
+	etc.
+	*/
+	template<typename pixel_t> void multiThreshold(Image<pixel_t>& img, const std::vector<pixel_t>& thresholds)
+	{
+		pointProcessImageParam<pixel_t, const std::vector<pixel_t>&, pixel_t, internals::multiThresholdOp<pixel_t> >(img, thresholds);
+	}
+
+	/**
 	Performs periodic thresholding.
 	Sets pixel to 1 if its value is in range (threshold range start, threshold range end] modulo period; sets the pixel value to 
 	0 otherwise. If threshold range is larger than period, sets all pixels to 1. If threshold range start is larger than or equal
@@ -662,6 +718,14 @@ namespace itl2
 	template<typename pixel_t> void linearMap(Image<pixel_t>& img, const math::Vec4d& bounds)
 	{
 		pointProcessImageParam<pixel_t, const math::Vec4d&, typename math::NumberUtils<pixel_t>::FloatType, internals::linearMapOp<pixel_t> >(img, bounds);
+	}
+
+	/**
+	Sets to v.b those pixels whose value is v.a.
+	*/
+	template<typename pixel_t> void replace(Image<pixel_t>& img, const math::Vec2<pixel_t>& v)
+	{
+		pointProcessImageParam<pixel_t, math::Vec2<pixel_t>, pixel_t, internals::replaceOp<pixel_t> >(img, v);
 	}
 
 

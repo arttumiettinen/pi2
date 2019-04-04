@@ -5,6 +5,8 @@
 #include "math/mathutils.h"
 #include "pointprocess.h"
 
+#include <set>
+
 using namespace math;
 
 namespace itl2
@@ -173,7 +175,56 @@ namespace itl2
 		{
 			result = result + (double)val1 * (double)val2;
 		}
+
+		template<typename pixel_t> void absDifferenceProjectionOp(pixel_t val1, pixel_t val2, double& result)
+		{
+			result = result + std::abs((double)val1 - (double)val2);
+		}
 	}
+
+
+	/**
+	Determines if pixel values in the two images are equal.
+	@param a, b Images to compare
+	*/
+	template<typename pixel1_t, typename pixel2_t> bool equals(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
+	{
+		a.checkSize(b);
+
+		bool eq = true;
+		#pragma omp parallel for if(a.pixelCount() > PARALLELIZATION_THRESHOLD)
+		for (coord_t n = 0; n < a.pixelCount(); n++)
+		{
+			if (eq && a(n) != b(n))
+				eq = false;
+
+			// Showing progress info here would induce more processing than is done in the whole loop.
+		}
+
+		return eq;
+	}
+
+	/**
+	Determines if pixel values in the two images are not equal.
+	@param a, b Images to compare
+	*/
+	template<typename pixel1_t, typename pixel2_t> bool differs(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
+	{
+		return !equals(a, b);
+	}
+
+	/**
+	Finds all unique pixel values in the image and adds them to the set.
+	*/
+	template<typename pixel_t> void unique(const Image<pixel_t>& img, std::set<pixel_t>& values)
+	{
+		// TODO: Parallelize
+		for (coord_t n = 0; n < img.pixelCount(); n++)
+		{
+			values.emplace(img(n));
+		}
+	}
+
 
 	/**
 	Calculates sum of all pixels in the image.
@@ -408,6 +459,72 @@ namespace itl2
 	}
 
 	/**
+	Calculates mean and standard deviation of all pixels in the image.
+	@param img Image to process.
+	@return Vec2 containing mean at Vec2::x and standard deviation at Vec2::y.
+	*/
+	template<typename pixel_t, typename out_t = double> Vec2<out_t> meanAndStdDev(const Image<pixel_t>& img)
+	{
+		// Non-threaded version
+		//out_t total = out_t();
+		//out_t total2 = out_t();
+
+		//for (coord_t n = 0; n < img.pixelCount(); n++)
+		//{
+		//	out_t val = (out_t)img(n);
+		//	total += val;
+		//	total2 += val * val;
+		//}
+
+
+		//out_t avg = total / img.pixelCount();
+		//out_t std = sqrt((total2 - (total * total / img.pixelCount())) / (img.pixelCount() - 1));
+
+		//return Vec2<out_t>(avg, std);
+
+		out_t total = out_t();
+		out_t total2 = out_t();
+
+#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+		{
+			out_t total_private = out_t();
+			out_t total2_private = out_t();
+
+#pragma omp for nowait
+			for (coord_t n = 0; n < img.pixelCount(); n++)
+			{
+				out_t val = (out_t)img(n);
+				total_private += val;
+				total2_private += val * val;
+
+				// Showing progress info here would induce more processing than is done in the whole loop.
+			}
+
+#pragma omp critical(sum_reduction)
+			{
+				total += total_private;
+				total2 += total2_private;
+			}
+		}
+
+		out_t avg = total / img.pixelCount();
+		out_t std = sqrt((total2 - (total * total / img.pixelCount())) / (img.pixelCount() - 1));
+
+		return Vec2<out_t>(avg, std);
+	}
+
+	/**
+	Calculates standard deviation of all pixels in the image.
+	@param img Image to process.
+	@return Standard deviation of all pixels.
+	*/
+	template<typename pixel_t, typename out_t = double> out_t stdDev(const Image<pixel_t>& img)
+	{
+		Vec2<out_t> v = meanAndStdDev(img);
+		return v.y;
+	}
+
+	/**
 	Sum projection in some coordinate direction.
 	@param img Input image.
 	@param dimension Zero-based dimension over which the projection should be made.
@@ -511,6 +628,14 @@ namespace itl2
 	template<typename pixel_t> double crossSum(const Image<pixel_t>& img1, const Image<pixel_t>& img2)
 	{
 		return projectAllDimensions<pixel_t, internals::crossSumProjectionOp<pixel_t> >(img1, img2);
+	}
+
+	/**
+	Calculates total absolute difference between two images, i.e. sum_r(abs(img1(r) - img2(r))), where the sum is taken over all pixels.
+	*/
+	template<typename pixel_t> double absDifference(const Image<pixel_t>& img1, const Image<pixel_t>& img2)
+	{
+		return projectAllDimensions<pixel_t, internals::absDifferenceProjectionOp<pixel_t> >(img1, img2);
 	}
 
 

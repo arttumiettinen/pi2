@@ -43,7 +43,22 @@ namespace math
 #endif
 
 
-		
+
+	
+	/**
+	Returns largest integer value whose square is less than given value.
+	*/
+	inline int32_t largestIntWhoseSquareIsLessThan(int32_t square)
+	{
+		// Initial guess using floating point math
+		int32_t result = (int32_t)sqrt(square);
+
+		// Refine the result in the case there are floating point inaccuracies
+		while (result * result < square)
+			result++;
+		result--;
+		return result;
+	}
 
 	/**
 	Function that should behave like MatLab's mod function.
@@ -233,11 +248,35 @@ namespace math
 	}
 
 	/**
-	Returns random coordinate in range [0, max-1] (==[0, max[).
+	Returns pseudo-random number between 0 and max.
+	*/
+	inline double frand(double max)
+	{
+		return frand() * max;
+	}
+
+	/**
+	Returns pseudo-random number between min and max.
+	*/
+	inline double frand(double min, double max)
+	{
+		return min + frand() * (max - min);
+	}
+
+	/**
+	Returns random coordinate in range [0, max-1] (== [0, max[).
 	*/
 	inline coord_t randc(coord_t max)
 	{
 		return math::round(frand() * (max - 1));
+	}
+
+	/**
+	Returns random coordinate in range [min, max-1] (== [min, max[).
+	*/
+	inline coord_t randc(coord_t min, coord_t max)
+	{
+		return min + randc(max - min);
 	}
 
 }

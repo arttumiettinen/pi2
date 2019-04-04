@@ -12,6 +12,7 @@ namespace pilib
 			new BlockMatchPartialLoadCommand(), // Only one, as this command determines data type itself
 			new FilterDisplacementsCommand(), // Only one, no data type dependence
 			ADD_REAL(PullbackCommand),
+			ADD_REAL(PullbackNoDiskCommand),
 			//ADD_REAL(StitchCommand)
 			ADD_REAL(StitchVer2Command),
 			new DetermineWorldToLocalCommand(),
@@ -19,21 +20,22 @@ namespace pilib
 			ADD_REAL(DistanceMapCommand),
 			ADD_REAL(HistogramCommand),
 
-			ADD_REAL(MinAllPixelsCommand),
-			ADD_REAL(MaxAllPixelsCommand),
-			ADD_REAL(SumAllPixelsCommand),
-			ADD_REAL(MeanAllPixelsCommand),
-			ADD_REAL(MinProjectCommand),
-			ADD_REAL(MaxProjectCommand),
-			ADD_REAL(SumProjectCommand),
-			ADD_REAL(MeanProjectCommand),
-
 			ADD_REAL(FloodFillCommand),
+			ADD_REAL(LabelCommand),
 
 			ADD_REAL(NormalizeZCommand),
-			ADD_REAL(RegionRemovalCommand),
 
-			ADD_REAL(RampCommand)
+			ADD_REAL(CannyCommand),
+			ADD_REAL(CannyPart1Command),
+			ADD_REAL(CannyPart2Command),
+
+			new CylindricalityCommand(),
+			//new PlanarityCommand()
+
+			ADD_REAL(DualThresholdCommand),
+			ADD_REAL(GrowCommand),
+
+			ADD_REAL(NoiseCommand)
 			}
 		);
 	}

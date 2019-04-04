@@ -2,8 +2,7 @@ TOPTARGETS := all clean
 
 SUBDIRS := itl2 pilib pi2 itl2tests
 
-
-CXXFLAGS := -O3 -fopenmp -std=c++1z 
+CXXFLAGS := -fopenmp -O3 -std=c++17 
 LDFLAGS := -fopenmp
 
 export CXXFLAGS
@@ -15,8 +14,12 @@ $(TOPTARGETS): $(SUBDIRS)
 	cp ./pilib/bin/libpilib.so ./bin-linux64/release/
 	cp ./pi2/bin/pi2 ./bin-linux64/release/
 	cp ./python_scripts/generic/*.py ./bin-linux64/release/
+	cp ./python_scripts/tomcat/*.py ./bin-linux64/release/
 	chmod +x ./bin-linux64/release/*.py
 	cp ./example_config/*.txt ./bin-linux64/release/
+	cp ./example_config/*.sh ./bin-linux64/release/
+	chmod +x ./bin-linux64/release/*.sh
+	cp ./example_config/*.cmd ./bin-linux64/release/
 	cp ./LICENSE.txt ./bin-linux64/release/
 
 $(SUBDIRS):

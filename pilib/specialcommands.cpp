@@ -5,6 +5,8 @@
 #include "utilities.h"
 #include "stringutils.h"
 #include <omp.h>
+#include "io/vol.h"
+#include "io/io.h"
 
 #include "commandmacros.h"
 
@@ -22,12 +24,15 @@ namespace pilib
 			new InfoCommand(),
 			new ListCommand(),
 			new LicenseCommand(),
+			new ReadCommand(),
 			new MapRawCommand(),
 			new NewImageCommand(),
+			new ReadBlockCommand(),
 			new ReadRawBlockCommand(),
 			new ReadRawCommand(),
 			new ReadSequenceBlockCommand(),
 			new ReadSequenceCommand(),
+			new ReadVolCommand(),
 			new WaitReturnCommand()
 			}
 		);
@@ -44,8 +49,8 @@ namespace pilib
 		cout << "under certain conditions; run `license()' command for more details." << endl;
 		cout << endl;
 		cout << "Based on work done at" << endl;
-		cout << "Centre d'Imagerie BioMedicale (CIBM), Ecole Polytechnique Federale de Lausanne (EPFL), Switzerland" << endl;
 		cout << "X-ray tomography research group, TOMCAT beamline, Swiss Light Source, Paul Scherrer Institute, Switzerland" << endl;
+		cout << "Centre d'Imagerie BioMedicale (CIBM), Ecole Polytechnique Federale de Lausanne (EPFL), Switzerland" << endl;
 		cout << "Complex materials research group, Department of Physics, University of Jyvaskyla, Finland" << endl;
 		cout << "Contact: arttu.miettinen@psi.ch" << endl;
 		cout << endl;
@@ -66,6 +71,52 @@ namespace pilib
 		cout << "This program is licensed under GNU General Public License Version 3." << endl;
 		cout << "Please see LICENSE.txt bundled with this software or" << endl;
 		cout << "https://www.gnu.org/licenses/gpl-3.0.html for more information." << endl;
+
+
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "Windows versions of this program contain code from libtiff library licensed under the libtiff license:" << endl;
+		cout << R"END(
+Copyright(c) 1988 - 1997 Sam Leffler
+Copyright(c) 1991 - 1997 Silicon Graphics, Inc.
+
+Permission to use, copy, modify, distribute, and sell this software and
+its documentation for any purpose is hereby granted without fee, provided
+that(i) the above copyright notices and this permission notice appear in
+all copies of the software and related documentation, and (ii)the names of
+Sam Leffler and Silicon Graphics may not be used in any advertising or
+publicity relating to the software without the specific, prior written
+permission of Sam Leffler and Silicon Graphics.
+
+THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND,
+EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
+WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+IN NO EVENT SHALL SAM LEFFLER OR SILICON GRAPHICS BE LIABLE FOR
+ANY SPECIAL, INCIDENTAL, INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND,
+R ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
+LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+OF THIS SOFTWARE.
+)END" << endl;
+		cout << endl;
+
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << R"END(This program contains code owned by Joachim Kopp, used for some matrix operations and licensed
+under the terms of the GNU Lesser General Public License(LGPL), see
+https://www.gnu.org/licenses/lgpl.txt for details. The original source code can be
+found at https://www.mpi-hd.mpg.de/personalhomes/globes/3x3/.
+The functionality of the code is further described in article
+Joachim Kopp - Efficient numerical diagonalization of hermitian 3x3 matrices
+Int. J. Mod. Phys. C 19 (2008) 523-548
+arXiv.org: physics/0610206)END" << endl;
+		cout << endl;
+
 
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
@@ -123,6 +174,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.)END" << endl;
+		cout << endl;
 
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
@@ -256,12 +308,13 @@ any encryption software.  See the EAR, paragraphs 734.3(b)(3) and
 Glenn Randers-Pehrson
 glennrp at users.sourceforge.net
 September 29, 2017)END" << endl;
+		cout << endl;
 
 
-cout << endl << endl;
-cout << "-----------------------------------------------------------------------------------------" << endl << endl;
-cout << "Windows versions of this program contain code from zlib library licensed with the following notice:" << endl;
-cout << R"END(
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "Windows versions of this program contain code from zlib library licensed with the following notice:" << endl;
+		cout << R"END(
 (C)1995 - 2017 Jean - loup Gailly and Mark Adler
 
 This software is provided 'as-is', without any express or implied
@@ -291,6 +344,7 @@ Gailly and Mark Adler; it does not include third - party code.
 If you redistribute modified sources, we would appreciate that you include in
 the file ChangeLog history information documenting your changes.Please read
 the FAQ for more information on the distribution of modified source versions.)END" << endl;
+		cout << endl;
 
 
 		cout << endl << endl;
@@ -321,38 +375,38 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 			if (img8)
 			{
-				dt = UInt8;
+				dt = ImageDataType::UInt8;
 				pixelSize = 1;
 			}
 			else if (img16)
 			{
-				dt = UInt16;
+				dt = ImageDataType::UInt16;
 				pixelSize = 2;
 			}
 			else if (img32)
 			{
-				dt = UInt32;
+				dt = ImageDataType::UInt32;
 				pixelSize = 4;
 			}
 			else if (img64)
 			{
-				dt = UInt64;
+				dt = ImageDataType::UInt64;
 				pixelSize = 8;
 			}
 			else if (imgf32)
 			{
-				dt = Float32;
+				dt = ImageDataType::Float32;
 				pixelSize = 4;
 			}
 			else if (imgC32)
 			{
-				dt = Complex32;
+				dt = ImageDataType::Complex32;
 				pixelSize = 8;
 			}
 			else
 			{
 				dimensions = Vec3c(0, 0, 0);
-				dt = Unknown;
+				dt = ImageDataType::Unknown;
 				pixelSize = 0;
 			}
 			
@@ -364,9 +418,10 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		cout << "Total " << bytesToString(totalSize) << endl;
 	}
 
-	void ListCommand::runDistributedInternal(PISystem* system, Distributor& distributor, vector<ParamVariant>& args) const
+	vector<string> ListCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 	{
 		double totalSize = 0;
+		PISystem* system = distributor.getSystem();
 		for (const string& name : system->getDistributedImageNames())
 		{
 			DistributedImageBase* img = system->getDistributedImage(name);
@@ -383,38 +438,38 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 			if (img8)
 			{
-				dt = UInt8;
+				dt = ImageDataType::UInt8;
 				pixelSize = 1;
 			}
 			else if (img16)
 			{
-				dt = UInt16;
+				dt = ImageDataType::UInt16;
 				pixelSize = 2;
 			}
 			else if (img32)
 			{
-				dt = UInt32;
+				dt = ImageDataType::UInt32;
 				pixelSize = 4;
 			}
 			else if (img64)
 			{
-				dt = UInt64;
+				dt = ImageDataType::UInt64;
 				pixelSize = 8;
 			}
 			else if (imgf32)
 			{
-				dt = Float32;
+				dt = ImageDataType::Float32;
 				pixelSize = 4;
 			}
 			else if (imgC32)
 			{
-				dt = Complex32;
+				dt = ImageDataType::Complex32;
 				pixelSize = 8;
 			}
 			else
 			{
 				dimensions = Vec3c(0, 0, 0);
-				dt = Unknown;
+				dt = ImageDataType::Unknown;
 				pixelSize = 0;
 			}
 
@@ -423,6 +478,8 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 			cout << name << ", " << dimensions << ", " << itl2::toString(dt) << ", " << bytesToString(dataSize) << endl;
 		}
+
+		return vector<string>();
 	}
 
 	void NewImageCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
@@ -433,25 +490,25 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
 
-		ImageDataType dt = fromString(dts);
+		ImageDataType dt = fromString<ImageDataType>(dts);
 
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 			system->replaceImage(name, new itl2::Image<uint8_t>(w, h, d));
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 			system->replaceImage(name, new itl2::Image<uint16_t>(w, h, d));
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 			system->replaceImage(name, new itl2::Image<uint32_t>(w, h, d));
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 			system->replaceImage(name, new itl2::Image<uint64_t>(w, h, d));
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 			system->replaceImage(name, new itl2::Image<float32_t>(w, h, d));
-		else if(dt == Complex32)
+		else if(dt == ImageDataType::Complex32)
 			system->replaceImage(name, new itl2::Image<complex32_t>(w, h, d));
 		else
 			throw ParseException(string("Invalid data type: ") + dts);
 	}
 
-	void NewImageCommand::runDistributedInternal(PISystem* system, Distributor& distributor, vector<ParamVariant>& args) const
+	vector<string> NewImageCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 	{
 		string name = pop<string>(args);
 		string dts = pop<string>(args);
@@ -459,22 +516,26 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
 
-		ImageDataType dt = fromString(dts);
+		ImageDataType dt = fromString<ImageDataType>(dts);
 
-		if (dt == UInt8)
+		PISystem* system = distributor.getSystem();
+
+		if (dt == ImageDataType::UInt8)
 			system->replaceDistributedImage(name, new DistributedImage<uint8_t>(name, w, h, d));
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 			system->replaceDistributedImage(name, new DistributedImage<uint16_t>(name, w, h, d));
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 			system->replaceDistributedImage(name, new DistributedImage<uint32_t>(name, w, h, d));
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 			system->replaceDistributedImage(name, new DistributedImage<uint64_t>(name, w, h, d));
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 			system->replaceDistributedImage(name, new DistributedImage<float32_t>(name, w, h, d));
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 			system->replaceDistributedImage(name, new DistributedImage<complex32_t>(name, w, h, d));
 		else
 			throw ParseException(string("Invalid data type: ") + dts);
+
+		return vector<string>();
 	}
 
 	/**
@@ -490,30 +551,17 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		h = pop<coord_t>(args);
 		d = pop<coord_t>(args);
 
-		dt = fromString(dts);
-
-		if (!fileExists(fname))
-		{
-			vector<string> candidates = sequence::internals::buildFileList(fname + "*.raw");
-
-			if(candidates.size() == 0)
-				throw ParseException(string("File not found: ") + fname);
-
-			if (candidates.size() == 1)
-				fname = candidates[0];
-			else
-				throw ParseException(string("Multiple .raw files start with name: ") + fname);
-		}
+		dt = fromString<ImageDataType>(dts);
 
 		// Parse dimensions from file name if no dimensions are provided
-		if (w <= 0 || h <= 0 || d <= 0 || dt == Unknown)
+		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
 		{
 			Vec3c dims;
 			ImageDataType dt2;
-			if (!raw::internals::parseDimensions(fname, dims, dt2))
+			if (!raw::getInfo(fname, dims, dt2))
 				throw ParseException(string("Unable to find dimensions from file name: ") + fname);
 
-			if (dt == Unknown)
+			if (dt == ImageDataType::Unknown)
 				dt = dt2;
 
 			w = dims.x;
@@ -521,6 +569,106 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			d = dims.z;
 		}
 	}
+
+
+	void ReadCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+
+		Vec3c dimensions;
+		ImageDataType dt;
+		if (!io::getInfo(filename, dimensions, dt))
+			throw ITLException(string("File type cannot be automatically recognized: ") + filename);
+
+		if (dt == ImageDataType::UInt8)
+		{
+			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(dimensions);
+			system->replaceImage(name, img);
+			io::read(*img, filename);
+		}
+		else if (dt == ImageDataType::UInt16)
+		{
+			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(dimensions);
+			system->replaceImage(name, img);
+			io::read(*img, filename);
+		}
+		else if (dt == ImageDataType::UInt32)
+		{
+			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(dimensions);
+			system->replaceImage(name, img);
+			io::read(*img, filename);
+		}
+		else if (dt == ImageDataType::UInt64)
+		{
+			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(dimensions);
+			system->replaceImage(name, img);
+			io::read(*img, filename);
+		}
+		else if (dt == ImageDataType::Float32)
+		{
+			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(dimensions);
+			system->replaceImage(name, img);
+			io::read(*img, filename);
+		}
+		else if (dt == ImageDataType::Complex32)
+		{
+			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(dimensions);
+			system->replaceImage(name, img);
+			io::read(*img, filename);
+		}
+		else
+			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+	}
+
+	vector<string> ReadCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+
+		Vec3c dimensions;
+		ImageDataType dt;
+		if (!io::getInfo(filename, dimensions, dt))
+			throw ITLException(string("File type cannot be automatically recognized: ") + filename);
+
+		PISystem* system = distributor.getSystem();
+
+		if (dt == ImageDataType::UInt8)
+		{
+			DistributedImage<uint8_t>* img = new DistributedImage<uint8_t>(name, dimensions, filename);
+			system->replaceDistributedImage(name, img);
+		}
+		else if (dt == ImageDataType::UInt16)
+		{
+			DistributedImage<uint16_t>* img = new DistributedImage<uint16_t>(name, dimensions, filename);
+			system->replaceDistributedImage(name, img);
+		}
+		else if (dt == ImageDataType::UInt32)
+		{
+			DistributedImage<uint32_t>* img = new DistributedImage<uint32_t>(name, dimensions, filename);
+			system->replaceDistributedImage(name, img);
+		}
+		else if (dt == ImageDataType::UInt64)
+		{
+			DistributedImage<uint64_t>* img = new DistributedImage<uint64_t>(name, dimensions, filename);
+			system->replaceDistributedImage(name, img);
+		}
+		else if (dt == ImageDataType::Float32)
+		{
+			DistributedImage<float32_t>* img = new DistributedImage<float32_t>(name, dimensions, filename);
+			system->replaceDistributedImage(name, img);
+		}
+		else if (dt == ImageDataType::Complex32)
+		{
+			DistributedImage<complex32_t>* img = new DistributedImage<complex32_t>(name, dimensions, filename);
+			system->replaceDistributedImage(name, img);
+		}
+		else
+			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+
+		return vector<string>();
+	}
+
 
 	void ReadRawCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
@@ -532,37 +680,37 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		ImageDataType dt;
 		parseArgs(args, name, filename, w, h, d, dt);
 
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 		{
 			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(w, h, d);
 			system->replaceImage(name, img);
 			raw::read(*img, filename);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(w, h, d);
 			system->replaceImage(name, img);
 			raw::read(*img, filename);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(w, h, d);
 			system->replaceImage(name, img);
 			raw::read(*img, filename);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(w, h, d);
 			system->replaceImage(name, img);
 			raw::read(*img, filename);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(w, h, d);
 			system->replaceImage(name, img);
 			raw::read(*img, filename);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(w, h, d);
 			system->replaceImage(name, img);
@@ -572,7 +720,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
 	}
 
-	void ReadRawCommand::runDistributedInternal(PISystem* system, Distributor& distributor, vector<ParamVariant>& args) const
+	vector<string> ReadRawCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 	{
 		string name;
 		string filename;
@@ -582,38 +730,42 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		ImageDataType dt;
 		parseArgs(args, name, filename, w, h, d, dt);
 
-		if (dt == UInt8)
+		PISystem* system = distributor.getSystem();
+
+		if (dt == ImageDataType::UInt8)
 		{
 			DistributedImage<uint8_t>* img = new DistributedImage<uint8_t>(name, w, h, d, filename);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			DistributedImage<uint16_t>* img = new DistributedImage<uint16_t>(name, w, h, d, filename);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			DistributedImage<uint32_t>* img = new DistributedImage<uint32_t>(name, w, h, d, filename);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			DistributedImage<uint64_t>* img = new DistributedImage<uint64_t>(name, w, h, d, filename);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			DistributedImage<float32_t>* img = new DistributedImage<float32_t>(name, w, h, d, filename);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			DistributedImage<complex32_t>* img = new DistributedImage<complex32_t>(name, w, h, d, filename);
 			system->replaceDistributedImage(name, img);
 		}
 		else
 			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+
+		return vector<string>();
 	}
 
 	void ReadSequenceCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
@@ -635,37 +787,37 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 		//d = z1 - z0 + 1;
 
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 		{
 			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(w, h, d);
 			system->replaceImage(name, img);
 			sequence::read(*img, fname);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(w, h, d);
 			system->replaceImage(name, img);
 			sequence::read(*img, fname);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(w, h, d);
 			system->replaceImage(name, img);
 			sequence::read(*img, fname);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(w, h, d);
 			system->replaceImage(name, img);
 			sequence::read(*img, fname);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(w, h, d);
 			system->replaceImage(name, img);
 			sequence::read(*img, fname);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(w, h, d);
 			system->replaceImage(name, img);
@@ -675,7 +827,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
 	}
 
-	void ReadSequenceCommand::runDistributedInternal(PISystem* system, Distributor& distributor, vector<ParamVariant>& args) const
+	vector<string> ReadSequenceCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 	{
 		string name = pop<string>(args);
 		string fname = pop<string>(args);
@@ -683,36 +835,152 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t w, h, d;
 		ImageDataType dt;
 		sequence::getInfo(fname, w, h, d, dt);
+
+		PISystem* system = distributor.getSystem();
 		
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 		{
 			DistributedImage<uint8_t>* img = new DistributedImage<uint8_t>(name, w, h, d, fname);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			DistributedImage<uint16_t>* img = new DistributedImage<uint16_t>(name, w, h, d, fname);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			DistributedImage<uint32_t>* img = new DistributedImage<uint32_t>(name, w, h, d, fname);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			DistributedImage<uint64_t>* img = new DistributedImage<uint64_t>(name, w, h, d, fname);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			DistributedImage<float32_t>* img = new DistributedImage<float32_t>(name, w, h, d, fname);
 			system->replaceDistributedImage(name, img);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			DistributedImage<complex32_t>* img = new DistributedImage<complex32_t>(name, w, h, d, fname);
 			system->replaceDistributedImage(name, img);
+		}
+		else
+			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+
+		return vector<string>();
+	}
+
+	void ReadVolCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+
+		Vec3c dimensions;
+		ImageDataType dt;
+		string endianness;
+		size_t headerSize;
+		if (!vol::getInfo(fname, dimensions, dt, endianness, headerSize))
+			throw ITLException(string("Not a .vol file: ") + fname);
+
+		coord_t w = dimensions.x;
+		coord_t h = dimensions.y;
+		coord_t d = dimensions.z;
+
+		if (dt == ImageDataType::UInt8)
+		{
+			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(w, h, d);
+			system->replaceImage(name, img);
+			vol::read(*img, fname);
+		}
+		else if (dt == ImageDataType::UInt16)
+		{
+			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(w, h, d);
+			system->replaceImage(name, img);
+			vol::read(*img, fname);
+		}
+		else if (dt == ImageDataType::UInt32)
+		{
+			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(w, h, d);
+			system->replaceImage(name, img);
+			vol::read(*img, fname);
+		}
+		else if (dt == ImageDataType::UInt64)
+		{
+			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(w, h, d);
+			system->replaceImage(name, img);
+			vol::read(*img, fname);
+		}
+		else if (dt == ImageDataType::Float32)
+		{
+			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(w, h, d);
+			system->replaceImage(name, img);
+			vol::read(*img, fname);
+		}
+		else if (dt == ImageDataType::Complex32)
+		{
+			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(w, h, d);
+			system->replaceImage(name, img);
+			vol::read(*img, fname);
+		}
+		else
+			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+	}
+
+	void ReadBlockCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		coord_t x = pop<coord_t>(args);
+		coord_t y = pop<coord_t>(args);
+		coord_t z = pop<coord_t>(args);
+		coord_t bw = pop<coord_t>(args);
+		coord_t bh = pop<coord_t>(args);
+		coord_t bd = pop<coord_t>(args);
+
+		Vec3c dims;
+		ImageDataType dt;
+		if (!io::getInfo(fname, dims, dt))
+			throw ITLException(string("Unable to read file dimensions: ") + fname);
+
+		if (dt == ImageDataType::UInt8)
+		{
+			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(bw, bh, bd);
+			system->replaceImage(name, img);
+			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+		}
+		else if (dt == ImageDataType::UInt16)
+		{
+			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(bw, bh, bd);
+			system->replaceImage(name, img);
+			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+		}
+		else if (dt == ImageDataType::UInt32)
+		{
+			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(bw, bh, bd);
+			system->replaceImage(name, img);
+			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+		}
+		else if (dt == ImageDataType::UInt64)
+		{
+			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(bw, bh, bd);
+			system->replaceImage(name, img);
+			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+		}
+		else if (dt == ImageDataType::Float32)
+		{
+			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(bw, bh, bd);
+			system->replaceImage(name, img);
+			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+		}
+		else if (dt == ImageDataType::Complex32)
+		{
+			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(bw, bh, bd);
+			system->replaceImage(name, img);
+			io::readBlock(*img, fname, Vec3c(x, y, z), true);
 		}
 		else
 			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
@@ -733,17 +1001,17 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
 
-		ImageDataType dt = fromString(dts);
+		ImageDataType dt = fromString<ImageDataType>(dts);
 
 		// Parse dimensions from file name if no dimensions are provided
-		if (w <= 0 || h <= 0 || d <= 0 || dt == Unknown)
+		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
 		{
 			Vec3c dims;
 			ImageDataType dt2;
-			if (!raw::internals::parseDimensions(fname, dims, dt2))
+			if (!raw::getInfo(fname, dims, dt2))
 				throw ParseException(string("Unable to find dimensions from file name: ") + fname);
 
-			if (dt == Unknown)
+			if (dt == ImageDataType::Unknown)
 				dt = dt2;
 
 			w = dims.x;
@@ -751,41 +1019,41 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			d = dims.z;
 		}
 
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 		{
 			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(bw, bh, bd);
 			system->replaceImage(name, img);
-			raw::readBlock(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
+			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(bw, bh, bd);
 			system->replaceImage(name, img);
-			raw::readBlock(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
+			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(bw, bh, bd);
 			system->replaceImage(name, img);
-			raw::readBlock(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
+			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(bw, bh, bd);
 			system->replaceImage(name, img);
-			raw::readBlock(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
+			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(bw, bh, bd);
 			system->replaceImage(name, img);
-			raw::readBlock(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
+			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(bw, bh, bd);
 			system->replaceImage(name, img);
-			raw::readBlock(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
+			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
 		}
 		else
 			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
@@ -806,37 +1074,37 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		ImageDataType dt;
 		sequence::getInfo(fname, w, h, d, dt);
 
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 		{
 			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(bw, bh, bd);
 			system->replaceImage(name, img);
 			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(bw, bh, bd);
 			system->replaceImage(name, img);
 			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(bw, bh, bd);
 			system->replaceImage(name, img);
 			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(bw, bh, bd);
 			system->replaceImage(name, img);
 			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(bw, bh, bd);
 			system->replaceImage(name, img);
 			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(bw, bh, bd);
 			system->replaceImage(name, img);
@@ -855,17 +1123,17 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
 
-		ImageDataType dt = fromString(dts);
+		ImageDataType dt = fromString<ImageDataType>(dts);
 
 		// Parse dimensions from file name if no dimensions are provided
-		if (w <= 0 || h <= 0 || d <= 0 || dt == Unknown)
+		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
 		{
 			Vec3c dims;
 			ImageDataType dt2;
-			if (!raw::internals::parseDimensions(fname, dims, dt2))
+			if (!raw::getInfo(fname, dims, dt2))
 				throw ParseException(string("Unable to find dimensions from file name: ") + fname);
 
-			if (dt == Unknown)
+			if (dt == ImageDataType::Unknown)
 				dt = dt2;
 
 			w = dims.x;
@@ -873,32 +1141,32 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			d = dims.z;
 		}
 
-		if (dt == UInt8)
+		if (dt == ImageDataType::UInt8)
 		{
 			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(fname, w, h, d);
 			system->replaceImage(name, img);
 		}
-		else if (dt == UInt16)
+		else if (dt == ImageDataType::UInt16)
 		{
 			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(fname, w, h, d);
 			system->replaceImage(name, img);
 		}
-		else if (dt == UInt32)
+		else if (dt == ImageDataType::UInt32)
 		{
 			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(fname, w, h, d);
 			system->replaceImage(name, img);
 		}
-		else if (dt == UInt64)
+		else if (dt == ImageDataType::UInt64)
 		{
 			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(fname, w, h, d);
 			system->replaceImage(name, img);
 		}
-		else if (dt == Float32)
+		else if (dt == ImageDataType::Float32)
 		{
 			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(fname, w, h, d);
 			system->replaceImage(name, img);
 		}
-		else if (dt == Complex32)
+		else if (dt == ImageDataType::Complex32)
 		{
 			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(fname, w, h, d);
 			system->replaceImage(name, img);
@@ -913,26 +1181,34 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		if (name != "")
 		{
 			system->replaceImage(name, 0);
-		}
-		else
-		{
-			for (auto name : system->getImageNames())
-				system->replaceImage(name, 0);
-		}
-	}
-
-	void ClearCommand::runDistributedInternal(PISystem* system, Distributor& distributor, vector<ParamVariant>& args) const
-	{
-		string name = pop<string>(args);
-		if (name != "")
-		{
 			system->replaceDistributedImage(name, 0);
 		}
 		else
 		{
-			for (auto name : system->getDistributedImageNames())
+			for (auto name : system->getImageNames())
+			{
+				system->replaceImage(name, 0);
 				system->replaceDistributedImage(name, 0);
+			}
 		}
+	}
+
+	vector<string> ClearCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+		runInternal(system, args);
+		//string name = pop<string>(args);
+		//if (name != "")
+		//{
+		//	system->replaceDistributedImage(name, 0);
+		//}
+		//else
+		//{
+		//	for (auto name : system->getDistributedImageNames())
+		//		system->replaceDistributedImage(name, 0);
+		//}
+
+		return vector<string>();
 	}
 
 	void HelpCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

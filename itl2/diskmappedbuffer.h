@@ -30,7 +30,6 @@
 namespace itl2
 {
 
-
 #if defined(__linux__)
 
 	/**
@@ -80,7 +79,7 @@ namespace itl2
 		@param size Size to map, pass zero to map the whole file.
 		@param filename Name of file to map to.
 		*/
-		DiskMappedBuffer(size_t size, const string& filename, size_t bytesToSkip = 0) :
+		DiskMappedBuffer(size_t size, const std::string& filename, size_t bytesToSkip = 0) :
 			pDummy(0),
 			mappedSize(size * sizeof(T))
 		{
@@ -204,6 +203,10 @@ namespace itl2
 
 				createFoldersFor(filename);
 
+				// Copy string to wstring.
+				//std::wstring wfilename(filename.length(), L' '); // Make room for characters
+				//std::copy(filename.begin(), filename.end(), wfilename.begin());
+
 				fileHandle = CreateFileA(filename.c_str(),					// filename
 										GENERIC_READ | GENERIC_WRITE,		// access mode
 										FILE_SHARE_READ | FILE_SHARE_WRITE,	// share mode
@@ -214,6 +217,20 @@ namespace itl2
 
 				if(fileHandle == INVALID_HANDLE_VALUE)
 					throw ITLException("Unable to open file " + filename + " for disk mapping.");
+
+				//// Get file size
+				//LARGE_INTEGER filesize;
+				//if(!GetFileSizeEx(fileHandle, &filesize))
+				//	throw ITLException("Unable to get file size " + filename);
+
+				//// Make sure file size is not zero.
+				//if(filesize.QuadPart == 0)
+				//{
+				//	T buffer = T();
+				//	DWORD written;
+				//	WriteFile(fileHandle, &buffer, sizeof(T), &written, NULL);
+				//	SetFilePointer(fileHandle, 0, 0, FILE_BEGIN);
+				//}
 
 				LARGE_INTEGER datasize;
 				datasize.QuadPart = size * sizeof(T);

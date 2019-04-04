@@ -3,10 +3,11 @@
 #include "command.h"
 #include "commandsbase.h"
 #include "distributable.h"
+#include "pointprocess.h"
+#include "math/mathutils.h"
+#include "misc.h"
 
 #include <vector>
-
-#include "itl2.h"
 
 using namespace std;
 using namespace itl2;
@@ -26,10 +27,17 @@ namespace pilib
 		{
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			// distribute in z, no overlap
-			distributor.distribute(this, args, 2, Vec3c(0, 0, 0));
+			return distributor.distribute(this, args, 2, Vec3c(0, 0, 0));
+		}
+
+		virtual JobType getJobType() const
+		{
+			return JobType::Fast;
 		}
 	};
 
@@ -101,7 +109,7 @@ namespace pilib
 	public:
 		SetConstantCommand() : PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >("set", "Sets all pixels to the same value.",
 			{
-				CommandArgument<double>(In, "x", "Pixel value.")
+				CommandArgument<double>(ParameterDirection::In, "x", "Pixel value.")
 			}) {}
 
 		virtual void run(Image<pixel_t>& img, vector<ParamVariant>& args) const
@@ -117,8 +125,8 @@ namespace pilib
 	public:
 		ThresholdRangeCommand() :PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >("thresholdrange", "Threshols a range from the image. Sets to one all pixels whose value is in ]min, max].",
 			{
-				CommandArgument<double>(In, "min", "Minimum of the threshold range."),
-				CommandArgument<double>(In, "max", "Maximum of the threshold range.")
+				CommandArgument<double>(ParameterDirection::In, "min", "Minimum of the threshold range."),
+				CommandArgument<double>(ParameterDirection::In, "max", "Maximum of the threshold range.")
 			})
 		{
 
@@ -132,15 +140,36 @@ namespace pilib
 		}
 	};
 
+	template<typename pixel_t> class DoubleThresholdCommand : public PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >
+	{
+	public:
+		DoubleThresholdCommand() : PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >("doublethreshold", "Sets pixel to 0 if its value is less than the first threshold. Sets pixel to 1 if pixel its is larger than or equal to the first threshold and less than the second threshold (if any). Sets pixel to 2 if pixel its is larger than or equal to the second threshold.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "first threshold", "Pixels whose value is larger than or equal to this threshold and less than the second threshold are set to 1."),
+				CommandArgument<double>(ParameterDirection::In, "second threshold", "Pixels whose value is larger than or equal to this threshold are set to 2.")
+			})
+		{
+
+		}
+
+		virtual void run(Image<pixel_t>& img, vector<ParamVariant>& args) const
+		{
+			double t1 = pop<double>(args);
+			double t2 = pop<double>(args);
+			vector<pixel_t> v = { pixelRound<pixel_t>(t1), pixelRound<pixel_t>(t2) };
+			multiThreshold(img, v);
+		}
+	};
+
 	template<typename pixel_t> class ThresholdPeriodicCommand : public PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >
 	{
 	public:
 		ThresholdPeriodicCommand() : PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >("thresholdperiodic", "Threshols a range from the image where pixel values are from periodic range (e.g. angle). Sets to one all pixels whose value is in ]min, max] mod period. If threshold range is larger than period, sets all pixels to 1. If threshold range start is larger than or equal to threshold range end, sets all pixels to 0.",
 			{
-				CommandArgument<double>(In, "period start", "Minimum of the period of pixel values."),
-				CommandArgument<double>(In, "period end", "Maximum of the period of pixel values."),
-				CommandArgument<double>(In, "min", "Minimum of the threshold range."),
-				CommandArgument<double>(In, "max", "Maximum of the threshold range.")
+				CommandArgument<double>(ParameterDirection::In, "period start", "Minimum of the period of pixel values."),
+				CommandArgument<double>(ParameterDirection::In, "period end", "Maximum of the period of pixel values."),
+				CommandArgument<double>(ParameterDirection::In, "min", "Minimum of the threshold range."),
+				CommandArgument<double>(ParameterDirection::In, "max", "Maximum of the threshold range.")
 			})
 		{
 
@@ -161,10 +190,10 @@ namespace pilib
 	public:
 		LinearMapCommand() : PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >("linmap", "Maps pixel values linearly from one range to another. Maps position a in range [input min, input max] linearly to position in range [output min, output max]. E.g. if a = 0.5 and [input min, input max] = [0, 1] and [output min, output max] = [3, 4], result will be 3 + (0.5 - 0) / (1 - 0) * (4 - 3) = 3.5.",
 			{
-				CommandArgument<double>(In, "input min", "Minimum of the input range."),
-				CommandArgument<double>(In, "input max", "Maximum of the input range."),
-				CommandArgument<double>(In, "output min", "Minimum of the output range."),
-				CommandArgument<double>(In, "output max", "Maximum of the output range.")
+				CommandArgument<double>(ParameterDirection::In, "input min", "Minimum of the input range."),
+				CommandArgument<double>(ParameterDirection::In, "input max", "Maximum of the input range."),
+				CommandArgument<double>(ParameterDirection::In, "output min", "Minimum of the output range."),
+				CommandArgument<double>(ParameterDirection::In, "output max", "Maximum of the output range.")
 			})
 		{
 
@@ -180,7 +209,25 @@ namespace pilib
 		}
 	};
 
+	template<typename pixel_t> class ReplaceCommand : public PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >
+	{
+	public:
+		ReplaceCommand() :PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >("replace", "Replaces pixel values a by value b.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "a", "Value to be replaced by b."),
+				CommandArgument<double>(ParameterDirection::In, "b", "Value that replaces a.")
+			})
+		{
 
+		}
+
+		virtual void run(Image<pixel_t>& img, vector<ParamVariant>& args) const
+		{
+			double a = pop<double>(args);
+			double b = pop<double>(args);
+			replace(img, Vec2<pixel_t>(pixelRound<pixel_t>(a), pixelRound<pixel_t>(b)));
+		}
+	};
 
 
 
@@ -217,8 +264,8 @@ namespace pilib
 		SetEdgesCommand() :
 			OneImageInPlaceCommand<pixel_t>("setedges", "Set edges of the image to specified value.",
 				{
-					CommandArgument<double>(In, "edge value", "The edges are set to this value.", 0),
-					CommandArgument<coord_t>(In, "radius", "Pixels whose distance to the image edge is less than or equal to this value are set.", 1)
+					CommandArgument<double>(ParameterDirection::In, "edge value", "The edges are set to this value.", 0),
+					CommandArgument<coord_t>(ParameterDirection::In, "radius", "Pixels whose distance to the image edge is less than or equal to this value are set.", 1)
 				}
 				)
 		{
@@ -229,7 +276,7 @@ namespace pilib
 			double val = pop<double>(args);
 			coord_t r = pop<coord_t>(args);
 
-			setEdges(img, pixelRound<pixel_t>(val), r);
+			setEdges(img, math::pixelRound<pixel_t>(val), r);
 		}
 	};
 
@@ -250,7 +297,7 @@ namespace pilib
 	public: \
 		classname##ConstantCommand() : PointProcessDistributable<OneImageInPlaceCommand<pixel_t> >(#commandname, helpParamTopic, \
 		{ \
-			CommandArgument<double>(In, "x", helpParamParam) \
+			CommandArgument<double>(ParameterDirection::In, "x", helpParamParam) \
 		}) {}\
 	\
 		virtual void run(Image<pixel_t>& img, vector<ParamVariant>& args) const \
@@ -269,13 +316,14 @@ namespace pilib
 	//DEF_MATH_DUAL(SetValue, setValue, "Copies pixel values from right image to left image.", "Sets all pixels to the same value.", "Pixel value.")
 	DEF_MATH_DUAL(Threshold, threshold, "Thresholds left image, taking threshold values from right image. Sets pixel to 1 if pixel value > threshold and to 0 otherwise.", "Thresholds image. Sets pixel to 1 if pixel value > threshold and to 0 otherwise.", "Threshold value.")
 
+
 	template<typename pixel_t> class SetCommand : public Command, public Distributable
 	{
 	public:
 		SetCommand() : Command("set", "Copies pixel values from right image to left image.",
 			{
-				CommandArgument<Image<pixel_t> >(Out, "target image", "Image whose values are set."),
-				CommandArgument<Image<pixel_t> >(In, "source image", "Image that is copied to the target image.")
+				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "target image", "Image whose values are set."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "source image", "Image that is copied to the target image.")
 			})
 		{
 		}
@@ -287,14 +335,14 @@ namespace pilib
 			itl2::setValue(target, source);
 		}
 
-		virtual void runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 		{
 			DistributedImage<pixel_t>& target = *get<DistributedImage<pixel_t>* >(args[0]);
 			DistributedImage<pixel_t>& source = *get<DistributedImage<pixel_t>* >(args[1]);
 			target.ensureSize(source.dimensions());
 
 			// distribute in z, no overlap
-			distributor.distribute(this, args, 2, Vec3c(0, 0, 0));
+			return distributor.distribute(this, args, 2, Vec3c(0, 0, 0));
 		}
 	};
 

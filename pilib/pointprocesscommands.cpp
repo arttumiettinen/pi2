@@ -23,6 +23,8 @@ namespace pilib
 			ADD_REAL(CeilCommand),
 			ADD_REAL(FloorCommand),
 
+			ADD_REAL(ReplaceCommand),
+
 
 			new ConjugateComplexCommand(),
 			new NormalizeComplexCommand(),
@@ -49,6 +51,7 @@ namespace pilib
 
 			ADD_REAL(ThresholdRangeCommand),
 			ADD_REAL(ThresholdPeriodicCommand),
+			ADD_REAL(DoubleThresholdCommand),
 			ADD_REAL(LinearMapCommand),
 
 			ADD_ALL2(CopyCommand),
