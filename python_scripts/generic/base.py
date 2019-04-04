@@ -238,7 +238,13 @@ class Scan:
         """
         Tests if reconstructed image file exists.
         """
-        return os.path.isfile(self.rec_file)
+        
+        pi_script = f"fileinfo({self.rec_file});"
+        s = run_pi2_locally(pi_script)
+        s = s.decode('ASCII')
+        lines = s.splitlines()
+        return len(lines) == 3 # Three lines means the file was found and can be read.
+
 
 
 
@@ -1414,6 +1420,21 @@ def find_first_node(comp):
 
 
 
+def fix_directories(path):
+    """
+    Removes directory separator characters from the path and returns the result.
+    """
+
+    while len(path) > 0 and (path[0] == '/' or path[0] == '\\'):
+        path = path[1:]
+
+    path = path.replace('.', '')
+    path = path.replace('/', '-')
+    path = path.replace('\\', '-')
+
+    return path
+
+
 def save_transformation(sample_name, scan, relations):
     """
     Saves world to local similarity tranformation of node at given position.
@@ -1424,7 +1445,7 @@ def save_transformation(sample_name, scan, relations):
     c = scan.c
     norm_fact = scan.norm_fact
 
-    scan_name = scan.rec_file
+    scan_name = fix_directories(scan.rec_file)
     file = f"{scan_name}_transformation.txt"
     with open(file, 'wb') as f:
         # Write world to local similarity transformation of this node
@@ -1439,7 +1460,7 @@ def save_transformation(sample_name, scan, relations):
         # Write count of parent nodes
         np.savetxt(f, np.array([len(parents)]))
         for parent_scan in parents:
-            parent_scan_name = parent_scan.rec_file
+            parent_scan_name = fix_directories(parent_scan.rec_file)
 
             prefix = displacement_file_prefix(sample_name, parent_scan, scan)
 
@@ -1487,7 +1508,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
                     #print(scan.rec_file)
                     done[scan] = True
 
-                    scan_name = scan.rec_file
+                    scan_name = fix_directories(scan.rec_file)
 
                     # Calculate world to local grid transform using pi
                     scan.world_to_local_prefix = f"{scan_name}_world_to_local"
