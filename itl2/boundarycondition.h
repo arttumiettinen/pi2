@@ -28,7 +28,7 @@ namespace itl2
 	{
 		switch (x)
 		{
-		case BoundaryCondition::Zero: return "BoundaryCondition::Zero";
+		case BoundaryCondition::Zero: return "Zero";
 		case BoundaryCondition::Nearest: return "Nearest";
 		}
 		throw ITLException("Invalid boundary condition.");
