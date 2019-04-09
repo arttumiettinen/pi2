@@ -12,7 +12,7 @@ Pi2 is not intended to be a replacement for huge libraries like ITK and VTK. Ins
 
 ## Binaries
 
-Pre-built binaries for Windows and CentOS Linux can be downloaded from the releases page.
+Pre-built binaries for Windows and CentOS Linux can be downloaded from the [releases page](https://github.com/arttumiettinen/pi2/releases).
 
 
 ## Examples
