@@ -10,16 +10,14 @@ This repository contains
 Pi2 is not intended to be a replacement for huge libraries like ITK and VTK. Instead, it is meant to be simple, performant, and easily extensible program well suitable for original author's own algorithm development and analysis tasks. It has been very useful for the author during the last years but... your mileage may vary.
 
 
-
 ## Help
 
 The user-oriented help of pi2 can be read at LINK-MISSING.
 
 
-
 ## Binaries
 
-Pre-built binaries for Windows and CentOS Linux can be downloaded from the releases page.
+Pre-built binaries for Windows and CentOS Linux can be downloaded from the [releases page](https://github.com/arttumiettinen/pi2/releases).
 
 
 ## Design decisions
