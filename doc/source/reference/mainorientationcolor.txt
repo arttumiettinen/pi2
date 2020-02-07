@@ -1,0 +1,75 @@
+.. _mainorientationcolor:
+
+mainorientationcolor
+********************
+
+
+**Syntax:** :code:`mainorientationcolor(geometry, phi, theta, phim, thetam, r, g, b)`
+
+Color codes orientation data according to deviation from a given main orientation. In the output, hue describes angle between the local orientation (phi and theta arguments) and the main orientation (phim and thetam arguments). Saturation is always 1 and value is the pixel value in the geometry image normalized such that maximum value of the geometry image is mapped to 1, and zero to 0.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+geometry [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+An image that contains the geometry for which local orientation has been determined.
+
+phi [input]
+~~~~~~~~~~~
+
+**Data type:** float32 image
+
+The azimuthal angle of the local orientation direction. The angle is given in radians and measured from positive :math:`x`-axis towards positive :math:`y`-axis and is given in range :math:`[-\pi, \pi]`.
+
+theta [input]
+~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+The polar angle of the local orientation direction. The angle is given in radians and measured from positive :math:`z`-axis towards :math:`xy`-plane. The values are in range :math:`[0, \pi]`.
+
+phim [input]
+~~~~~~~~~~~~
+
+**Data type:** real
+
+The azimuthal angle of the main orientation direction in radians.
+
+thetam [input]
+~~~~~~~~~~~~~~
+
+**Data type:** real
+
+The polar angle of the main orientation direction in radians.
+
+r [output]
+~~~~~~~~~~
+
+**Data type:** uint8 image
+
+Red channel of the result will be stored into this image.
+
+g [output]
+~~~~~~~~~~
+
+**Data type:** uint8 image
+
+Green channel of the result will be stored into this image.
+
+b [output]
+~~~~~~~~~~
+
+**Data type:** uint8 image
+
+Blue channel of the result will be stored into this image.
+
+See also
+--------
+
+:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`

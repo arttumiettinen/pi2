@@ -102,10 +102,61 @@
     <ClInclude Include="generationcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tomocommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="jobtype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="projectioncommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="delayed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commandlist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dmapcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pick.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="convertcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="histogramcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thickmapcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="helpformat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="standardhelp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="whereami.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="whereamicpp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="maximacommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="carpetcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="structurecommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="distributedtempimage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="autothresholdcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -176,7 +227,49 @@
     <ClCompile Include="generationcommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tomocommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="projectioncommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="delayed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="commandlist.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dmapcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="convertcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="histogramcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="thickmapcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="argumentdatatype.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="commandargument.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="whereami.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="maximacommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="carpetcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="structurecommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="autothresholdcommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

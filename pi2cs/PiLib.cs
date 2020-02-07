@@ -7,6 +7,60 @@ using System.Threading.Tasks;
 
 namespace pi2cs
 {
+// Naming Styles warning is disabled as lower/uppercase is used to separate function names in dynamic library and in wrapper class.
+#pragma warning disable IDE1006 
+
+    /// <summary>
+    /// Enumerates supported pixel data types.
+    /// </summary>
+    public enum ImageDataType
+    { 
+        /**
+		Unknown pixel data type.
+		*/
+		Unknown = 0,
+		/**
+		Unsigned 8-bit integer pixel data type.
+		*/
+		UInt8 = 1,
+		/**
+		Unsigned 16-bit integer pixel data type.
+		*/
+		UInt16 = 2,
+		/**
+		Unsigned 32-bit integer pixel data type.
+		*/
+		UInt32 = 3,
+		/**
+		Unsigned 64-bit integer pixel data type.
+		*/
+		UInt64 = 4,
+		/**
+		32-bit floating point pixel data type.
+		*/
+		Float32 = 5,
+		/**
+		Complex value consisting of two 32-bit floating point values.
+		*/
+		Complex32 = 6,
+        /**
+        Signed 8-bit integer pixel data type.
+        */
+        Int8 = 7,
+        /**
+		Signed 16-bit integer pixel data type.
+		*/
+        Int16 = 8,
+        /**
+		Signed 32-bit integer pixel data type.
+		*/
+        Int32 = 9,
+        /**
+		Signed 64-bit integer pixel data type.
+		*/
+        Int64 = 10
+    }
+
     /**
      * Low-level interface to pi.dll.
      */
@@ -95,6 +149,9 @@ namespace pi2cs
 	    @param dataType The system sets this int to 1 to signify uint8 image, 2 for uint16 image, 3 for float32 image and 4 for complex32 image.
 	    */
         [DllImport("pi", EntryPoint = "getImage")]
-        public static extern IntPtr GetImage(IntPtr pi, string imgName, out Int64 width, out Int64 height, out Int64 depth, out Int32 dataType);
+        public static extern IntPtr GetImage(IntPtr pi, string imgName, out Int64 width, out Int64 height, out Int64 depth, out ImageDataType dataType);
     }
+
+
+#pragma warning restore IDE1006 // Naming Styles
 }

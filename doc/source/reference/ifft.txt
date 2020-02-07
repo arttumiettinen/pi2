@@ -1,0 +1,33 @@
+.. _ifft:
+
+ifft
+****
+
+
+**Syntax:** :code:`ifft(input image, output image)`
+
+Calculates inverse Fourier transform. The size of the output image must be set to the size of the original data where the FFT was calculated from. The input image will be used as a temporary buffer and its contents are therefore destroyed.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+See also
+--------
+
+:ref:`fft`, :ref:`ifft`, :ref:`bandpassfilter`, :ref:`highpassfilter`

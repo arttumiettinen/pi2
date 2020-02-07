@@ -4,8 +4,8 @@
 #include <sstream>
 
 #include "argumentdatatype.h"
+#include "helpformat.h"
 
-using namespace std;
 using itl2::Image;
 
 namespace pilib
@@ -19,16 +19,16 @@ namespace pilib
 
 		ParameterDirection dir;
 
-		string def;
+		std::string def;
 
 		bool defAllowed;
 
-		string cname;
+		std::string cname;
 
-		string help;
+		std::string help;
 
 	protected:
-		CommandArgumentBase(ParameterDirection direction, ArgumentDataType type, string name, string help, string defaultValue, bool defaultValueAllowed) :
+		CommandArgumentBase(ParameterDirection direction, ArgumentDataType type, const std::string& name, const std::string& help, const std::string& defaultValue, bool defaultValueAllowed) :
 			type(type),
 			dir(direction),
 			def(defaultValue),
@@ -45,7 +45,7 @@ namespace pilib
 		///**
 		//Constructor for arguments with default value.
 		//*/
-		//CommandArgumentBase(ParameterDirection direction, ArgumentDataType type, string name, string help, string defaultValue) :
+		//CommandArgumentBase(ParameterDirection direction, ArgumentDataType type, std::string name, std::string help, std::string defaultValue) :
 		//	CommandArgumentBase(direction, type, name, help, defaultValue, true)
 		//{
 		//}
@@ -53,7 +53,7 @@ namespace pilib
 		///**
 		//Constructor for arguments without default value.
 		//*/
-		//CommandArgumentBase(ParameterDirection direction, ArgumentDataType type, string name, string help) :
+		//CommandArgumentBase(ParameterDirection direction, ArgumentDataType type, std::string name, std::string help) :
 		//	CommandArgumentBase(direction, type, name, help, "", false)
 		//{
 		//}
@@ -68,7 +68,7 @@ namespace pilib
 			return dir;
 		}
 
-		const string& defaultValue() const
+		const std::string& defaultValue() const
 		{
 			return def;
 		}
@@ -78,59 +78,44 @@ namespace pilib
 			return defAllowed;
 		}
 
-		const string& name() const
+		const std::string& name() const
 		{
 			return cname;
 		}
 
+		/**
+		Gets default value, quoted if it is empty or contains spaces.
+		Returns empty string if there is no default value allowed.
+		*/
+		std::string defaultValueQuoted() const;
+
 		/*
 		Makes a string representation of this argument.
 		*/
-		string toString() const
-		{
-			stringstream msg;
-			msg << "[" << pilib::toString(direction()) << ", " << pilib::toString(dataType()) << "] " << name();
-			if (defaultAllowed())
-			{
-				msg << " = \"" << defaultValue() << "\"";
-			}
-			return msg.str();
-		}
+		std::string toString() const;
 
 		/*
 		Makes simple string representation of this argument.
 		*/
-		string toSimpleString() const
-		{
-			stringstream msg;
-			msg << name();
-			return msg.str();
-		}
+		std::string toSimpleString() const;
+
+		/*
+		Makes a string representation of the argument and its default value.
+		*/
+		std::string dataTypeHelpString(const std::string* dataTypeOverride = nullptr) const;
+
+		/*
+		Makes a string representation of the argument but not its default value.
+		*/
+		std::string dataTypeHelpStringNoDefault(const std::string* dataTypeOverride = nullptr) const;
 
 		/*
 		Creates string containing help for usage of this parameter.
+		@param dataTypeOverride Pointer to string that contains the string to be printed as data type for this argument.
+		Pass nullptr to print the real data type.
+		If data type override length is zero, no data type will be shown.
 		*/
-		string helpString() const
-		{
-			stringstream msg;
-			msg << name() << " [";
-			if (direction() == ParameterDirection::In)
-				msg << "input";
-			else if (direction() == ParameterDirection::Out)
-				msg << "output";
-			else
-				msg << "input & output";
-			msg << ", " << pilib::toString(dataType());
-
-			if (direction() == ParameterDirection::In && defAllowed)
-				msg << ", default value = " << defaultValue();
-
-			msg << "]";
-			msg << ": ";
-			msg << help << endl;
-			msg << endl;
-			return msg.str();
-		}
+		std::string helpString(HelpFormat format, const std::string* dataTypeOverride = nullptr) const;
 	};
 
 	/*
@@ -142,7 +127,7 @@ namespace pilib
 		/**
 		Constructor for arguments with default value.
 		*/
-		CommandArgument(ParameterDirection direction, string name, string help, param_t defaultValue) :
+		CommandArgument(ParameterDirection direction, const std::string& name, const std::string& help, param_t defaultValue) :
 			CommandArgumentBase(direction, parameterType<param_t>(), name, help, itl2::toString(defaultValue), true)
 		{
 		}
@@ -150,7 +135,7 @@ namespace pilib
 		/**
 		Constructor for arguments without default value.
 		*/
-		CommandArgument(ParameterDirection direction, string name, string help) :
+		CommandArgument(ParameterDirection direction, const std::string& name, const std::string& help) :
 			CommandArgumentBase(direction, parameterType<param_t>(), name, help, "", false)
 		{
 		}

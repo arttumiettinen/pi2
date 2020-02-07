@@ -13,50 +13,44 @@ namespace pilib
 	private:
 		size_t allowedMem;
 
-		virtual void submitJob(const string& piCode, JobType jobType);
-
-		virtual vector<string> waitForJobs();
-
-		virtual size_t allowedMemory() const
-		{
-			return allowedMem;
-		}
-
-		void cancelAll();
-
-		string getErrorMessage(size_t jobIndex) const;
+		std::string getErrorMessage(size_t jobIndex) const;
 
 		/**
 		Stores (job slurm id, queue type, submission count) of all submitted jobs since last call to waitForJobs.
 		*/
-		vector<tuple<size_t, JobType, size_t> > submittedJobs;
+		std::vector<std::tuple<size_t, JobType, size_t> > submittedJobs;
 
 		/**
 		Extra arguments for sbatch and sinfo, for fast jobs
 		*/
-		string extraArgsFastJobs;
+		std::string extraArgsFastJobs;
 
 		/**
 		Extra arguments for sbatch and sinfo, for normal jobs
 		*/
-		string extraArgsNormalJobs;
+		std::string extraArgsNormalJobs;
 
 		/**
 		Extra arguments for sbatch and sinfo, for slow jobs
 		*/
-		string extraArgsSlowJobs;
+		std::string extraArgsSlowJobs;
+
+		/**
+		Commands used to run sbatch, squeue, scancel and sinfo.
+		*/
+		std::string sbatchCommand, squeueCommand, scancelCommand, sinfoCommand;
 
 		/**
 		Returns suitable sbatch arguments given type of job.
 		*/
-		string extraArgs(JobType jobType) const
+		std::string extraArgs(JobType jobType) const
 		{
 			switch (jobType)
 			{
 			case JobType::Fast: return extraArgsFastJobs;
 			case JobType::Normal: return extraArgsNormalJobs;
 			case JobType::Slow: return extraArgsSlowJobs;
-			default: throw logic_error("Invalid JobType value.");
+			default: throw std::logic_error("Invalid JobType value.");
 			}
 		}
 
@@ -69,12 +63,27 @@ namespace pilib
 		/**
 		Commands run on each node before pi.
 		*/
-		string jobInitCommands;
+		std::string jobInitCommands;
+
+		/**
+		Identifies this running instance from others so that multiple SLURM distributor instances can run from the same working folder.
+		*/
+		std::string myName;
+
+		/**
+		Cancels job with given SLURM id.
+		*/
+		void cancelJob(size_t slurmId) const;
+
+		/**
+		Cancel all jobs submitted by this object.
+		*/
+		void cancelAll() const;
 
 		/**
 		Calculate progress of all jobs in submittedJobs array.
 		*/
-		vector<int> getJobProgress() const;
+		std::vector<int> getJobProgress() const;
 
 		/**
 		Checks if the given job has finished.
@@ -84,12 +93,12 @@ namespace pilib
 		/**
 		Gets log of given job.
 		*/
-		string getLog(size_t jobIndex, bool flush = false) const;
+		std::string getLog(size_t jobIndex, bool flush = false) const;
 
 		/**
 		Gets SLURM error log of given job.
 		*/
-		string getSlurmErrorLog(size_t jobIndex, bool flush = false) const;
+		std::string getSlurmErrorLog(size_t jobIndex, bool flush = false) const;
 
 		/**
 		Gets job progress from log file.
@@ -104,14 +113,45 @@ namespace pilib
 		/**
 		Create a progress bar string.
 		*/
-		string createProgressBar(const vector<int>& progress);
+		std::string createProgressBar(const std::vector<int>& progress);
 
 		/**
 		Submits job with given index again.
 		*/
 		void resubmit(size_t jobIndex);
 
+		/**
+		Creates unique name for a job.
+		*/
+		std::string makeJobName(size_t jobIndex) const;
+
+		/**
+		Creates input file name.
+		*/
+		std::string makeInputName(size_t jobIndex) const;
+
+		/**
+		Creates output log file name.
+		*/
+		std::string makeOutputName(size_t jobIndex) const;
+
+		/**
+		Creates error log file name.
+		*/
+		std::string makeErrorName(size_t jobIndex) const;
+
 	public:
 		SLURMDistributor(PISystem* system);
+
+		virtual void submitJob(const std::string& piCode, JobType jobType) override;
+
+		virtual std::vector<std::string> waitForJobs() override;
+
+		virtual size_t allowedMemory() const override
+		{
+			return allowedMem;
+		}
+
+		virtual void allowedMemory(size_t maxMem) override;
 	};
 }

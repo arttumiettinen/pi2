@@ -12,26 +12,41 @@ namespace pilib
 	template<class CMDBASE>
 	class OverlapDistributable : public CMDBASE, public Distributable
 	{
-	public:
+	protected:
+		friend class CommandList;
 
-		OverlapDistributable(const string& name, const string& help, const vector<CommandArgumentBase>& extraArgs = {}) : CMDBASE(name, help, extraArgs)
+		OverlapDistributable(const string& name, const string& help, const vector<CommandArgumentBase>& extraArgs = {}, const string& seeAlso = "") : CMDBASE(name, help, extraArgs, seeAlso)
 		{
 		}
 
+	public:
 		/**
 		Calculate and return required overlap margin.
 		Ensure that possible output image and input image have correct size.
 		*/
-		virtual Vec3c calculateOverlap(vector<ParamVariant>& args) const = 0;
+		virtual Vec3c calculateOverlap(const vector<ParamVariant>& args) const = 0;
+
+
+		virtual Vec3c getMargin(const vector<ParamVariant>& args) const override
+		{
+			return calculateOverlap(args);
+		}
+
+		virtual size_t getDistributionDirection2(const vector<ParamVariant>& args) const override
+		{
+			return 1;
+		}
+
+		virtual bool canDelay(const vector<ParamVariant>& args) const override
+		{
+			return true;
+		}
 
 		using Distributable::runDistributed;
 
-		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
 		{
-			Vec3c margin = calculateOverlap(args);
-
-			// distribute in z, use overlap
-			return distributor.distribute(this, args, 2, 1, margin);
+			return distributor.distribute(this, args);
 		}
 	};
 

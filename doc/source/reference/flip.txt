@@ -1,0 +1,33 @@
+.. _flip:
+
+flip
+****
+
+
+**Syntax:** :code:`flip(image, dimension)`
+
+Flips image in the given dimension, e.g. if dimension is zero, the left edge of the image becomes the right edge and vice versa.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+dimension [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+The dimension to flip. Zero corresponds to :math:`x`, one ty :math:`y`, etc.
+
+See also
+--------
+
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`

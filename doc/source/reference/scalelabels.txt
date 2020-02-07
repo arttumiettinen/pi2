@@ -1,0 +1,51 @@
+.. _scalelabels:
+
+scalelabels
+***********
+
+
+**Syntax:** :code:`scalelabels(input image, output image, scaling factor, block origin)`
+
+Scales input image and places the result into the output image. Assumes that input image is a binary image or contains label values, and performs scaling such that edges of regions do not become jagged. Supports only upscaling by integer scaling factor. Set size of output image before calling this command or specify scaling factor as an argument.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+scaling factor [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Scaling factor in each coordinate direction. If zero in some dimension, the factor is calculated from current size of the output image and the input image in that dimension.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[-1, -1, -1]"
+
+Specifies origin of current calculation block. This parameter is used internally in distributed processing and should be set to (-1, -1, -1) in normal use.
+
+See also
+--------
+
+:ref:`scale`, :ref:`bin`, :ref:`scalelabels`

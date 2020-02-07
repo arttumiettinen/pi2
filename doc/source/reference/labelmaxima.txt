@@ -1,0 +1,33 @@
+.. _labelmaxima:
+
+labelmaxima
+***********
+
+
+**Syntax:** :code:`labelmaxima(image, regions)`
+
+Draws all regions in the given list, each with different color. If there are not enough colors available, an error is shown.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image where the maxima are to be drawn.
+
+regions [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that contains the regions. The format of this image is described in the :ref:`localmaxima`' command.
+
+See also
+--------
+
+:ref:`localmaxima`, :ref:`cleanmaxima`, :ref:`labelmaxima`, :ref:`growlabels`, :ref:`grow`

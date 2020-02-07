@@ -170,15 +170,15 @@ namespace itl2
 
 	}
 
-	PointGrid1D<coord_t> readPointGrid1D(ifstream& in)
+	PointGrid1D<coord_t> readPointGrid1D(std::ifstream& in)
 	{
-		string line;
-		getline(in, line);
+		std::string line;
+		std::getline(in, line);
 
-		stringstream str;
+		std::stringstream str;
 		str << line;
 
-		string val1, val2, val3;
+		std::string val1, val2, val3;
 		getline(str, val1, ',');
 		getline(str, val2, ',');
 		getline(str, val3);
@@ -199,7 +199,7 @@ namespace itl2
 		PointGrid1D<coord_t> g3 = readPointGrid1D(in);
 		refPoints = PointGrid3D<coord_t>(g1, g2, g3);
 
-		string line;
+		std::string line;
 		getline(in, line);
 		normFact = fromString<double>(line);
 
@@ -211,12 +211,12 @@ namespace itl2
 	/*
 	Writes result of block matching to file.
 	*/
-	void writeBlockMatchResult(const string& filename, const vector<Vec3c>& refPoints, const vector<Vec3d>& defPoints, const vector<double> gof)
+	void writeBlockMatchResult(const std::string& filename, const vector<Vec3c>& refPoints, const vector<Vec3d>& defPoints, const std::vector<double> gof)
 	{
 		if (refPoints.size() != defPoints.size() || gof.size() != refPoints.size())
 			throw ITLException("Sizes of reference, deformed and gof point lists must be equal.");
 
-		ofstream out;
+		std::ofstream out;
 		out.open(filename);
 		for (coord_t n = 0; n < (coord_t)refPoints.size(); n++)
 		{
@@ -230,29 +230,29 @@ namespace itl2
 	/*
 	Reads file written by writeBlockMatchResult.
 	*/
-	void readBlockMatchResult(const string& filename, vector<Vec3d>& refPoints, vector<Vec3d>& defPoints, vector<double>& gof)
+	void readBlockMatchResult(const std::string& filename, vector<Vec3d>& refPoints, std::vector<Vec3d>& defPoints, std::vector<double>& gof)
 	{
-		ifstream in(filename);
+		std::ifstream in(filename);
 
 		if (!in.good())
-			throw ITLException(string("Unable to read file ") + filename);
+			throw ITLException(std::string("Unable to read file ") + filename);
 
-		vector<double> row;
+		std::vector<double> row;
 		row.reserve(7);
 		while (in.good())
 		{
-			string line;
+			std::string line;
 			getline(in, line);
 
 			row.clear();
 			if (!line.empty())
 			{
-				stringstream str;
+				std::stringstream str;
 				str << line;
 
 				while (str.good())
 				{
-					string svalue;
+					std::string svalue;
 					getline(str, svalue, ',');
 					if (svalue.length() > 0)
 					{
@@ -281,13 +281,13 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> reference(head16.dimensions());
 			convert(head16, reference);
 
 			Image<uint16_t> deformed16;
-			raw::read(deformed16, "./t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "./input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -356,7 +356,7 @@ namespace itl2
 			Vec3c referenceDimensions(256, 256, 129);
 
 			Image<uint16_t> deformed16;
-			raw::read(deformed16, "./t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "./input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -422,7 +422,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -517,7 +517,7 @@ namespace itl2
 		void mipMatch()
 		{
 			Image<uint16_t> head16;
-			raw::read(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);

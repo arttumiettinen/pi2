@@ -1,0 +1,62 @@
+.. _closingfilter:
+
+closingfilter
+*************
+
+
+**Syntax:** :code:`closingfilter(image, radius, allow optimization, neighbourhood type, boundary condition)`
+
+Closing filter. Closes gaps in bright objects. Has optimized implementation for rectangular neighbourhoods. Creates one temporary image of same size than input.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+radius [input]
+~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[1, 1, 1]"
+
+Radius of neighbourhood. Diameter will be :math:`2r+1`.
+
+allow optimization [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to allow use of approximate decompositions of spherical structuring elements using periodic lines. As a result of the approximation processing is much faster but the true shape of the structuring element is not sphere but a regular polyhedron. See van Herk - A fast algorithm for local minimum and maximum filters on rectangular and octagonal kernels and Jones - Periodic lines Definition, cascades, and application to granulometries.
+
+neighbourhood type [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** neighbourhood type
+
+**Default value:** Ellipsoidal
+
+Type of neighbourhood. Can be Ellipsoidal for ellipsoidal or spherical neighbourhood; or Rectangular for rectangular neighbourhood.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Nearest
+
+Type of boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+See also
+--------
+
+:ref:`gaussfilter`, :ref:`bilateralfilter`, :ref:`bilateralfilterapprox`, :ref:`vawefilter`, :ref:`openingfilter`, :ref:`closingfilter`, :ref:`minfilter`, :ref:`maxfilter`, :ref:`medianfilter`, :ref:`variancefilter`, :ref:`stddevfilter`, :ref:`bandpassfilter`, :ref:`highpassfilter`

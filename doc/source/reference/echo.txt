@@ -1,0 +1,37 @@
+.. _echo:
+
+echo
+****
+
+
+**Syntax:** :code:`echo(commands, timing)`
+
+Enables or disables echoing of commands and timing information to output.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+commands [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to show commands that have been run.
+
+timing [input]
+~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to show timing information on commands that have been run.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

@@ -8,7 +8,7 @@
 #include <algorithm>
 
 using namespace std;
-using namespace math;
+
 
 namespace itl2
 {
@@ -123,15 +123,19 @@ namespace itl2
 
 				// Get those files in directory that match the template
 				vector<string> filenames;
-				for (auto & p : fs::directory_iterator(dir))
+
+				if (fs::is_directory(dir)) // Note: This is required in Linux, or otherwise we get an exception for non-existing directories.
 				{
-					string filename = p.path().filename().string();
-					if (matches(filename, fileTemplate))
-						filenames.push_back(p.path().string());
+					for (auto & p : fs::directory_iterator(dir))
+					{
+						string filename = p.path().filename().string();
+						if (matches(filename, fileTemplate))
+							filenames.push_back(p.path().string());
+					}
+
+					// Sort to natural order
+					sort(filenames.begin(), filenames.end(), doj::alphanum_less<std::string>());
 				}
-				
-				// Sort to natural order
-				sort(filenames.begin(), filenames.end(), doj::alphanum_less<std::string>());
 
 				//for (size_t n = 0; n < filenames.size(); n++)
 				//	cout << filenames[n] << endl;
@@ -160,7 +164,57 @@ namespace itl2
 
 				return results;
 			}
+			
+			
+			
+			bool getInfo2D(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType, string& reason)
+			{
+				// TODO: Add other formats here.
+
+				// All .png files that can be read are supported.
+				if (png::getInfo(filename, width, height, dataType, reason))
+					return true;
+
+				// .tif files with single slice are supported.
+				Vec3c dimensions;
+				if (tiff::getInfo(filename, dimensions, dataType, reason))
+				{
+					width = dimensions.x;
+					height = dimensions.y;
+					if (dimensions.z == 1)
+						return true;
+
+					reason = "The sequence contains 3D tiff files.";
+					return false;
+				}
+
+				reason = "Sequence slices could not be determined to be in any supported file format.";
+				return false;
+			}
 		}
+		
+		
+		bool getInfo(const string& filename, coord_t& width, coord_t& height, coord_t& depth, ImageDataType& dataType, string& reason)
+	    {
+		    width = 0;
+		    height = 0;
+		    depth = 0;
+		    dataType = ImageDataType::Unknown;
+		    
+		    vector<string> files = internals::buildFilteredFileList(filename);
+
+			if (files.size() <= 0)
+			{
+				reason = "The sequence does not match to any files.";
+				return false;
+			}
+
+		    depth = files.size();
+		    
+		    return internals::getInfo2D(files[0], width, height, dataType, reason);
+	    }
+	
+		
 
 		namespace tests
 		{
@@ -222,14 +276,14 @@ namespace itl2
 
 			void sequence()
 			{
-				// NOTE: No asserts!
+				// NOTE: No enough asserts!
 
 				//Image<uint8_t> img;
 				//sequence::read(img, "./sequence/test_seq/test_sequence@.png");
 				//raw::writed(img, "./sequence/test_sequence");
 
 				Image<uint8_t> img2;
-				sequence::read(img2, "./test_seq/t1-head_bin@.png");
+				sequence::read(img2, "./input_data/test_seq/t1-head_bin_@.png");
 				raw::writed(img2, "./sequence/test_sequence");
 				sequence::write(img2, "./sequence/test_sequence");
 
@@ -238,7 +292,7 @@ namespace itl2
 				Image<uint8_t> withbad;
 				sequence::read(withbad, "./sequence/test_sequence");
 				testAssert(equals(withbad, img2), "sequence with non-image file");
-
+				deleteFile("./sequence/test_sequence/BAD_FILE");
 
 				sequence::write(img2, "./sequence/save_test/auto_@(-).png");
 				sequence::write(img2, "./sequence/save_test/zero_@.png");
@@ -252,7 +306,7 @@ namespace itl2
 				sequence::read(img2, "./sequence/save_to_folder_test2");
 
 				// Partial read and write
-				sequence::read(img2, "./test_seq/t1-head_bin@.png", 100, 110);
+				sequence::read(img2, "./input_data/test_seq/t1-head_bin_@.png", 100, 110);
 				sequence::write(img2, "./sequence/partial_100-110/", 100);
 
 			}
@@ -260,7 +314,7 @@ namespace itl2
 			void fileFormats()
 			{
 				Image<uint16_t> head(256, 256, 129);
-				raw::read(head, "./t1-head_256x256x129.raw");
+				raw::read(head, "./input_data/t1-head_256x256x129.raw");
 
 				sequence::write(head, "./sequence/formats/@.png");
 				sequence::write(head, "./sequence/formats/@.tif");
@@ -279,7 +333,7 @@ namespace itl2
 				// NOTE: No asserts!
 
 				Image<uint16_t> head(256, 256, 129);
-				raw::read(head, "./t1-head_256x256x129.raw");
+				raw::read(head, "./input_data/t1-head_256x256x129.raw");
 				sequence::write(head, "./sequence/readwriteblock/write_normal/");
 
 				Image<uint16_t> block(100, 100, 100);
@@ -309,7 +363,7 @@ namespace itl2
 			void readWriteBlockOptimization()
 			{
 				Image<uint16_t> head(256, 256, 129);
-				raw::read(head, "./t1-head_256x256x129.raw");
+				raw::read(head, "./input_data/t1-head_256x256x129.raw");
 
 				sequence::write(head, "./sequence/readwriteblock/write_normal/");
 				sequence::writeBlock(head, "./sequence/readwriteblock/write_block/", Vec3c(0, 0, 0), head.dimensions());

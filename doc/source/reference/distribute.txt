@@ -1,0 +1,28 @@
+.. _distribute:
+
+distribute
+**********
+
+
+**Syntax:** :code:`distribute(workload manager system name)`
+
+Enables or disables distributed processing of commands. Run this command before commands that you would like to run using distributed processing. Images used during distributed processing are not available for local processing and vice versa, unless they are loaded again from disk. All commands do not support distributed processing.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+workload manager system name [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Set to 'SLURM' to use SLURM workload manager; set to 'LOCAL' to process tasks sequentially using the local computer; set to empty string to disable distributed processing (default).
+
+See also
+--------
+
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`

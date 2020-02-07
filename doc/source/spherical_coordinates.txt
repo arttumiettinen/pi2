@@ -1,0 +1,41 @@
+.. _spherical_coordinates:
+
+Spherical coordinates
+=====================
+
+Orientation-related commands (e.g. :ref:`cylinderorientation`) use spherical coordinates defined in the figure below.
+Namely, :math:`\phi` refers to the azimuthal angle and :math:`\theta` to the polar angle.
+The azimuthal angle is measured in :math:`xy`-plane from the positive :math:`x`-axis towards the positive :math:`y`-axis,
+and its values are always in the range :math:`[-\pi, \pi]`.
+The polar angle is measured from the positive :math:`z`-axis towards the :math:`xy`-plane, and its values
+are always in the range :math:`[0, \pi]`.
+
+.. figure:: examples/figures/coordinate_system0.png
+   :scale: 25 %
+   :alt: Spherical coordinate system
+
+   Spherical coordinate system used in pi2. Here, :math:`\phi` is the azimuthal angle and :math:`\theta` is the polar angle.
+
+
+Conversion from the cartesian coordinates to the polar coordinates is done with
+
+.. math::
+
+	r &= \sqrt{x^2 + y^2 + z^2} \\
+	\phi &= \operatorname{arctan2}(y, x) \\
+	\theta &= \arccos(z / r)
+	
+Conversion from the polar coordinates to the cartesian coordinates is done with
+
+.. math::
+	
+	x &= r \cos(\phi) sin(\theta) \\
+	y &= r \sin(\phi) sin(\theta) \\
+	z &= r \cos(\theta)
+	
+Most orientation-related commands return only angles for which the cartesian :math:`x`-component is positive.
+This is because the orientations are symmetrical, i.e. directions :math:`-\vec{r}` and :math:`\vec{r}` describe the same orientation,
+and therefore half of the possible directions are redundant.
+Additionally, in orientation-related commands :math:`r=1` most of the time.
+
+

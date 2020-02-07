@@ -1,0 +1,44 @@
+.. _cylindricality:
+
+cylindricality
+**************
+
+
+**Syntax:** :code:`cylindricality(image, derivative sigma, smoothing sigma)`
+
+Estimates likelihood of structures being cylinders, based on eigenvalues of the local structure tensor. The input image is replaced with the cylindricality values.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image to process.
+
+derivative sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Scale parameter. Set to the preferred scale of edges that define the cylinders. Derivatives required in the stucture tensor are calculated using convolutions with derivative of a Gaussian function, and this parameter defines the standard deviation of the Gaussian.
+
+smoothing sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+The structure tensor is smoothed by convolution with a Gaussian. This parameter defines the standard deviation of the smoothing Gaussian.
+
+See also
+--------
+
+:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`

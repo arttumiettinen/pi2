@@ -1,0 +1,33 @@
+.. _finalizetmap:
+
+finalizetmap
+************
+
+
+**Syntax:** :code:`finalizetmap(input image, output image)`
+
+Converts squared local radius map to local thickness map.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Output image.
+
+See also
+--------
+
+:ref:`tmap`

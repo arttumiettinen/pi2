@@ -1,0 +1,38 @@
+.. _squaresum:
+
+squaresum
+*********
+
+
+**Syntax:** :code:`squaresum(input image, output image, print to log)`
+
+Calculates squareSum of all pixels in the input image. The output is a 1x1x1 image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+print to log [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to print the results to the log.
+

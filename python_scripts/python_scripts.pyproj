@@ -5,17 +5,17 @@
     <ProjectGuid>ba94b144-c555-4822-8258-53a8861b7dc7</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>generic\pi2py_examples.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <StartupFile>generic\pi2py2_examples.py</StartupFile>
+    <SearchPath>generic;..\x64\Debug</SearchPath>
     <WorkingDirectory>..\x64\Release</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
     <RootNamespace>elastic_stitcher</RootNamespace>
     <IsWindowsApplication>False</IsWindowsApplication>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-logs C:\mytemp\dev\itl2\testing\nr_stitcher_tomcat\logs1\10516_IC_F_B1_.log</CommandLineArguments>
-    <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
+    <CommandLineArguments>
+    </CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <PublishUrl>
     </PublishUrl>
     <Environment>
@@ -29,21 +29,27 @@
     <DebugSymbols>true</DebugSymbols>
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Singlethreaded Debug' ">
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release no OpenCL' ">
     <DebugSymbols>true</DebugSymbols>
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
-    <OutputPath>bin\Singlethreaded Debug\</OutputPath>
+    <OutputPath>bin\Release no OpenCL\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="generic\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="generic\base.py" />
     <Compile Include="generic\nr_stitcher_grid.py" />
-    <Compile Include="generic\nr_stitcher_nongrid.py" />
-    <Compile Include="generic\pi2py.py" />
-    <Compile Include="generic\pi2py_examples.py" />
-    <Compile Include="generic\plot_network.py">
+    <Compile Include="generic\base.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="generic\nr_stitcher_nongrid.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="generic\pi2py2.py" />
+    <Compile Include="generic\pi2py2_examples.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="generic\pi2py2_tests.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

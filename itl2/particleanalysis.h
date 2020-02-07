@@ -11,19 +11,19 @@
 #include "math/vec3.h"
 
 #include "indexforest.h"
-#include "box.h"
+#include "aabox.h"
+#include "misc.h"
 
 #include "resultstable.h"
 #include "analyzers.h"
 
+#include "math/vectoroperations.h"
+
+#include "generation.h"
+
 
 namespace itl2
 {
-
-	using math::Vec2c;
-	using math::Vec3c;
-	using math::Vec3sc;
-	using math::pixelRound;
 
 	///**
 	//Number labels such that the numbering begins from one and is consecutive.
@@ -74,9 +74,10 @@ namespace itl2
 	Label all particles with distinct colors beginning from one.
 	It is assumed that background pixels are set to zero.
 	Uses simple flood fill algorithm.
+	If the pixel data type does not support large enough values to label all particles, an exception is thrown.
 	@param image Image containing the particles.
-	@param particleColor Color of particles. This color will be skipped in labeling. Pass zero to label particles of any color.
-	@param firstLabelValue Value of the first label.
+	@param particleColor Color of particles. This color will be skipped in labeling, and regions having some other color than this are not labeled. Pass zero to label particles of any color.
+	@param firstLabelValue Label value for the first particle encountered.
 	@returns The largest label value used in the image.
 	*/
 	template<typename pixel_t> pixel_t labelParticles(Image<pixel_t>& image, pixel_t particleColor = 0, pixel_t firstLabelValue = 1, Connectivity connectivity = Connectivity::NearestNeighbours, bool showProgress = true)
@@ -86,7 +87,7 @@ namespace itl2
 		// Handle "color all particles" case first
 		if (particleColor == 0)
 		{
-			particleColor = numeric_limits<pixel_t>::max();
+			particleColor = std::numeric_limits<pixel_t>::max();
 
 			#pragma omp parallel for if (image.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t n = 0; n < image.pixelCount(); n++)
@@ -110,7 +111,7 @@ namespace itl2
 
 					if (pixel == particleColor)
 					{
-						if (particleNumber >= numeric_limits<pixel_t>::max() - 2)
+						if (particleNumber >= std::numeric_limits<pixel_t>::max() - 2)
 							throw ITLException("Unable to label because there are not enough distinct pixel values available. Consider converting input image to higher bitdepth (e.g. uint8 to uint16).");
 
 						floodfill(image, Vec3c(x, y, z), particleNumber, particleNumber, connectivity);
@@ -136,8 +137,15 @@ namespace itl2
 		template<typename T> class SpecialColors
 		{
 		public:
-			static T fillColor();
-			static T largeColor();
+			static T fillColor()
+			{
+				return std::numeric_limits<T>::max();
+			}
+
+			static T largeColor()
+			{
+				return std::numeric_limits<T>::max() - 1;
+			}
 		};
 
 		template<> class SpecialColors<uint8_t>
@@ -151,6 +159,20 @@ namespace itl2
 			static uint8_t largeColor()
 			{
 				return 230;
+			}
+		};
+
+		template<> class SpecialColors<int8_t>
+		{
+		public:
+			static int8_t fillColor()
+			{
+				return 64;
+			}
+
+			static int8_t largeColor()
+			{
+				return 100;
 			}
 		};
 
@@ -168,52 +190,11 @@ namespace itl2
 			}
 		};
 
-		template<> class SpecialColors<uint16_t>
-		{
-		public:
-			static uint16_t fillColor()
-			{
-				return numeric_limits<uint16_t>::max();
-			}
-
-			static uint16_t largeColor()
-			{
-				return numeric_limits<uint16_t>::max() - 1;
-			}
-		};
-
-		template<> class SpecialColors<uint32_t>
-		{
-		public:
-			static uint32_t fillColor()
-			{
-				return numeric_limits<uint32_t>::max();
-			}
-
-			static uint32_t largeColor()
-			{
-				return numeric_limits<uint32_t>::max() - 1;
-			}
-		};
-
-		template<> class SpecialColors<uint64_t>
-		{
-		public:
-			static uint64_t fillColor()
-			{
-				return numeric_limits<uint64_t>::max();
-			}
-
-			static uint64_t largeColor()
-			{
-				return numeric_limits<uint64_t>::max() - 1;
-			}
-		};
 
 		/**
 		Tests if Z coordinate of any particle point is 0 or maxZ.
 		*/
-		inline bool isOnZEdge(const vector<Vec3sc>& particle, coord_t maxZ)
+		inline bool isOnZEdge(const std::vector<Vec3sc>& particle, coord_t maxZ)
 		{
 			for (size_t n = 0; n < particle.size(); n++)
 			{
@@ -239,9 +220,9 @@ namespace itl2
 		@param largeColor Particles that are skipped because their size is larger than volumeLimit are colored with this color.
 		@param backgroundColor Color of background.
 		*/
-		template<typename pixel_t> void analyzeParticlesSingleBlock(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, vector<vector<Vec3sc> >* pIncompleteParticles, vector<vector<Vec3sc> >* pLargeEdgePoints, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, size_t& counter, size_t counterMax, const Vec3sc& coordinateShift)
+		template<typename pixel_t> void analyzeParticlesSingleBlock(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, std::vector<std::vector<Vec3sc> >* pIncompleteParticles, std::vector<std::vector<Vec3sc> >* pLargeEdgePoints, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, size_t& counter, size_t counterMax, const Vec3sc& coordinateShift)
 		{
-			vector<Vec3sc> particlePoints;
+			std::vector<Vec3sc> particlePoints;
 			particlePoints.reserve(1000);
 
 			for (coord_t z = 0; z < image.depth(); z++)
@@ -265,7 +246,7 @@ namespace itl2
 								// Volume limit (we may have large color region neighbouring the current particle)
 								// Capture neighbourColors so that large particles are not collected as 1-pixel regions but larger ones
 								// (good for combineParticleAnalysisResults).
-								set<pixel_t> neighbourColors;
+								std::set<pixel_t> neighbourColors;
 								isOk = floodfill(image, Vec3c(x, y, z), fillColor, fillColor, connectivity, 0, &particlePoints, volumeLimit, &neighbourColors);
 								if (isOk) // Check if the region touches region with large color
 									isOk = neighbourColors.count(largeColor) <= 0;
@@ -295,7 +276,7 @@ namespace itl2
 								else
 								{
 									// The particle does not touch image edge, store only analysis results.
-									vector<double> resultLine;
+									std::vector<double> resultLine;
 									analyzers.analyze(particlePoints, resultLine);
 									results.push_back(resultLine);
 								}
@@ -315,7 +296,7 @@ namespace itl2
 								// Store image edge points belonging to large particle
 								if (pLargeEdgePoints)
 								{
-									vector<Vec3sc> edgePoints;
+									std::vector<Vec3sc> edgePoints;
 
 									// Find edge points and apply shift
 									for (size_t n = 0; n < particlePoints.size(); n++)
@@ -362,7 +343,7 @@ namespace itl2
 		@param fillColor The analyzed particles will be colored with this color.
 		@param largeColor Particles that are skipped because their size is larger than volumeLimit are colored with this color.
 		*/
-		template<typename pixel_t> void analyzeParticlesBlocks(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, vector<vector<Vec3sc> >& largeEdgePoints, vector<vector<Vec3sc> >& incompleteParticles, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, const Vec3sc& origin, vector<coord_t>& blockEdgeZ)
+		template<typename pixel_t> void analyzeParticlesBlocks(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, std::vector<std::vector<Vec3sc> >& largeEdgePoints, std::vector<std::vector<Vec3sc> >& incompleteParticles, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, const Vec3sc& origin, std::vector<coord_t>& blockEdgeZ)
 		{
 			size_t counter = 0;
 
@@ -388,15 +369,15 @@ namespace itl2
 				{
 					#pragma omp critical
 					{
-						cout << "Analyzing in " << count << " blocks." << endl;
+						std::cout << "Analyzing in " << count << " blocks." << std::endl;
 					}
 				}
 
 				// Calculate amount of slices single thread should process.
 				// The value is capped so that we don't divide the work unnecessarily too much if the image is small.
 				coord_t size = image.depth() / count;
-				if (size < 50)
-					size = 50;
+				if (size < 100)
+					size = 100;
 
 				// If there's nothing to do for all the threads, the excess threads will just skip processing.
 				coord_t minZ = idx * size;
@@ -417,7 +398,7 @@ namespace itl2
 
 //#pragma omp critical
 //					{
-//						cout << "Thread " << idx << " analyzes z-range [" << minZ << ", " << maxZ << "[" << endl;
+//						std::cout << "Thread " << idx << " analyzes z-range [" << minZ << ", " << maxZ << "[" << std::endl;
 //					}
 
 					// Get view of part of the image
@@ -425,9 +406,9 @@ namespace itl2
 
 					// Analyze the block. All coordinates are shifted in analyzeParticlesSingleBlock function to global original image coordinates.
 					Results blockResults;
-					vector<vector<Vec3sc> > blockLargeEdgePoints;
-					vector<vector<Vec3sc> > blockIncompleteParticles;
-					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, connectivity, volumeLimit, fillColor, largeColor, counter, image.depth() * image.height(), origin + math::Vec3sc(0, 0, (int32_t)minZ));
+					std::vector<std::vector<Vec3sc> > blockLargeEdgePoints;
+					std::vector<std::vector<Vec3sc> > blockIncompleteParticles;
+					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, connectivity, volumeLimit, fillColor, largeColor, counter, image.depth() * image.height(), origin + Vec3sc(0, 0, (int32_t)minZ));
 
 					//raw::writed(block, "./particleanalysis/block");
 					//raw::writed(image, "./particleanalysis/image");
@@ -447,7 +428,7 @@ namespace itl2
 		/**
 		Tests if the two point lists have neighbouring elements.
 		*/
-		inline bool isNeighbouring(const vector<Vec3sc>& points1, const vector<Vec3sc>& points2, Connectivity connectivity)
+		inline bool isNeighbouring(const std::vector<Vec3sc>& points1, const std::vector<Vec3sc>& points2, Connectivity connectivity)
 		{
 			switch (connectivity)
 			{
@@ -484,21 +465,21 @@ namespace itl2
 		At output the forest will contain all indices of incomplete particles list, and indices of neighbouring particles belong to the same root.
 		@param edgePoints Points of incomplete particles that are at calculation block edges.
 		*/
-		inline void findNeighboringParticles(const vector<vector<Vec3sc> >& edgePoints, IndexForest& forest, Connectivity connectivity)
+		inline void findNeighboringParticles(const std::vector<std::vector<Vec3sc> >& edgePoints, IndexForest& forest, Connectivity connectivity)
 		{
 			// Add all indices to the forest
-			cout << "Build forest..." << endl;
+			std::cout << "Build forest..." << std::endl;
 			forest.initialize(edgePoints.size());
 
 			// Calculate bounding boxes for incomplete vertex sets
-			cout << "Determine bounding boxes..." << endl;
-			vector<Box<int32_t> > boundingBoxes;
+			std::cout << "Determine bounding boxes..." << std::endl;
+			std::vector<AABox<int32_t> > boundingBoxes;
 			boundingBoxes.reserve(edgePoints.size());
-			Vec3sc m = Vec3sc(numeric_limits<int32_t>::max(), numeric_limits<int32_t>::max(), numeric_limits<int32_t>::max());
-			Vec3sc M = Vec3sc(numeric_limits<int32_t>::lowest(), numeric_limits<int32_t>::lowest(), numeric_limits<int32_t>::lowest());
+			Vec3sc m = Vec3sc(std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max());
+			Vec3sc M = Vec3sc(std::numeric_limits<int32_t>::lowest(), std::numeric_limits<int32_t>::lowest(), std::numeric_limits<int32_t>::lowest());
 			for (size_t n = 0; n < edgePoints.size(); n++)
 			{
-				Box<int32_t> b = Box<int32_t>::boundingBox(edgePoints[n]);
+				AABox<int32_t> b = AABox<int32_t>::boundingBox(edgePoints[n]);
 				if (edgePoints[n].size() > 0)
 				{
 					b.inflate(1);
@@ -509,21 +490,21 @@ namespace itl2
 				boundingBoxes.push_back(b);
 			}
 
-			Image<vector<size_t> > grid(100, 100, 100);
+			Image<std::vector<size_t> > grid(100, 100, 100);
 
-			cout << "Divide boxes to a grid..." << endl;
+			std::cout << "Divide boxes to a grid..." << std::endl;
 			size_t counter = 0;
 			for (size_t n = 0; n < boundingBoxes.size(); n++)
 			{
 				if (edgePoints[n].size() > 0)
 				{
-					Vec3c mcell((coord_t)floor((double)(boundingBoxes[n].minc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
-						(coord_t)floor((double)(boundingBoxes[n].minc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
-						(coord_t)floor((double)(boundingBoxes[n].minc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
+					Vec3c mcell(itl2::floor((double)(boundingBoxes[n].minc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
+								itl2::floor((double)(boundingBoxes[n].minc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
+								itl2::floor((double)(boundingBoxes[n].minc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
 
-					Vec3c Mcell((coord_t)ceil((double)(boundingBoxes[n].maxc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
-						(coord_t)ceil((double)(boundingBoxes[n].maxc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
-						(coord_t)ceil((double)(boundingBoxes[n].maxc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
+					Vec3c Mcell(itl2::ceil((double)(boundingBoxes[n].maxc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
+								itl2::ceil((double)(boundingBoxes[n].maxc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
+								itl2::ceil((double)(boundingBoxes[n].maxc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
 
 					for (coord_t zc = mcell.z; zc <= Mcell.z; zc++)
 					{
@@ -540,12 +521,12 @@ namespace itl2
 				showThreadProgress(counter, boundingBoxes.size());
 			}
 
-			cout << "Determine overlaps..." << endl;
+			std::cout << "Determine overlaps..." << std::endl;
 			counter = 0;
 			
 			#pragma omp parallel if(!omp_in_parallel())
 			{
-				set<tuple<size_t, size_t> > nonOverlapping;
+				std::set<std::tuple<size_t, size_t> > nonOverlapping;
 
 				#pragma omp for schedule(dynamic)
 				for (coord_t i = 0; i < grid.pixelCount(); i++)
@@ -555,20 +536,20 @@ namespace itl2
 					for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
 					{
 						size_t n = list[ni];
-						const vector<Vec3sc>& v1 = edgePoints[n];
-						const Box<int32_t>& b1 = boundingBoxes[n];
+						const std::vector<Vec3sc>& v1 = edgePoints[n];
+						const AABox<int32_t>& b1 = boundingBoxes[n];
 
 						if (v1.size() > 0)
 						{
 							for (size_t mi = ni + 1; mi < list.size(); mi++)
 							{
 								size_t m = list[mi];
-								const vector<Vec3sc>& v2 = edgePoints[m];
-								const Box<int32_t>& b2 = boundingBoxes[m];
+								const std::vector<Vec3sc>& v2 = edgePoints[m];
+								const AABox<int32_t>& b2 = boundingBoxes[m];
 
-								//if (math::min(n, m) == 308 && math::max(n, m) == 417)
+								//if (std::min(n, m) == 308 && std::max(n, m) == 417)
 								//{
-								//	cout << "testing " << n << ", " << m << endl;
+								//	std::cout << "testing " << n << ", " << m << std::endl;
 								//}
 
 								if (v2.size() > 0)
@@ -582,7 +563,7 @@ namespace itl2
 
 										if (b1.overlaps(b2)) // Do bounding boxes overlap?
 										{
-											auto key = make_tuple(math::min(n, m), math::max(n, m));
+											auto key = std::make_tuple(std::min(n, m), std::max(n, m));
 
 											// Only test points if they have not been determined to be non-overlapping.
 											if(nonOverlapping.find(key) == nonOverlapping.end())
@@ -612,7 +593,7 @@ namespace itl2
 			}
 		}
 
-		inline void concatAndShrink(vector<Vec3sc>& target, vector<Vec3sc>& source)
+		inline void concatAndShrink(std::vector<Vec3sc>& target, std::vector<Vec3sc>& source)
 		{
 			target.insert(target.end(), source.begin(), source.end());
 			source.clear();
@@ -621,22 +602,36 @@ namespace itl2
 
 		/**
 		Combines incomplete particles and analyzes them.
+		Can be called multiple times, adding more particles to the results, largeEdgePoints, and incompleteParticles arrays.
+		The added particles must not be from already processed blocks.
+		@param isSubBlock Set to false if this is the final call to this function. This ensures that also particles that touch z-block edges are included in the results table.
 		*/
-		template<typename pixel_t> void combineParticleAnalysisResults(const AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, const vector<vector<Vec3sc> >& largeEdgePoints, vector<vector<Vec3sc> >& incompleteParticles, size_t volumeLimit, Connectivity connectivity, const vector<coord_t>& blockEdgeZ)
+		template<typename pixel_t> void combineParticleAnalysisResults(const AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, std::vector<std::vector<Vec3sc> >& largeEdgePoints, std::vector<std::vector<Vec3sc> >& incompleteParticles, size_t volumeLimit, Connectivity connectivity, std::vector<coord_t>& blockEdgeZ, bool isSubBlock)
 		{
-			if (incompleteParticles.size() <= 0)
-				return;
+			/*
+			At end of this function:
+			largeEdgePoints = points of large particles that touch blockEdgeZ.front() or blockEdgeZ.back() (if blockEdgeZ.size() > 0)
+			blockEdgeZ = (blockEdgeZ.front(), blockEdgeZ.back())
+			incompleteParticles = those particles that touch blockEdgeZ.front() or blockEdgeZ.back()
+			results = all other particles (combined ones)
 
-			cout << "Processing " << incompleteParticles.size() << " particles on block edge boundaries..." << endl;
+			==> we don't need to load all data in distributed processing, it is enough to load the data sequentially and call this method for combination of previously
+			combined points + newly read points.
+			*/
+
+
+			coord_t maxZ = max(blockEdgeZ);
+
+			std::cout << "Processing " << incompleteParticles.size() << " particles on block edge boundaries..." << std::endl;
 
 			// Create list of edge points for each incomplete particle
-			cout << "Find edge points of particles..." << endl;
-			vector<vector<Vec3sc> > edgePoints;
+			std::cout << "Find edge points of particles..." << std::endl;
+			std::vector<std::vector<Vec3sc> > edgePoints;
 			size_t counter = 0;
 			for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 			{
 				auto& points = incompleteParticles[n];
-				vector<Vec3sc> currEdgePoints;
+				std::vector<Vec3sc> currEdgePoints;
 				for (size_t m = 0; m < points.size(); m++)
 				{
 					if (find(blockEdgeZ.begin(), blockEdgeZ.end(), points[m].z) != blockEdgeZ.end())
@@ -650,9 +645,11 @@ namespace itl2
 			}
 
 			// Add big particles to edge points
+			// NOTE: After this the items {edgePoints[0], ..., edgePoints[incompleteParticles.size()-1]} correspond to the incomplete particles,
+			// and the itemes {edgePoints[incompleteParticles.size()], ..., edgePoints[edgePoints.size()-1]} correspond to large particles.
 			edgePoints.insert(edgePoints.end(), largeEdgePoints.begin(), largeEdgePoints.end());
 
-			vector<bool> isBig(incompleteParticles.size(), false);
+			std::vector<bool> isBig(incompleteParticles.size(), false);
 
 			// Find overlapping particles (based on edge points) and combine them
 			{
@@ -660,7 +657,7 @@ namespace itl2
 				findNeighboringParticles(edgePoints, forest, connectivity);
 
 				// Move all points to roots
-				cout << "Combine particles..." << endl;
+				std::cout << "Combine particles..." << std::endl;
 				size_t counter = 0;
 				for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 				{
@@ -675,12 +672,20 @@ namespace itl2
 						else
 						{
 							// We are going to combine particle n to a big particle.
-							// Mark particle n as big and clear its points.
+							// Mark particle n as big and clear its points (except those that touch image z edge).
 							isBig[n] = true;
-							incompleteParticles[n].clear();
-							incompleteParticles[n].shrink_to_fit();
+							
+
 							edgePoints[n].clear();
 							edgePoints[n].shrink_to_fit();
+
+							incompleteParticles[n].erase(
+								std::remove_if(incompleteParticles[n].begin(), incompleteParticles[n].end(),
+									[=](Vec3sc& p)
+									{
+										return p.z != 0 && p.z != maxZ;
+									}),
+								incompleteParticles[n].end());
 						}
 					}
 
@@ -708,40 +713,58 @@ namespace itl2
 			}
 
 
-			// Analyze combined partiles
-			cout << "Analyze combined particles..." << endl;
+			// Analyze combined particles
+			std::cout << "Analyze combined particles..." << std::endl;
 			counter = 0;
+
+			std::vector<std::vector<Vec3sc> > remainingLargeEdgePoints;
+			std::vector<std::vector<Vec3sc> > remainingIncompleteParticles;
+			std::vector<coord_t> remainingBlockEdgeZ;
+
+			remainingBlockEdgeZ.push_back(0);
+			remainingBlockEdgeZ.push_back(maxZ);
+
 			#pragma omp parallel for if(!omp_in_parallel() && incompleteParticles.size() > 1000) schedule(dynamic)
 			for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 			{
 
 				auto& points = incompleteParticles[n];
-				//if (points.size() > 0)
+				// NOTE: Empty point list is used to indicate that the particle has been combined with some other particle,
+				// and thus must not be analyzed. (the other particle to which this one was combined contains all the points)
 				if(points.size() > 0)
 				{
-					//bool isLarge = points.size() >= volumeLimit;
-
-					//if (!isLarge) // Test if the particle touches a position known to belong to large particle?
-					//{
-					//	
-					//	isLarge = isNeighbouring(edgePoints[n], largeEdgePoints, connectivity);
-					//}
-
-					//if (!isLarge)
-					//{
 
 					if(volumeLimit <= 0 || (volumeLimit > 0 && !isBig[n]))
 					{
-						// Analyze the particle
-						// Note: the parts of particles originating from different calculation blocks
-						// do not overlap so there are no duplicate points in the point list
-						//Vec3c point = points[0];
-						vector<double> resultLine;
-						analyzers.analyze(points, resultLine);
-
-						#pragma omp critical(resultsInsert)
+						if (isSubBlock && isOnZEdge(points, maxZ))
 						{
-							results.push_back(resultLine);
+							// The particle is incomplete.
+							#pragma omp critical(remainingIncompleteParticlesInsert)
+							{
+								remainingIncompleteParticles.push_back(points);
+							}
+						}
+						else
+						{
+							// The particle is complete and not big. Analyze it.
+							// Note: the parts of particles originating from different calculation blocks
+							// do not overlap so there are no duplicate points in the point list
+							//Vec3c point = points[0];
+							std::vector<double> resultLine;
+							analyzers.analyze(points, resultLine);
+
+							#pragma omp critical(resultsInsert)
+							{
+								results.push_back(resultLine);
+							}
+						}
+					}
+					else if (volumeLimit > 0 && isBig[n])
+					{
+						// The particle is big. Add its edge points to the new largeEdgePoints list.
+						#pragma omp critical(remainingLargeEdgePointsInsert)
+						{
+							remainingLargeEdgePoints.push_back(points);
 						}
 					}
 
@@ -749,16 +772,63 @@ namespace itl2
 				showThreadProgress(counter, incompleteParticles.size());
 			}
 
-			// Clear incomplete particles so that doing the same call again does not change anything.
-			incompleteParticles.clear();
+			if (isSubBlock)
+			{
+				// Add large edge points from last call to the new large edge points list
+				// This is necessary as otherwise edge points that are not combined with any particle will
+				// be discarded.
+				for (auto& points : largeEdgePoints)
+				{
+					std::vector<Vec3sc> filtered;
+
+					for (Vec3sc& v : points)
+					{
+						if (v.z == 0 || v.z == maxZ)
+							filtered.push_back(v);
+					}
+
+					if (filtered.size() > 0)
+						remainingLargeEdgePoints.push_back(filtered);
+				}
+
+				largeEdgePoints = remainingLargeEdgePoints;
+				incompleteParticles = remainingIncompleteParticles;
+				blockEdgeZ = remainingBlockEdgeZ;
+			}
+			else
+			{
+				incompleteParticles.clear();
+			}
 		}
 	}
 
 	/**
-	Perform particle analysis.
-	Needs image that can store at least four distinct colours - original particle color, temporary color, large particle color and background color.
-	Regions colored with large particle color are skipped. Additionally, particles that are larger than volumeLimit will be colored with large
-	particle color. Other particles will be colored with fill color.
+	Makes sure that all particles have the same color.
+	*/
+	template<typename pixel_t> void prepareParticleAnalysis(Image<pixel_t>& image, pixel_t fillColor = internals::SpecialColors<pixel_t>::fillColor(), pixel_t largeColor = internals::SpecialColors<pixel_t>::largeColor())
+	{
+		// Find particle color
+		pixel_t particleColor = 1;
+		while (particleColor == fillColor || particleColor == largeColor)
+			particleColor++;
+
+		// Make sure that there are no extra colors in the image.
+		#pragma omp parallel for if (image.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
+		for (coord_t n = 0; n < image.pixelCount(); n++)
+		{
+			pixel_t& pixel = image(n);
+			if (pixel != fillColor && pixel != 0 && pixel != largeColor)
+				pixel = particleColor;
+		}
+	}
+
+	/**
+	Measure properties of binary particles separated by background regions.
+	Needs image that can store at least four distinct colours - original particle color, temporary color, large particle color and background color,
+	and therefore is able to process many particles without need for labeling of all of them with individual values.
+	Regions colored with large particle color are skipped.
+	Additionally, particles that are larger than volumeLimit will be colored with large particle color.
+	Other particles will be colored with fill color.
 	@param image The image containing the particles.
 	@param analyzers Analyzer objects to apply to the particles.
 	@param results Results table.
@@ -774,18 +844,20 @@ namespace itl2
 		if (largeColor == 0)
 			throw ITLException("Large color must not be zero as zero is background color.");
 
-		vector<vector<Vec3sc> > incompleteParticles;
-		vector<vector<Vec3sc> > largeEdgePoints;
-		vector<coord_t> edgeZ;
+		std::vector<std::vector<Vec3sc> > incompleteParticles;
+		std::vector<std::vector<Vec3sc> > largeEdgePoints;
+		std::vector<coord_t> edgeZ;
 		
 		results.headers() = analyzers.headers();
 
+		prepareParticleAnalysis(image, fillColor, largeColor);
+
 		internals::analyzeParticlesBlocks(image, analyzers, results, largeEdgePoints, incompleteParticles, connectivity, volumeLimit, fillColor, largeColor, Vec3sc(), edgeZ);
 
-		//cout << "Block edges are at" << endl;
+		//std::cout << "Block edges are at" << std::endl;
 		//sort(edgeZ.begin(), edgeZ.end());
 		//for (coord_t z : edgeZ)
-		//	cout << z << endl;
+		//	std::cout << z << std::endl;
 
 		//Image<uint16_t> labels(image.dimensions());
 		//for (size_t n = 0; n < incompleteParticles.size(); n++)
@@ -797,7 +869,7 @@ namespace itl2
 		//}
 		//raw::writed(labels, "particleanalysis/labels");
 
-		internals::combineParticleAnalysisResults(analyzers, results, largeEdgePoints, incompleteParticles, volumeLimit, connectivity, edgeZ);
+		internals::combineParticleAnalysisResults(analyzers, results, largeEdgePoints, incompleteParticles, volumeLimit, connectivity, edgeZ, false);
 	}
 
 	/**
@@ -815,7 +887,7 @@ namespace itl2
 	*/
 	template<typename pixel_t> void analyzeParticles(Image<pixel_t>& image, const string& analyzerNames, Results& results, Connectivity connectivity = Connectivity::AllNeighbours, size_t volumeLimit = 0, pixel_t fillColor = internals::SpecialColors<pixel_t>::fillColor(), pixel_t largeColor = internals::SpecialColors<pixel_t>::largeColor())
 	{
-		auto analyzers = createAnalyzers<uint8_t>(analyzerNames, image.dimensions());
+		auto analyzers = createAnalyzers<pixel_t>(analyzerNames, image.dimensions());
 		analyzeParticles(image, analyzers, results, connectivity, volumeLimit, fillColor, largeColor);
 	}
 
@@ -844,7 +916,9 @@ namespace itl2
 
 		results.headers() = analyzers.headers();
 
-		internals::analyzeParticlesSingleBlock(image, analyzers, results, 0, 0, connectivity, volumeLimit, fillColor, largeColor, counter, image.depth() * image.height(), Vec3sc());
+		prepareParticleAnalysis(image, fillColor, largeColor);
+
+		internals::analyzeParticlesSingleBlock(image, analyzers, results, nullptr, nullptr, connectivity, volumeLimit, fillColor, largeColor, counter, image.depth() * image.height(), Vec3sc());
 
 		//raw::writed(image, "particleanalysis/labels");
 	}
@@ -865,84 +939,116 @@ namespace itl2
 	*/
 	template<typename pixel_t> void analyzeParticlesSingleThreaded(Image<pixel_t>& image, const string& analyzerNames, Results& results, Connectivity connectivity = Connectivity::AllNeighbours, size_t volumeLimit = 0, pixel_t fillColor = internals::SpecialColors<pixel_t>::fillColor(), pixel_t largeColor = internals::SpecialColors<pixel_t>::largeColor())
 	{
-		auto analyzers = createAnalyzers<uint8_t>(analyzerNames, image.dimensions());
+		auto analyzers = createAnalyzers<pixel_t>(analyzerNames, image.dimensions());
 		analyzeParticlesSingleThreaded(image, analyzers, results, connectivity, volumeLimit, fillColor, largeColor);
 	}
 
-	///**
-	//Perform greedy coloring of particles in 3D.
-	//Colors each region in image such that its neighbours are colored with different colors.
-	//Uses greedy algorithm.
-	//Needs image that can store at least four distinct colours - original particle color, temporary color, big particle color and background color.
- //   Particles colored with big particle color are skipped. Additionally, particles that are larger than volumeLimit will be colored with big
- //   particle color. Other particles will be colored with colors such that neighbouring particles are colored with different colors.
- //   @param image The image containing the particles.
- //   @param volumeLimit Only include particles smaller than this value in the results.
- //   @param fillColor The analyzed particles will be colored with this color.
- //   @param largeColor Particles that are skipped because their size is larger than volumeLimit are colored with this color.
- //   @param backgroundColor Color of background.
- //   */
- //   template<typename T> void colorMapGreedy3D(Image<T>& image, Connectivity connectivity = All, size_t volumeLimit = 0, T fillColor = internal::SpecialColors<T>::fillColor(), T largeColor = internal::SpecialColors<T>::largeColor(), T backgroundColor = 0)
- //   {
-	//	if(image.dimensionality() != 3)
-	//		throw ITLException("This method supports only 3-dimensional images.");
+	/**
+	Analyzes labeled regions of the input image.
+	The regions do not need to be connected.
+	Region having value zero is skipped.
+	*/
+	template<typename pixel_t> void analyzeLabels(const Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results)
+	{
+		// TODO: This can be done more efficiently by changing analyzers such that they don't require all the points at once.
 
- //       if(fillColor == largeColor)
- //           throw ITLException("Fill color and large color must not be equal.");
- //       if(largeColor == backgroundColor)
- //           throw ITLException("Background color and large color must not be equal.");
+		// Divide pixels into point sets based on their value
+		std::map<pixel_t, std::vector<Vec3sc> > points;
+		for (coord_t z = 0; z < image.depth(); z++)
+		{
+			for (coord_t y = 0; y < image.height(); y++)
+			{
+				for (coord_t x = 0; x < image.width(); x++)
+				{
+					pixel_t pixel = image(x, y, z);
+					if (pixel != 0)
+					{
+						points[pixel].push_back(Vec3sc(Vec3c(x, y, z)));
+					}
+				}
+			}
+		}
 
- //       CursorPointer<T, LinearCursor<T> > cursor(image, image.createLinearCursor());
+		// Analyze each set
+		results.headers() = analyzers.headers();
+		for (auto& item : points)
+		{
+			std::vector<double> resultLine;
+			analyzers.analyze(item.second, resultLine);
+			results.push_back(resultLine);
+		}
+	}
 
-	//	set<T> usedColors;
+	/**
+	Analyzes labeled regions of the input image.
+	The regions do not need to be connected.
+	Region having value zero is skipped.
+	*/
+	template<typename pixel_t> void analyzeLabels(const Image<pixel_t>& image, const std::string& analyzerNames, Results& results)
+	{
+		auto analyzers = createAnalyzers<pixel_t>(analyzerNames, image.dimensions());
+		analyzeLabels(image, analyzers, results);
+	}
 
-	//	set<T> neighbourColors;
+	/**
+	Perform greedy coloring of regions.
+	Colors each region in image such that its neighbours are colored with different colors, and uses as little colors as possible.
+	Uses greedy algorithm so the count of colors used might not be minimal.
+	Assumes background to have value 0.
+    @param image The image containing the particles. Background is assumed to have value 0. The image must be able to store at least one value that it does not contain at input.
+    */
+    template<typename T> void greedyColoring(Image<T>& image, Connectivity connectivity = Connectivity::AllNeighbours)
+    {
+		
+		// Find suitable fill color
+		T fillColor = findUnusedValue(image);
 
- //       vector<Vec3c> particlePoints;
- //       particlePoints.reserve(1000);
 
- //       size_t n = 0;
- //       for(; cursor->hasNext(); cursor->proceed())
- //       {
- //           T pixel = **cursor;
- //           if(pixel != fillColor && pixel != backgroundColor && pixel != largeColor && usedColors.find(pixel) == usedColors.end())
- //           {
- //               if(singlethreaded::floodfill3D(image, cursor->getPosition(), fillColor, largeColor, connectivity, &particlePoints, volumeLimit, &neighbourColors))
- //               {
- //                   // Analyze the points only if the volume of the particle is small enough.
+		// Paint regions
+        
+		std::set<T> usedColors;
+		std::set<T> neighbourColors;
 
-	//				// Get color not in use by neighbours
-	//				T newColor = 0;
-	//				for(; newColor < numeric_limits<T>::max(); newColor++)
-	//				{
-	//					if(newColor != fillColor && newColor != backgroundColor && newColor != largeColor && neighbourColors.find(newColor) == neighbourColors.end())
-	//						break;
-	//				}
+		std::vector<Vec3sc> particlePoints;
+        particlePoints.reserve(1000);
 
-	//				usedColors.insert(newColor);
+		for (coord_t z = 0; z < image.depth(); z++)
+		{
+			for (coord_t y = 0; y < image.height(); y++)
+			{
+				for (coord_t x = 0; x < image.width(); x++)
+				{
+					Vec3c p(x, y, z);
+					T pixel = image(p);
+					if (pixel != 0 && pixel != fillColor && usedColors.find(pixel) == usedColors.end())
+					{
+						floodfill(image, p, fillColor, fillColor, connectivity, nullptr, &particlePoints, 0, &neighbourColors);
 
-	//				// Fill the particle with that color
-	//				for(size_t n = 0; n < particlePoints.size(); n++)
- //                       image.setPixel(particlePoints[n], newColor);
+						// Get color not in use by neighbours
+						T newColor = 1;
+						for (; newColor < std::numeric_limits<T>::max(); newColor++)
+						{
+							if (newColor != fillColor && neighbourColors.find(newColor) == neighbourColors.end())
+								break;
+						}
 
- //               }
- //               else
- //               {
- //                   // The fill was ended by size limit. Mark the filled points as belonging to a large particle.
+						usedColors.insert(newColor);
 
- //                   for(size_t n = 0; n < particlePoints.size(); n++)
- //                       image.setPixel(particlePoints[n], largeColor);
- //               }
+						// Fill the particle with that color
+						for (size_t n = 0; n < particlePoints.size(); n++)
+							image(particlePoints[n]) = newColor;
 
- //               particlePoints.clear();
-	//			neighbourColors.clear();
- //           }
+						particlePoints.clear();
+						neighbourColors.clear();
+					}
 
- //           n++;
-	//		utilities::showProgress(n, image.pixelCount());
- //       }
+				}
+			}
 
- //   }
+			showProgress(z, image.depth());
+		}
+
+    }
 
 
     /**
@@ -960,6 +1066,8 @@ namespace itl2
 		size_t yi = results.getColumnIndex("Y");
 		size_t zi = results.getColumnIndex("Z");
 
+		prepareParticleAnalysis(image);
+
 		size_t counter = 0;
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)results.size(); n++)
@@ -970,9 +1078,9 @@ namespace itl2
 			if(fill)
 			{
 				Vec3c pos;
-				pos.x = math::round(results[n][xi]);
-				pos.y = math::round(results[n][yi]);
-				pos.z = math::round(results[n][zi]);
+				pos.x = round(results[n][xi]);
+				pos.y = round(results[n][yi]);
+				pos.z = round(results[n][zi]);
 
 				floodfill<pixel_t>(image, pos, fillColor, fillColor, conn);
 			}
@@ -994,6 +1102,8 @@ namespace itl2
 		size_t yi = results.getColumnIndex("Y");
 		size_t zi = results.getColumnIndex("Z");
 
+		prepareParticleAnalysis(image);
+
 		size_t counter = 0;
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)results.size(); n++)
@@ -1001,9 +1111,9 @@ namespace itl2
 			pixel_t value = pixelRound<pixel_t>(results[n][condi] * multiplier);
 
 			Vec3c pos;
-			pos.x = math::round(results[n][xi]);
-			pos.y = math::round(results[n][yi]);
-			pos.z = math::round(results[n][zi]);
+			pos.x = round(results[n][xi]);
+			pos.y = round(results[n][yi]);
+			pos.z = round(results[n][zi]);
 
 			floodfill<pixel_t>(image, pos, value, value, conn);
 
@@ -1024,14 +1134,16 @@ namespace itl2
 		size_t yi = results.getColumnIndex("Y");
 		size_t zi = results.getColumnIndex("Z");
 
+		prepareParticleAnalysis(image);
+
 		size_t counter = 0;
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)results.size(); n++)
 		{
 			Vec3c pos;
-			pos.x = math::round(results[n][xi]);
-			pos.y = math::round(results[n][yi]);
-			pos.z = math::round(results[n][zi]);
+			pos.x = round(results[n][xi]);
+			pos.y = round(results[n][yi]);
+			pos.z = round(results[n][zi]);
 
 			floodfill<pixel_t>(image, pos + shift, fillColor, fillColor, conn);
 
@@ -1039,249 +1151,168 @@ namespace itl2
 		}
 	}
 
-	///**
-	//Gets value of left side of ellipsoid equation at p for ellipsoid located at c that has
-	//semi-axis lengths l1, l2 and l3	and whose semi-axis orientations are given by (phiN, thetaN), N=1..3.
-	//Points inside the ellipsoid are characterized by return value <= 1.
-	//*/
-	//inline double getEllipsoidFunctionValue(const Vec3d& p,
-	//							const Vec3d& c,
-	//							double l1, double l2, double l3,
-	//							double phi1, double theta1,
-	//							double phi2, double theta2,
-	//							double phi3, double theta3)
-	//{
-	//	// Make the ellipsoid centered to origin
-	//	Vec3d pdot = p - c;
+	/**
+	Enumerates types of ellipsoids that can be used for visualization of particles.
+	*/
+	enum class EllipsoidType
+	{
+		/**
+		Draw the principal ellipsoid as is without scaling.
+		*/
+		Principal,
+		/**
+		Scale the principal ellipsoid such that all particle points fit inside it.
+		*/
+		BoundingEllipsoid,
+		/**
+		Draw bounding sphere of the particle.
+		*/
+		BoundingSphere,
+		/**
+		Scale the principal ellipsoid such that its volume equals the volume of the particle
+		*/
+		CorrectVolume
+	};
 
-	//	// Rotate pdot such that ellipsoid axes are aligned with coordinate axes
-	//	Vec3d u1 = tocartesian(1.0, phi1, theta1);
-	//	Vec3d u2 = tocartesian(1.0, phi2, theta2);
-	//	Vec3d u3 = tocartesian(1.0, phi3, theta3);
+	template<>
+	inline std::string toString(const EllipsoidType& x)
+	{
+		switch (x)
+		{
+		case EllipsoidType::Principal: return "Principal";
+		case EllipsoidType::BoundingEllipsoid: return "BoundingEllipsoid";
+		case EllipsoidType::BoundingSphere: return "BoundingSphere";
+		case EllipsoidType::CorrectVolume: return "Volume";
+		}
+		throw ITLException("Invalid ellipsoid type.");
+	}
 
-	//	Matrix3x3d R(u1.x, u2.x, u3.x,
-	//				 u1.y, u2.y, u3.y,
-	//				 u1.z, u2.z, u3.z);
+	template<>
+	inline EllipsoidType fromString(const string& dt)
+	{
+		string dt2 = dt;
+		trim(dt2);
+		toLower(dt2);
+		if (dt2 == "principal")
+			return EllipsoidType::Principal;
+		if (dt2 == "boundingellipsoid" || dt2 == "bounding ellipsoid")
+			return EllipsoidType::BoundingEllipsoid;
+		if (dt2 == "boundingsphere" || dt2 == "bounding sphere")
+			return EllipsoidType::BoundingSphere;
+		if (dt2 == "correctvolume" || dt2 == "volume")
+			return EllipsoidType::CorrectVolume;
 
-	//	R.transpose();
-	//	pdot = R * pdot;
+		throw ITLException(string("Unsupported ellipsoid type: ") + dt);
+	}
 
-	//	//Matrix3x3d Ri;
-	//	//R.inverse(Ri);
-	//	//pdot = Ri * pdot;
+	/**
+	Visualizes particles as ellipsoids.
+	@param results Results table. If ellipsoid type is not BoundingSphere, the table must contain columns CX, CY, CZ, l1, l2, l3, phi1, theta1, phi2, theta2, and bounding scale (i.e. most of the results of the PCA analyzer). Otherwise, the table must contain 'bounding sphere X', 'bounding sphere Y', 'bounding sphere Z', and 'bounding sphere radius', i.e. the output of the boundingsphere analyzer.
+	*/
+	template<typename pixel_t> void drawEllipsoids(Image<pixel_t>& image, const Results& results, pixel_t color, EllipsoidType type)
+	{
+		size_t cxi = 0;
+		size_t cyi = 0; 
+		size_t czi = 0; 
+		size_t l1i = 0; 
+		size_t l2i = 0; 
+		size_t l3i = 0; 
+		size_t phi1i = 0; 
+		size_t theta1i = 0; 
+		size_t phi2i = 0;
+		size_t theta2i = 0;
+		if (type != EllipsoidType::BoundingSphere)
+		{
+			cxi = results.getColumnIndex("CX [pixel]");
+			cyi = results.getColumnIndex("CY [pixel]");
+			czi = results.getColumnIndex("CZ [pixel]");
+			l1i = results.getColumnIndex("l1 [pixel]");
+			l2i = results.getColumnIndex("l2 [pixel]");
+			l3i = results.getColumnIndex("l3 [pixel]");
+			phi1i = results.getColumnIndex("phi1 [rad]");
+			theta1i = results.getColumnIndex("theta1 [rad]");
+			phi2i = results.getColumnIndex("phi2 [rad]");
+			theta2i = results.getColumnIndex("theta2 [rad]");
+		}
 
-	//	// Use ellipsoid equation
-	//	double f = (pdot.x * pdot.x) / (l1 * l1) + (pdot.y * pdot.y) / (l2 * l2) + (pdot.z * pdot.z) / (l3 * l3);
+		size_t boundingScalei = 0;
+		if(type == EllipsoidType::BoundingEllipsoid)
+			boundingScalei = results.getColumnIndex("bounding scale");
 
-	//	return f;
-	//}
+		size_t volumei = 0;
+		if(type == EllipsoidType::CorrectVolume)
+			volumei = results.getColumnIndex("Volume [pixel]");
 
-	///**
-	//Test if point p is in ellipsoid located at c that has semi-axis lengths l1, l2 and l3
-	//and whose semi-axis orientations are given by (phiN, thetaN), N=1..3.
-	//*/
-	//inline bool isInEllipsoid(const Vec3d& p,
-	//							const Vec3d& c,
-	//							double l1, double l2, double l3,
-	//							double phi1, double theta1,
-	//							double phi2, double theta2,
-	//							double phi3, double theta3)
-	//{
-	//	double f = getEllipsoidFunctionValue(p, c, l1, l2, l3, phi1, theta1, phi2, theta2, phi3, theta3);
-	//	return f <= 1;
-	//}
+		size_t bsxi = 0; 
+		size_t bsyi = 0; 
+		size_t bszi = 0; 
+		size_t bsri = 0; 
+		if (type == EllipsoidType::BoundingSphere)
+		{
+			bsxi = results.getColumnIndex("bounding sphere X [pixel]");
+			bsyi = results.getColumnIndex("bounding sphere Y [pixel]");
+			bszi = results.getColumnIndex("bounding sphere Z [pixel]");
+			bsri = results.getColumnIndex("bounding sphere radius [pixel]");
+		}
 
-	///**
-	//Test if point p is in ellipsoid located at c that has semi-axis lengths l1, l2 and l3
-	//and that can be transformed to axis-aligned ellipsoid by rotating with rotation matrix Rinv
-	//*/
-	//inline bool isInEllipsoid(const Vec3d& p,
-	//							const Vec3d& c,
-	//							double l1, double l2, double l3,
-	//							const Matrix3x3d& Rinv)
-	//{
-	//	// Make the ellipsoid centered to origin
-	//	Vec3d pdot = p - c;
+		for(size_t n = 0; n < results.size(); n++)
+		{
+			if (type != EllipsoidType::BoundingSphere)
+			{
+				Vec3d pos;
+				pos.x = results[n][cxi];
+				pos.y = results[n][cyi];
+				pos.z = results[n][czi];
 
-	//	// Rotate pdot such that ellipsoid axes are aligned with coordinate axes
-	//	pdot = Rinv * pdot;
+				double l1 = results[n][l1i];
+				double l2 = results[n][l2i];
+				double l3 = results[n][l3i];
 
-	//	// Use ellipsoid equation
-	//	double f = (pdot.x * pdot.x) / (l1 * l1) + (pdot.y * pdot.y) / (l2 * l2) + (pdot.z * pdot.z) / (l3 * l3);
+				double phi1 = results[n][phi1i];
+				double phi2 = results[n][phi2i];
 
-	//	return f <= 1;
-	//}
+				double theta1 = results[n][theta1i];
+				double theta2 = results[n][theta2i];
 
-	///**
-	//Draws single ellipsoid.
-	//@param pMask Positions where *pMask == 0 are not filled.
-	//@return Count of filled pixels.
-	//*/
-	//template<typename T, typename Tmask> unsigned long long drawEllipsoid(Image<T>& image, const Vec3d& pos,
-	//																		double l1, double l2, double l3,
-	//																		double phi1, double theta1,
-	//																		double phi2, double theta2,
-	//																		double phi3, double theta3,
-	//																		T color,
-	//																		Image<Tmask>* pMask)
-	//{
-	//	double maxl = mathutils::max(l1, l2);
-	//	maxl = mathutils::max(maxl, l3);
+				if (type == EllipsoidType::BoundingEllipsoid)
+				{
+					double boundingScale = results[n][boundingScalei];
 
-	//	Vec3c minPos = round(pos - Vec3d(maxl, maxl, maxl));
-	//	Vec3c maxPos = round(pos + Vec3d(maxl, maxl, maxl));
-	//	
-	//	Vec3c dimensions((int)image.getDimension(0), (int)image.getDimension(1), (int)image.getDimension(2));
-	//	clamp(minPos, Vec3c(0, 0, 0), dimensions);
-	//	clamp(maxPos, Vec3c(0, 0, 0), dimensions);
+					// Scale the ellipsoid so that it becomes bounding ellipsoid
+					l1 *= boundingScale;
+					l2 *= boundingScale;
+					l3 *= boundingScale;
+				}
+				else if (type == EllipsoidType::CorrectVolume)
+				{
+					double particleVolume = results[n][volumei];
+					double ellipsoidVolume = 4.0 / 3.0 * PI * l1 * l2 * l3;
+					double scale = std::pow(particleVolume / ellipsoidVolume, 1.0 / 3.0);
+					l1 *= scale;
+					l2 *= scale;
+					l3 *= scale;
+				}
 
-	//	Vec3d u1 = tocartesian(1.0, phi1, theta1);
-	//	Vec3d u2 = tocartesian(1.0, phi2, theta2);
-	//	Vec3d u3 = tocartesian(1.0, phi3, theta3);
+				// Only draw if the ellipsoid is sane!
+				if (!isinf(l1) && !isnan(l1) && l1 != 0 &&
+					!isinf(l2) && !isnan(l2) && l2 != 0 &&
+					!isinf(l3) && !isnan(l3) && l3 != 0)
+					draw(image, Ellipsoid(pos, Vec3d(l1, l2, l3), phi1, theta1, phi2, theta2), color);
+			}
+			else
+			{
+				// Draw bounding sphere
+				Vec3d pos;
+				pos.x = results[n][bsxi];
+				pos.y = results[n][bsyi];
+				pos.z = results[n][bszi];
+				double r = results[n][bsri];
 
-	//	Matrix3x3d R(u1.x, u2.x, u3.x,
-	//				 u1.y, u2.y, u3.y,
-	//				 u1.z, u2.z, u3.z);
-
-	//	R.transpose();
-	//	
-	//	unsigned long long filledCount = 0;
-	//	#pragma omp parallel for reduction(+:filledCount)
-	//	for(coord_t z = minPos.z; z < maxPos.z; z++)
-	//	{
-	//		for(size_t y = minPos.y; y < maxPos.y; y++)
-	//		{
-	//			for(size_t x = minPos.x; x < maxPos.x; x++)
-	//			{
-	//				if(pMask == 0 || pMask->getPixel((coord_t)x, (coord_t)y, (coord_t)z) != 0)
-	//				{
-	//					if(isInEllipsoid(Vec3d((double)x, (double)y, (double)z), pos, l1, l2, l3, R))
-	//					{
-	//						image.setPixel((coord_t)x, (coord_t)y, (coord_t)z, color);
-	//						filledCount++;
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//	
-	//	//line<T>(image, pos, pos + tocartesian(l1, phi1, theta1), 200);
-	//	//line<T>(image, pos, pos + tocartesian(l2, phi2, theta2), 220);
-	//	//line<T>(image, pos, pos + tocartesian(l3, phi3, theta3), 240);
-
-	//	return filledCount;
-	//}
-
-	///**
-	//Draws bounding PCA ellipsoids.
-	//@param pMask Pointer to mask image. Only pixels where mask != 0 will be colored.
-	//@param pResults Pointer to results array. If not null, count of filled pixels for each bounding ellipsoid is added to the array.
-	//*/
-	//template<typename T, typename Tmask> void drawEllipsoids(Image<T>& image, const vector<string>& headers, const vector<vector<double> >& results, T ellipsoidColor,
-	//										Image<Tmask>* pMask = 0, vector<unsigned long long>* pResults = 0)
-	//											/*int cxi = 5, int cyi = 6, int czi = 7,
-	//											int l1i = 9, int l2i = 10, int l3i = 11,
-	//											int phi1i = 12, int theta1i = 13,
-	//											int phi2i = 14, int theta2i = 15,
-	//											int phi3i = 16, int theta3i = 17)*/
-	//{
-	//	size_t cxi = getColumnIndex("CX [pixel]", headers);
-	//	size_t cyi = getColumnIndex("CY [pixel]", headers);
-	//	size_t czi = getColumnIndex("CZ [pixel]", headers);
-	//	size_t l1i = getColumnIndex("l1 [pixel]", headers);
-	//	size_t l2i = getColumnIndex("l2 [pixel]", headers);
-	//	size_t l3i = getColumnIndex("l3 [pixel]", headers);
-	//	size_t phi1i = getColumnIndex("phi1 [rad]", headers);
-	//	size_t theta1i = getColumnIndex("theta1 [rad]", headers);
-	//	size_t phi2i = getColumnIndex("phi2 [rad]", headers);
-	//	size_t theta2i = getColumnIndex("theta2 [rad]", headers);
-	//	size_t phi3i = getColumnIndex("phi3 [rad]", headers);
-	//	size_t theta3i = getColumnIndex("theta3 [rad]", headers);
-	//	size_t d1i = getColumnIndex("d1 [pixel]", headers);
-	//	size_t d2i = getColumnIndex("d2 [pixel]", headers);
-	//	size_t d3i = getColumnIndex("d3 [pixel]", headers);
-	//	size_t boundingScalei = getColumnIndex("bounding scale", headers);
-
-	//	Vec3d pos;
-	//	for(size_t n = 0; n < results.size(); n++)
-	//	{
-	//		pos.x = results[n][cxi];
-	//		pos.y = results[n][cyi];
-	//		pos.z = results[n][czi];
-
-	//		double l1 = results[n][l1i];
-	//		double l2 = results[n][l2i];
-	//		double l3 = results[n][l3i];
-
-	//		double phi1 = results[n][phi1i];
-	//		double phi2 = results[n][phi2i];
-	//		double phi3 = results[n][phi3i];
-
-	//		double theta1 = results[n][theta1i];
-	//		double theta2 = results[n][theta2i];
-	//		double theta3 = results[n][theta3i];
-
-	//		double d1 = results[n][d1i];
-	//		double d2 = results[n][d2i];
-	//		double d3 = results[n][d3i];
-
-	//		double boundingScale = results[n][boundingScalei];
-
-	//		// Scale the ellipsoid so that it becomes bounding ellipsoid
-	//		l1 = boundingScale * sqrt(l1);
-	//		l2 = boundingScale * sqrt(l2);
-	//		l3 = boundingScale * sqrt(l3);
-
-	//		unsigned long long count = 0;
-
-	//		// Only draw if the ellipsoid is sane!
-	//		if(!isinf(l1) && !isnan(l1) && l1 != 0 &&
-	//			!isinf(l2) && !isnan(l2) && l2 != 0 &&
-	//			!isinf(l3) && !isnan(l3) && l3 != 0)
-	//			count = drawEllipsoid<T, Tmask>(image, pos, l1, l2, l3, phi1, theta1, phi2, theta2, phi3, theta3, ellipsoidColor, pMask);
-
-	//		if(pResults != 0)
-	//			pResults->push_back(count);
-
-	//		utilities::showProgress(n, results.size());
-	//	}
-	//}
-
-	
-	///**
-	//Draws bounding spheres.
-	//@param pMask Pointer to mask image. Only pixels where mask != 0 will be colored.
-	//@param pResults Pointer to results array. If not null, contains count of filled pixels for each bounding sphere.
-	//*/
-	//template<typename T, typename Tmask> void drawBoundingSpheres(Image<T>& image, const vector<string>& headers, const vector<vector<double> >& results, T sphereColor,
-	//												Image<Tmask>* pMask = 0, vector<unsigned long long>* pResults = 0)
-	//{
-	//	//int cxi = 25, int cyi = 26, int czi = 27, int radiusi = 28
-	//	size_t cxi = getColumnIndex("bcenter X [pixel]", headers);
-	//	size_t cyi = getColumnIndex("bcenter Y [pixel]", headers);
-	//	size_t czi = getColumnIndex("bcenter Z [pixel]", headers);
-	//	size_t radiusi = getColumnIndex("bradius [pixel]", headers);
-
-	//	Vec3d pos;
-	//	Sphere<double> sphere;
-	//	for(size_t n = 0; n < results.size(); n++)
-	//	{
-	//		pos.x = results[n][cxi];
-	//		pos.y = results[n][cyi];
-	//		pos.z = results[n][czi];
-
-	//		double radius = results[n][radiusi];
-	//		
-	//		sphere.center = pos;
-	//		sphere.radius = radius;
-
-	//		unsigned long long count = drawSphere<T, double, Tmask>(image, sphere, sphereColor, pMask);
-	//		if(pResults != 0)
-	//			pResults->push_back(count);
-
-	//		utilities::showProgress(n, results.size());
-	//	}
-	//}
+				draw(image, Sphere(pos, r), color);
+			}
+			showProgress(n, results.size());
+		}
+	}
 
 	namespace tests
 	{

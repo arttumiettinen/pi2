@@ -1,0 +1,72 @@
+.. _io:
+
+Supported file formats
+======================
+
+Pi2 supports a limited selection of useful file formats as indicated in the table below.
+Pi2 can either read full files or small blocks of files, but both operation modes are not
+supported for all file formats.
+If you need to read a format not listed here, please contact the authors to check if support
+for the format could be added.
+
+==========================  =======  =======  ==============  ==============
+Type                        Reading  Writing  Reading blocks  Writing blocks
+==========================  =======  =======  ==============  ==============
+:ref:`.raw <raw_format>`    Yes      Yes      Yes             Yes
+`.tif (2D & 3D)`_           Yes      Yes      Yes             Yes                
+`.nrrd`_                    Yes      Yes      No              No
+`.vol/.longvol`_            Yes      No       Yes             No
+`.tif`_ sequence            Yes      Yes      Yes             Yes
+`.png`_ sequence            Yes      Yes      Yes             Yes
+==========================  =======  =======  ==============  ==============
+
+.. _`.tif (2D & 3D)`: https://download.osgeo.org/libtiff/doc/TIFF6.pdf
+.. _`.tif`: https://download.osgeo.org/libtiff/doc/TIFF6.pdf
+.. _`.nrrd`: http://teem.sourceforge.net/nrrd/format.html
+.. _`.vol/.longvol`: https://perso.liris.cnrs.fr/david.coeurjolly/Code/SimpleVol/
+.. _`.png`: http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html
+
+All the file formats can be read using the generic :ref:`read` command, or
+the file format specific :code:`readX` command, where :code:`X` is the file extension.
+
+Files are written using the :code:`writeX` command, where :code:`X` is the file extension.
+Sequences can be written with the :ref:`writesequence` command.
+
+
+
+.. _raw_format:
+
+.raw file format
+----------------
+
+The pi2 .raw files are equal to those used in `Fiji <http://fiji.sc/>`_/`ImageJ <https://imagej.nih.gov/>`_.
+Basically the .raw file contains only the pixel values in such an order that the fastest changing coordinate is the first image dimension.
+Pi2 assumes that pixels are represented in the native byte order of the host computer.
+If this is not the case, byte order can be changed after reading the .raw file by using the :ref:`swapbyteorder` command.
+
+In addition, pi2 supports parsing dimensions of the .raw files from the file name, as long as the 
+file name is in format :file:`name_WxHxD.raw` or :file:`name_WxH.raw`, where :file:`W`, :file:`H`, and :file:`D`
+are the width, height, and depth of the image in pixels.
+
+Pi2 uses .raw format extensively in distributed processing mode as multiple compute nodes can easily write to the same .raw file
+at the same time (but of course not to the same locations).
+
+
+.. _memory_mapping:
+
+Memory mapped .raw files
+------------------------
+
+An advantage of .raw files is that they can be easily memory-mapped.
+Memory-mapping means that the file on hard disk is correlated one-to-one to RAM that pi2 uses.
+If the file is larger than available RAM, the operating system manages reading and writing relevant
+portions of the file to and from RAM.
+
+Memory mapping enables relatively efficient processing of files larger than RAM, but it should not be
+confused with :ref:`distributed computing possibilities <cluster_config>` offered by pi2.
+
+Raw files can be memory-mapped with command :ref:`mapraw` that is a (almost) drop-in replacement for the :ref:`readraw` command.
+That is, after you :ref:`mapraw` an image, it can be used just like any other image but any changes made to it are immediately
+reflected to disk.
+Memory-mapped images do not have to be saved using the :ref:`writeraw` command.
+

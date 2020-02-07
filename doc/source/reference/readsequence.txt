@@ -1,0 +1,29 @@
+.. _readsequence:
+
+readsequence
+************
+
+
+**Syntax:** :code:`readsequence(image name, filename template)`
+
+Reads an image sequence from disk. Supports any image formats supported by the back end (at least .png).
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of image in the system.
+
+filename template [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) template of the sequence to be read. If template is directory name, all files in the directory will be read. If the template is file name, it can contain wildcards *, ? and @. Wildcard * corresponds to any sequence of characters, wildcard ? corresponds to any character, and wildcard @ corresponds to sequence of numerical digits. For example, sequence containing files xyz_000.png, xyz_001.png, xyz_002.png, etc. could be read with template 'xyz_@.png'.
+

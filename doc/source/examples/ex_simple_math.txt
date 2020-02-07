@@ -1,0 +1,82 @@
+.. _saturating_arithmetic:
+
+Simple image math and saturation arithmetic
+===========================================
+
+This example demonstrates how to do simple mathematical operations on images.
+All the operations are `saturating <https://en.wikipedia.org/wiki/Saturation_arithmetic>`__, i.e. out-of-bounds results are clamped to the
+allowable value range of the pixel data type instead of wrapping around
+
+Some operations support input images of different size. In this case, out-of-bounds pixels are taken
+from the nearest valid location in the edge of the image. As a result, one can e.g. multiply each slice
+of a 3D image by a 2D image. This process is often used to mask bad regions away (e.g. regions outside of
+the completely reconstructed cylinder in a tomographic image).
+
+::
+
+	def math():
+		"""
+		Demonstrates use of simple image math.
+		"""
+
+		# Add images
+		img = pi.read(input_file())
+		pi.add(img, img)
+		pi.writeraw(img, output_file('head_added_to_itself'))
+
+
+		# Subtract images
+		img = pi.read(input_file())
+		pi.subtract(img, img)
+		pi.writeraw(img, output_file('head_subtracted_from_itself'))
+
+
+		# Add constant
+		# The math operations are saturating, i.e. if the result of an operation is out of
+		# bounds that can be represented with pixel data type, the value is clipped
+		# to the bounds.
+		# For example,
+		# 200 + 200 = 255 for uint8 image,
+		# 200 + 200 = 400 for uint16 image,
+		# 2*30000 = 65535 for uint16 image,
+		# etc.
+		img = pi.read(input_file())
+		pi.add(img, 65400) # Add large value to partially saturate 16-bit range
+		pi.writeraw(img, output_file('head_saturated'))
+
+
+		# Do you have a 2D mask that you would like to apply to
+		# all slices of a 3D stack?
+		# No problem, just specify True for 'allow dimension broadcast' parameter:
+		img = pi.read(input_file())
+
+		# Create mask whose size is the same than the size of the original but it contains
+		# only one slice. Then draw a circle into it, with color 1.
+		mask = pi.newimage(img.get_data_type(), img.get_width(), img.get_height())
+		pi.sphere(mask, [img.get_width() / 2, img.get_height() / 2, 0], img.get_width() / 4, 1)
+		pi.writetif(mask, output_file('mask'))
+		
+		pi.multiply(img, mask, True)
+		pi.writetif(img, output_file('head_masked'))
+		
+
+
+.. figure:: figures/t1-head_slice.png
+   :scale: 100 %
+   :alt: Input image
+
+   One slice of the input image. Grayscale range is :math:`[0, 463]`.
+		
+		
+.. figure:: figures/head_saturated.png
+   :scale: 100 %
+   :alt: Saturated image
+
+   Saturated output image, input image + 65400. Notice that many regions are saturated to white, corresponding to the maximum value of the pixel data type. Grayscale range is :math:`[65400, 65535]`.
+	
+.. figure:: figures/mask_and_result.png
+   :scale: 100 %
+   :alt: Mask and masking result
+
+   Mask (left) and masking result (right). In the mask (left), white pixels correspond to value 1 and black pixels to value 0.
+

@@ -6,6 +6,7 @@
 #include "io/raw.h"
 
 #include <string>
+#include <array>
 
 namespace itl2
 {
@@ -33,12 +34,13 @@ namespace itl2
 		/**
 		Gets information about .vol file in the given path.
 		*/
-		inline bool getInfo(const std::string& filename, math::Vec3c& dimensions, ImageDataType& dataType, string& endianness, size_t& headerSize)
+		inline bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& endianness, size_t& headerSize, string& reason)
 		{
-			ifstream in(filename.c_str(), ios_base::in | ios_base::binary);
+			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if (!in)
 			{
+				reason = "Unable to open file.";
 				return false;
 				//throw ITLException(std::string("Unable to open ") + filename + string(", ") + getStreamErrorMessage());
 			}
@@ -48,25 +50,38 @@ namespace itl2
 			string line;
 			while (true)
 			{
-				std::getline(in, line);
+				// Don't use bare getline here. If the file is NOT a .vol file, there might be tens of gigabytes of data read before the first
+				// newline is encountered!
+				//std::getline(in, line);
+
+				std::array<char, 101> tmp{};
+				in.getline(&tmp[0], tmp.size()-1);
+				line = string(&tmp[0]);
+
+				if (line.length() >= 100)
+				{
+					reason = "Excessively long line in file header.";
+					return false; // .vol file does not PROBABLY contain this long lines!
+				}
+
 				trim(line);
 
 				if (line.length() <= 0 || line == ".")
 					break;
 
-				if (line.length() > 100)
-					return false; // .vol file does not PROBABLY contain this long lines!
-
 				if (!internals::isOkVolHeaderCharacters(line))
+				{
+					reason = "Invalid characters in file header.";
 					return false;
+				}
 
 				toLower(line);
 
-				vector<string> items = split(line, false, ':', true);
+				std::vector<string> items = split(line, false, ':', true);
 				if (items.size() == 2)
 				{
-					string key = items[0];
-					string value = items[1];
+					std::string key = items[0];
+					std::string value = items[1];
 
 					if (key == "x")
 						dimensions.x = fromString<coord_t>(value);
@@ -85,6 +100,7 @@ namespace itl2
 				}
 				else
 				{
+					reason = string("Unexpected key in file header: ") + line;
 					return false;
 					//cout << "Warning: Unexpected key in .vol file header: " << line << endl;
 				}
@@ -107,28 +123,29 @@ namespace itl2
 		/**
 		Gets information about .vol file in the given path.
 		*/
-		inline bool getInfo(const std::string& filename, math::Vec3c& dimensions, ImageDataType& dataType)
+		inline bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, std::string& reason)
 		{
-			string endianness;
+			std::string endianness;
 			size_t headerSize;
-			return getInfo(filename, dimensions, dataType, endianness, headerSize);
+			return getInfo(filename, dimensions, dataType, endianness, headerSize, reason);
 		}
 
-		template<typename pixel_t> void getInfoAndCheck(const std::string& filename, math::Vec3c& dimensions, ImageDataType& dataType, size_t& headerSize)
+		template<typename pixel_t> void getInfoAndCheck(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, size_t& headerSize)
 		{
-			string endianness;
-			if (!getInfo(filename, dimensions, dataType, endianness, headerSize))
-				throw ITLException(string("Not a .vol file: ") + filename);
+			std::string endianness;
+			std::string reason;
+			if (!getInfo(filename, dimensions, dataType, endianness, headerSize, reason))
+				throw ITLException(std::string("Not a .vol file: ") + filename + ". " + reason);
 
 			// Check data
 			if (dimensions.x <= 0 || dimensions.y <= 0 || dimensions.z <= 0)
-				throw ITLException(string(".vol file contains invalid size specification: ") + toString(dimensions));
+				throw ITLException(std::string(".vol file contains invalid size specification: ") + toString(dimensions));
 
 			if (endianness != "0123")
-				throw ITLException(string(".vol file contains unsupported endianness value: ") + toString(endianness));
+				throw ITLException(std::string(".vol file contains unsupported endianness value: ") + toString(endianness));
 
 			if (dataType != imageDataType<pixel_t>())
-				throw ITLException(string("Expected data type is ") + toString(imageDataType<pixel_t>()) + " but the .vol file contains data of type " + toString(dataType) + ".");
+				throw ITLException(std::string("Expected data type is ") + toString(imageDataType<pixel_t>()) + " but the .vol file contains data of type " + toString(dataType) + ".");
 		}
 
 		/**
@@ -136,7 +153,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& filename)
 		{
-			math::Vec3c dimensions;
+			Vec3c dimensions;
 			ImageDataType dataType;
 			size_t headerSize;
 			getInfoAndCheck<pixel_t>(filename, dimensions, dataType, headerSize);
@@ -149,9 +166,9 @@ namespace itl2
 		/**
 		Reads a block of .vol file from the given path.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const math::Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
 		{
-			math::Vec3c dimensions;
+			Vec3c dimensions;
 			ImageDataType dataType;
 			size_t headerSize;
 			getInfoAndCheck<pixel_t>(filename, dimensions, dataType, headerSize);

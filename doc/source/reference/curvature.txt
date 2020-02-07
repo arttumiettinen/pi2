@@ -1,0 +1,67 @@
+.. _curvature:
+
+curvature
+*********
+
+
+**Syntax:** :code:`curvature(geometry, radius, kappa1, kappa2, boundary condition, non-surface value)`
+
+Calculates curvature of surfaces in the image. Uses quadratic surface fitting algorithms in Petitjean - A Survey of Methods for Recovering Quadrics in Triangle Meshes. Pointwise surface normal is determined using principal component analysis of the covariance matrix of surface points near the center point. The surface normal orientation is chosen so that it points toward background voxels. Curvature is determined by transforming surface points near center point to a coordinate system where the :math:`z`-direction is parallel to the surface normal, and then fitting a surface :math:`f(x, y) = a x^2 + b x y + c y^2 + d` to the tranformed points. The curvature values and directions are calculated from the coefficients :math:`a`, :math:`b` and :math:`c`. Finally, directions are then transformed back to the original coordinates. 
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+geometry [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+The image containing the geometry. Non-zero pixels are assumed to be foreground.
+
+radius [input]
+~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 5
+
+Geodesic radius (radius on the surface) of neighbourhood around surface point considered when determining curvature. Typically e.g. 5 gives good results.
+
+kappa1 [output]
+~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Largest principal curvature will be placed to this image. Set image size to (1, 1, 1) to skip calculation of this quantity.
+
+kappa2 [output]
+~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Smallest principal curvature will be placed to this image. Set image size to (1, 1, 1) to skip calculation of this quantity.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Nearest
+
+Type of boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+non-surface value [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** nan
+
+Value that is used to fill the non-surface points in the kappa1 and kappa2 images.
+
+See also
+--------
+
+:ref:`meancurvature`

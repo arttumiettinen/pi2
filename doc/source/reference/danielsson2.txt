@@ -1,0 +1,33 @@
+.. _danielsson2:
+
+danielsson2
+***********
+
+
+**Syntax:** :code:`danielsson2(input image, output image)`
+
+Calculates an estimate of the set of centers of locally maximal spheres from squared Euclidean distance map. Uses Danielsson's algorithm. The output image can be interpreted as a medial axis or a distance ridge. Drawing a sphere on each nonzero pixel in the output image, with radius and color equal to square root of pixel value, results in a local thickness map of the structure. See e.g. Yaorong Ge and J. Michael Fitzpatrick - On the Generation of Skeletons from Discrete Euclidean Distance Maps, IEEE Transactions on Pattern Analysis and Machine Intelligence 18, 1996; and P.-E. Danielsson, Euclidean distance mapping, Computer Graphics and Image Processing 14(3), 1980.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+See also
+--------
+
+:ref:`dmap2`, :ref:`dmap`, :ref:`tmap`

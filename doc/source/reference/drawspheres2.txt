@@ -1,0 +1,51 @@
+.. _drawspheres2:
+
+drawspheres2
+************
+
+
+**Syntax:** :code:`drawspheres2(input image, output image, save memory, block size)`
+
+Draws a sphere centered in each non-zero point of the input image. Radius of the sphere is given by the square root of the value of the pixel. Color is given by the value of the pixel. This command is used to generate squared local radius map from squared distance map or output of :ref:`danielsson2` command.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+save memory [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+For non-distributed processing: Set to true to use slower algorithm that uses less memory than the faster one. If set to true, the input and output images can be the same. For distributed processing: Only false is supported at the moment.
+
+block size [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Block size to use in distributed processing. Set to zero to use a default value calculated based on available memory. If calculation with default value fails, use smaller block size and report it to the authors. This argument has no effect when running in non-distributed mode.
+
+See also
+--------
+
+:ref:`tmap`

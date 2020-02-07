@@ -1,0 +1,101 @@
+.. _set:
+
+set
+***
+
+There are 3 forms of this command.
+
+:code:`set(target image, source image)`
+=======================================
+
+Copies pixel values from the source image to the target image. Sets the size and data type of the target image to those of the source image. See also :ref:`copy` command.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+target image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image whose values are set.
+
+source image [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image that is copied to the target image.
+
+
+:code:`set(image, x)`
+=====================
+
+Sets all pixels to the same value.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+x [input]
+~~~~~~~~~
+
+**Data type:** real
+
+Pixel value.
+
+
+:code:`set(image, position, value, block origin)`
+=================================================
+
+Sets a pixel in the image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Position to set.
+
+value [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+Value that the pixel at given position should be set to.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.
+
+See also
+--------
+
+:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`ramp`

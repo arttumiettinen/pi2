@@ -1,0 +1,80 @@
+.. _ellipsoid:
+
+ellipsoid
+*********
+
+
+**Syntax:** :code:`ellipsoid(image, position, semi-axis lengths, value, direction 1, direction 2, block origin)`
+
+Draws a filled ellipsoid into the image, given position, semi-axis lengths and the directions of the first two semi-axes. The direction of the third semi-axis is the cross-product of the first two semi-axis direction vectors. The command ensures that the direction of the second semi-axis is perpendicular to the first and to the third one.The lengths of the direction vectors can be anything. The filling is performed such that pixels on the surface of the ellipsoid are not filled.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 0, 0]"
+
+Position of the center point of the ellipsoid.
+
+semi-axis lengths [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[10, 20, 30]"
+
+Lengths of the semi-axes of the ellipsoid.
+
+value [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Value for pixels inside the ellipsoid.
+
+direction 1 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[1, 0, 0]"
+
+Direction vector for the first semi-axis.
+
+direction 2 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 1, 0]"
+
+Direction vector for the second semi-axis.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.
+
+See also
+--------
+
+:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`ramp`

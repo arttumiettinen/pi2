@@ -1,0 +1,16 @@
+Articles where pi2 has been used
+--------------------------------
+
+This is an incomplete list of articles where this software or some of its previous versions has been used.
+If you want to add your paper here, please email arttu.miettinen@psi.ch.
+
+* Elena Borisova, Goran Lovric, Arttu Miettinen, Luca Fardin, Sam Bayat, Anders Larsson, Marco Stampanoni, Johannes C. Schittny, Christian M. Schlepütz. Micrometer-resolution X-ray tomographic full-volume reconstruction of an intact post mortem juvenile rat lung, submitted, 2020.
+* Lukas Anschuetz, Marco Demattè, Alessia Pica, Wilhelm Wimmer, Marco Caversaccio, Anne Bonnin. Synchrotron radiation imaging revealing the sub-micron structure of the auditory ossicles, Hearing Research 383, 2019.
+* Arttu Miettinen, Ioannis Vogiatzis Oikonomidis, Anne Bonnin, Marco Stampanoni. NRStitcher: Non-rigid stitching of terapixel-scale volumetric images, Bioinformatics 35(24), 2019.
+* Jairan Nafar Dastgerdi, Behnam Anbarlooie, Arttu Miettinen, Hossein Hosseini-Toudeshky, Heikki Remes. Effects of particle clustering on the plastic deformation and damage initiation of particulate reinforced composite utilizing X-ray CT data and finite element modeling, Composites Part B 153(15), 2018.
+* Mohammad Sayab, Arttu Miettinen, Domingo Aerden, Fredrik Karell. Orthogonal switching of AMS axes during type-2 fold interference: Insights from integrated X-ray computed tomography, AMS and 3D petrography, Journal of Structural Geology 103, 2017.
+* Abdelghani Hajlane, Arttu Miettinen, Bo Madsen, Justine Beauson, Roberts Joffe. Use of micro-tomography for validation of method to identify interfacial shear strength from tensile tests of short regenerated cellulose fibre composites, IOP Conference Series: Materials Science and Engineering 139, 2016.
+* Arttu Miettinen, Antti Ojala, Lisa Wikström, Roberts Joffe, Bo Madsen, Kalle Nättinen, Markku, Kataja. Non-destructive automatic determination of aspect ratio and cross-sectional properties of fibres, Composites Part A 77, 2015.
+* Arttu Miettinen, Roberts Joffe, Liva Pupure, Bo Madsen. Identification of true microstructure of composites based on various flax fibre assemblies by means of three-dimensional tomography, 20th International Conference on Composite Materials, Copenhagen, 2015.
+* Thomas Joffre, Arttu Miettinen, Fredrik Berthold, E. Kristofer Gamstedt. X-ray micro-computed tomography investigation of fibre length degradation during the processing steps of short-fibre composites, Composites Science and Technology 105, 2014.
+* Arttu Miettinen, Cris L. Luengo Hendriks, Gary Chinga-Carrasco, E. Kristofer Gamstedt, Markku Kataja. A non-destructive X-ray microtomography approach for measuring fibre length in short-fibre composites, Composites Science and Technology 72(15), 2012.

@@ -2,6 +2,7 @@
 #include "projections.h"
 #include "pointprocess.h"
 #include "io/raw.h"
+#include "generation.h"
 
 namespace itl2
 {
@@ -33,8 +34,9 @@ namespace itl2
 		{
 			Vec3c dimensions;
 			ImageDataType dt;
+			string reason;
 
-			raw::getInfo(file, dimensions, dt);
+			raw::getInfo(file, dimensions, dt, reason);
 
 			Image<float32_t> gt(dimensions);
 
@@ -51,7 +53,7 @@ namespace itl2
 		{
 
 			Image<uint16_t> head(256, 256, 129);
-			raw::read(head, "t1-head_256x256x129.raw");
+			raw::read(head, "./input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> maxy;
 			max(head, 1, maxy, false);
@@ -67,13 +69,13 @@ namespace itl2
 			raw::writed(yprojection, "./projections/yproj_sum");
 			raw::writed(xprojection, "./projections/xproj_sum");
 
-			checkResult(zprojection, "./zproj_sum_true_256x256x1.raw", "z projection");
-			checkResult(yprojection, "./yproj_sum_true_256x129x1.raw", "y projection");
-			checkResult(xprojection, "./xproj_sum_true_129x256x1.raw", "x projection");
+			checkResult(zprojection, "./input_data/zproj_sum_true_256x256x1.raw", "z projection");
+			checkResult(yprojection, "./input_data/yproj_sum_true_256x129x1.raw", "y projection");
+			checkResult(xprojection, "./input_data/xproj_sum_true_129x256x1.raw", "x projection");
 
 			double count;
 			double sum = maskedsum(zprojection, (float32_t)0, count);
-			double sum2 = maskedsum(zprojection, numeric_limits<float32_t>::signaling_NaN(), count);
+			double sum2 = maskedsum(zprojection, std::numeric_limits<float32_t>::signaling_NaN(), count);
 
 			Image<float32_t> minproj, maxproj, meanproj;
 			min(head, 2, minproj);
@@ -84,9 +86,26 @@ namespace itl2
 			raw::writed(maxproj, "./projections/zproj_max");
 			raw::writed(meanproj, "./projections/zproj_mean");
 
-			checkResult(minproj, "./zproj_min_true_256x256x1.raw", "min projection");
-			checkResult(maxproj, "./zproj_max_true_256x256x1.raw", "max projection");
-			checkResult(meanproj, "./zproj_mean_true_256x256x1.raw", "mean projection");
+			checkResult(minproj, "./input_data/zproj_min_true_256x256x1.raw", "min projection");
+			checkResult(maxproj, "./input_data/zproj_max_true_256x256x1.raw", "max projection");
+			checkResult(meanproj, "./input_data/zproj_mean_true_256x256x1.raw", "mean projection");
+
+			// Test also 2-image variants
+			Image<uint16_t> rampImage(head.dimensions());
+			ramp(rampImage, 0);
+
+			Image<uint16_t> zprojectionVal;
+			Image<uint16_t> yprojectionVal;
+			Image<uint16_t> xprojectionVal;
+			max(head, rampImage, 2, zprojection, zprojectionVal);
+			max(head, rampImage, 1, yprojection, yprojectionVal);
+			max(head, rampImage, 0, xprojection, xprojectionVal);
+			raw::writed(zprojection, "./projections/val_zproj");
+			raw::writed(yprojection, "./projections/val_yproj");
+			raw::writed(xprojection, "./projections/val_xproj");
+			raw::writed(zprojectionVal, "./projections/val_zproj_rampval");
+			raw::writed(yprojectionVal, "./projections/val_yproj_rampval");
+			raw::writed(xprojectionVal, "./projections/val_xproj_rampval");
 
 		}
 	}

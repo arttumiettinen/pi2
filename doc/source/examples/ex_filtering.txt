@@ -1,0 +1,114 @@
+.. _filtering_example:
+
+Filtering, normal and distributed mode
+======================================
+
+This example demonstrates :ref:`Gaussian filtering <gaussfilter>` of an image in normal mode and
+in :ref:`distributed mode <distribute>`.
+For demonstration, the :ref:`max_memory <maxmemory>` setting of the distributed mode is
+set such that we need two jobs even for the small test image used in the example.
+The filtering result is calculated also in normal mode, and the results between
+the normal mode and the distributed mode are compared.
+
+The example generalizes easily to other filtering methods like
+:ref:`vawe <vawefilter>`,
+:ref:`bilateral <bilateralfilter>`,
+:ref:`maximum <maxfilter>`,
+:ref:`opening <openingfilter>`,
+:ref:`closing <closingfilter>`,
+etc.
+
+::
+
+	def filtering():
+		"""
+		Calculates Gaussian blur of image normally and using distributed processing.
+		Calculates difference of the two versions.
+		The example generalizes to any available filtering procedure like
+		vawefilter, bilateralfilter, maxfilter, openingfilter, etc.
+		"""
+
+		# Gaussian filtering (local sequential 'distributed' processing)
+		# --------------------------------------------------------------
+
+		# Enable distributed mode
+		pi.distribute(Distributor.LOCAL)
+
+		# For demonstration, set memory per one job to low value.
+		# 25 megabytes results in 2 jobs for the default input image in this example.
+		# Typically you would set this value in local_config.txt file.
+		pi.maxmemory(25)
+
+		# Read image
+		img = pi.read(input_file())
+
+		# Create output image
+		filtered = pi.newlike(img)
+
+		# Filter
+		pi.gaussfilter(img, filtered, 5)
+
+		# Write output to disk.
+		# The distributed mode saves internal temporary images as .raw files or .png
+		# sequences. Writeraw command in distributed mode therefore often converts
+		# into a simple file rename.
+		pi.writeraw(filtered, output_file('head_gauss_distributed'))
+
+		# Disable distributed mode
+		pi.maxmemory(0) # Sets max memory to automatically determined value
+		pi.distribute(Distributor.NONE)
+
+
+		# Gaussian filtering (local processing)
+		# -------------------------------------
+
+		# This code is the same than in distributed case above, but without
+		# pi.distribute-commands.
+		img = pi.read(input_file())
+		filtered = pi.newlike(img)
+		pi.gaussfilter(img, filtered, 5)
+		pi.writeraw(filtered, output_file('head_gauss_normal'))
+
+
+		# Calculate difference of results of normal and distributed processing
+		# --------------------------------------------------------------------
+
+		# Read both images
+		img = pi.read(output_file('head_gauss_normal'))
+		img2 = pi.read(output_file('head_gauss_distributed'))
+
+		# Convert them to float32 so that negative values can be represented, too.
+		pi.convert(img, ImageDataType.FLOAT32)
+		pi.convert(img2, ImageDataType.FLOAT32)
+
+		# Subtract img2 from img
+		pi.subtract(img, img2)
+		pi.writeraw(img, output_file('gauss_difference'))
+
+		# Calculate absolute value of each pixel
+		pi.abs(img)
+
+		# Calculate maximal value and place it to image M.
+		# M will be a 1x1x1 image.
+		M = pi.newimage(ImageDataType.FLOAT32)
+		pi.maxval(img, M)
+
+		# Get the value of the first pixel of image M.
+		# In this case M is a 1x1x1 image so we have only one pixel anyway.
+		M = M.get_value()
+		print(f"Maximal difference = {M}")
+
+Output:
+
+.. code-block:: none
+	:emphasize-lines: 5
+
+	Enabling distributed computing mode using local sequential processing.
+	Using 13.51 GiB RAM per task.
+	Using 25 MiB RAM per task.
+	Submitting 2 jobs, each estimated to require at most 21 MiB of RAM...
+	-- Individual job progress information is cut away for clarity --
+	Waiting for jobs to finish...
+	Using 13.51 GiB RAM per task.
+	Distributed computing mode is disabled.
+	Maximal difference = 0.0

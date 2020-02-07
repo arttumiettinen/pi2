@@ -1,0 +1,65 @@
+.. _fillparticles:
+
+fillparticles
+*************
+
+
+**Syntax:** :code:`fillparticles(image, analyzers, results, fill color, connectivity, block origin)`
+
+Fills particles that correspond to an entry in a list of particles with specified value. All other particles will be set to value 1. This command does not support cases where the particles have different colors.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+analyzers [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+List of names of analyzers that have been used to analyze the particles in the :ref:`analyzeparticles` command. The analyzers must contain 'coordinates' analyzer; otherwise this command does not know where the particles are.
+
+results [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Analysis results image.
+
+fill color [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Fill color.
+
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** Nearest
+
+Connectivity of the particles. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Shift that is to be applied to the image before filling the particles. This argument is used internally in distributed processing.
+
+See also
+--------
+
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`

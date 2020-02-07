@@ -1,0 +1,36 @@
+Read and write images
+=====================
+
+
+This example shows how to read and write images in various file formats::
+
+	def read_and_write_image():
+		"""
+		Demonstrates reading and writing images.
+		"""
+
+		# .tif image
+		img1 = pi.read(input_file('t1-head.tif'))
+
+		# .png image
+		img2 = pi.read(input_file('uint8.png'))
+
+		# .raw file
+		img3 = pi.read(input_file('t1-head_bin_'))
+
+		# Save sequence. The @(3) declares that the file name should contain 3 numeric digits in the place of @, e.g. head_001_bin.tif.
+		pi.writesequence(img3, output_file('binary_head/head_@(3)_bin.tif'))
+
+		# Read sequence back. Notice that reading does not support (3) directive in the sequence template!
+		img4 = pi.read(output_file('binary_head/head_@_bin.tif'))
+
+		# Images can also be read into existing images.
+		pi.read(output_file('binary_head/head_@_bin.tif'), target_image=img1)
+
+		# When saving .raw files, the dimensions are appended to the file name
+		pi.writeraw(img2, output_file('uint8_as_raw'))
+
+		# When reading .raw files, it is not necessary to give the dimensions and .raw suffix
+		# if the given part of the file name identifies an unique .raw file
+		img2 = pi.read(output_file('uint8_as_raw'))
+	

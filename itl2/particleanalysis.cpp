@@ -3,12 +3,14 @@
 #include "generation.h"
 #include "pointprocess.h"
 
-using namespace math;
+
+using namespace std;
 
 namespace itl2
 {
 	namespace tests
 	{
+
 		bool resultsComparer(const vector<double>& v1, const vector<double>& v2)
 		{
 			for (size_t n = 0; n < v1.size(); n++)
@@ -17,6 +19,44 @@ namespace itl2
 					return v1[n] < v2[n];
 			}
 			return false;
+		}
+
+		void checkResults(Results& resultsSingle, Results& resultsMulti)
+		{
+			size_t N = std::min(resultsSingle.size(), resultsMulti.size());
+			bool different = false;
+			for (size_t n = 0; n < N; n++)
+			{
+				for (size_t m = 0; m < resultsSingle[n].size(); m++)
+				{
+					if (!NumberUtils<double>::equals(resultsSingle[n][m], resultsMulti[n][m], 0.001))
+					{
+						cout << "First difference at " << n << endl;
+						cout << resultsSingle.headers() << endl;
+						cout << resultsSingle.str(n) << endl;
+						cout << resultsMulti.str(n) << endl;
+						different = true;
+						break;
+					}
+				}
+
+				if (different)
+					break;
+			}
+
+			if (!different && resultsSingle.size() != resultsMulti.size())
+				different = true;
+
+			if (different)
+			{
+				//raw::writed(img, "particleanalysis/geometry");
+				writeText("./particleanalysis/results_single.txt", resultsSingle.str());
+				writeText("./particleanalysis/results_multi.txt", resultsMulti.str());
+				throw ITLException("Difference found.");
+
+			}
+
+			testAssert(!different, "multi- and single-threaded particle analysis");
 		}
 
 		Results checkThreading(const Image<uint8_t>& img, Connectivity conn, coord_t volumeLimit)
@@ -28,63 +68,120 @@ namespace itl2
 			Image<uint8_t> img2;
 			setValue(img2, img);
 
+			Image<uint8_t> img3;
+			setValue(img3, img);
+
+
 			auto analyzers = allAnalyzers(img);
-			Results results1, results2;
-			
+			Results results_multi, results_single, results_alternate;
+
 			Timer timer;
+
+
 			timer.start();
-			itl2::analyzeParticles(img1, analyzers, results1, conn, volumeLimit);
+			{
+				vector<Results> allResults;
+				vector<vector<vector<Vec3sc> > > allBlockLargeEdgePoints;
+				vector<vector<vector<Vec3sc> > > allBlockIncompleteParticles;
+				vector<vector<coord_t> > allBlockEdgeZ;
+
+				coord_t blockSize = 100;
+				for (coord_t minZ = 0; minZ < img3.depth(); minZ += blockSize)
+				{
+					coord_t maxZ = minZ + blockSize - 1;
+					if (maxZ >= img3.depth())
+						maxZ = img3.depth() - 1;
+
+					Image<uint8_t> block(img3, minZ, maxZ);
+
+					Results blockResults;
+					vector<vector<Vec3sc> > blockLargeEdgePoints;
+					vector<vector<Vec3sc> > blockIncompleteParticles;
+					vector<coord_t> blockEdgeZ;
+					size_t counter = 0;
+					uint8_t fillColor = internals::SpecialColors<uint8_t>::fillColor();
+					uint8_t largeColor = internals::SpecialColors<uint8_t>::largeColor();
+					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, conn, volumeLimit, fillColor, largeColor, counter, img3.depth() * img3.height(), Vec3sc(0, 0, (int32_t)minZ));
+
+					allResults.push_back(blockResults);
+
+					allBlockLargeEdgePoints.push_back(blockLargeEdgePoints);
+					allBlockIncompleteParticles.push_back(blockIncompleteParticles);
+
+					blockEdgeZ.push_back(minZ);
+					blockEdgeZ.push_back(maxZ);
+
+					allBlockEdgeZ.push_back(blockEdgeZ);
+				}
+
+
+				Results finalResults = allResults[0];
+				finalResults.headers() = analyzers.headers();
+				vector<vector<Vec3sc> > finalLargeEdgePoints = allBlockLargeEdgePoints[0];
+				vector<vector<Vec3sc> > finalIncompleteParticles = allBlockIncompleteParticles[0];
+				vector<coord_t> finalEdgeZ = allBlockEdgeZ[0];
+
+				if (allResults.size() > 1)
+				{
+					for (size_t n = 1; n < allResults.size(); n++)
+					{
+						finalResults.insert(finalResults.end(), allResults[n].begin(), allResults[n].end());
+						finalLargeEdgePoints.insert(finalLargeEdgePoints.end(), allBlockLargeEdgePoints[n].begin(), allBlockLargeEdgePoints[n].end());
+						finalIncompleteParticles.insert(finalIncompleteParticles.end(), allBlockIncompleteParticles[n].begin(), allBlockIncompleteParticles[n].end());
+						finalEdgeZ.insert(finalEdgeZ.end(), allBlockEdgeZ[n].begin(), allBlockEdgeZ[n].end());
+
+						internals::combineParticleAnalysisResults(analyzers, finalResults, finalLargeEdgePoints, finalIncompleteParticles, volumeLimit, conn, finalEdgeZ, n < allResults.size() - 1);
+					}
+				}
+				else
+				{
+					internals::combineParticleAnalysisResults(analyzers, finalResults, finalLargeEdgePoints, finalIncompleteParticles, volumeLimit, conn, finalEdgeZ, false);
+				}
+
+				results_alternate = finalResults;
+
+			}
+			timer.stop();
+			cout << "Alternate block combine method test (single-threaded) took " << timer.getTime() << " ms." << endl;
+
+			timer.start();
+			itl2::analyzeParticles(img1, analyzers, results_multi, conn, volumeLimit);
 			timer.stop();
 			cout << "Multithreaded particle analysis took " << timer.getTime() << " ms." << endl;
 
+
 			timer.start();
-			itl2::analyzeParticlesSingleThreaded(img2, analyzers, results2, conn, volumeLimit);
+			itl2::analyzeParticlesSingleThreaded(img2, analyzers, results_single, conn, volumeLimit);
 			timer.stop();
 			cout << "Singlethreaded particle analysis took " << timer.getTime() << " ms." << endl;
 
 			// Remove x, y, and z from the results as they might not be the same for single- and multithreaded versions.
 			// (They are just arbitrary location inside the particle)
-			results1.removeColumn("x");
-			results1.removeColumn("y");
-			results1.removeColumn("z");
-			results2.removeColumn("x");
-			results2.removeColumn("y");
-			results2.removeColumn("z");
+			results_multi.removeColumn("x");
+			results_multi.removeColumn("y");
+			results_multi.removeColumn("z");
+			results_single.removeColumn("x");
+			results_single.removeColumn("y");
+			results_single.removeColumn("z");
+			results_alternate.removeColumn("x");
+			results_alternate.removeColumn("y");
+			results_alternate.removeColumn("z");
+
+			// Artificial difference to test that code below works.
+			//results_single[3][3] = 7;
 
 			// Sort the results so that threading does not affect the comparisons
-			std::sort(results1.begin(), results1.end(), resultsComparer);
-			std::sort(results2.begin(), results2.end(), resultsComparer);
+			std::sort(results_multi.begin(), results_multi.end(), resultsComparer);
+			std::sort(results_single.begin(), results_single.end(), resultsComparer);
+			std::sort(results_alternate.begin(), results_alternate.end(), resultsComparer);
 
-			//cout << results1.size() << endl;
-			//cout << results2.size() << endl;
+			//cout << results_single.str() << endl;
+			//cout << results_multi.str() << endl;
 
-			size_t N = math::min(results1.size(), results2.size());
-			for (size_t n = 0; n < N; n++)
-			{
-				if (results1.str(n) != results2.str(n))
-				{
-					cout << "First difference at " << n << endl;
-					cout << results1.headers() << endl;
-					cout << results1.str(n) << endl;
-					cout << results2.str(n) << endl;
-					break;
-				}
-			}
-			
-			bool different = results1.str() != results2.str();
-			if (different)
-			{
-				raw::writed(img, "particleanalysis/geometry");
-				writeText("./particleanalysis/results_multi.txt", results1.str());
-				writeText("./particleanalysis/results_single.txt", results2.str());
-				//cout << results1 << endl;
-				//cout << "----" << endl;
-				//cout << results2 << endl;
-			}
+			checkResults(results_single, results_multi);
+			checkResults(results_single, results_alternate);
 
-			testAssert(!different, "multi- and single-threaded particle analysis");
-
-			return results1;
+			return results_multi;
 		}
 
 		void checkThreading(const Image<uint8_t>& img)
@@ -104,8 +201,8 @@ namespace itl2
 		{
 			Image<uint8_t> img(150, 150, 150);
 
-			Box box1 = Box(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
-			Box box2 = Box(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
+			AABox box1 = AABox(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
+			AABox box2 = AABox(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
 			draw(img, box1, (uint8_t)1);
 			draw(img, box2, (uint8_t)1);
 
@@ -117,7 +214,7 @@ namespace itl2
 			for (size_t trial = 0; trial < 50; trial++)
 			{
 				cout << "Trial " << trial << endl;
-				cout << "-----------------------------------------" << endl;
+				cout << "*****************************************" << endl;
 
 				Image<uint8_t> img(600, 600, 600);
 
@@ -129,11 +226,9 @@ namespace itl2
 					draw(img, Sphere(pos, r), (uint8_t)1);
 				}
 
-				//if (trial == 2)
-				//{
-					checkThreading(img);
-				//	return;
-				//}
+				raw::writed(img, "./particleanalysis/geometry");
+
+				checkThreading(img);
 			}
 		}
 
@@ -141,7 +236,7 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img;
-				raw::read(img, "complicated_particles_1");
+				raw::read(img, "./input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img);
@@ -160,7 +255,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> img;
-				raw::read(img, "complicated_particles_1");
+				raw::read(img, "./input_data/complicated_particles_1");
 
 				// Detailed check
 				Results results;
@@ -192,7 +287,7 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img;
-				raw::read(img, "complicated_particles_1");
+				raw::read(img, "./input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img, Connectivity::AllNeighbours, 3000);
@@ -211,7 +306,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> img;
-				raw::read(img, "complicated_particles_1");
+				raw::read(img, "./input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img, Connectivity::NearestNeighbours, 3000);
@@ -235,8 +330,8 @@ namespace itl2
 		{
 			Image<uint8_t> img(150, 150, 150);
 
-			Box box1 = Box(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
-			Box box2 = Box(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
+			AABox box1 = AABox(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
+			AABox box2 = AABox(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
 			draw(img, box1, (uint8_t)1);
 			draw(img, box2, (uint8_t)1);
 

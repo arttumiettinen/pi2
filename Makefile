@@ -2,7 +2,7 @@ TOPTARGETS := all clean
 
 SUBDIRS := itl2 pilib pi2 itl2tests
 
-CXXFLAGS := -fopenmp -O3 -std=c++17 
+CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -march=native
 LDFLAGS := -fopenmp
 
 export CXXFLAGS

@@ -1,0 +1,23 @@
+.. _command_reference:
+
+Command reference
+=================
+
+This section contains documentation for each command available in the pi2 system. The same information is also available using commands::
+
+	pi2 help
+	pi2 help(command_name)
+
+where :code:`command_name` is the name of the command whose help is to be retrieved.
+
+If using pi2 from ipython, the help is available using the standard TAB and ?-help functionality.
+
+
+
+.. toctree::
+   :maxdepth: 1
+   :titlesonly:
+   :caption: Available commands:
+   :glob:
+   
+   *

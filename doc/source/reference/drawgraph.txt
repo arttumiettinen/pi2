@@ -1,0 +1,165 @@
+.. _drawgraph:
+
+drawgraph
+*********
+
+There are 2 forms of this command.
+
+:code:`drawgraph(image, vertices, edges, measurements, edge points, vertex radius, vertex color, edge color, use measured edge area, block origin)`
+===================================================================================================================================================
+
+Draws a graph into the image. Vertices are drawn as spheres and edges as lines.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+vertices [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. The size of the image must be 3xN, where N is the number of vertices in the graph.
+
+edges [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge will be set. The size of the image must be 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array.
+
+measurements [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores properties of each edge. See output from traceskeleton command.
+
+edge points [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. See output from traceskeleton command.
+
+vertex radius [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 2
+
+Radius of the spheres corresponding to the vertices.
+
+vertex color [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+
+**Default value:** Shown along data types.
+
+Value that is used to fill spheres corresponding to vertices.
+
+edge color [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+
+**Default value:** Shown along data types.
+
+Value that is used to draw lines corresponding to edges.
+
+use measured edge area [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to draw edges as capsules with cross-sectional area read from edge properties.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current block in coordinates of the full image. This argument is used internally in distributed processing to shift the vertices to correct locations when only a part of the image is processed. Set to zero in normal usage.
+
+
+:code:`drawgraph(image, vertices, edges, vertex radius, vertex color, edge color, block origin)`
+================================================================================================
+
+Draws a graph into the image. Vertices are drawn as spheres and edges as lines.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+vertices [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. The size of the image must be 3xN, where N is the number of vertices in the graph.
+
+edges [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge will be set. The size of the image must be 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array.
+
+vertex radius [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 2
+
+Radius of the spheres corresponding to the vertices.
+
+vertex color [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+
+**Default value:** Shown along data types.
+
+Value that is used to fill spheres corresponding to vertices.
+
+edge color [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+
+**Default value:** Shown along data types.
+
+Value that is used to draw lines corresponding to edges.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current block in coordinates of the full image. This argument is used internally in distributed processing to shift the vertices to correct locations when only a part of the image is processed. Set to zero in normal usage.
+

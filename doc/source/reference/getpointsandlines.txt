@@ -1,0 +1,79 @@
+.. _getpointsandlines:
+
+getpointsandlines
+*****************
+
+
+**Syntax:** :code:`getpointsandlines(vertices, edges, edge measurements, edge points, points, lines, smoothing sigma, max displacement)`
+
+Converts a traced skeleton to points-and-lines format, where all points on the skeleton are stored in one array and all branches are stored as lists of indices of points that form the branch.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+vertices [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. See :ref:`tracelineskeleton` command.
+
+edges [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge measurements [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where properties of each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge points [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. See :ref:`tracelineskeleton` command.
+
+points [output]
+~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores coordinates of all points in the network. These include points on edges and centroids of intersection regions. Each row of image stores (x, y, z) of one point.
+
+lines [output]
+~~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image that stores a list of point indices for each edge. This image is stored in compressed format: [count of edges][count of points in 1st edge][index of point 1][index of point 2]...[count of points in 2nd edge][index of point 1][index of point 2]...
+
+smoothing sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+If smooth lines are requested instead of jagged lines (consisting of pixel locations), specify positive value here. The value is standard deviation of a Gaussian kernel used to smooth the lines in an anchored convolution smoothing. The end points of each line are not changed by smoothing. Values in range [0.5, 1.5] often give suitable amount of smoothing. The smoothing algorithm is described in Suhadolnik - An anchored discrete convolution algorithm for measuring length in digital images.
+
+max displacement [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.5
+
+Maximum displacement of points in anchored convolution smoothing of the lines.
+
+See also
+--------
+
+:ref:`writevtk`, :ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`

@@ -1,0 +1,33 @@
+.. _rot90ccw:
+
+rot90ccw
+********
+
+
+**Syntax:** :code:`rot90ccw(input image, output image)`
+
+Rotates input image counterclockwise 90 degrees around the :math:`z`-axis.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Output image.
+
+See also
+--------
+
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`

@@ -1,0 +1,49 @@
+.. _fileinfo:
+
+fileinfo
+********
+
+There are 2 forms of this command.
+
+:code:`fileinfo(filename, info)`
+================================
+
+Reads metadata of given image file.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of image file.
+
+info [input]
+~~~~~~~~~~~~
+
+**Data type:** uint32 image
+
+At output, this image will contain four pixels corresponding to width, height, depth, and data type index of the image. If the image has only zero pixels, the given file is not an image that can be read into the pi system. The data type index one correspond to uint8, two to uint16, etc. in this sequence: uint8, uint16, uint32, uint64, float32, complex32, int8, int16, int32, int64.
+
+
+:code:`fileinfo(filename)`
+==========================
+
+Displays metadata of given image file.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of image file.
+

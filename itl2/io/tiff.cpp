@@ -4,8 +4,6 @@
 #include "projections.h"
 #include "transform.h"
 
-using namespace math;
-
 namespace itl2
 {
 	namespace tiff
@@ -34,9 +32,9 @@ namespace itl2
 				return lastTiffErrorMessage;
 			}
 
-			bool getCurrentDirectoryInfo(TIFF* tif, math::Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes)
+			bool getCurrentDirectoryInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason)
 			{
-				string reason = "";
+				reason = "";
 
 				uint16_t tiffDatatype = 0;
 				uint32_t sampleFormat = 0;
@@ -54,7 +52,7 @@ namespace itl2
 				TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
 				TIFFGetFieldDefaulted(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
 
-				dimensions = math::Vec3c(tiffWidth, tiffHeight, tiffDepth);
+				dimensions = Vec3c(tiffWidth, tiffHeight, tiffDepth);
 
 				switch (sampleFormat)
 				{
@@ -166,11 +164,11 @@ namespace itl2
 				return reason.length() <= 0;
 			}
 
-			bool getInfo(TIFF* tif, math::Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes)
+			bool getInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason)
 			{
 				// Read information from all .tif directories and make sure that all of them match.
 
-				if (!getCurrentDirectoryInfo(tif, dimensions, dataType, pixelSizeBytes))
+				if (!getCurrentDirectoryInfo(tif, dimensions, dataType, pixelSizeBytes, reason))
 					return false;
 
 				coord_t dirCount = 1;
@@ -180,26 +178,34 @@ namespace itl2
 					do
 					{
 						if (TIFFReadDirectory(tif) != 1)
-							return false; // Unable to read the next directory. The file invalid.
+						{
+							reason = "Unable to read TIFF directory. The file invalid.";
+							return false;
+						}
 
 						if (dimensions.z > 1)
+						{
+							reason = "TIFF file contains 3D slices.";
 							return false;
+						}
 
-						math::Vec3c currDims;
+						Vec3c currDims;
 						ImageDataType currDT;
 						size_t currPixelSizeBytes;
 
-						if (!getCurrentDirectoryInfo(tif, currDims, currDT, currPixelSizeBytes))
+						if (!getCurrentDirectoryInfo(tif, currDims, currDT, currPixelSizeBytes, reason))
 							return false;
 
 						if (currDims != dimensions || currDims.z > 1)
 						{
 							dimensions = Vec3c(0, 0, 0);
+							reason = "TIFF file contains slices of different dimensions.";
 							return false;
 						}
 
 						if (currDT != dataType)
 						{
+							reason = "TIFF file contains data of unsupported pixel data type.";
 							dataType = ImageDataType::Unknown;
 							currPixelSizeBytes = 0;
 							return false;
@@ -207,6 +213,7 @@ namespace itl2
 
 						if (currPixelSizeBytes != pixelSizeBytes)
 						{
+							reason = "TIFF file contains slices of multiple pixel data types.";
 							pixelSizeBytes = 0;
 							return false;
 						}
@@ -223,22 +230,23 @@ namespace itl2
 
 		}
 
-		inline bool getInfo(const std::string& filename, math::Vec3c& dimensions, ImageDataType& dataType)
+		inline bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
 			internals::initTIFF();
-			auto tifObj = unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
+			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 			TIFF* tif = tifObj.get();
 
 			if (tif)
 			{
 				size_t bytesPerPixel = 0;
-				return internals::getInfo(tif, dimensions, dataType, bytesPerPixel);
+				return internals::getInfo(tif, dimensions, dataType, bytesPerPixel, reason);
 			}
 			//else
 			//{
 			//	throw ITLException(string("Unable to open .tiff file: ") + internals::tiffLastError());
 			//}
 
+			reason = "The file does not contain a valid TIFF header.";
 			return false;
 		}
 
@@ -252,8 +260,8 @@ namespace itl2
 				Image<uint16_t> img2;
 				try
 				{
-					tiff::read(img2, "./t1-head_256x256x129.raw");
-					throw runtime_error("TIFF reader did not raise exception for non-tiff file.");
+					tiff::read(img2, "./input_data/t1-head_256x256x129.raw");
+					throw std::runtime_error("TIFF reader did not raise exception for non-tiff file.");
 				}
 				catch (ITLException e)
 				{
@@ -264,14 +272,16 @@ namespace itl2
 				ImageDataType dt;
 
 				// 2D, 8-bit
-				tiff::getInfo("./uint8.tif", dims, dt);
+				string reason;
+				tiff::getInfo("./input_data/uint8.tif", dims, dt, reason);
+				testAssert(reason == "", "reason");
 				testAssert(dims.x == 100, "tif width");
 				testAssert(dims.y == 200, "tif height");
 				testAssert(dims.z == 1, "tif depth");
 				testAssert(dt == ImageDataType::UInt8, "tif data type (uint8)");
 
 				Image<uint8_t> img1;
-				tiff::read(img1, "./uint8.tif");
+				tiff::read(img1, "./input_data/uint8.tif");
 				raw::writed(img1, "./tiff/uint8");
 				tiff::writed(img1, "./tiff/uint8_out");
 
@@ -281,14 +291,16 @@ namespace itl2
 
 
 				// 2D, 16-bit
-				tiff::getInfo("./uint16.tif", dims, dt);
+				reason = "";
+				tiff::getInfo("./input_data/uint16.tif", dims, dt, reason);
+				testAssert(reason == "", "reason");
 				testAssert(dims.x == 100, "tif width");
 				testAssert(dims.y == 200, "tif height");
 				testAssert(dims.z == 1, "tif depth");
 				testAssert(dt == ImageDataType::UInt16, "tif data type (uint16)");
 
 				
-				tiff::read(img2, "./uint16.tif");
+				tiff::read(img2, "./input_data/uint16.tif");
 				raw::writed(img2, "./tiff/uint16");
 				tiff::writed(img2, "./tiff/uint16_out");
 
@@ -298,9 +310,9 @@ namespace itl2
 
 
 				// 3d tiff files
-				tiff::read(img2, "./t1-head.tif");
+				tiff::read(img2, "./input_data/t1-head.tif");
 				Image<uint16_t> gt;
-				raw::read(gt, "./t1-head");
+				raw::read(gt, "./input_data/t1-head");
 				testAssert(equals(img2, gt), ".tif and .raw are not equal.");
 
 				tiff::write(img2, "./tiff/t1-head.tif");
@@ -309,17 +321,17 @@ namespace itl2
 
 				// Tiled vs non-tiled tiff files
 				Image<uint8_t> nontiled, tiled;
-				tiff::read(nontiled, "./GraphicEx-cramps.tif");
-				tiff::read(tiled, "./GraphicEx-cramps-tile.tif");
+				tiff::read(nontiled, "./input_data/GraphicEx-cramps.tif");
+				tiff::read(tiled, "./input_data/GraphicEx-cramps-tile.tif");
 				testAssert(equals(nontiled, tiled), "Tiled and non-tiled .tif are not equal.");
 
 				// Read block of head
 				Image<uint16_t> headBlock(128, 128, 64);
-				tiff::readBlock(headBlock, "t1-head.tif", Vec3c(128, 128, 63), true);
+				tiff::readBlock(headBlock, "./input_data/t1-head.tif", Vec3c(128, 128, 63), true);
 				raw::writed(headBlock, "./tiff/head_block");
 
 				Image<uint16_t> headBlockGTFull, headBlockGT(128, 128, 64);
-				tiff::read(headBlockGTFull, "t1-head.tif");
+				tiff::read(headBlockGTFull, "./input_data/t1-head.tif");
 				crop(headBlockGTFull, headBlockGT, Vec3c(128, 128, 63));
 
 				testAssert(equals(headBlock, headBlockGT), ".tif block read and crop");

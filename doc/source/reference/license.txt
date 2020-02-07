@@ -1,0 +1,16 @@
+.. _license:
+
+license
+*******
+
+
+**Syntax:** :code:`license()`
+
+Displays license of this program and PI system.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

@@ -23,7 +23,7 @@ namespace itl2
 		{
 			for (size_t n = 0; n < size(); n++)
 			{
-				if (iStartsWith((*this)[n], name))
+				if (startsWithIgnoreCase((*this)[n], name))
 					return n;
 			}
 
@@ -33,7 +33,7 @@ namespace itl2
 		/**
 		Converts this object to std::string in csv format.
 		*/
-		friend ostream& operator<<(ostream& stream, const Headers& v)
+		friend std::ostream& operator<<(std::ostream& stream, const Headers& v)
 		{
 			for (size_t n = 0; n < v.size(); n++)
 			{
@@ -67,7 +67,7 @@ namespace itl2
 		/**
 		Outputs line n of the table to the given stream (as csv text).
 		*/
-		void toStream(ostream& stream, size_t n) const;
+		void toStream(std::ostream& stream, size_t n) const;
 
 	public:
 
@@ -121,7 +121,7 @@ namespace itl2
 		/**
 		Converts this object to std::string in csv format.
 		*/
-		friend ostream& operator<<(ostream& stream, const Results& v);
+		friend std::ostream& operator<<(std::ostream& stream, const Results& v);
 
 		/**
 		Converts this object to std::string in csv format.

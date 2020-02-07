@@ -1,0 +1,56 @@
+.. _bilateralfilter:
+
+bilateralfilter
+***************
+
+
+**Syntax:** :code:`bilateralfilter(input image, output image, spatial sigma, radiometric sigma, boundary condition)`
+
+Bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel used for spatial smoothing.
+
+radiometric sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel used to avoid smoothing edges of features. Order of magnitude must be similar to difference between gray levels of background and objects.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Nearest
+
+Type of boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+See also
+--------
+
+:ref:`gaussfilter`, :ref:`bilateralfilter`, :ref:`bilateralfilterapprox`, :ref:`vawefilter`, :ref:`openingfilter`, :ref:`closingfilter`, :ref:`minfilter`, :ref:`maxfilter`, :ref:`medianfilter`, :ref:`variancefilter`, :ref:`stddevfilter`, :ref:`bandpassfilter`, :ref:`highpassfilter`

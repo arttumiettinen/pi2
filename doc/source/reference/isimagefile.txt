@@ -1,0 +1,29 @@
+.. _isimagefile:
+
+isimagefile
+***********
+
+
+**Syntax:** :code:`isimagefile(filename, result)`
+
+Checks if a file with given name is image file.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of image file.
+
+result [input]
+~~~~~~~~~~~~~~
+
+**Data type:** uint8 image
+
+Set to 1 if the given file name is a readable image file, and to 0 otherwise.
+

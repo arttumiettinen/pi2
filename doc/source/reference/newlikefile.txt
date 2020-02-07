@@ -1,0 +1,118 @@
+.. _newlikefile:
+
+newlikefile
+***********
+
+There are 2 forms of this command.
+
+:code:`newlikefile(image name, template filename, data type, width, height, depth)`
+===================================================================================
+
+Creates a new, empty image that has properties (dimensions, data type) similar to another image that has been saved to disk.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the new image in the system.
+
+template filename [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of existing image file where dimensions and data type will be copied from.
+
+data type [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Data type of the image. Can be uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, or complex32. Leave empty or set to Unknown to copy the value from the template image.
+
+width [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Width of the image. Set to zero to copy the value from the template image.
+
+height [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Height of the image. Set to zero to copy the value from the template image.
+
+depth [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Depth of the image. Set to zero to copy the value from the template image.
+
+See also
+--------
+
+:ref:`newlikefile`, :ref:`newimage`, :ref:`ensuresize`
+
+:code:`newlikefile(image name, template filename, data type, dimensions)`
+=========================================================================
+
+Creates a new, empty image that has properties (dimensions, data type) similar to another image that has been saved to disk.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the new image in the system.
+
+template filename [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of existing image file where dimensions and data type will be copied from.
+
+data type [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Data type of the image. Can be uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, or complex32. Leave empty or set to Unknown to copy the value from the template image.
+
+dimensions [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Dimensions of the image. Set any component to zero to copy that from the template image.
+
+See also
+--------
+
+:ref:`newlikefile`, :ref:`newimage`, :ref:`ensuresize`

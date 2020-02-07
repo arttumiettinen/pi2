@@ -2,7 +2,7 @@
 
 #if defined(__linux__)
 
-#define PILIB_API extern
+#define PILIB_API __attribute__ ((visibility("default"))) extern
 
 #elif defined(_WIN32)
 
@@ -76,10 +76,17 @@ extern "C"
 	PILIB_API const char* help(void* pi, const char* commandName);
 
 	/**
+	Gets information of an image given its name.
+	Does not read distributed images into RAM, and does not return pointer to image data.
+	*/
+	PILIB_API void getImageInfo(void* pi, const char* imgName, int64_t* width, int64_t* height, int64_t* depth, int32_t* dataType);
+
+	/**
 	Gets pointer to data storing the given image.
+	In distributed mode the image is read to RAM.
 	Stores the size of the image into the values pointed by the three last arguments.
 	If an error occurs, returns zero and sets width, height and depth to zero, and sets dataType to Unknown (zero).
-	@param dataType The system sets this int to 1 to signify uint8 image, 2 for uint16 image, 3 for float32 image and 4 for complex32 image.
+	@param dataType The system sets this to a value describing pixel data type. See ImageDataType.
 	*/
 	PILIB_API void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, int64_t* depth, int32_t* dataType);
 

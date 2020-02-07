@@ -1,16 +1,20 @@
 #pragma once
 
 #include <cstring>
+#include <initializer_list>
+#include <algorithm>
+#include <iostream>
 
 #include "math/numberutils.h"
-#include "test.h"
 #include "itlexception.h"
+#include "math/mathutils.h"
 
-namespace math
+namespace itl2
 {
 
 	/**
 	Generic m x n matrix.
+	Supports access as row matrix if column count n is zero.
 	*/
 	template <typename real_t = double> class Matrix
 	{
@@ -46,7 +50,42 @@ namespace math
 		}
 
 	public:
-		Matrix(const size_t rows = 1, const size_t columns = 1)
+
+		/**
+		Creates identity matrix.
+		The matrix has ones on the main diagonal and zeros everywhere else.
+		*/
+		static Matrix identity(size_t rows, size_t columns)
+		{
+			Matrix A(rows, columns);
+
+			for (size_t i = 0; i < std::min(rows, columns); i++)
+				A(i, i) = 1;
+
+			return A;
+		}
+
+		/**
+		Creates identity matrix of the same size and type as the given matrix.
+		*/
+		static Matrix identity(const Matrix& r)
+		{
+			return identity(r.rowCount(), r.columnCount());
+		}
+
+		/**
+		Creates zero matrix.
+		*/
+		static Matrix zero(size_t rows, size_t columns)
+		{
+			return Matrix(rows, columns);
+		}
+
+		/**
+		Constructor.
+		Initializes the matrix to all zeroes.
+		*/
+		Matrix(size_t rows = 1, size_t columns = 1) : pElem(0)
 		{
 			if (rows == 0 || columns == 0)
 				throw itl2::ITLException("Invalid initialization of matrix with zero rows or columns.");
@@ -57,12 +96,18 @@ namespace math
 			memset(pElem, 0, count() * sizeof(real_t));
 		}
 
+		/**
+		Destructor
+		*/
 		~Matrix()
 		{
-			delete [] pElem;
+			delete[] pElem;
 		}
 
-		Matrix(const Matrix<real_t>& r)
+		/**
+		Copy constructor.
+		*/
+		Matrix(const Matrix<real_t>& r) : pElem(0)
 		{
 			rows = r.rows;
 			columns = r.columns;
@@ -71,6 +116,39 @@ namespace math
 			operator=(r);
 		}
 
+		/**
+		Constructor.
+		Create matrix from initializer list using syntax
+		Matrix A = {{1, 2, 3},
+					{4, 5, 6}}
+		*/
+		Matrix(const std::initializer_list<std::initializer_list<real_t> > elems) : pElem(0)
+		{
+			if (elems.size() <= 0)
+				throw itl2::ITLException("Invalid initialization of matrix with zero elements.");
+
+			rows = elems.size();
+			columns = elems.begin()->size();
+
+			pElem = new real_t[rows * columns];
+
+			int r = 0;
+			for (const std::initializer_list<real_t>& row : elems)
+			{
+				int c = 0;
+				for (real_t val : row)
+				{
+					(*this)(r, c) = val;
+					c++;
+				}
+				r++;
+			}
+		}
+
+		/**
+		Assignment operator.
+		Returns reference to this matrix.
+		*/
 		Matrix<real_t>& operator=(const Matrix<real_t>& r)
 		{
 			if (this == &r)
@@ -90,6 +168,19 @@ namespace math
 			return *this;
 		}
 
+		/**
+		Assigns the same value to all the elements.
+		*/
+		Matrix<real_t>& operator=(real_t r)
+		{
+			for (size_t n = 0; n < count(); n++)
+				pElem[n] = r;
+		}
+
+		/**
+		Converts this matrix to single number.
+		Throws exception if the matrix has more than one element.
+		*/
 		operator real_t() const
 		{
 			if (count() != 1)
@@ -98,26 +189,61 @@ namespace math
 			return pElem[0];
 		}
 
+		/**
+		Gets count of elements in this matrix.
+		*/
 		size_t count() const
 		{
 			return rows * columns;
 		}
 
+		/**
+		Gets count of rows in this matrix.
+		*/
 		size_t rowCount() const
 		{
 			return rows;
 		}
 
+		/**
+		Gets count of columns in this matrix.
+		*/
 		size_t columnCount() const
 		{
 			return columns;
 		}
 
+		/**
+		Gets a value indicating whether this matrix is square or not.
+		*/
 		bool isSquare() const
 		{
 			return rows == columns;
 		}
 
+		/**
+		Tests if this matrix is symmetric up to given numerical tolerance.
+		*/
+		bool isSymmetric(real_t tolerance = NumberUtils<real_t>::tolerance()) const
+		{
+			if (!isSquare())
+				return false;
+
+			for (size_t i = 0; i < rows; i++)
+			{
+				for (size_t j = 0; j < rows; j++)
+				{
+					if (!NumberUtils<real_t>::equals((*this)(i, j), (*this)(j, i), tolerance))
+						return false;
+				}
+			}
+
+			return true;
+		}
+
+		/**
+		Gets a reference to an element of this matrix.
+		*/
 		real_t& operator()(const size_t row, const size_t column = 0)
 		{
 			return pElem[getIndex(row, column)];
@@ -128,11 +254,17 @@ namespace math
 			return pElem[getIndex(row, column)];
 		}
 
+		/**
+		Gets a value indicating whether the size of this matrix equals the size of the given matrix.
+		*/
 		bool isSameSize(const Matrix<real_t>& r) const
 		{
 			return r.rows == rows && r.columns == columns;
 		}
 
+		/**
+		Tests if this matrix equals the given matrix up to the given tolerance.
+		*/
 		const bool equals(const Matrix<real_t>& r, real_t tolerance = NumberUtils<real_t>::tolerance()) const
 		{
 			if (!isSameSize(r))
@@ -249,8 +381,11 @@ namespace math
 			result /= r;
 			return result;
 		}
-		
-		const Matrix<real_t> operator*(const Matrix<real_t>& r) const
+
+		/**
+		Multiplies two matrices.
+		*/
+		Matrix<real_t> operator*(const Matrix<real_t>& r) const
 		{
 			if (columns != r.rows)
 				throw itl2::ITLException("Incompatible size of multiplicant matrices.");
@@ -271,6 +406,9 @@ namespace math
 			return result;
 		}
 
+		/**
+		Creates a new matrix that is transpose of this matrix.
+		*/
 		Matrix<real_t> transpose() const
 		{
 			Matrix<real_t> result(columns, rows);
@@ -287,23 +425,82 @@ namespace math
 		}
 
 		/**
-		Tests if this matrix is symmetric.
+		Solve A*X = B
+		@param B Right hand side
+		@return Solution if A is square, least squares solution otherwise.
 		*/
-		bool isSymmetric() const
-		{
-			if (!isSquare())
-				return false;
+		Matrix solve(Matrix B) const;
 
-			for (size_t i = 0; i < rows; i++)
+		/**
+		Solve X*A = B, which is also A'*X' = B'
+		@param B Right hand side
+		@return Solution if A is square, least squares solution otherwise.
+		*/
+		Matrix<real_t> solveTranspose(Matrix B) const
+		{
+			return transpose().solve(B.transpose());
+		}
+
+		/**
+		Calculate inverse or pseudoinverse of this matrix.
+		@return Inverse of this matrix if this matrix is is square, pseudoinverse otherwise.
+		*/
+		Matrix<real_t> inverse() const
+		{
+			return solve(identity(rowCount(), rowCount()));
+		}
+
+		/**
+		Calculate determinant of this matrix
+		*/
+		real_t det() const;
+
+		/**
+		Get a submatrix.
+		@param r Array of row indices.
+		@param j0 Initial column index
+		@param j1 Final column index
+		@return A(r(:), j0:j1)
+		*/
+		Matrix<real_t> subMatrix(const Matrix<size_t> &rows, size_t j0, size_t j1) const
+		{
+			size_t rowCount = rows.count();
+
+			Matrix<real_t> X(rowCount, j1 - j0 + 1);
+
+			for (size_t i = 0; i < rowCount; i++)
 			{
-				for (size_t j = 0; j < rows; j++)
-				{
-					if (!NumberUtils<real_t>::equals((*this)(i, j), (*this)(j, i)))
-						return false;
-				}
+				for (size_t j = j0; j <= j1; j++)
+					X(i, j - j0) = (*this)(rows(i), j);
 			}
 
-			return true;
+			return X;
+		}
+
+		/**
+		Converts this object to string.
+		*/
+		friend std::ostream& operator<<(std::ostream& stream, const Matrix<real_t>& v)
+		{
+			stream << "[";
+			for (size_t i = 0; i < v.rowCount(); i++)
+			{
+				if (i > 0)
+					stream << " ";
+				stream << "[";
+				for (size_t j = 0; j < v.columnCount(); j++)
+				{
+					stream << v(i, j);
+					if (j < v.columnCount() - 1)
+						stream << ", ";
+				}
+				stream << "]";
+				if (i < v.rowCount() - 1)
+					stream << "," << std::endl;
+			}
+			stream << "]";
+			
+			return stream;
 		}
 	};
 
@@ -323,37 +520,41 @@ namespace math
 	}
 
 
+
+}
+
+
+// Include matrix algorithms
+#include "math/ludecomposition.h"
+#include "math/qrdecomposition.h"
+
+
+// Implementation of methods requiring algorithms
+namespace itl2
+{
+
+	template<typename real_t> Matrix<real_t> Matrix<real_t>::solve(Matrix B) const
+	{
+		if (isSquare())
+			return LUDecomposition(*this).solve(B);
+		else
+			return QRDecomposition(*this).solve(B);
+	}
+
+	template<typename real_t> real_t Matrix<real_t>::det() const
+	{
+		return LUDecomposition(this).det();
+	}
+
+
+
+
+
 	namespace tests
 	{
-		inline void matrix()
-		{
-			Matrix<double> mat(2, 2);
-
-			mat(0, 0) = 1;
-			mat(1, 0) = 2;
-			mat(0, 1) = 3;
-			mat(1, 1) = 4;
-
-			mat(1, 1) = 7;
-
-			Matrix<double> mat2 = mat;
-
-			mat2(1, 1) = 0;
-
-			itl2::testAssert(mat2 != mat, "Matrix inequality");
-
-			mat2(1, 1) = mat(1, 1);
-
-			itl2::testAssert(mat2 == mat, "Matrix equality");
-
-			itl2::testAssert(mat.isSymmetric() == false, "Matrix isSymmetric");
-
-			mat2 * mat2;
-
-			mat + 5.0;
-			5.0 + mat;
-
-		}
+		void matrix();
+		void solve();
+		void leastSquares();
 	}
 }
 

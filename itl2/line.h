@@ -1,11 +1,13 @@
 #pragma once
 
 #include "math/vec3.h"
-
-using math::Vec3;
+#include "math/geometry.h"
 
 namespace itl2
 {
+	/**
+	Represents line between two points.
+	*/
 	template<typename T>
 	class Line
 	{
@@ -17,6 +19,14 @@ namespace itl2
 			start(start),
 			end(end)
 		{
+		}
+
+		/**
+		Calculates distance between this line and the given point.
+		*/
+		T distance(const Vec3<T>& x) const
+		{
+			return (T)pointLineSegmentDistance(start, end, x);
 		}
 	};
 }

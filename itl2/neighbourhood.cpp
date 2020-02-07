@@ -3,7 +3,7 @@
 
 #include "io/raw.h"
 
-using namespace math;
+
 
 namespace itl2
 {

@@ -1,0 +1,56 @@
+.. _bilateralfilterapprox:
+
+bilateralfilterapprox
+*********************
+
+
+**Syntax:** :code:`bilateralfilterapprox(input image, output image, spatial sigma, radiometric sigma, sample count)`
+
+Approximate bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel. The difference to exact bilateral filter is that the approximate version does not process all pixels in a neighbourhood but only a random subset of them. As a result, the filtering operation is much faster but the output may contain some random noise.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel used for spatial smoothing.
+
+radiometric sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel used to avoid smoothing edges of features. Order of magnitude must be similar to difference between gray levels of background and objects.
+
+sample count [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Count of samples processed in each neighbourhood. Specify zero to determine sample count automatically.
+
+See also
+--------
+
+:ref:`gaussfilter`, :ref:`bilateralfilter`, :ref:`bilateralfilterapprox`, :ref:`vawefilter`, :ref:`openingfilter`, :ref:`closingfilter`, :ref:`minfilter`, :ref:`maxfilter`, :ref:`medianfilter`, :ref:`variancefilter`, :ref:`stddevfilter`, :ref:`bandpassfilter`, :ref:`highpassfilter`

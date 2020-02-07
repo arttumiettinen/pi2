@@ -1,0 +1,106 @@
+.. _writevtk:
+
+writevtk
+********
+
+There are 2 forms of this command.
+
+:code:`writevtk(points, lines, filename, point data name, point data, line data name, cell data)`
+=================================================================================================
+
+Writes network in points-and-lines format to a .vtk file.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+points [input]
+~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores coordinates of all points in the network. See :ref:`getpointsandlines` command.
+
+lines [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image that stores a list of point indices for each edge. See :ref:`getpointsandlines` command.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of file to write. Suffix .vtk will be added to the file name.
+
+point data name [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Name of data field for each point.
+
+point data [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that has one value for each point. The data will be saved in the .vtk file using name given in argument 'point data name'.
+
+line data name [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Name of data field for each line.
+
+cell data [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that has one value for each line. The data will be saved in the .vtk file using name given in argument 'line data name'.
+
+See also
+--------
+
+:ref:`getpointsandlines`
+
+:code:`writevtk(points, lines, filename)`
+=========================================
+
+Writes network in points-and-lines format to a .vtk file.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+points [input]
+~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores coordinates of all points in the network. See :ref:`getpointsandlines` command.
+
+lines [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image that stores a list of point indices for each edge. See :ref:`getpointsandlines` command.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of file to write. Suffix .vtk will be added to the file name.
+

@@ -1,0 +1,54 @@
+.. _maskedmean:
+
+maskedmean
+**********
+
+
+**Syntax:** :code:`maskedmean(input image, output image, ignored value, print to log, square root)`
+
+Calculates mean of all pixels in the input image, but skips specific value in the calculation. The output is a 1x1x1 image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+ignored value [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+This value is ignored in the calculation.
+
+print to log [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to print the results to the log. This is a hack required because there is currently no good way to return single/simple values in distributed processing.
+
+square root [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to take square root of the pixel values before calculating mean. This is a hack currently needed in distributed thickness map calculation. If set to true, the input image will contain its square root at output, except in distributed processing where it will retain its old value.
+

@@ -1,0 +1,22 @@
+.. _sequenceinfo:
+
+sequenceinfo
+************
+
+
+**Syntax:** :code:`sequenceinfo(filename template)`
+
+Displays metadata of image sequence.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+filename template [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Filename template corresponding to the sequence, as described in readsequence command documentation.
+

@@ -14,6 +14,13 @@ namespace itl2
 
 	bool testOk = true;
 
+	bool throwOnAssertion = false;
+
+	void throwOnFailedAssertion(bool shouldThrow)
+	{
+		throwOnAssertion = shouldThrow;
+	}
+
 	void test(void (*testfunc)(), const string& testName)
 	{
 		cout << "Testing " << testName << endl;
@@ -48,6 +55,8 @@ namespace itl2
 			cout << "Test FAILED" << endl;
 			failedTestCount++;
 		}
+
+		throwOnFailedAssertion(false);
 	}
 
 	bool testAssert(bool condition, const string& assertName)
@@ -55,7 +64,10 @@ namespace itl2
 		if(!condition)
 		{
 			testOk = false;
-			cout << "Assertion failed: " << assertName << endl;
+			cout << "ASSERTION FAILED: " << assertName << endl;
+
+			if (throwOnAssertion)
+				throw ITLException("Exception requested on assertion failure.");
 		}
 
 		return condition;

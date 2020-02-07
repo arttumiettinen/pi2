@@ -1,0 +1,85 @@
+.. _satofilter:
+
+satofilter
+**********
+
+
+**Syntax:** :code:`satofilter(input image, output image, spatial sigma, scale, gamma, gamma23, gamma12, alpha)`
+
+Calculates line-enhancing filter lambda123 according to Sato - Three-dimensional multi-scale line filter for segmentation and visualization of curvilinear structures in medical images.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel, determines scale of structures that are probed.
+
+scale [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Output values are scaled by this number. Pass in zero to scale output value 1 to maximum of the data type for integer data types and to 1 for floating point data types.
+
+gamma [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Scale-space scaling exponent. Set to zero to disable scaling.
+
+gamma23 [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+:math:`\gamma_{23}` parameter; controls the sharpness of the selectivity for the cross-section isotropy. Only non-negative values are valid.
+
+gamma12 [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+:math:`\gamma_{12}` parameter. Non-negative values are valid.
+
+alpha [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.5
+
+Alpha parameter, must be between 0 and 1.
+
+See also
+--------
+
+:ref:`frangifilter`

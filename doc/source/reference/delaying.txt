@@ -1,0 +1,28 @@
+.. _delaying:
+
+delaying
+********
+
+
+**Syntax:** :code:`delaying(enable)`
+
+Enables or disables possibility for combination of similar commands before sending them to compute processes/nodes in distributed processing (kind of lazy evaluation). Delaying decreases amount of disk space and I/O used for temporary images. When delaying is enabled, command run times (see echo command) are not accurate. Delaying is enabled by default.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+enable [input]
+~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to enable delaying.
+
+See also
+--------
+
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`

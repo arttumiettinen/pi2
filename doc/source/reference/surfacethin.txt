@@ -1,0 +1,35 @@
+.. _surfacethin:
+
+surfacethin
+***********
+
+
+**Syntax:** :code:`surfacethin(image, retain surfaces)`
+
+Thins one layer of pixels from the foreground of the image. Positive pixels are assumed to belong to the foreground. Run iteratively to calculate a surface skeleton. This command is not guaranteed to give the same result in both normal and distributed processing mode. Despite that, both modes should give a valid result.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+retain surfaces [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to false to allow thinning of surfaces to lines if the surface does not surround a cavity.
+
+See also
+--------
+
+:ref:`surfacethin`, :ref:`surfaceskeleton`, :ref:`linethin`, :ref:`lineskeleton`, :ref:`tracelineskeleton`, :ref:`classifyskeleton`

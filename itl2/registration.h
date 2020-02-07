@@ -11,10 +11,6 @@
 #include "projections.h"
 #include "io/io.h"
 
-using math::Vec3;
-using math::Vec3d;
-using std::vector;
-
 namespace itl2
 {
 
@@ -99,7 +95,7 @@ namespace itl2
 	@param searchRadius Radius of search region around initial guess.
 	@param compRadius Radius of a block of reference image extracted at each calculation point for comparing between reference and deformed.
 	*/
-	template<typename ref_t, typename def_t> void blockMatch(const Image<ref_t>& reference, const Image<def_t>& deformed, const vector<Vec3c>& refPoints, vector<Vec3d>& defPoints, vector<double>& accuracy, const Vec3c& blockRadius)
+	template<typename ref_t, typename def_t> void blockMatch(const Image<ref_t>& reference, const Image<def_t>& deformed, const std::vector<Vec3c>& refPoints, std::vector<Vec3d>& defPoints, std::vector<double>& accuracy, const Vec3c& blockRadius)
 	{
 		while (defPoints.size() < refPoints.size())
 			defPoints.push_back(Vec3d());
@@ -231,7 +227,7 @@ namespace itl2
 		/*
 		Calculates locations of all points in this grid and adds them to the given list.
 		*/
-		void getAllPoints(vector<Vec3c>& out) const
+		void getAllPoints(std::vector<Vec3c>& out) const
 		{
 			for (coord_t zi = 0; zi < zg.pointCount(); zi++)
 			{
@@ -295,8 +291,9 @@ namespace itl2
 
 		ImageDataType refDt, defDt;
 		Vec3c refImageDimensions, defImageDimensions;
-		io::getInfo(referenceFile, refImageDimensions, refDt);
-		io::getInfo(deformedFile, defImageDimensions, defDt);
+		string reasonRef, reasonDef;
+		io::getInfo(referenceFile, refImageDimensions, refDt, reasonRef);
+		io::getInfo(deformedFile, defImageDimensions, defDt, reasonDef);
 
 		clamp(defStart, Vec3c(0, 0, 0), defImageDimensions);
 		clamp(defEnd, Vec3c(0, 0, 0), defImageDimensions);
@@ -306,10 +303,10 @@ namespace itl2
 		Image<ref_t> referenceBlock(refEnd - refStart);
 		Image<def_t> deformedBlock(defEnd - defStart);
 
-		cout << "Loading block of reference image, size = " << (referenceBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << endl;
+		std::cout << "Loading block of reference image, size = " << (referenceBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << std::endl;
 		io::readBlock(referenceBlock, referenceFile, refStart, true);
 
-		cout << "Loading block of deformed image, size  = " << (deformedBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << endl;
+		std::cout << "Loading block of deformed image, size  = " << (deformedBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << std::endl;
 		io::readBlock(deformedBlock, deformedFile, defStart, true);
 
 		// Calculate normalization factor for gray values
@@ -318,7 +315,7 @@ namespace itl2
 		double meanDef = maskedmean(deformedBlock, (def_t)0);
 		normFact = meanRef - meanDef;
 		
-		if (math::isnan(normFact))
+		if (std::isnan(normFact))
 			normFact = 1;
 
 		if (normalize)
@@ -332,7 +329,7 @@ namespace itl2
 		//for (int i = 0; i < 3; i++)
 		//	if (-initialShift[i] > reference.dimension(i) / 2)
 		//		mipTranslation[i] = reference.dimension(i) + mipTranslation[i];
-		//cout << "Initial translation = " << mipTranslation << endl;
+		//std::cout << "Initial translation = " << mipTranslation << std::endl;
 
 
 		size_t counter = 0;
@@ -454,7 +451,7 @@ namespace itl2
 	/*
 	Used to read PointGrid1D from file.
 	*/
-	PointGrid1D<coord_t> readPointGrid1D(ifstream& in);
+	PointGrid1D<coord_t> readPointGrid1D(std::ifstream& in);
 
 	namespace tests
 	{

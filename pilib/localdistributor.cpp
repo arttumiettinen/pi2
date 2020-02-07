@@ -3,26 +3,39 @@
 
 #include "stringutils.h"
 #include "exeutils.h"
-#include "inireader.h"
 
 #include <algorithm>
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 
+using namespace itl2;
+using namespace std;
 
 namespace pilib
 {
-	LocalDistributor::LocalDistributor(PISystem* piSystem) : Distributor(piSystem)
+	LocalDistributor::LocalDistributor(PISystem* piSystem) : Distributor(piSystem), allowedMem(0)
 	{
 		fs::path configPath = getPiCommand();
+		size_t mem = 0;
 		if (configPath.has_filename())
+		{
 			configPath = configPath.replace_filename("local_config.txt");
 
-		INIReader reader(configPath.string());
+			INIReader reader(configPath.string());
 
-		allowedMem = reader.get<size_t>("max_memory", 0) * 1024 * 1024;
+			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
+			
+			readSettings(reader);
+		}
 
-		if(allowedMem <= 0)
+		allowedMemory(mem);
+	}
+
+	void LocalDistributor::allowedMemory(size_t maxMem)
+	{
+		allowedMem = maxMem;
+
+		if (allowedMem <= 0)
 			allowedMem = (size_t)(0.85 * itl2::memorySize());
 
 		cout << "Using " << bytesToString((double)allowedMem) << " RAM per task." << endl;
@@ -33,10 +46,11 @@ namespace pilib
 		// Write the code to (temporary) file
 		{
 			ofstream f("pi2_local_job.txt");
-			f << piCode;
+			f << piCode << endl;
+			f << "print(Everything done.)" << endl;
 		}
 
-		string output = execute(getPiCommand(), "pi2_local_job.txt", true);
+		string output = execute("\"" + getPiCommand() + "\"", "pi2_local_job.txt", true);
 
 		outputs.push_back(output);
 	}
@@ -53,6 +67,10 @@ namespace pilib
 			if (startsWith(line, "Error"))
 			{
 				msg << "Job " << n << " failed with message '" << line << "'" << endl;
+			}
+			else if (line != "Everything done.")
+			{
+				msg << "Job " << n << " failed without error message." << endl;
 			}
 		}
 

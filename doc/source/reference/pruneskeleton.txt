@@ -1,0 +1,68 @@
+.. _pruneskeleton:
+
+pruneskeleton
+*************
+
+
+**Syntax:** :code:`pruneskeleton(vertices, edges, edge measurements, edge points, maximum length, disconnect straight-through nodes, remove isolated nodes)`
+
+Prunes a traced skeleton. Removes all edges that end in a node with no other branches connected to it (degree = 1) and whose length is less than specified value.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+vertices [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. See :ref:`tracelineskeleton` command.
+
+edges [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge measurements [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where properties of each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge points [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. See :ref:`tracelineskeleton` command.
+
+maximum length [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Edges shorter than this are pruned if they are not connected to other edges in both ends.
+
+disconnect straight-through nodes [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+If set to true, all straight-through nodes (nodes with degree = 2) are removed after pruning. This operation might change the network even if no edges are pruned.
+
+remove isolated nodes [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+If set to true, all isolated nodes (nodes with degree = 0) are removed after pruning. This operation might change the network even if no edges are pruned.
+
+See also
+--------
+
+:ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`

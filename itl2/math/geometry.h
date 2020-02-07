@@ -2,8 +2,9 @@
 
 #include "math/vec3.h"
 #include "math/numberutils.h"
+#include "test.h"
 
-namespace math
+namespace itl2
 {
 	/**
 	Find nearest point of some point p on line segment from l1 to l2.
@@ -151,19 +152,19 @@ namespace math
 
 			start = Vec3d(-1, -1, -1);
 			end = Vec3d(2, 2, 2);
-			testAssert(clipLine(start, end, Vec3d(0, 0, 0), Vec3d(1, 1, 1)) == true, "clipLine return value");
-			testAssert(start == Vec3d(0, 0, 0), "start point");
-			testAssert(end == Vec3d(1, 1, 1), "end point");
+			itl2::testAssert(clipLine(start, end, Vec3d(0, 0, 0), Vec3d(1, 1, 1)) == true, "clipLine return value");
+			itl2::testAssert(start == Vec3d(0, 0, 0), "start point");
+			itl2::testAssert(end == Vec3d(1, 1, 1), "end point");
 
 			double d1 = pointLineSegmentDistance(start, end, start);
 			double d2 = pointLineSegmentDistance(start, end, end);
 			double d3 = pointLineSegmentDistance(start, end, (start + end) / 2);
 			double d4 = pointLineSegmentDistance(start, end, Vec3d(-2, -2, -2));
 			double d4_true = (start - Vec3d(-2, -2, -2)).norm();
-			testAssert(d1 == 0, "point line segment distance 1");
-			testAssert(d2 == 0, "point line segment distance 2");
-			testAssert(d3 == 0, "point line segment distance 3");
-			testAssert(NumberUtils<double>::equals(d4, d4_true), "point line segment distance 4");
+			itl2::testAssert(d1 == 0, "point line segment distance 1");
+			itl2::testAssert(d2 == 0, "point line segment distance 2");
+			itl2::testAssert(d3 == 0, "point line segment distance 3");
+			itl2::testAssert(NumberUtils<double>::equals(d4, d4_true), "point line segment distance 4");
 
 		}
 	}

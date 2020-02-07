@@ -8,9 +8,6 @@
 #include "interpolation.h"
 #include "floodfill.h"
 
-using math::Vec3;
-using math::Vec3d;
-
 namespace itl2
 {
 	/**
@@ -60,9 +57,9 @@ namespace itl2
 	@param dim1, dim2 Dimensions where the derivative should be calculated. If dim2 is negative, calculates df/dx_i where f is img and i is dim1; otherwise, calculates d^2f/(dx_i dx_j), where j is dim2.
 	@param gamma Scaling exponent. Set to zero to disable scaling.
 	*/
-	template<typename pixel_t, typename out_t> void normalizedDerivative(const Image<pixel_t>& img, Image<out_t>& df, double sigma, coord_t dim1, coord_t dim2, double gamma)
+	template<typename pixel_t, typename out_t> void normalizedDerivative(const Image<pixel_t>& img, Image<out_t>& df, double sigma, coord_t dim1, coord_t dim2, double gamma, bool showProgressInfo = true)
 	{
-		gaussDerivative(img, df, sigma, dim1, dim2, BoundaryCondition::Nearest);
+		gaussDerivative(img, df, sigma, dim1, dim2, BoundaryCondition::Nearest, showProgressInfo);
 		if (gamma != 0)
 		{
 			double m = (double)dim1;
@@ -79,18 +76,24 @@ namespace itl2
 	Calculates gradient of img.
 	@param gamma Scale-space scaling exponent. Set to zero to disable scaling.
 	*/
-	template<typename pixel_t, typename out_t> void gradient(const Image<pixel_t>& img, Image<out_t>& dfdx, Image<out_t>& dfdy, Image<out_t>& dfdz, double sigma, double gamma = 0)
+	template<typename pixel_t, typename out_t> void gradient(const Image<pixel_t>& img, Image<out_t>& dfdx, Image<out_t>& dfdy, Image<out_t>& dfdz, double sigma, double gamma = 0, bool showProgressInfo = true)
 	{
 		dfdx.ensureSize(img);	// Allocate memory here to fail fast if there is not enough memory.
 		dfdy.ensureSize(img);
 		dfdz.ensureSize(img);
 
-		cout << "df / dx..." << endl;
-		normalizedDerivative(img, dfdx, sigma, 0, -1, gamma);
-		cout << "df / dy..." << endl;
-		normalizedDerivative(img, dfdy, sigma, 1, -1, gamma);
-		cout << "df / dz..." << endl;
-		normalizedDerivative(img, dfdz, sigma, 2, -1, gamma);
+		if(showProgressInfo)
+			std::cout << "df / dx..." << std::endl;
+		normalizedDerivative(img, dfdx, sigma, 0, -1, gamma, showProgressInfo);
+
+		if (showProgressInfo)
+			std::cout << "df / dy..." << std::endl;
+
+		normalizedDerivative(img, dfdy, sigma, 1, -1, gamma, showProgressInfo);
+
+		if (showProgressInfo)
+			std::cout << "df / dz..." << std::endl;
+		normalizedDerivative(img, dfdz, sigma, 2, -1, gamma, showProgressInfo);
 	}
 
 	/**
@@ -106,17 +109,17 @@ namespace itl2
 		Fxz.ensureSize(img);
 		Fyz.ensureSize(img);
 
-		cout << "d^2 f / dx^2..." << endl;
+		std::cout << "d^2 f / dx^2..." << std::endl;
 		normalizedDerivative(img, Fxx, sigma, 0, 0, gamma);
-		cout << "d^2 f / dy^2..." << endl;
+		std::cout << "d^2 f / dy^2..." << std::endl;
 		normalizedDerivative(img, Fyy, sigma, 1, 1, gamma);
-		cout << "d^2 f / dz^2..." << endl;
+		std::cout << "d^2 f / dz^2..." << std::endl;
 		normalizedDerivative(img, Fzz, sigma, 2, 2, gamma);
-		cout << "d^2 f / dxdy..." << endl;
+		std::cout << "d^2 f / dxdy..." << std::endl;
 		normalizedDerivative(img, Fxy, sigma, 0, 1, gamma);
-		cout << "d^2 f / dxdz..." << endl;
+		std::cout << "d^2 f / dxdz..." << std::endl;
 		normalizedDerivative(img, Fxz, sigma, 0, 2, gamma);
-		cout << "d^2 f / dydz..." << endl;
+		std::cout << "d^2 f / dydz..." << std::endl;
 		normalizedDerivative(img, Fyz, sigma, 1, 2, gamma);
 	}
 
@@ -125,76 +128,108 @@ namespace itl2
 	Allocates 3 temporary images of the same size and pixel type than original.
 	@param gradientMagnitude Output image, can be the same than the input image.
 	*/
-	template<typename pixel_t, typename out_t> void gradientMagnitude(const Image<pixel_t>& img, Image<out_t>& gradientMagnitude, double derivativeSigma, double gamma = 0)
+	template<typename pixel_t, typename out_t> void gradientMagnitude(const Image<pixel_t>& img, Image<out_t>& gradientMagnitude, double derivativeSigma, double gamma = 0, bool showProgressInfo = true)
 	{
 		Image<typename NumberUtils<pixel_t>::FloatType> dfdx, dfdy, dfdz;
-		gradient(img, dfdx, dfdy, dfdz, derivativeSigma, gamma);
+		gradient(img, dfdx, dfdy, dfdz, derivativeSigma, gamma, showProgressInfo);
 		norm(dfdx, dfdy, dfdz, gradientMagnitude);
 	}
 
 	/**
-	Calculates mean curvature of surfaces defined by img(x, y, z) == 0.
-	Allocates 9 temporary images of the same size than the original.
-	The curvature values are valid only near surfaces of objects, elsewhere the values tend to infinity.
-	See https://en.wikipedia.org/wiki/Mean_curvature#Implicit_form_of_mean_curvature for formula that is used to determine the curvature.
-	(The corresponding 2D formula is https://en.wikipedia.org/wiki/Implicit_curve#Curvature)
+	Calculates mean curvature of surfaces defined by img(x, y, z) == 0 multiplied by the norm of the gradient of img.
+	Without multiplication by ||nabla f||, curvature of f is very hard to interpret as the values are only valid near the zero contour from
+	image processing point of view. See also surfaceCurvature functionality, where the principal curvatyres of surfaces are being calculated.
+	See https://en.wikipedia.org/wiki/Mean_curvature#Implicit_form_of_mean_curvature for formulas that can be used to determine the curvature.
+	(The corresponding 2D formula is at https://en.wikipedia.org/wiki/Implicit_curve#Curvature)
+	Note that this function might produce invalid results on surfaces of structures whose thickness is of the same order than sigma.
+	TODO: Gaussian curvature can be calculated with similar means.
 	@param curvature Output image, can equal to input image.
 	*/
-	template<typename pixel_t> void meanCurvature(const Image<pixel_t>& img, double sigma, Image<pixel_t>& curvature)
+	template<typename pixel_t, typename out_t> void meanCurvature(const Image<pixel_t>& img, double sigma, Image<out_t>& curvature, bool showProgressInfo = true)
 	{
-		/*
-		// 2D only
-		Image<pixel_t> Fx, Fy, Fxx, Fyy, Fxy;
-		gaussDerivative(img, Fx, sigma, 0, -1, BoundaryCondition::Nearest);
-		gaussDerivative(img, Fy, sigma, 1, -1, BoundaryCondition::Nearest);
-		gaussDerivative(img, Fxx, sigma, 0, 0, BoundaryCondition::Nearest);
-		gaussDerivative(img, Fyy, sigma, 1, 1, BoundaryCondition::Nearest);
-		gaussDerivative(img, Fxy, sigma, 0, 1, BoundaryCondition::Nearest);
-
 		curvature.ensureSize(img);
 
-		#pragma omp parallel for if(Fx.pixelCount() > PARALLELIZATION_THRESHOLD)
-		for (coord_t n = 0; n < Fx.pixelCount(); n++)
-		{
-			curvature(n) = math::pixelRound<pixel_t>((-Fy(n) * Fy(n) * Fxx(n) + 2 * Fx(n) * Fy(n) * Fxy(n) - Fx(n) * Fx(n) * Fyy(n)) / ::pow(Fx(n) * Fx(n) + Fy(n) * Fy(n), 3.0/2.0));
-		}
-		*/
+		// This calculates curvature from gradient and Hessian
+		//if (img.dimensionality() == 2)
+		//{
+		//	// 2D only
+		//	Image<pixel_t> Fx, Fy, Fxx, Fyy, Fxy;
+		//	gaussDerivative(img, Fx, sigma, 0, -1, BoundaryCondition::Nearest);
+		//	gaussDerivative(img, Fy, sigma, 1, -1, BoundaryCondition::Nearest);
+		//	gaussDerivative(img, Fxx, sigma, 0, 0, BoundaryCondition::Nearest);
+		//	gaussDerivative(img, Fyy, sigma, 1, 1, BoundaryCondition::Nearest);
+		//	gaussDerivative(img, Fxy, sigma, 0, 1, BoundaryCondition::Nearest);
+
+		//	#pragma omp parallel for if(Fx.pixelCount() > PARALLELIZATION_THRESHOLD)
+		//	for (coord_t n = 0; n < Fx.pixelCount(); n++)
+		//	{
+		//		pixel_t L = Vec2<pixel_t>(Fx(n), Fy(n)).norm();
+		//		curvature(n) = pixelRound<pixel_t>(L * (-Fy(n) * Fy(n) * Fxx(n) + 2 * Fx(n) * Fy(n) * Fxy(n) - Fx(n) * Fx(n) * Fyy(n)) / ::pow((pixel_t)1e-8 + Fx(n) * Fx(n) + Fy(n) * Fy(n), 3.0 / 2.0));
+		//	}
+
+		//}
+		//else
+		//{
+		//	// 2D or 3D, here used for the 3D case only.
+
+		//	Image<pixel_t> Fx, Fy, Fz, Fxx, Fyy, Fzz, Fxy, Fxz, Fyz;
+		//	Fx.ensureSize(img);	// Allocate memory here to fail fast if there is not enough memory.
+		//	Fy.ensureSize(img);
+		//	Fz.ensureSize(img);
+		//	Fxx.ensureSize(img);
+		//	Fyy.ensureSize(img);
+		//	Fzz.ensureSize(img);
+		//	Fxy.ensureSize(img);
+		//	Fxz.ensureSize(img);
+		//	Fyz.ensureSize(img);
+
+		//	gradient(img, Fx, Fy, Fz, sigma, 0.0, showProgressInfo);
+		//	hessian(img, Fxx, Fyy, Fzz, Fxy, Fxz, Fyz, sigma, 0.0);
+
+		//	size_t counter = 0;
+		//	#pragma omp parallel for if(Fx.pixelCount() > PARALLELIZATION_THRESHOLD)
+		//	for (coord_t n = 0; n < Fx.pixelCount(); n++)
+		//	{
+		//		Matrix3x3<pixel_t> Hess(
+		//			Fxx(n), Fxy(n), Fxz(n),
+		//			Fxy(n), Fyy(n), Fyz(n),
+		//			Fxz(n), Fyz(n), Fzz(n));
+		//		Vec3<pixel_t> nablaF(Fx(n), Fy(n), Fz(n));
+		//		pixel_t nablaFNorm = nablaF.norm();
+
+		//		pixel_t c = nablaFNorm * (Hess.bilinear(nablaF, nablaF) - nablaFNorm * nablaFNorm * Hess.trace()) / ((pixel_t)1e-8 + 2 * nablaFNorm * nablaFNorm * nablaFNorm);
+		//		curvature(n) = pixelRound<pixel_t>(c);
+
+		//		showThreadProgress(counter, Fx.pixelCount(), showProgressInfo);
+		//	}
+		//}
 
 
-		Image<pixel_t> Fx, Fy, Fz, Fxx, Fyy, Fzz, Fxy, Fxz, Fyz;
-		Fx.ensureSize(img);	// Allocate memory here to fail fast if there is not enough memory.
-		Fy.ensureSize(img);
-		Fz.ensureSize(img);
-		Fxx.ensureSize(img);
-		Fyy.ensureSize(img);
-		Fzz.ensureSize(img);
-		Fxy.ensureSize(img);
-		Fxz.ensureSize(img);
-		Fyz.ensureSize(img);
+		// This calculates curvature as divergence of unit normal (times nabla f norm), [-0.5 nabla . (nabla f / ||nabla f||)] * ||nabla f||
+		// This version requires less temporaries than the Hessian method above.
+		// TODO: At least two temporaries (L and phix) can still be easily removed.
 
-		gradient(img, Fx, Fy, Fz, sigma, 0.0);
-		hessian(img, Fxx, Fyy, Fzz, Fxy, Fxz, Fyz, sigma, 0.0);
-		
-		curvature.ensureSize(img);
+		Image<float32_t> phix, phiy, phiz, L;
 
-		size_t counter = 0;
-#pragma omp parallel for if(Fx.pixelCount() > PARALLELIZATION_THRESHOLD)
-		for (coord_t n = 0; n < Fx.pixelCount(); n++)
-		{
-			math::Matrix3x3<pixel_t> Hess(
-				Fxx(n), Fxy(n), Fxz(n),
-				Fxy(n), Fyy(n), Fyz(n),
-				Fxz(n), Fyz(n), Fzz(n));
-			math::Vec3<pixel_t> nablaF(Fx(n), Fy(n), Fz(n));
-			pixel_t nablaFNorm = nablaF.norm();
+		gradient(img, phix, phiy, phiz, sigma, 0, false);
+		norm(phix, phiy, phiz, L);
 
-			pixel_t c = (Hess.bilinear(nablaF, nablaF) - nablaFNorm * nablaFNorm * Hess.trace()) / (2 * nablaFNorm * nablaFNorm * nablaFNorm);
-			curvature(n) = math::pixelRound<pixel_t>(c);
+		add(L, 1e-8); // Add small number to stabilize regions where L is zero.
+		divide(phix, L);
+		divide(phiy, L);
+		divide(phiz, L);
 
-			showThreadProgress(counter, Fx.pixelCount());
-		}
+		gaussDerivative(phix, sigma, 0, -1, BoundaryCondition::Nearest, false);
+		gaussDerivative(phiy, sigma, 1, -1, BoundaryCondition::Nearest, false);
+		gaussDerivative(phiz, sigma, 2, -1, BoundaryCondition::Nearest, false);
+
+		setValue(curvature, phix);
+		add(curvature, phiy);
+		add(curvature, phiz);
+
+		multiply(curvature, L);
+		multiply(curvature, -0.5);
 	}
-
 
 	/**
 	Calculate quantities from the structure tensor.
@@ -209,7 +244,7 @@ namespace itl2
 	@param penergy Energy.
 	@param gamma Scale-space scaling exponent. Set to zero to disable.
 	*/
-	template<typename pixel_t> void structureTensor(Image<pixel_t>& img,
+	template<typename pixel_t> void structureTensor(const Image<pixel_t>& img,
 		double sigmad, double sigmat,
 		Image<pixel_t>* pl1 = 0, Image<pixel_t>* pl2 = 0, Image<pixel_t>* pl3 = 0,
 		Image<pixel_t>* pphi1 = 0, Image<pixel_t>* ptheta1 = 0,
@@ -261,7 +296,7 @@ namespace itl2
 		gradient(img, dx2, dy2, dz2, sigmad, gamma);
 
 
-		cout << "Six multiplications..." << endl;
+		std::cout << "Six multiplications..." << std::endl;
 		setValue(dxdy, dx2);
 		setValue(dxdz, dx2);
 		setValue(dydz, dy2);
@@ -273,20 +308,20 @@ namespace itl2
 		multiply(dy2, dy2);
 		multiply(dz2, dz2);
 
-		cout << "Blur 1/6..." << endl;
+		std::cout << "Blur 1/6..." << std::endl;
 		gaussFilter(dx2, sigmat, BoundaryCondition::Nearest);
-		cout << "Blur 2/6..." << endl;
+		std::cout << "Blur 2/6..." << std::endl;
 		gaussFilter(dy2, sigmat, BoundaryCondition::Nearest);
-		cout << "Blur 3/6..." << endl;
+		std::cout << "Blur 3/6..." << std::endl;
 		gaussFilter(dz2, sigmat, BoundaryCondition::Nearest);
-		cout << "Blur 4/6..." << endl;
+		std::cout << "Blur 4/6..." << std::endl;
 		gaussFilter(dxdy, sigmat, BoundaryCondition::Nearest);
-		cout << "Blur 5/6..." << endl;
+		std::cout << "Blur 5/6..." << std::endl;
 		gaussFilter(dxdz, sigmat, BoundaryCondition::Nearest);
-		cout << "Blur 6/6..." << endl;
+		std::cout << "Blur 6/6..." << std::endl;
 		gaussFilter(dydz, sigmat, BoundaryCondition::Nearest);
 
-		cout << "Solving eigenvalues and outputs..." << endl;
+		std::cout << "Solving eigenvalues and outputs..." << std::endl;
 		#pragma omp parallel for if(dx2.pixelCount() > PARALLELIZATION_THRESHOLD)
 		for (coord_t n = 0; n < dx2.pixelCount(); n++)
 		{
@@ -299,21 +334,21 @@ namespace itl2
 		//	coord_t n1 = dx2.getLinearIndex(0, 0, z + 1);
 		//	for (coord_t n = n0; n < n1; n++)
 		//	{
-				math::Matrix3x3d ST(
+				Matrix3x3d ST(
 					dx2(n), dxdy(n), dxdz(n),
 					dxdy(n), dy2(n), dydz(n),
 					dxdz(n), dydz(n), dz2(n));
 
 				double lambda1, lambda2, lambda3;
-				math::Vec3d v1, v2, v3;
+				Vec3d v1, v2, v3;
 
 				ST.eigsym(v1, v2, v3, lambda1, lambda2, lambda3);
 
 				double r;
 				double phi1, theta1, phi2, theta2, phi3, theta3;
-				math::toSpherical(v1, r, phi1, theta1);
-				math::toSpherical(v2, r, phi2, theta2);
-				math::toSpherical(v3, r, phi3, theta3);
+				toSpherical(v1, r, phi1, theta1);
+				toSpherical(v2, r, phi2, theta2);
+				toSpherical(v3, r, phi3, theta3);
 
 				double energy = lambda1 + lambda2 + lambda3;
 				double planarity = (lambda1 - lambda2) / lambda1;
@@ -322,29 +357,29 @@ namespace itl2
 
 				// Assign outputs
 				if (pl1)
-					(*pl1)(n) = math::pixelRound<pixel_t>(lambda1);
+					(*pl1)(n) = pixelRound<pixel_t>(lambda1);
 				if (pl2)
-					(*pl2)(n) = math::pixelRound<pixel_t>(lambda2);
+					(*pl2)(n) = pixelRound<pixel_t>(lambda2);
 				if (pl3)
-					(*pl3)(n) = math::pixelRound<pixel_t>(lambda3);
+					(*pl3)(n) = pixelRound<pixel_t>(lambda3);
 				if (pphi1)
-					(*pphi1)(n) = math::pixelRound<pixel_t>(phi1);
+					(*pphi1)(n) = pixelRound<pixel_t>(phi1);
 				if (pphi2)
-					(*pphi2)(n) = math::pixelRound<pixel_t>(phi2);
+					(*pphi2)(n) = pixelRound<pixel_t>(phi2);
 				if (pphi3)
-					(*pphi3)(n) = math::pixelRound<pixel_t>(phi3);
+					(*pphi3)(n) = pixelRound<pixel_t>(phi3);
 				if (ptheta1)
-					(*ptheta1)(n) = math::pixelRound<pixel_t>(theta1);
+					(*ptheta1)(n) = pixelRound<pixel_t>(theta1);
 				if (ptheta2)
-					(*ptheta2)(n) = math::pixelRound<pixel_t>(theta2);
+					(*ptheta2)(n) = pixelRound<pixel_t>(theta2);
 				if (ptheta3)
-					(*ptheta3)(n) = math::pixelRound<pixel_t>(theta3);
+					(*ptheta3)(n) = pixelRound<pixel_t>(theta3);
 				if (pcylindricality)
-					(*pcylindricality)(n) = math::pixelRound<pixel_t>(cylindricality);
+					(*pcylindricality)(n) = pixelRound<pixel_t>(cylindricality);
 				if (pplanarity)
-					(*pplanarity)(n) = math::pixelRound<pixel_t>(planarity);
+					(*pplanarity)(n) = pixelRound<pixel_t>(planarity);
 				if (penergy)
-					(*penergy)(n) = math::pixelRound<pixel_t>(energy);
+					(*penergy)(n) = pixelRound<pixel_t>(energy);
 			//}
 			//showThreadProgress(counter, dx2.depth());
 		}
@@ -372,9 +407,9 @@ namespace itl2
 			pV->ensureSize(img);
 
 		if (outScale == 0)
-			outScale = (double)math::NumberUtils<pixel_t>::scale();
+			outScale = (double)NumberUtils<pixel_t>::scale();
 		
-		typedef typename math::NumberUtils<pixel_t>::FloatType real_t;
+		typedef typename NumberUtils<pixel_t>::FloatType real_t;
 		
 		Image<real_t> Fxx, Fyy, Fzz, Fxy, Fxz, Fyz;
 		hessian(img, Fxx, Fyy, Fzz, Fxy, Fxz, Fyz, sigma, gamma);
@@ -383,13 +418,13 @@ namespace itl2
 		#pragma omp parallel for if(Fxx.pixelCount() > PARALLELIZATION_THRESHOLD)
 		for (coord_t n = 0; n < Fxx.pixelCount(); n++)
 		{
-			math::Matrix3x3d Hess(
+			Matrix3x3d Hess(
 				Fxx(n), Fxy(n), Fxz(n),
 				Fxy(n), Fyy(n), Fyz(n),
 				Fxz(n), Fyz(n), Fzz(n));
 
 			double lambda1, lambda2, lambda3;
-			math::Vec3d v1, v2, v3;
+			Vec3d v1, v2, v3;
 
 			Hess.eigsym(v1, v2, v3, lambda1, lambda2, lambda3);
 
@@ -409,7 +444,7 @@ namespace itl2
 				if (std::isnan(lambda123))
 					lambda123 = 0;
 
-				(*plambda123)(n) = math::pixelRound<pixel_t>(lambda123 * outScale);
+				(*plambda123)(n) = pixelRound<pixel_t>(lambda123 * outScale);
 			}
 
 			if (pV)
@@ -423,21 +458,21 @@ namespace itl2
 				double al3 = std::abs(lambda3);
 				if (al1 > al3)
 				{
-					swap(al1, al3);
-					swap(lambda1, lambda3);
-					swap(v1, v3);
+					std::swap(al1, al3);
+					std::swap(lambda1, lambda3);
+					std::swap(v1, v3);
 				}
 				if (al1 > al2)
 				{
-					swap(al1, al2);
-					swap(lambda1, lambda2);
-					swap(v1, v2);
+					std::swap(al1, al2);
+					std::swap(lambda1, lambda2);
+					std::swap(v1, v2);
 				}
 				if (al2 > al3)
 				{
-					swap(al2, al3);
-					swap(lambda2, lambda3);
-					swap(v2, v3);
+					std::swap(al2, al3);
+					std::swap(lambda2, lambda3);
+					std::swap(v2, v3);
 				}
 
 				double Rb = al1 / sqrt(al2 * al3);
@@ -452,7 +487,7 @@ namespace itl2
 				if (std::isnan(Vo))
 					Vo = 0;
 
-				(*pV)(n) = math::pixelRound<pixel_t>(Vo * outScale);
+				(*pV)(n) = pixelRound<pixel_t>(Vo * outScale);
 			}
 		}
 	}
@@ -466,11 +501,17 @@ namespace itl2
 	*/
 	template<typename real_t, typename out_t> void nonMaximumSuppression(const Image<real_t>& dx, const Image<real_t>& dy, const Image<real_t>& dz, Image<out_t>& out, real_t minThreshold, real_t maxThreshold)
 	{
+		// Here we need double precision.
+		// If using single precision, the results differ between local and distributed processing,
+		// as p0 is different in the same pixel in the two operation modes, and as a result the f1 and f2
+		// values will become slightly different. Double precision seems to mitigate this at least somehow.
+		using real2_t = double;
+
 		dx.checkSize(dy);
 		dz.checkSize(dy);
 		out.ensureSize(dx);
 
-		LinearInterpolator<real_t, real_t> interp(BoundaryCondition::Nearest);
+		LinearInterpolator<real2_t, real_t> interp(BoundaryCondition::Nearest);
 		size_t counter = 0;
 		#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
@@ -480,35 +521,32 @@ namespace itl2
 				for (coord_t x = 0; x < out.width(); x++)
 				{
 					// Calculate gradient value at the current pixel
-					Vec3<real_t> p0((real_t)x, (real_t)y, (real_t)z);
-					Vec3<real_t> dir(dx(x, y, z), dy(x, y, z), dz(x, y, z));
-					real_t f0;
+					Vec3<real2_t> p0((real2_t)x, (real2_t)y, (real2_t)z);
+					Vec3<real2_t> dir(dx(x, y, z), dy(x, y, z), dz(x, y, z));
+					real2_t f0;
 					dir.normalize(f0);
 					
 					// Calculate gradient value in gradient direction
-					Vec3<real_t> p1 = p0 + dir;
-					real_t dx1 = interp(dx, p1.x, p1.y, p1.z);
-					real_t dy1 = interp(dy, p1.x, p1.y, p1.z);
-					real_t dz1 = interp(dz, p1.x, p1.y, p1.z);
-					real_t f1 = (Vec3<real_t>(dx1, dy1, dz1)).norm();
+					Vec3<real2_t> p1 = p0 + dir;
+					real2_t dx1 = interp(dx, p1.x, p1.y, p1.z);
+					real2_t dy1 = interp(dy, p1.x, p1.y, p1.z);
+					real2_t dz1 = interp(dz, p1.x, p1.y, p1.z);
+					real2_t f1 = (Vec3<real2_t>(dx1, dy1, dz1)).norm();
 
 					// Calculate gradient value in reverse gradient direction
-					Vec3<real_t> p2 = p0 - dir;
-					real_t dx2 = interp(dx, p2.x, p2.y, p2.z);
-					real_t dy2 = interp(dy, p2.x, p2.y, p2.z);
-					real_t dz2 = interp(dz, p2.x, p2.y, p2.z);
-					real_t f2 = (Vec3<real_t>(dx2, dy2, dz2)).norm();
-
+					Vec3<real2_t> p2 = p0 - dir;
+					real2_t dx2 = interp(dx, p2.x, p2.y, p2.z);
+					real2_t dy2 = interp(dy, p2.x, p2.y, p2.z);
+					real2_t dz2 = interp(dz, p2.x, p2.y, p2.z);
+					real2_t f2 = (Vec3<real2_t>(dx2, dy2, dz2)).norm();
 
 					// Store to output values only if gradient at current location is maximal compared to the other two positions
-					if (f0 > f1 && f0 > f2)
+					if(NumberUtils<real2_t>::greaterThan(f0, f1) && NumberUtils<real2_t>::greaterThan(f0, f2))
 					{
-						//out(x, y, z) = f0;
-
 						// Dual thresholding
-						if(f0 < minThreshold)
+						if(NumberUtils<real2_t>::lessThan(f0, minThreshold))
 							out(x, y, z) = 0;
-						else if(f0 < maxThreshold)
+						else if(NumberUtils<real2_t>::lessThan(f0, maxThreshold))
 							out(x, y, z) = 1;
 						else
 							out(x, y, z) = 2;
@@ -528,20 +566,21 @@ namespace itl2
 	{
 		template<typename pixel_t> void cannyPart1(Image<pixel_t>& img, double derivativeSigma, double lowerThreshold, double upperThreshold)
 		{
-			// 1. Pre-smoothing (skipped in this version as we are calculating derivatives with gaussian convolution anyway)
+			// 1. Pre-smoothing (skipped in this version as we are calculating derivatives with Gaussian convolution anyway)
 			//if(preSmoothingSigma > 0)
 			//	gaussFilter(img, preSmoothingSigma, BoundaryCondition::Nearest);
 
 			// 2. Gradient
-			cout << "Partial derivatives..." << endl;
+			std::cout << "Partial derivatives..." << std::endl;
 			Image<float32_t> dx, dy, dz;
 			gradient<pixel_t, float32_t>(img, dx, dy, dz, derivativeSigma);
+
 
 			// 3. Non-maximum suppression - find local maxima of gradient combined to
 			// 4. Dual threshold - edges with gradient value above upper threshold are "surely" edges,
 			// and edges with gradient value between lower and upper threshold are edges only if
 			// they touch "sure" edge.
-			cout << "Non-maximum suppression and dual thresholding..." << endl;
+			std::cout << "Non-maximum suppression and dual thresholding..." << std::endl;
 			nonMaximumSuppression<float32_t, pixel_t>(dx, dy, dz, img, pixelRound<float32_t>(lowerThreshold), pixelRound<float32_t>(upperThreshold));
 
 			// 4. Dual threshold - edges with gradient value above upper threshold are "surely" edges,
@@ -555,9 +594,9 @@ namespace itl2
 		template<typename pixel_t> void cannyPart2(Image<pixel_t>& img)
 		{
 			// 5. Edge tracking - Convert all those edges to "sure" that touch a "sure" edge.
-			cout << "Edge tracking..." << endl;
+			std::cout << "Edge tracking..." << std::endl;
 			size_t changed = grow<pixel_t>(img, pixelRound<pixel_t>(2), pixelRound<pixel_t>(1));
-			cout << changed << " pixels changed." << endl;
+			std::cout << changed << " pixels changed." << std::endl;
 		}
 	}
 
@@ -581,9 +620,188 @@ namespace itl2
 		threshold<pixel_t>(img, 1);
 	}
 
+
+	/**
+	Convert a color value from (hue, saturation, value) representation to (red, green, blue).
+	Hue must be given in radians, saturation and value must be in range [0, 1].
+	Output (r, g, b) values are in range [0, 1].
+	*/
+	inline void hsv2rgb(double h, double s, double v, double& r, double& g, double& b)
+	{
+		// Convert hue to degrees.
+		h *= 57.2957795;
+
+		if (s <= 0.0)
+		{
+			r = v;
+			g = v;
+			b = v;
+			return;
+		}
+
+		double hh = h;
+		while (hh < 0)
+			hh += 360;
+		while (hh > 360)
+			hh -= 360;
+		hh /= 60.0;
+		long i = (long)hh;
+		double ff = hh - i;
+		double p = v * (1.0 - s);
+		double q = v * (1.0 - (s * ff));
+		double t = v * (1.0 - (s * (1.0 - ff)));
+
+		switch (i) {
+		case 0:
+			r = v;
+			g = t;
+			b = p;
+			break;
+		case 1:
+			r = q;
+			g = v;
+			b = p;
+			break;
+		case 2:
+			r = p;
+			g = v;
+			b = t;
+			break;
+
+		case 3:
+			r = p;
+			g = q;
+			b = v;
+			break;
+		case 4:
+			r = t;
+			g = p;
+			b = v;
+			break;
+		case 5:
+		default:
+			r = v;
+			g = p;
+			b = q;
+			break;
+		}
+	}
+
+
+	/**
+	Color codes orientation data according to deviation from a given main orientation.
+	In the output, hue describes angle from main orientation (phim, thetam).
+	Saturation is always 1 and value is the pixel value in geometry image normalized
+	such that maximum value of the geometry image is mapped to 1, and zero to 0.
+	@param geometry Original geometry.
+	@param phi, theta Azimuthal (phi) and polar (theta) angles as described in the documentation of structureTensor function.
+	@param r, g, b Output color components.
+	@param phim, thetam Azimuthal (phim) and polar (thetam) angles corresponding to the main orientation.
+	*/
+	template<typename pixel_t> void mainOrientationColoring(const Image<pixel_t>& geometry, const Image<float32_t>& phi, const Image<float32_t>& theta,
+		Image<uint8_t>& r, Image<uint8_t>& g, Image<uint8_t>& b,
+		double phim, double thetam)
+	{
+		geometry.checkSize(phi);
+		geometry.checkSize(theta);
+
+		r.ensureSize(geometry);
+		g.ensureSize(geometry);
+		b.ensureSize(geometry);
+
+		double geomMax = (double)max(geometry);
+
+		#pragma omp parallel for if(geometry.pixelCount() > PARALLELIZATION_THRESHOLD)
+		for (coord_t n = 0; n < geometry.pixelCount(); n++)
+		{
+			double t = theta(n);
+			double p = phi(n);
+
+			// Calculate angle between main orientation and (phi, theta)
+			double alpha = (cos(p) * cos(phim) + sin(p) * sin(phim)) * sin(t) * sin(thetam) + cos(t) * cos(thetam);
+			if (alpha > 1)
+				alpha = 1;
+			else if (alpha < -1)
+				alpha = -1;
+			alpha = acos(abs(alpha));
+
+			double hue = 2 * alpha;
+			double saturation = 1;
+			//double value = 1;
+			double value = geometry(n) / geomMax;
+
+			double rr, gg, bb;
+			hsv2rgb(hue, saturation, value, rr, gg, bb);
+
+			rr *= 255;
+			gg *= 255;
+			bb *= 255;
+
+			r(n) = pixelRound<uint8_t>(rr);
+			g(n) = pixelRound<uint8_t>(gg);
+			b(n) = pixelRound<uint8_t>(bb);
+		}
+	}
+
+
+
+
+	/**
+	Color coding of orientation data used in Axelsson - Estimating 3D fibre orientation in volume images.
+	This color coding is most suited to materials where most orientations are in the xy-plane, e.g. paper or cardboard.
+	In the output, hue describes angle between the positive x-axis and the projection of the orientation vector to the xy-plane,
+	i.e. azimuthal component of the orientation direction.
+	Absolute value of the z-coordinate of the orientation direction is mapped to saturation, maximum being at the xy-plane.
+	Value is mapped to the pixel value in the geometry image normalized
+	such that maximum value of the geometry image is mapped to 1, and zero to 0.
+	@param geometry Original geometry.
+	@param phi, theta Azimuthal (phi) and polar (theta) angles as described in the documentation of structureTensor function.
+	@param r, g, b Output color components.
+	*/
+	template<typename pixel_t> void axelssonColoring(const Image<pixel_t>& geometry, const Image<float32_t>& phi, const Image<float32_t>& theta,
+		Image<uint8_t>& r, Image<uint8_t>& g, Image<uint8_t>& b)
+	{
+		geometry.checkSize(phi);
+		geometry.checkSize(theta);
+
+		r.ensureSize(geometry);
+		g.ensureSize(geometry);
+		b.ensureSize(geometry);
+
+		double geomMax = (double)max(geometry);
+
+#pragma omp parallel for if(geometry.pixelCount() > PARALLELIZATION_THRESHOLD)
+		for (coord_t n = 0; n < geometry.pixelCount(); n++)
+		{
+			double t = theta(n);
+			double p = phi(n);
+
+			// Orientations in xy plane are in full color.
+			// Increasing orientation in z decreases saturation.
+			double hue = 2 * p;
+			double z = cos(t);
+			double saturation = 1 - abs(z);
+			double value = geometry(n) / geomMax;
+
+
+			double rr, gg, bb;
+			hsv2rgb(hue, saturation, value, rr, gg, bb);
+
+			rr *= 255;
+			gg *= 255;
+			bb *= 255;
+
+			r(n) = pixelRound<uint8_t>(rr);
+			g(n) = pixelRound<uint8_t>(gg);
+			b(n) = pixelRound<uint8_t>(bb);
+		}
+	}
+
+
+
+
 	namespace tests
 	{
-		void curvature();
 		void structureTensor();
 		void lineFilter();
 		void canny();

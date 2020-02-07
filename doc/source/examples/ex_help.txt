@@ -1,0 +1,27 @@
+Help
+====
+
+This example shows how to use the :ref:`help` command and commands related to it::
+
+	def help():
+		"""
+		Demonstrates Pi2 help commands.
+		IPython docstrings contain the same information.
+		"""
+
+		# Show generic info
+		pi.info()
+
+		# Show license(s) related to the pi2
+		pi.license()
+
+		# List all available commands
+		pi.help()
+
+		# Show help for convert command
+		pi.help('convert')
+	
+	
+Output of this example very lengthy and is not shown here. Part of the output can be seen on the :ref:`formatted_license`, :ref:`command_reference`, and :ref:`convert` pages.
+
+In addition to the :ref:`help` command, the iPython help system (TAB and ?) and .NET XML API documentation are supported.

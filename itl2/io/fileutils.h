@@ -2,7 +2,8 @@
 
 #include <string>
 #include <fstream>
-#include <cstring>
+
+#include "math/vec3.h"
 
 namespace itl2
 {
@@ -14,16 +15,7 @@ namespace itl2
 	/**
 	Gets error message corresponding to the current errno variable.
 	*/
-	inline const std::string getStreamErrorMessage()
-	{
-#if defined(_WIN32)
-		char buf[1024];
-		strerror_s(&buf[0], 1024, errno);
-		return std::string(&buf[0]);
-#else
-		return std::string(strerror(errno));
-#endif
-	}
+	const std::string getStreamErrorMessage();
 
 	/**
 	Sets size of file to given value.
@@ -44,7 +36,7 @@ namespace itl2
 	Copies a file.
 	The destination file is overwritten.
 	*/
-	void copyFile(const std::string& sourceName, const std::string& destinationName);
+	void copyFile(const std::string& sourceName, const std::string& destinationName, bool showProgressInfo);
 
 	/**
 	Moves a file.
@@ -57,5 +49,15 @@ namespace itl2
 	Does not create the file, only directories.
 	*/
 	void createFoldersFor(const std::string& filename);
+
+	/**
+	Adds .raw image dimensions to file name.
+	*/
+	std::string concatDimensions(const std::string& baseName, const Vec3c& dimensions);
+
+	/**
+	Removes .raw image dimensions from file name.
+	*/
+	std::string getPrefix(std::string filename);
 
 }

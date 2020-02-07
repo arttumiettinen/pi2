@@ -1,0 +1,36 @@
+.. _thresholdrange:
+
+thresholdrange
+**************
+
+
+**Syntax:** :code:`thresholdrange(image, min, max)`
+
+Threshols a range from the image. Sets to one all pixels whose value is in ]min, max].
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+min [input]
+~~~~~~~~~~~
+
+**Data type:** real
+
+Minimum of the threshold range.
+
+max [input]
+~~~~~~~~~~~
+
+**Data type:** real
+
+Maximum of the threshold range.
+

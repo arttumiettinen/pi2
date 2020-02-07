@@ -1,0 +1,28 @@
+.. _maxmemory:
+
+maxmemory
+*********
+
+
+**Syntax:** :code:`maxmemory(maximum memory)`
+
+Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm distribution mode).
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+maximum memory [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Maximum amount of memory to use, in megabytes. Specify zero to calculate the value automatically.
+
+See also
+--------
+
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`

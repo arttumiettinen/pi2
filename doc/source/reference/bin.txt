@@ -1,0 +1,49 @@
+.. _bin:
+
+bin
+***
+
+
+**Syntax:** :code:`bin(input image, output image, factor, binning type)`
+
+Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+factor [input]
+~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Binning factor in each coordinate direction. Value 2 makes the output image dimension half of the input image dimension, 3 makes them one third etc.
+
+binning type [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** mean
+
+Name of binning type to be performed. Currently 'mean', 'min' and 'max' are supported.
+
+See also
+--------
+
+:ref:`scale`, :ref:`bin`, :ref:`scalelabels`

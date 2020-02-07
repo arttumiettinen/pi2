@@ -1,0 +1,33 @@
+.. _fft:
+
+fft
+***
+
+
+**Syntax:** :code:`fft(input image, output image)`
+
+Calculates Fourier transform.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** complex32 image
+
+Output image.
+
+See also
+--------
+
+:ref:`fft`, :ref:`ifft`, :ref:`bandpassfilter`, :ref:`highpassfilter`

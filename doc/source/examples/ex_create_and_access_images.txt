@@ -1,0 +1,63 @@
+Create and access images
+========================
+
+This example shows how to create images, retrieve their dimensions and data type, save them, and access the images as NumPy arrays::
+
+	def create_and_access_images():
+		"""
+		Demonstrates creation of image and accessing its data.
+		"""
+
+		# newimage command is used to create new images
+		img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 30)
+		print(f"Width = {img1.get_width()}")
+		print(f"Height = {img1.get_height()}")
+		print(f"Depth = {img1.get_depth()}")
+		print(f"Data type = {img1.get_data_type()}")
+		print(f"All in one: {img1}")
+
+		# newlike command can be used to create new image that is similar to existing image,
+		# This line creates second image that has the same dimensions than img1 and pixel
+		# data type UINT16.
+		img2 = pi.newlike(img1, ImageDataType.UINT16);
+		print(f"img2 is {img2}")
+
+		# This line creates second image that has the same pixel data type than img1,
+		# but its dimensions are 50x50x50.
+		img3 = pi.newlike(img1, ImageDataType.UNKNOWN, 50, 50, 50);
+		print(f"img3 is {img3}")
+
+		# The data in the image can be retrieved as a NumPy array
+		data = img1.get_data()
+		print(f"When converted to a NumPy array, the shape of the image is {data.shape} and data type is {data.dtype}.")
+
+		# Image data can also be set from a NumPy array
+		data = np.eye(100, 100)
+		img1.set_data(data)
+
+		# This writes img1 to disk as a .raw file.
+		# The dimensions of the image and the .raw suffix are automatically appended to
+		# the image name given as second argument.
+		pi.writeraw(img1, output_file("img1"))
+
+		# NumPy arrays can be used directly as input in commands.
+		# Changes made by Pi2 are NOT reflected in the NumPy arrays as
+		# in some cases that would require re-shaping of the arrays, and that
+		# does not seem to be wise...
+		pi.writetif(data, output_file("numpy_array_tif"))
+
+
+Output shown by the code above:
+
+.. code-block:: none
+
+	Width = 10
+	Height = 20
+	Depth = 30
+	Data type = uint8
+	All in one: (10, 20, 30), uint8
+	img2 is (10, 20, 30), uint16
+	img3 is (50, 50, 50), uint8
+	When converted to a NumPy array, the shape of the image is (20, 10, 30) and data type is uint8.
+	
+	

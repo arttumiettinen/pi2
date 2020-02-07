@@ -1,0 +1,34 @@
+Montage
+=======
+
+This example shows how to make a :ref:`montage` of a 3D image.
+The montage shows multiple 2D slices of the 3D image in a single view.
+
+
+::
+
+	def montage():
+		"""
+		Demonstrates creation of a montage from a 3D image.
+		"""
+
+		# Read the 3D image
+		img = pi.read(input_file())
+
+		# Create empty image for the montage
+		montage = pi.newimage(img.get_data_type())
+
+		# Make the montage, 4x3 slices, scaled to 0.5 of
+		# original size
+		pi.montage(img, montage, 4, 3, 0.5)
+
+		# Save the output
+		pi.writetif(montage, output_file('montage'))
+		
+		
+		
+.. figure:: figures/montage.png
+   :scale: 100 %
+   :alt: Montage
+
+   Montage of the input image.

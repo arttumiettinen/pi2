@@ -1,0 +1,70 @@
+.. _fillskeleton:
+
+fillskeleton
+************
+
+
+**Syntax:** :code:`fillskeleton(skeleton, vertices, edges, edge measurements, edge points, fill index, block origin)`
+
+Fills a traced skeleton with one of values measured from the skeleton. E.g. fills each branch by its length.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+skeleton [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image containing the skeleton. Point belonging to the skeleton must be marked with non-zero value. The pixel data type should be able to store all values of the fill quantity, or otherwise clipping will occur. (Note that traceskeleton command clears the input image.)
+
+vertices [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. See :ref:`tracelineskeleton` command.
+
+edges [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge measurements [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores properties of each edge. See :ref:`tracelineskeleton` command
+
+edge points [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. See :ref:`tracelineskeleton` command
+
+fill index [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+Defines column in the measurement image where fill values are grabbed from. Zero corresponds to first column in edge measurements, etc.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+If processing a block of original image, origin of the block in coordinates of the full image. This parameter is used internally in distributed processing and should usually be set to its default value.
+
+See also
+--------
+
+:ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`

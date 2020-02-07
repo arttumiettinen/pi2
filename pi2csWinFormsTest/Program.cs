@@ -16,7 +16,9 @@ namespace pi2csWinFormsTest
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            //Application.Run(new PictureBoxTestForm());
+            Application.Run(new PictureViewerTestForm());
         }
     }
 }

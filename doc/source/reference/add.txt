@@ -1,0 +1,65 @@
+.. _add:
+
+add
+***
+
+There are 2 forms of this command.
+
+:code:`add(image, parameter image, allow broadcast)`
+====================================================
+
+Adds two images. Output is placed to the first image. The operation is performed using saturation arithmetic.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+parameter image [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image, complex32 image
+
+Parameter image.
+
+allow broadcast [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to allow size of parameter image differ from size of input image. If there is a need to access pixel outside of parameter image, the nearest value inside the image is taken instead. If set to false, dimensions of input and parameter images must be equal. If set to true, the parameter image is always loaded in its entirety in distributed processing mode.
+
+
+:code:`add(image, x)`
+=====================
+
+Adds and image and a constant. The operation is performed using saturation arithmetic.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+x [input]
+~~~~~~~~~
+
+**Data type:** real
+
+Constant to add to the image.
+

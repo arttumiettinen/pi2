@@ -1,0 +1,18 @@
+About
+=====
+
+pi2 = Process Image 2
+
+Copyright © 2011 Arttu Miettinen
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it
+under certain conditions; see :ref:`formatted_license` for details.
+
+Contact: arttu.miettinen@psi.ch
+
+Based on work done at
+
+* `X-ray tomography research group <https://www.psi.ch/en/x-ray-tomography-group>`__, `TOMCAT beamline <https://www.psi.ch/en/sls/tomcat>`__, Swiss Light Source (SLS), Paul Scherrer Institute (PSI), Switzerland
+* `Institute for Biomedical Engineering <https://biomed.ee.ethz.ch/>`__, Swiss Federal Institute of Technology Zurich (ETH Zurich), Switzerland
+* `Centre d'Imagerie BioMedicale (CIBM) <https://cibm.ch/>`__, Ecole Polytechnique Federale de Lausanne (EPFL), Switzerland
+* `Complex materials research group <https://www.jyu.fi/science/en/physics/research/materials-physics/complex-materials>`__, Department of Physics, University of Jyvaskyla, Finland

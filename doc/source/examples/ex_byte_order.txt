@@ -1,0 +1,36 @@
+Byte order, big-endian, little-endian
+=====================================
+
+This example demonstrates some issues with big-endian and little-endian .raw files.
+
+The pi2 system always assumes that .raw files are read in native byte order of the
+host computer.
+If this is not the case, the byte order can be changed using :ref:`swapbyteorder <swapbyteorder>`
+command
+
+::
+
+	def big_endian_and_little_endian():
+		"""
+		Demonstrates how to change the endianness of pixel values.
+		"""
+
+		# The images are in the native byte order
+		geometry = pi.newimage(ImageDataType.UINT16, 100, 100)
+		pi.ramp(geometry, 1)
+
+		# By default, images are written in the native byte order.
+		# This usually means little endian at the time this was written, and at the
+		# processors this code has ever run.
+		pi.writeraw(geometry, output_file("little_endian_ramp"))
+
+		# Change to big endian format can be made by running swapbyteorder command
+		pi.swapbyteorder(geometry)
+		pi.writeraw(geometry, output_file("big_endian_ramp"))
+
+		# NOTE: Here the geometry image is stored in big endian format, and you cannot do
+		# any calculations on it until you run the swapbyteorder command on it again!
+		# For example, writing something else than .raw files for image in non-native byte
+		# order does not make sense! The .tif file saved below will
+		# contain pixel values in wrong byte order.
+		pi.writetif(geometry, output_file("big_endian_ramp.tif"))

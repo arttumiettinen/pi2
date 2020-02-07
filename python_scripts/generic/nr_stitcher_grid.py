@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+
 # Non-rigid stitching script that does assumes that the sub-images are arranged in a grid.
 # In order to use this script, please make a stitch_settings.txt file according to
 # the provided template. Place it into the directory where the output and temporary files
@@ -42,6 +43,7 @@ class StitchSettings:
     allow_local_shifts = True
     allow_local_deformation = True
     force_redo = [False, False, False]
+    create_goodness_file = False
 
 
 class GridScan(Scan):
@@ -150,16 +152,24 @@ def init_grid(settings, show_warnings):
     # Adjust for binning
     settings2 = copy.deepcopy(settings)
 
-    auto_binning(relations, settings2.binning)
+    # Perform binning
+    while True:
+        if auto_binning(relations, settings2.binning):
+            break;
 
-    if is_use_cluster():
-        if is_wait_for_jobs():
-            wait_for_cluster_jobs()
-        else:
-            # TODO: It is not good to exit() here. This should be moved to the top-level function.
-            print("Please run this program again when all the cluster jobs have finished.")
-            exit()
+        if is_use_cluster():
+            if is_wait_for_jobs():
+                wait_for_cluster_jobs()
+            else:
+                # TODO: It is not good to exit() here. This should be moved to the top-level function.
+                print("Please run this program again when all the cluster jobs have finished.")
+                exit()
 
+    if settings2.binning != 1:
+        for node in relations.nodes():
+            node.rec_file = node.binned_file
+            node.dimensions = node.dimensions / settings2.binning
+            node.position = node.position / settings2.binning
 
     settings2.overlap_x /= settings2.binning
     settings2.overlap_y /= settings2.binning
@@ -224,7 +234,7 @@ def stitch_all(settings):
     read_displacement_fields(adj_settings.sample_name, relations, adj_settings.allow_rotation)
 
     # Process all subgraphs separately
-    run_stitching_for_all_connected_components(relations, adj_settings.sample_name, adj_settings.normalize_while_stitching, adj_settings.global_optimization, adj_settings.allow_rotation, adj_settings.allow_local_deformations)
+    run_stitching_for_all_connected_components(relations, adj_settings.sample_name, adj_settings.normalize_while_stitching, adj_settings.global_optimization, adj_settings.allow_rotation, adj_settings.allow_local_deformations, adj_settings.create_goodness_file)
 
     # TODO: Waiting here is a small hack... We should return flag and wait in main method, but this way we avoid reading displacement fields again.
     wait_for_cluster_jobs()
@@ -332,6 +342,9 @@ def main():
     settings.force_redo[0] = get(config, 'redo_x', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
     settings.force_redo[1] = get(config, 'redo_y', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
     settings.force_redo[2] = get(config, 'redo_z', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+
+    # Create stitch goodness output?
+    settings.create_goodness_file = get(config, 'create_goodness', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
 
     # Run
     while True:

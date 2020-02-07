@@ -2,37 +2,51 @@
 #include "pisystem.h"
 #include "commandmacros.h"
 #include "io/io.h"
+#include "commandlist.h"
+#include "pilibutilities.h"
+
+using namespace std;
 
 namespace pilib
 {
-	/**
-	Creates all commands and adds them to the list.
-	Used in the constructor of PISystem and defined elsewhere to keep this file shorter and cleaner,
-	and to cut dependencies between PISystem header and command definitions.
-	*/
-	void addFilterCommands(vector<Command*>& commands);
-	void addSpecialCommands(vector<Command*>& commands);
-	void addIOCommands(vector<Command*>& commands);
-	void addOtherCommands(vector<Command*>& commands);
-	void addPointProcessCommands(vector<Command*>& commands);
-	void addThinAndSkeletonCommands(vector<Command*>& commands);
-	void addSpecialSystemCommands(vector<Command*>& commands);
-	void addTransformCommands(vector<Command*>& commands);
-	void addParticlesCommands(vector<Command*>& commands);
-	void addGenerationCommands(vector<Command*>& commands);
-	void addProjectionCommands(vector<Command*>& commands);
 
-
-	void addSpecialSystemCommands(vector<Command*>& commands)
+	void addSpecialSystemCommands()
 	{
-		commands.insert(commands.end(),
-			{
-			ADD_REAL(ConvertCommand),
-			ADD_ALL(NewLikeCommand),
-			new NewLikeFileCommand()
-			});
+		ADD_ALL(NewLikeCommand);
+		ADD_ALL(NewLike2Command);
+		CommandList::add<NewLikeFileCommand>();
+		CommandList::add<NewLikeFile2Command>();
 	}
 
+	/**
+	Parses string from argument section.
+	Reads characters until terminator character is found.
+	Supports \[terminator] escape sequence.
+	*/
+	string parseString(string& argSection, char terminator)
+	{
+		string result = "";
+		while (argSection.length() > 0)
+		{
+			char s = argSection[0];
+			argSection.erase(argSection.begin());
+			if (s == terminator)
+				break;
+
+			if (s == '\\' && argSection.length() > 0)
+			{
+				if (argSection[0] == terminator)
+				{
+					s = terminator;
+					argSection.erase(argSection.begin());
+				}
+			}
+
+			result += s;
+		}
+
+		return result;
+	}
 
 
 	/**
@@ -67,53 +81,57 @@ namespace pilib
 			{
 				while (argSection.length() > 0)
 				{
-					char delim;
-					string arg = getToken(argSection, ",[", delim);
-
-					if (delim == ',' || delim == 0)
-					{
-						// This is standard argument
-						trim(arg);
-
-						args.push_back(arg);
-					}
-					else if (delim == '[')
+					if (argSection[0] == '[')
 					{
 						// This is start of vector argument
 						// Get tokens until ending ]
-						arg = getToken(argSection, "]", delim);
-						getToken(argSection, ",", delim);
-						arg = '[' + arg + ']';
+						char delim;
+						string arg = getToken(argSection, "]", delim);
+
+						string mid = getToken(argSection, ",)", delim);
+						trim(mid);
+						if (mid.length() > 0)
+							throw ParseException("Trailing characters after vector value.");
+
+						arg = arg + ']'; // There is already [ in the beginning of the arg.
 						args.push_back(arg);
 					}
-				}
+					else if (argSection[0] == '"')
+					{
+						argSection.erase(argSection.begin());
+						string arg = parseString(argSection, '"');
+						args.push_back(arg);
+						trim(argSection);
+						if (argSection.length() > 0 && argSection[0] != ',')
+							throw ParseException("Trailing characters after string value.");
+						if (argSection.length() > 0)
+    						argSection.erase(argSection.begin());
+					}
+					else if (argSection[0] == '\'')
+					{
+						argSection.erase(argSection.begin());
+						string arg = parseString(argSection, '\'');
+						args.push_back(arg);
+						trim(argSection);
+						if (argSection.length() > 0 && argSection[0] != ',')
+							throw ParseException("Trailing characters after string value.");
+						if (argSection.length() > 0)
+    						argSection.erase(argSection.begin());
+					}
+					else
+					{
+						// This is standard argument
+						// Get tokens until ending ,
+						char delim;
+						string arg = getToken(argSection, ",", delim);
+						trim(arg);
+						args.push_back(arg);
+					}
 
-				//stringstream ss;
-				//ss << argSection;
-				//while (ss.good())
-				//{
-				//	string arg;
-				//	getline(ss, arg, ',');
-				//	trim(arg);
-				//	args.push_back(arg);
-				//}
+					trim(argSection);
+				}
 			}
 		}
-
-	}
-
-	/**
-	Get all commands whose name is the given one.
-	*/
-	vector<Command*> PISystem::getCommands(const string& name) const
-	{
-		vector<Command*> cmds;
-		for (size_t n = 0; n < commands.size(); n++)
-		{
-			if (commands[n]->name() == name)
-				cmds.push_back(commands[n]);
-		}
-		return cmds;
 	}
 
 	/**
@@ -141,9 +159,9 @@ namespace pilib
 	*/
 	string PISystem::imageName(const ImageBase* img) const
 	{
-		for (map<string, ImageBase*>::const_iterator it = imgs.begin(); it != imgs.end(); it++)
+		for (map<string, shared_ptr<ImageBase> >::const_iterator it = imgs.begin(); it != imgs.end(); it++)
 		{
-			if (it->second == img)
+			if (it->second.get() == img)
 				return it->first;
 		}
 
@@ -153,33 +171,60 @@ namespace pilib
 	/**
 	Converts distributed image to variable name.
 	*/
-	string PISystem::distributedImageName(const DistributedImageBase* img) const
+	//string PISystem::distributedImageName(const DistributedImageBase* img) const
+	//{
+	//	return img->varName();
+	//}
+
+	/**
+	Functor that extracts Vec3d from image.
+	*/
+	template<typename pixel_t> struct ConvertToVec3
 	{
-		return img->varName();
-	}
+		static void run(const ImageBase* p, Vec3d& vec)
+		{
+			const Image<pixel_t>* img = (const Image<pixel_t>*)p;
+			vec.x = (double)(*img)(0);
+			vec.y = (double)(*img)(1);
+			vec.z = (double)(*img)(2);
+		}
+	};
+
+	template<> struct ConvertToVec3<complex32_t>
+	{
+		static void run(const ImageBase* p, Vec3d& vec)
+		{
+			const Image<complex32_t>* img = (const Image<complex32_t>*)p;
+			vec.x = (double)(*img)(0).real();
+			vec.y = (double)(*img)(1).real();
+			vec.z = (double)(*img)(2).real();
+		}
+	};
 
 	Vec3d toVec3(const ImageBase* p)
 	{
-		const Image<uint8_t>* p8 = dynamic_cast<const Image<uint8_t>*>(p);
-		const Image<uint16_t>* p16 = dynamic_cast<const Image<uint16_t>*>(p);
-		const Image<uint32_t>* p32 = dynamic_cast<const Image<uint32_t>*>(p);
-		const Image<uint64_t>* p64 = dynamic_cast<const Image<uint64_t>*>(p);
-		const Image<float32_t>* pf32 = dynamic_cast<const Image<float32_t>*>(p);
-		//const Image<complex32_t >* pc32 = dynamic_cast<const Image<complex32_t >*>(p);
+		//const Image<uint8_t>* p8 = dynamic_cast<const Image<uint8_t>*>(p);
+		//const Image<uint16_t>* p16 = dynamic_cast<const Image<uint16_t>*>(p);
+		//const Image<uint32_t>* p32 = dynamic_cast<const Image<uint32_t>*>(p);
+		//const Image<uint64_t>* p64 = dynamic_cast<const Image<uint64_t>*>(p);
+		//const Image<float32_t>* pf32 = dynamic_cast<const Image<float32_t>*>(p);
 
-		if (p8)
-			return Vec3d((*p8)(0), (*p8)(1), (*p8)(2));
-		if (p16)
-			return Vec3d((*p16)(0), (*p16)(1), (*p16)(2));
-		if (p32)
-			return Vec3d((*p32)(0), (*p32)(1), (*p32)(2));
-		if (p64)
-			return Vec3d((double)(*p64)(0), (double)(*p64)(1), (double)(*p64)(2));
-		if (pf32)
-			return Vec3d((*pf32)(0), (*pf32)(1), (*pf32)(2));
+		//if (p8)
+		//	return Vec3d((*p8)(0), (*p8)(1), (*p8)(2));
+		//if (p16)
+		//	return Vec3d((*p16)(0), (*p16)(1), (*p16)(2));
+		//if (p32)
+		//	return Vec3d((*p32)(0), (*p32)(1), (*p32)(2));
+		//if (p64)
+		//	return Vec3d((double)(*p64)(0), (double)(*p64)(1), (double)(*p64)(2));
+		//if (pf32)
+		//	return Vec3d((*pf32)(0), (*pf32)(1), (*pf32)(2));
+
+		//return Vec3d(0, 0, 0);
 		
-
-		return Vec3d(0, 0, 0);
+		Vec3d vec;
+		pick<ConvertToVec3>(p->dataType(), p, vec);
+		return vec;
 	}
 
 	/**
@@ -189,16 +234,67 @@ namespace pilib
 	{
 		if (imgs.find(name) != imgs.end() || distributedImgs.find(name) != distributedImgs.end())
 		{
-			ImageBase* pValueImage = getImage(name);
+			// First get info as getImage reads the whole image into memory.
+			coord_t w = 0, h = 0, d = 0;
+			ImageDataType dt;
+			getImageInfoNoThrow(name, w, h, d, dt);
 
-			if (pValueImage->pixelCount() == 3)
+			coord_t pixelCount = w * h * d;
+			if (pixelCount == 3 && dt != ImageDataType::Complex32 && dt != ImageDataType::Unknown)
 			{
+				ImageBase* pValueImage = getImage(name);
+
 				v = toVec3(pValueImage);
 				return true;
 			}
 		}
 		return false;
 	}
+
+	/**
+	Tries to convert string to given data type using fromString implementation.
+	Returns true if succesfull (and if dt matches target_t).
+	*/
+	template<typename target_t> bool trySimpleConversion(ArgumentDataType dt, const string& value, bool doConversion, ParamVariant& result, string& reason)
+	{
+		if (parameterType<target_t>() != dt)
+			return false;
+
+		try
+		{
+			target_t val = itl2::fromString<target_t>(value);
+			if (doConversion)
+				result = val;
+			return true;
+		}
+		catch (ITLException& e)
+		{
+			reason = e.message();
+			return false;
+		}
+	}
+
+	/**
+	Functor that casts image to another type and assigns it to ParamVariant.
+	*/
+	template<typename pixel_t> struct CastImage
+	{
+		static void run(ImageBase* p, ParamVariant& target)
+		{
+			target = dynamic_cast<Image<pixel_t>*>(p);
+		}
+	};
+
+	/**
+	Functor that casts distributed image to another type and assigns it to ParamVariant.
+	*/
+	template<typename pixel_t> struct CastDistributedImage
+	{
+		static void run(DistributedImageBase* p, ParamVariant& target)
+		{
+			target = dynamic_cast<DistributedImage<pixel_t>*>(p);
+		}
+	};
 
 	/**
 	Try to convert the given string to match the given argument.
@@ -209,67 +305,23 @@ namespace pilib
 	*/
 	int PISystem::tryConvert(string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, string& reason)
 	{
-		// TODO: Clean this up. This function has become a mess.
+		ArgumentDataType dt = type.dataType();
 
 		if (type.direction() == ParameterDirection::In || type.direction() == ParameterDirection::InOut)
 		{
 			// Input parameter.
 			// Strings must be convertible to primitives, images must exist.
 
-			ArgumentDataType dt = type.dataType();
-
-			if (dt == ArgumentDataType::String)
-			{
-				if (doConversion)
-					result = value;
+			if (trySimpleConversion<string>(dt, value, doConversion, result, reason))
 				return 1;
-			}
-			else if (dt == ArgumentDataType::Bool)
+			if (trySimpleConversion<bool>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<double>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<Vec3d>(dt, value, doConversion, result, reason))
+				return 1;
+			if (dt == ArgumentDataType::Vect3d)
 			{
-				try
-				{
-					bool val = itl2::fromString<bool>(value);
-					if (doConversion)
-						result = val;
-					return 1;
-				}
-				catch (ITLException& e)
-				{
-					reason = e.message();
-					return 0;
-				}
-			}
-			else if (dt == ArgumentDataType::Double)
-			{
-				try
-				{
-					double val = itl2::fromString<double>(value);
-					if (doConversion)
-						result = val;
-					return 1;
-				}
-				catch (ITLException& e)
-				{
-					reason = e.message();
-					return 0;
-				}
-			}
-			else if (dt == ArgumentDataType::Vect3d)
-			{
-				try
-				{
-					Vec3d val = itl2::fromString<Vec3d>(value);
-					if (doConversion)
-					{
-						result = val;
-					}
-					return 1;
-				}
-				catch (ITLException& e)
-				{
-					reason = e.message();
-				}
-
 				Vec3d v;
 				if (getImageAsVec3(value, v))
 				{
@@ -277,552 +329,159 @@ namespace pilib
 						result = v;
 					return 1;
 				}
-
-				return 0;
 			}
-			else if (dt == ArgumentDataType::Vect3c)
+			if (trySimpleConversion<Vec3c>(dt, value, doConversion, result, reason))
+				return 1;
+			if (dt == ArgumentDataType::Vect3c)
 			{
-				try
-				{
-					Vec3c val = itl2::fromString<Vec3c>(value);
-					if (doConversion)
-					{
-						result = val;
-					}
-					return 1;
-				}
-				catch (ITLException& e)
-				{
-					reason = e.message();
-				}
-
 				Vec3d v;
 				if (getImageAsVec3(value, v))
 				{
 					if (doConversion)
-						result = math::round(v);
+						result = round(v);
 					return 1;
 				}
-
-				return 0;
 			}
-			else if (dt == ArgumentDataType::Int || dt == ArgumentDataType::Size)
-			{
-				char* p;
-				coord_t val = strtol(value.c_str(), &p, 10);
-				if (*p)
-				{
-					reason = string("Value ") + value + string(" is not a valid integer number.");
-					return 0;
-				}
-				if (doConversion)
-				{
-					if (dt == ArgumentDataType::Int)
-						result = val;
-					else
-						result = (size_t)math::max((size_t)0, (size_t)val);
-				}
+			if (trySimpleConversion<coord_t>(dt, value, doConversion, result, reason))
 				return 1;
-			}
-			else if (dt == ArgumentDataType::NBType)
-			{
-				string lv = value;
-				toLower(lv);
+			if (trySimpleConversion<size_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<NeighbourhoodType>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<BoundaryCondition>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<Connectivity>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<InterpolationMode>(dt, value, doConversion, result, reason))
+				return 1;
 
-				if (lv == "rect" || lv == "rectangular" || lv == "box")
-				{
-					if (doConversion)
-						result = NeighbourhoodType::Rectangular;
-					return 1;
-				}
-
-				if (lv == "ell" || lv == "ellipsoidal" || lv == "ellipsoid" || lv == "spherical" || lv == "sphere")
-				{
-					if (doConversion)
-						result = NeighbourhoodType::Ellipsoidal;
-					return 1;
-				}
-
-				reason = string("Unknown neighbourhood type: ") + value;
-				return 0;
-			}
-			else if (dt == ArgumentDataType::BoundaryCond)
-			{
-				string lv = value;
-				toLower(lv);
-
-				if (lv == "zero" || lv == "0")
-				{
-					if (doConversion)
-						result = BoundaryCondition::Zero;
-					return 1;
-				}
-
-				if (lv == "nearest" || lv == "1")
-				{
-					if (doConversion)
-						result = BoundaryCondition::Nearest;
-					return 1;
-				}
-
-				reason = string("Unknown boundary condition: ") + value;
-				return 0;
-			}
-			else if (dt == ArgumentDataType::Connectiv)
-			{
-				string lv = value;
-				toLower(lv);
-
-				if (lv == "nearest" || lv == "nearestneigbours" || lv == "nearest_neighbours" ||
-					lv == "nearestneigbors" || lv == "nearest_neighbors" ||
-					value == "4" || value == "6" || value == "0")
-				{
-					if (doConversion)
-						result = Connectivity::NearestNeighbours;
-					return 1;
-				}
-
-				if (lv == "all" || lv == "allneigbours" || lv == "all_neighbours" ||
-					lv == "allneigbors" || lv == "all_neighbors" ||
-					value == "8" || value == "27" || value == "1")
-				{
-					if (doConversion)
-						result = Connectivity::AllNeighbours;
-					return 1;
-				}
-
-				reason = string("Unknown connectivity value: ") + value;
-				return 0;
-			}
-			else if (dt == ArgumentDataType::InterpolationMode)
-			{
-				string lv = value;
-				toLower(lv);
-
-				if (startsWith(lv, "nearest")
-					|| lv == "0" || lv == "no" || lv == "none" || lv == "off")
-				{
-					if (doConversion)
-						result = InterpolationMode::Nearest;
-					return 1;
-				}
-
-				if (startsWith(lv, "linear")
-					|| lv == "1")
-				{
-					if (doConversion)
-						result = InterpolationMode::Linear;
-					return 1;
-				}
-
-				if (startsWith(lv, "cubic")
-					|| lv == "2")
-				{
-					if (doConversion)
-						result = InterpolationMode::Cubic;
-					return 1;
-				}
-
-				reason = string("Unknown interpolation mode: ") + value;
-				return 0;
-			}
-			else if (dt == ArgumentDataType::ImageUInt8 ||
-				dt == ArgumentDataType::ImageUInt16 ||
-				dt == ArgumentDataType::ImageUInt32 ||
-				dt == ArgumentDataType::ImageUInt64 ||
-				dt == ArgumentDataType::ImageFloat32 ||
-				dt == ArgumentDataType::ImageComplex32)
+			if (isImage(dt))
 			{
 				// Find image with given name
 
 				if (!isValidImageName(value, reason))
 					return 0;
 
+				ImageDataType idt = argumentDataTypeToImageDataType(dt);
+
 				if (!isDistributed())
 				{
 					// Non-distributed case
 
-					map<string, ImageBase*>::const_iterator it = imgs.find(value);
+					auto it = imgs.find(value);
 					if (it == imgs.end())
 					{
 						reason = string("Image ") + value + string(" does not exist.");
 						return 0;
 					}
 
-					ImageBase* p = it->second;
+					// Check that image data type is correct
+					ImageBase* p = it->second.get();
 
-					// Check image data type
-					if (dt == ArgumentDataType::ImageUInt8)
+					if (idt != p->dataType())
 					{
-						Image<uint8_t>* p2 = dynamic_cast<Image<uint8_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt8) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
+						reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
+						return 0;
 					}
+					
+					if (doConversion)
+						pick<CastImage>(idt, p, result);
 
-					if (dt == ArgumentDataType::ImageUInt16)
-					{
-						Image<uint16_t>* p2 = dynamic_cast<Image<uint16_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt16) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageUInt32)
-					{
-						Image<uint32_t>* p2 = dynamic_cast<Image<uint32_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt32) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageUInt64)
-					{
-						Image<uint64_t>* p2 = dynamic_cast<Image<uint64_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt64) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageFloat32)
-					{
-						Image<float32_t>* p2 = dynamic_cast<Image<float32_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageFloat32) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageComplex32)
-					{
-						Image<complex32_t >* p2 = dynamic_cast<Image<complex32_t >*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageComplex32) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					throw runtime_error("tryConvert not implemented for given input image data type.");
+					return 1;
 				}
 				else
 				{
-					// Distributed case
-
-					map<string, DistributedImageBase*>::const_iterator it = distributedImgs.find(value);
+					auto it = distributedImgs.find(value);
 					if (it == distributedImgs.end())
 					{
 						reason = string("Image ") + value + string(" does not exist.");
 						return 0;
 					}
 
-					DistributedImageBase* p = it->second;
+					// Check that image data type is correct
+					DistributedImageBase* p = it->second.get();
 
-					// Check image data type
-					if (dt == ArgumentDataType::ImageUInt8)
+					if (idt != p->dataType())
 					{
-						DistributedImage<uint8_t>* p2 = dynamic_cast<DistributedImage<uint8_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt8) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
+						reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
+						return 0;
 					}
 
-					if (dt == ArgumentDataType::ImageUInt16)
-					{
-						DistributedImage<uint16_t>* p2 = dynamic_cast<DistributedImage<uint16_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt16) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
+					if (doConversion)
+						pick<CastDistributedImage>(idt, p, result);
 
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageUInt32)
-					{
-						DistributedImage<uint32_t>* p2 = dynamic_cast<DistributedImage<uint32_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt32) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageUInt64)
-					{
-						DistributedImage<uint64_t>* p2 = dynamic_cast<DistributedImage<uint64_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageUInt64) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageFloat32)
-					{
-						DistributedImage<float32_t>* p2 = dynamic_cast<DistributedImage<float32_t>*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageFloat32) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					if (dt == ArgumentDataType::ImageComplex32)
-					{
-						DistributedImage<complex32_t >* p2 = dynamic_cast<DistributedImage<complex32_t >*>(p);
-						if (!p2)
-						{
-							reason = string("Expected ") + toString(ArgumentDataType::ImageComplex32) + string(", but ") + value + string(" is ") + getDataTypeString(p);
-							return 0;
-						}
-
-						if (doConversion)
-							result = p2;
-
-						return 1;
-					}
-
-					throw runtime_error("tryConvert not implemented for given input image data type.");
+					return 1;
 				}
+
+
 			}
-			else
-			{
-				throw runtime_error("Input parameter data type not implemented.");
-			}
+
+			return 0;
 		}
 		else
 		{
 			// Output parameter
 
-			ArgumentDataType dt = type.dataType();
 
-			if (dt == ArgumentDataType::ImageUInt8 ||
-				dt == ArgumentDataType::ImageUInt16 ||
-				dt == ArgumentDataType::ImageUInt32 ||
-				dt == ArgumentDataType::ImageUInt64 ||
-				dt == ArgumentDataType::ImageFloat32 ||
-				dt == ArgumentDataType::ImageComplex32)
+			if (isImage(dt))
 			{
 				if (!isValidImageName(value, reason))
 					return 0;
+
+				ImageDataType idt = argumentDataTypeToImageDataType(dt);
 
 				// Any image type can be output automatically, but existing images get higher priority
 
 				// Search match from existing images.
 				if (!isDistributed())
 				{
-					map<string, ImageBase*>::const_iterator it = imgs.find(value);
+					auto it = imgs.find(value);
 					if (it != imgs.end())
 					{
-						ImageBase* p = it->second;
-						if ((dt == ArgumentDataType::ImageUInt8 && dynamic_cast<Image<uint8_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageUInt16 && dynamic_cast<Image<uint16_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageUInt32 && dynamic_cast<Image<uint32_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageUInt64 && dynamic_cast<Image<uint64_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageFloat32 && dynamic_cast<Image<float32_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageComplex32 && dynamic_cast<Image<complex32_t>*>(p)))
+						ImageBase* p = it->second.get();
+						if (p->dataType() == idt)
 						{
 							// Match
 							if (doConversion)
-							{
-								switch (dt)
-								{
-								case ArgumentDataType::ImageUInt8: result = dynamic_cast<Image<uint8_t>*>(p); break;
-								case ArgumentDataType::ImageUInt16: result = dynamic_cast<Image<uint16_t>*>(p); break;
-								case ArgumentDataType::ImageUInt32: result = dynamic_cast<Image<uint32_t>*>(p); break;
-								case ArgumentDataType::ImageUInt64: result = dynamic_cast<Image<uint64_t>*>(p); break;
-								case ArgumentDataType::ImageFloat32: result = dynamic_cast<Image<float32_t>*>(p); break;
-								case ArgumentDataType::ImageComplex32: result = dynamic_cast<Image<complex32_t>*>(p); break;
-								default: throw logic_error("Image data type not configured.");
-								}
-							}
+								pick<CastImage>(idt, p, result);
 							return 1;
 						}
 					}
 				}
 				else
 				{
-					map<string, DistributedImageBase*>::const_iterator it = distributedImgs.find(value);
+					auto it = distributedImgs.find(value);
 					if (it != distributedImgs.end())
 					{
-						DistributedImageBase* p = it->second;
-						if ((dt == ArgumentDataType::ImageUInt8 && dynamic_cast<DistributedImage<uint8_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageUInt16 && dynamic_cast<DistributedImage<uint16_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageUInt32 && dynamic_cast<DistributedImage<uint32_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageUInt64 && dynamic_cast<DistributedImage<uint64_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageFloat32 && dynamic_cast<DistributedImage<float32_t>*>(p)) ||
-							(dt == ArgumentDataType::ImageComplex32 && dynamic_cast<DistributedImage<complex32_t>*>(p)))
+						DistributedImageBase* p = it->second.get();
+
+						if (p->dataType() == idt)
 						{
 							// Match
 							if (doConversion)
-							{
-								switch (dt)
-								{
-								case ArgumentDataType::ImageUInt8: result = dynamic_cast<DistributedImage<uint8_t>*>(p); break;
-								case ArgumentDataType::ImageUInt16: result = dynamic_cast<DistributedImage<uint16_t>*>(p); break;
-								case ArgumentDataType::ImageUInt32: result = dynamic_cast<DistributedImage<uint32_t>*>(p); break;
-								case ArgumentDataType::ImageUInt64: result = dynamic_cast<DistributedImage<uint64_t>*>(p); break;
-								case ArgumentDataType::ImageFloat32: result = dynamic_cast<DistributedImage<float32_t>*>(p); break;
-								case ArgumentDataType::ImageComplex32: result = dynamic_cast<DistributedImage<complex32_t>*>(p); break;
-								default: throw logic_error("Image data type not configured.");
-								}
-							}
+								pick<CastDistributedImage>(idt, p, result);
 							return 1;
 						}
 					}
 				}
 
+				// No match found from existing images.
 				// Create image if it does not exist.
 				if (doConversion)
 				{
 					if (!isDistributed())
 					{
 						// Create normal image
-						if (imgs[value] != 0)
-							delete imgs[value];
-
-						if (dt == ArgumentDataType::ImageUInt8)
-						{
-							result = new Image<uint8_t>();
-							imgs[value] = get<Image<uint8_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageUInt16)
-						{
-							result = new Image<uint16_t>();
-							imgs[value] = get<Image<uint16_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageUInt32)
-						{
-							result = new Image<uint32_t>();
-							imgs[value] = get<Image<uint32_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageUInt64)
-						{
-							result = new Image<uint64_t>();
-							imgs[value] = get<Image<uint64_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageFloat32)
-						{
-							result = new Image<float32_t>();
-							imgs[value] = get<Image<float32_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageComplex32)
-						{
-							result = new Image<complex32_t>();
-							imgs[value] = get<Image<complex32_t>*>(result);
-						}
-						else
-						{
-							throw runtime_error("Output image data type not implemented.");
-						}
+						pick<CreateImage>(idt, Vec3c(1, 1, 1), value, this);
+						ImageBase* p = imgs[value].get();
+						pick<CastImage>(idt, p, result);
 					}
 					else
 					{
 						// Create distributed image
-						if (distributedImgs[value] != 0)
-							delete distributedImgs[value];
-
-
-						if (dt == ArgumentDataType::ImageUInt8)
-						{
-							result = new DistributedImage<uint8_t>(value);
-							distributedImgs[value] = get<DistributedImage<uint8_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageUInt16)
-						{
-							result = new DistributedImage<uint16_t>(value);
-							distributedImgs[value] = get<DistributedImage<uint16_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageUInt32)
-						{
-							result = new DistributedImage<uint32_t>(value);
-							distributedImgs[value] = get<DistributedImage<uint32_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageUInt64)
-						{
-							result = new DistributedImage<uint64_t>(value);
-							distributedImgs[value] = get<DistributedImage<uint64_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageFloat32)
-						{
-							result = new DistributedImage<float32_t>(value);
-							distributedImgs[value] = get<DistributedImage<float32_t>*>(result);
-						}
-						else if (dt == ArgumentDataType::ImageComplex32)
-						{
-							result = new DistributedImage<complex32_t>(value);
-							distributedImgs[value] = get<DistributedImage<complex32_t>*>(result);
-						}
-						else
-						{
-							throw runtime_error("Output image data type not implemented.");
-						}
+						pick<CreateEmptyDistributedImage>(idt, value, Vec3c(1, 1, 1), this);
+						DistributedImageBase* p = distributedImgs[value].get();
+						pick<CastDistributedImage>(idt, p, result);
 					}
 				}
 
@@ -914,7 +573,7 @@ namespace pilib
 	void PISystem::executeCommand(const string& name, vector<string>& args)
 	{
 		// Match name
-		vector<Command*> candidates = getCommands(name);
+		vector<Command*> candidates = CommandList::byName(name);
 
 		if (candidates.size() <= 0)
 			throw ParseException(string("Unknown command name: ") + name);
@@ -1018,11 +677,30 @@ namespace pilib
 		// Convert string parameters to values. This must succeed as the process was tested above.
 		vector<ParamVariant> convertedArgs;
 		convertedArgs.reserve(realArgs.size());
+
+		vector<shared_ptr<ImageBase> > imageStore;
+		
 		for (size_t n = 0; n < realArgs.size(); n++)
 		{
 			ParamVariant res;
 			string dummy;
 			tryConvert(realArgs[n], cmd->args()[n], true, res, dummy);
+
+			// Store shared_ptrs to image arguments so that they don't get deleted if the next parameters override them.
+			// NOTE: We just hold the pointers but don't do anything with them.
+			DistributedImageBase* db = getDistributedImageNoThrow(res);
+			if (db)
+			{
+				distributedImageStore.push_back(getDistributedImagePointer(db));
+			}
+
+			ImageBase* ib = pilib::getImageNoThrow(res);
+			if (ib)
+			{
+				imageStore.push_back(getImagePointer(ib));
+			}
+
+
 			convertedArgs.push_back(res);
 		}
 
@@ -1052,10 +730,30 @@ namespace pilib
 
 		if (showTiming && !isNoShow)
 			cout << "Operation took " << setprecision(3) << timer.getSeconds() << " s" << endl;
+
+		distributedImageStore.clear();
 	}
 
 	/**
-	Parse one line (one command) of input code.
+	Parse one statement of input code.
+	*/
+	void PISystem::parseStatement(string& statement)
+	{
+		trim(statement);
+
+		string cmd;
+		vector<string> args;
+		parseFunctionCall(statement, cmd, args);
+
+		//cout << "Name: " << cmd << endl;
+		//for (size_t n = 0; n < args.size(); n++)
+		//	cout << "Argument " << (n + 1) << ": " << args[n] << endl;
+
+		executeCommand(cmd, args);
+	}
+
+	/**
+	Parse one line of input code.
 	*/
 	void PISystem::parseLine(string& line)
 	{
@@ -1065,18 +763,19 @@ namespace pilib
 
 		if (line.length() > 0)
 		{
-			if (line[0] != '%' && line[0] != '#' && line.find("//") != 0)
+			if (line[0] != '%'
+				&& line[0] != '#'
+				&& line.find("//") != 0)
 			{
-				// Not a comment.
-				string cmd;
-				vector<string> args;
-				parseFunctionCall(line, cmd, args);
+				// Not a comment. Parse statements one by one.
 
-				//cout << "Name: " << cmd << endl;
-				//for (size_t n = 0; n < args.size(); n++)
-				//	cout << "Argument " << (n + 1) << ": " << args[n] << endl;
+				while (line.length() > 0)
+				{
+					char delim = 0;
+					string token = getToken(line, ";\n", delim);
 
-				executeCommand(cmd, args);
+					parseStatement(token);
+				}
 			}
 
 		}
@@ -1088,27 +787,7 @@ namespace pilib
 	*/
 	string PISystem::getDataTypeString(const ImageBase* p)
 	{
-		const Image<uint8_t>* p8 = dynamic_cast<const Image<uint8_t>*>(p);
-		const Image<uint16_t>* p16 = dynamic_cast<const Image<uint16_t>*>(p);
-		const Image<uint32_t>* p32 = dynamic_cast<const Image<uint32_t>*>(p);
-		const Image<uint64_t>* p64 = dynamic_cast<const Image<uint64_t>*>(p);
-		const Image<float32_t>* pf32 = dynamic_cast<const Image<float32_t>*>(p);
-		const Image<complex32_t >* pc32 = dynamic_cast<const Image<complex32_t >*>(p);
-
-		if (p8)
-			return toString(ArgumentDataType::ImageUInt8);
-		if (p16)
-			return toString(ArgumentDataType::ImageUInt16);
-		if (p32)
-			return toString(ArgumentDataType::ImageUInt32);
-		if (p64)
-			return toString(ArgumentDataType::ImageUInt64);
-		if (pf32)
-			return toString(ArgumentDataType::ImageFloat32);
-		if (pc32)
-			return toString(ArgumentDataType::ImageComplex32);
-
-		throw runtime_error("getDataTypeString not implemented for given data type.");
+		return toString(p->dataType()) + " image";
 	}
 
 
@@ -1117,27 +796,7 @@ namespace pilib
 	*/
 	string PISystem::getDataTypeString(const DistributedImageBase* p)
 	{
-		const DistributedImage<uint8_t>* p8 = dynamic_cast<const DistributedImage<uint8_t>*>(p);
-		const DistributedImage<uint16_t>* p16 = dynamic_cast<const DistributedImage<uint16_t>*>(p);
-		const DistributedImage<uint32_t>* p32 = dynamic_cast<const DistributedImage<uint32_t>*>(p);
-		const DistributedImage<uint64_t>* p64 = dynamic_cast<const DistributedImage<uint64_t>*>(p);
-		const DistributedImage<float32_t>* pf32 = dynamic_cast<const DistributedImage<float32_t>*>(p);
-		const DistributedImage<complex32_t >* pc32 = dynamic_cast<const DistributedImage<complex32_t >*>(p);
-
-		if (p8)
-			return toString(ArgumentDataType::ImageUInt8);
-		if (p16)
-			return toString(ArgumentDataType::ImageUInt16);
-		if (p32)
-			return toString(ArgumentDataType::ImageUInt32);
-		if (p64)
-			return toString(ArgumentDataType::ImageUInt64);
-		if (pf32)
-			return toString(ArgumentDataType::ImageFloat32);
-		if (pc32)
-			return toString(ArgumentDataType::ImageComplex32);
-
-		throw runtime_error("getDataTypeString not implemented for given data type.");
+		return string("distributed ") + toString(p->dataType()) + " image";
 	}
 
 
@@ -1148,36 +807,10 @@ namespace pilib
 	PISystem::PISystem()
 	{
 		clearLastError();
-
-		addFilterCommands(commands);
-		addSpecialCommands(commands);
-		addIOCommands(commands);
-		addOtherCommands(commands);
-		addPointProcessCommands(commands);
-		addThinAndSkeletonCommands(commands);
-		addSpecialSystemCommands(commands);
-		addTransformCommands(commands);
-		addParticlesCommands(commands);
-		addGenerationCommands(commands);
-		addProjectionCommands(commands);
 	}
 
 	PISystem::~PISystem()
 	{
-		// Delete all images
-		for (map<string, ImageBase*>::iterator it = imgs.begin(); it != imgs.end(); it++)
-			delete it->second;
-		imgs.clear();
-
-		for (map<string, DistributedImageBase*>::iterator it = distributedImgs.begin(); it != distributedImgs.end(); it++)
-			delete it->second;
-		distributedImgs.clear();
-
-		// Delete all commands
-		for (size_t n = 0; n < commands.size(); n++)
-		{
-			delete commands[n];
-		}
 	}
 
 	/**
@@ -1198,7 +831,7 @@ namespace pilib
 	string PISystem::getImageName(const ImageBase* img) const
 	{
 		for (auto const& item : imgs)
-			if (item.second == img)
+			if (item.second.get() == img)
 				return item.first;
 		throw ITLException("Invalid image name query.");
 	}
@@ -1226,7 +859,7 @@ namespace pilib
 			replaceImage(name, distributedImgs[name]->toNormalImage());
 		}
 
-		return imgs[name];
+		return imgs[name].get();
 	}
 
 	/**
@@ -1238,7 +871,7 @@ namespace pilib
 	{
 		if (isDistributed())
 		{
-			distributedImgs[imgName]->setData(imgs[imgName]);
+			distributedImgs[imgName]->setData(imgs[imgName].get());
 			replaceImage(imgName, 0);
 		}
 	}
@@ -1268,6 +901,45 @@ namespace pilib
 	/**
 	Retrieve image having given name, do not throw exception but set last error and return 0 if exception would be thrown.
 	*/
+	void PISystem::getImageInfoNoThrow(const string& name, coord_t& width, coord_t& height, coord_t& depth, ImageDataType& dt)
+	{
+		try
+		{
+			// NOTE: Do not use getImage as that results in reading distributed images to RAM.
+			if (!isDistributed())
+			{
+				auto p = imgs[name];
+				width = p->width();
+				height = p->height();
+				depth = p->depth();
+				dt = p->dataType();
+			}
+			else
+			{
+				auto p = distributedImgs[name];
+				width = p->width();
+				height = p->height();
+				depth = p->depth();
+				dt = p->dataType();
+			}
+			return;
+		}
+		catch (ITLException& e)
+		{
+			lastException = e.message();
+		}
+		catch (exception& e)
+		{
+			lastException = e.what();
+		}
+
+		if (lastException == "")
+			lastException = "Image not found.";
+	}
+
+	/**
+	Retrieve image having given name, do not throw exception but set last error and return 0 if exception would be thrown.
+	*/
 	ImageBase* PISystem::getImageNoThrow(const string& name)
 	{
 		try
@@ -1291,14 +963,11 @@ namespace pilib
 	Replace image with given image.
 	Replace image by null pointer to remove it from the system.
 	*/
-	void PISystem::replaceImage(const string& name, ImageBase* newImg)
+	void PISystem::replaceImage(const string& name, shared_ptr<ImageBase> newImg)
 	{
 		if (imgs.find(name) != imgs.end())
-		{
-			if (imgs[name] != newImg)
-				delete imgs[name];
 			imgs.erase(name);
-		}
+		
 		if (newImg)
 			imgs[name] = newImg;
 	}
@@ -1308,21 +977,18 @@ namespace pilib
 	*/
 	DistributedImageBase* PISystem::getDistributedImage(const string& name)
 	{
-		return distributedImgs[name];
+		return distributedImgs[name].get();
 	}
 
 	/**
 	Replace distributed image with a new one.
 	Set newImg to zero to remove the image with given name.
 	*/
-	void PISystem::replaceDistributedImage(const string& name, DistributedImageBase* newImg, bool free)
+	void PISystem::replaceDistributedImage(const string& name, shared_ptr<DistributedImageBase> newImg)
 	{
 		if (distributedImgs.find(name) != distributedImgs.end())
-		{
-			if (distributedImgs[name] != newImg && free)
-				delete distributedImgs[name];
 			distributedImgs.erase(name);
-		}
+		
 		if (newImg)
 			distributedImgs[name] = newImg;
 	}
@@ -1377,9 +1043,10 @@ namespace pilib
 	{
 		if (distributor)
 		{
+			distributor->flush();
 			delete distributor;
 			distributor = 0;
-			cout << "Disabled distributed computing mode." << endl;
+			cout << "Distributed computing mode is disabled." << endl;
 		}
 
 		toLower(provider);
@@ -1413,7 +1080,7 @@ namespace pilib
 			while (rest.length() > 0)
 			{
 				char delim = 0;
-				string token = getToken(rest, ";\n", delim);
+				string token = getToken(rest, "\n", delim);
 
 				parseLine(token);
 
@@ -1436,95 +1103,44 @@ namespace pilib
 		}
 	}
 
-	/**
-	Gets help topics for given command name.
-	*/
-	vector<string> PISystem::getHelp(const string& cmdName) const
+
+	shared_ptr<DistributedImageBase> PISystem::getDistributedImagePointer(DistributedImageBase* img) const
 	{
-		vector<string> results;
-
-		vector<Command*> cmds = getCommands(cmdName);
-
-		for (size_t n = 0; n < cmds.size(); n++)
+		for (auto& item : distributedImgs)
 		{
-			results.push_back(cmds[n]->helpString());
+			if (item.second.get() == img)
+				return item.second;
 		}
 
-		return results;
+		for (auto& item : distributedImageStore)
+		{
+			if (item.get() == img)
+				return item;
+		}
+
+		throw ITLException("Unknown distributed image pointer.");
 	}
 
-	/**
-	Get a list of commands and some basic information about each one, each command separated by newline.
-	*/
-	string PISystem::commandList(bool forUser) const
+	shared_ptr<ImageBase> PISystem::getImagePointer(ImageBase* img) const
 	{
-		vector<tuple<string, bool> > names;
-		for (size_t n = 0; n < commands.size(); n++)
+		for (auto& item : imgs)
 		{
-			names.push_back(make_tuple(commands[n]->toSimpleString(), commands[n]->canDistribute()));
+			if (item.second.get() == img)
+				return item.second;
 		}
-		removeDuplicates(names);
-		sort(names.begin(), names.end());
-		stringstream msg;
-		if (forUser)
-			msg << "Letter D placed before command name indicates a command that can be used in distributed computing mode. See help(distribute) for more information." << endl << endl;
-		for (size_t n = 0; n < names.size(); n++)
-		{
-			if (forUser)
-				msg << (get<1>(names[n]) ? "D " : "  ");
-			msg << get<0>(names[n]) << endl;
-		}
-		return msg.str();
+
+		throw ITLException("Unknown image pointer.");
 	}
 
-	/**
-	Convert argument to string.
-	@param isDistributed Set to true to convert arguments of type Image* to DistributedImage*
-	*/
-	string PISystem::argumentToString(const CommandArgumentBase& argument, const ParamVariant& value, bool isDistributed) const
+	bool PISystem::isDistributedImage(DistributedImageBase* img) const
 	{
-		ArgumentDataType dt = argument.dataType();
-
-		if (isDistributed)
+		for (auto& item : distributedImgs)
 		{
-			switch (dt)
-			{
-			case ArgumentDataType::ImageUInt8: dt = ArgumentDataType::DImageUInt8; break;
-			case ArgumentDataType::ImageUInt16: dt = ArgumentDataType::DImageUInt16; break;
-			case ArgumentDataType::ImageUInt32: dt = ArgumentDataType::DImageUInt32; break;
-			case ArgumentDataType::ImageUInt64: dt = ArgumentDataType::DImageUInt64; break;
-			case ArgumentDataType::ImageFloat32: dt = ArgumentDataType::DImageFloat32; break;
-			case ArgumentDataType::ImageComplex32: dt = ArgumentDataType::DImageComplex32; break;
-			}
+			if (item.second.get() == img)
+				return true;
 		}
 
-		string s;
-		switch (dt)
-		{
-		case ArgumentDataType::String: s = get<string>(value); return s;
-		case ArgumentDataType::Double: return itl2::toString(get<double>(value));
-		case ArgumentDataType::Int: return itl2::toString(get<coord_t>(value));
-		case ArgumentDataType::Size: return itl2::toString(get<size_t>(value));
-		case ArgumentDataType::NBType: return itl2::toString(get<NeighbourhoodType>(value));
-		case ArgumentDataType::BoundaryCond: return itl2::toString(get<BoundaryCondition>(value));
-		case ArgumentDataType::Connectiv: return itl2::toString(get<Connectivity>(value));
-		case ArgumentDataType::InterpolationMode: return itl2::toString(get<InterpolationMode>(value));
-		case ArgumentDataType::Bool: return itl2::toString(get<bool>(value));
-		case ArgumentDataType::Vect3d: return itl2::toString(get<Vec3d>(value));
-		case ArgumentDataType::Vect3c: return itl2::toString(get<Vec3c>(value));
-		case ArgumentDataType::ImageUInt8: return imageName(get<Image<uint8_t>* >(value));
-		case ArgumentDataType::ImageUInt16: return imageName(get<Image<uint16_t>* >(value));
-		case ArgumentDataType::ImageUInt32: return imageName(get<Image<uint32_t>* >(value));
-		case ArgumentDataType::ImageUInt64: return imageName(get<Image<uint64_t>* >(value));
-		case ArgumentDataType::ImageFloat32: return imageName(get<Image<float32_t>* >(value));
-		case ArgumentDataType::ImageComplex32: return imageName(get<Image<complex32_t>* >(value));
-		case ArgumentDataType::DImageUInt8: return distributedImageName(get<DistributedImage<uint8_t>* >(value));
-		case ArgumentDataType::DImageUInt16: return distributedImageName(get<DistributedImage<uint16_t>* >(value));
-		case ArgumentDataType::DImageUInt32: return distributedImageName(get<DistributedImage<uint32_t>* >(value));
-		case ArgumentDataType::DImageFloat32: return distributedImageName(get<DistributedImage<float32_t>* >(value));
-		case ArgumentDataType::DImageComplex32: return distributedImageName(get<DistributedImage<complex32_t>* >(value));
-		default: throw ITLException("Data type not configured.");
-		}
+		return false;
 	}
 
 
@@ -1539,9 +1155,10 @@ namespace pilib
 		coord_t d = pop<coord_t>(args);
 
 		ImageDataType templDT;
-		math::Vec3c templDims;
-		if (!itl2::io::getInfo(filename, templDims, templDT))
-			throw ITLException(string("Unable to find dimensions and data type of file ") + filename);
+		Vec3c templDims;
+		string reason;
+		if (!itl2::io::getInfo(filename, templDims, templDT, reason))
+			throw ITLException(string("Unable to find dimensions and data type of file ") + filename + ". " + reason);
 
 		createImage(name, dts, w, h, d, templDT, templDims.x, templDims.y, templDims.z, system);
 	}
@@ -1556,13 +1173,50 @@ namespace pilib
 		coord_t d = pop<coord_t>(args);
 
 		ImageDataType templDT;
-		math::Vec3c templDims;
-		if (!itl2::io::getInfo(filename, templDims, templDT))
-			throw ITLException(string("Unable to find dimensions and data type of file ") + filename);
+		Vec3c templDims;
+		string reason;
+		if (!itl2::io::getInfo(filename, templDims, templDT, reason))
+			throw ITLException(string("Unable to find dimensions and data type of file ") + filename + ". " + reason);
 
 		PISystem* system = distributor.getSystem();
 
 		createDistributedImage(name, dts, w, h, d, templDT, templDims.x, templDims.y, templDims.z, system);
+
+		return vector<string>();
+	}
+
+	void NewLikeFile2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+		Vec3c dim = pop<Vec3c>(args);
+
+		ImageDataType templDT;
+		Vec3c templDims;
+		string reason;
+		if (!itl2::io::getInfo(filename, templDims, templDT, reason))
+			throw ITLException(string("Unable to find dimensions and data type of file ") + filename + ". " + reason);
+
+		createImage(name, dts, dim.x, dim.y, dim.z, templDT, templDims.x, templDims.y, templDims.z, system);
+	}
+
+	vector<string> NewLikeFile2Command::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+		Vec3c dim = pop<Vec3c>(args);
+
+		ImageDataType templDT;
+		Vec3c templDims;
+		string reason;
+		if (!itl2::io::getInfo(filename, templDims, templDT, reason))
+			throw ITLException(string("Unable to find dimensions and data type of file ") + filename + ". " + reason);
+
+		PISystem* system = distributor.getSystem();
+
+		createDistributedImage(name, dts, dim.x, dim.y, dim.z, templDT, templDims.x, templDims.y, templDims.z, system);
 
 		return vector<string>();
 	}

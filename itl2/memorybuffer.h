@@ -37,12 +37,12 @@ namespace itl2
 			fftwf_free(pBuffer);
 		}
 
-		virtual pixel_t* getBufferPointer()
+		virtual pixel_t* getBufferPointer() override
 		{
 			return pBuffer;
 		}
 
-		virtual void prefetch(size_t start, size_t end) const
+		virtual void prefetch(size_t start, size_t end) const override
 		{
 			// Do nothing, there's nothing to prefetch.
 		}

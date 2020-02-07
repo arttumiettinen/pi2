@@ -1,0 +1,104 @@
+.. _nr_stitcher:
+
+Non-rigid stitching & the NRStitcher program
+============================================
+
+NRStitcher is a Python program for non-rigid stitching of terabyte-scale volume images.
+Algorithms that it implements are discussed in
+*Arttu Miettinen, Ioannis Vogiatzis Oikonomidis, Anne Bonnin, Marco Stampanoni. NRStitcher: non-rigid stitching of terapixel-scale volumetric images, btz423, Bioinformatics, 2019*.
+
+Basically, NRStitcher is used to construct a large (volume) image from overlapping tiles.
+The program is able to account for small deformations in the tiles.
+NRStitcher uses pi2 system for image processing and runs on Slurm cluster or locally.
+
+
+Acquisition of the tile images
+------------------------------
+
+In order to generate input data for the NRStitcher program, one typically uses some kind of a microscope to acquire a number of overlapping
+images. Large-ish overlaps are easier to stitch with the NRStitcher. For microtomographic images overlaps of 10 % - 30 % are typically used.
+The images must be saved in a format supported by the pi2 system, e.g. :file:`.raw`, :file:`.tif`, :file:`.nrrd`, or sequence of :file:`.tif` or :file:`.png` slices.
+
+The order of acquisition can be anything (snake, row-by-row, random, etc.) as long as the locations of the tiles are known.
+
+
+Stitching
+---------
+
+In order to stitch the tiles, one must first create a new folder that will contain stitch settings file, temporary files, and the
+final stitched image.
+
+The stitch settings file must be generated according to the `template <https://github.com/arttumiettinen/pi2/blob/master/example_config/stitch_settings_nongrid.txt>`_.
+The name of the settings file must be :file:`stitch_settings_nongrid.txt` and it must be saved into the output folder.
+Most of the settings can be initially left to their default values, but the :code:`[positions]` section must be modified
+so that it contains paths and file names of the tiles and their positions.
+The section contains one line for each tile.
+The line is formatted like :code:`image_name = x, y, z`, where :code:`image_name` gives the path and file name of the tile,
+and :code:`x, y, z` is the location of that tile in pixels.
+
+For example, positions of a four-tile image could be defined like this::
+
+	[positions]
+	wc1_150x150x1.raw = 0, 80, 0
+	wc2_150x150x1.raw = 110, 60, 0
+	wc3_150x150x1.raw = 220, 40, 0
+	wc4_150x150x1.raw = 330, 20, 0
+	
+If the stitching is to be run on a computer cluster, the cluster settings in the configuration file must be changed to match the
+capabilities of the available compute nodes.
+
+.. hint:
+
+If you are working at the SLS TOMCAT beamline, there is a script that converts a set of CT scan log files to a stitch settings file.
+Please refer to the internal documentation for details.
+
+Often it is useful to try the stitching with downscaled versions of the tiles to see if everything works.
+This can be conveniently done using the parameter :code:`binning`. Specify value larger than one to downscale the
+tiles by that amount before stitching.
+Usually binning 4 is a good starting point.
+
+When the parameter file is ready, the stitching process is started by running the Python file :file:`nr_stitcher_nongrid.py` in the output folder.
+
+After the script is finished, the largest :file:`.raw` image in the output folder is the stitched image.
+Please note that if there are multiple non-connected sets of tiles in the output, multiple output images will be created.
+
+.. important:
+
+Before running :file:`nr_stitcher_nongrid.py` again (e.g. for parameter tuning), please remove all temporary files from the output
+folder by running :file:`rm-stitch-temp.sh` or :file:`rm-stitch-temp.cmd`.
+
+
+
+Example
+-------
+
+An example of tiles and the corresponding settings file can be found in the examples archive distributed along each pi2 version.
+See https://github.com/arttumiettinen/pi2/releases.
+
+
+
+Known problems
+--------------
+
+* Stitching result is not good, there are doubled details visible in the regions where one or more tiles overlap.
+	This is usually caused by too large or too small values of :code:`point_spacing` and :code:`coarse_block_radius` parameters.
+* Error ": No such file or directory" when running in Linux.
+	The error means that the line endings in the .py files have been converted to Windows format.
+	This might happen for various not-so-obvious reasons, e.g. when transferring the Python code files by email.
+	Easy workaround is to prepend 'python' to the commands, e.g.
+
+	.. code-block:: bash
+
+		python /path_to_scripts/nr_stitcher_nongrid.py
+		
+	In some cases it is necessary to explicitly specify python3 so that the operating system does not decide to use python 2.x versions that are incompatible:
+	
+	.. code-block:: bash
+
+		python3 /path_to_scripts/nr_stitcher_nongrid.py
+		
+* The same cluster jobs are being submitted over and over again.
+	The cluster jobs fail for reason or another, and the NRStitcher is unable to catch the error.
+	Check Slurm output files :code:`*-out.txt` and :code:`*-err.txt` for more information.
+	Sometimes simply re-running the nr_stitcher_nongrid.py fixes the problem.
+	

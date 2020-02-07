@@ -1,0 +1,69 @@
+.. _analyzeparticles:
+
+analyzeparticles
+****************
+
+
+**Syntax:** :code:`analyzeparticles(input image, results, analyzers, connectivity, volume limit, single-threaded)`
+
+Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command :ref:`headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see :ref:`analyzelabels`.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image. The particles in this image will be filled with temporary color.
+
+results [output]
+~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command 'headers' to retrieve meanings of columns.
+
+analyzers [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** "coordinates, volume"
+
+List of names of analyzers to use. Use command :ref:`listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.
+
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** Nearest
+
+Connectivity of the particles. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+volume limit [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Maximum size of particles to consider, in pixels. Specify zero to consider all particles.
+
+single-threaded [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to use single-threaded processing. That might be faster for some cases. Does not have any effect if distributed processing is enabled.
+
+See also
+--------
+
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`

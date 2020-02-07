@@ -1,0 +1,192 @@
+.. _writesequenceblock:
+
+writesequenceblock
+******************
+
+There are 2 forms of this command.
+
+:code:`writesequenceblock(input image, filename, x, y, z, width, height, depth, ix, iy, iz, iwidth, iheight, idepth)`
+=====================================================================================================================
+
+Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to save.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of file to write.
+
+x [input]
+~~~~~~~~~
+
+**Data type:** integer
+
+X-position of the image in the target file.
+
+y [input]
+~~~~~~~~~
+
+**Data type:** integer
+
+Y-position of the image in the target file.
+
+z [input]
+~~~~~~~~~
+
+**Data type:** integer
+
+Z-position of the image in the target file.
+
+width [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Width of the output file. Specify zero to parse dimensions from the files.
+
+height [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Height of the output file. Specify zero to parse dimensions from the files.
+
+depth [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Depth of the output file. Specify zero to parse dimensions from the files.
+
+ix [input]
+~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+X-position of the block of the source image to write.
+
+iy [input]
+~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Y-position of the block of the source image to write.
+
+iz [input]
+~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Z-position of the block of the source image to write.
+
+iwidth [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** -1
+
+Width of the block to write. Specify a negative value to write the whole source image.
+
+iheight [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** -1
+
+Height of the block to write. Specify a negative value to write the whole source image.
+
+idepth [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** -1
+
+Depth of the block to write. Specify a negative value to write the whole source image.
+
+
+:code:`writesequenceblock(input image, filename, position, file dimensions, source position, source block size)`
+================================================================================================================
+
+Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to save.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of the file to write.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Position of the image in the target file.
+
+file dimensions [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Dimensions of the output file. Specify zero to parse dimensions from the file. In this case it must exist.
+
+source position [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Position of the block of the source image to write.
+
+source block size [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Size of the block to write. Specify zero to write the whole source image.
+

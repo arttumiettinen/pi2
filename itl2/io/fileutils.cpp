@@ -2,6 +2,9 @@
 #include "fileutils.h"
 #include "itlexception.h"
 #include "utilities.h"
+#include "stringutils.h"
+
+#include <cstring>
 
 #include <experimental/filesystem>
 
@@ -25,11 +28,21 @@
 #endif
 
 namespace fs = std::experimental::filesystem;
-using std::string;
-using std::ifstream;
+using namespace std;
 
 namespace itl2
 {
+	const std::string getStreamErrorMessage()
+	{
+#if defined(_WIN32)
+		char buf[1024];
+		strerror_s(&buf[0], 1024, errno);
+		return std::string(&buf[0]);
+#else
+		return std::string(strerror(errno));
+#endif
+	}
+
 	/**
 	Returns size of given file.
 	*/
@@ -83,7 +96,7 @@ namespace itl2
 		CloseHandle(fileHandle);
 #else
 
-#error raw.h not configured for this platform.
+#error fileutils.cpp not configured for this platform.
 
 #endif
 	}
@@ -93,9 +106,9 @@ namespace itl2
 	*/
 	bool fileExists(const std::string& filename)
 	{
-		std::ifstream infile(filename);
-		//return infile.good();
-		return (bool)infile;
+		//std::ifstream infile(filename);
+		//return (bool)infile;
+		return fs::exists(filename);
 	}
 
 	/**
@@ -119,7 +132,8 @@ namespace itl2
 		LPVOID lpData
 	)
 	{
-		showProgress(TotalBytesTransferred.QuadPart, TotalFileSize.QuadPart + 1);
+		//showProgress(TotalBytesTransferred.QuadPart, TotalFileSize.QuadPart + 1);
+		cout << bytesToString((double)TotalBytesTransferred.QuadPart) << " / " << bytesToString((double)TotalFileSize.QuadPart) << "\r";
 		return PROGRESS_CONTINUE;
 	};
 #endif
@@ -128,8 +142,13 @@ namespace itl2
 	Copies a file.
 	The destination file is overwritten.
 	*/
-	void copyFile(const std::string& sourceName, const std::string& destinationName)
+	void copyFile(const std::string& sourceName, const std::string& destinationName, bool showProgressInfo)
 	{
+		fs::path p1(sourceName);
+		fs::path p2(destinationName);
+		if (fs::equivalent(p1, p2))
+			return;
+
 		if (fileExists(sourceName))
 			deleteFile(destinationName);
 
@@ -139,32 +158,20 @@ namespace itl2
 		system((string("cp \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
 
 #elif defined(_WIN32)
+
 		BOOL cancel = FALSE;
-		if (CopyFileExA(sourceName.c_str(), destinationName.c_str(), &progressRoutine, NULL, &cancel, 0) == 0)
+		LPPROGRESS_ROUTINE progress = nullptr;
+		if (showProgressInfo)
+			progress = &progressRoutine;
+		
+		if (CopyFileExA(sourceName.c_str(), destinationName.c_str(), progress, NULL, &cancel, 0) == 0)
 			throw ITLException(string("Unable to copy ") + sourceName + " to " + destinationName);
+
+		if(showProgressInfo)
+			cout << "                          \r" << flush;
 #else
 
-#error raw.h not configured for this platform.
-
-#endif
-	}
-
-	/**
-	Moves a file.
-	The destination file is overwritten.
-	*/
-	void moveFile(const std::string& sourceName, const std::string& destinationName)
-	{
-#if defined(__linux__)
-
-		system((string("mv \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
-
-#elif defined(_WIN32)
-		if (MoveFileWithProgressA(sourceName.c_str(), destinationName.c_str(), &progressRoutine, NULL, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0)
-			throw ITLException(string("Unable to move ") + sourceName + " to " + destinationName);
-#else
-
-#error raw.h not configured for this platform.
+#error fileutils.cpp not configured for this platform.
 
 #endif
 	}
@@ -179,6 +186,54 @@ namespace itl2
 		folder = folder.remove_filename();
 		if (folder != filename && folder != "")
 			fs::create_directories(folder);
+	}
+
+	/**
+	Moves a file.
+	The destination file is overwritten.
+	*/
+	void moveFile(const std::string& sourceName, const std::string& destinationName)
+	{
+		fs::path p1(sourceName);
+		fs::path p2(destinationName);
+		if (fs::equivalent(p1, p2))
+			return;
+
+		createFoldersFor(destinationName);
+
+#if defined(__linux__)
+
+		system((string("mv \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
+
+#elif defined(_WIN32)
+		if (MoveFileWithProgressA(sourceName.c_str(), destinationName.c_str(), &progressRoutine, NULL, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0)
+			throw ITLException(string("Unable to move ") + sourceName + " to " + destinationName);
+#else
+
+#error fileutils.cpp not configured for this platform.
+
+#endif
+	}
+
+	std::string concatDimensions(const std::string& baseName, const Vec3c& dimensions)
+	{
+		std::stringstream suffix;
+		suffix << "_" << dimensions.x << "x" << dimensions.y << "x" << dimensions.z << ".raw";
+
+		if (endsWithIgnoreCase(baseName, suffix.str()))
+			return baseName;
+
+		std::stringstream name;
+		name << baseName << suffix.str();
+		return name.str();
+	}
+
+	std::string getPrefix(std::string filename)
+	{
+		size_t pos = filename.find_last_of('_');
+		if (pos != std::string::npos)
+			filename.erase(filename.begin() + pos, filename.end());
+		return filename;
 	}
 
 }

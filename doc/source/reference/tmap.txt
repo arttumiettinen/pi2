@@ -1,0 +1,71 @@
+.. _tmap:
+
+tmap
+****
+
+
+**Syntax:** :code:`tmap(input image, output image, background value, round distance values, save memory, block size)`
+
+Calculates local thickness map (i.e. opening transform) of a binary image. Input image is used as temporary storage space. The pixel data type must be able to contain large enough values; usually uint8 is too small. Uint32 or uint64 are recommended. 
+
+The algorithm selection depends on the value of the 'save memory' argument. If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model - Independent Assessment of Thickness in Three-Dimensional Images is used. If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte - scale volume images is applied. The separable algorithm is usually much faster than the Hildebrand algorithm, but requires much more RAM (normal mode) or temporary disk space (distributed mode). 
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image where background is marked with background value given by the third argument.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Output image (thickness map) where pixel value equals diameter of object at that location, i.e. diameter of the largest sphere that fits in foreground points and contains the object.
+
+background value [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Pixels belonging to the background are marked with this value in the input image.
+
+round distance values [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to generate approximate distance map by rounding distance values to nearest integers. Calculation of rounded distance map is faster, but the result is only approximation both in distance values and shape of structures.
+
+save memory [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+For non-distributed processing: Set to true to use slower algorithm (Hildebrand) that uses less memory than the faster one (separable). If set to true, the input and output images can be the same. For distributed processing: Only false is supported at the moment.
+
+block size [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Block size to use in distributed processing in sphere plotting phase. Set to zero to use a default value calculated based on available memory. If calculation with default value fails, use smaller block size and report it to the authors. This argument has no effect when running in non-distributed mode.
+
+See also
+--------
+
+:ref:`dmap2`, :ref:`dmap`

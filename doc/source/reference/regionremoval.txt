@@ -1,0 +1,44 @@
+.. _regionremoval:
+
+regionremoval
+*************
+
+
+**Syntax:** :code:`regionremoval(image, volume threshold, connectivity)`
+
+Removes nonzero foreground regions smaller than given threshold. This command supports only binary images (where regions are separated by backround).
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+volume threshold [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 600
+
+All nonzero regions consisting of less than this many pixels are removed.
+
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** Nearest
+
+Connectivity of the particles. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+See also
+--------
+
+:ref:`openingfilter`, :ref:`closingfilter`, :ref:`analyzeparticles`

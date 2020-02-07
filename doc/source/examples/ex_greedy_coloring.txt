@@ -1,0 +1,54 @@
+Greedy coloring
+===============
+
+This example demonstrates :ref:`coloring <greedycoloring>` of regions with minimal number of colors,
+while ensuring that neighbouring regions have different colors.
+See also `<https://en.wikipedia.org/wiki/Four_color_theorem>`__.
+
+The coloring is made using a greedy algorithm, so the number of colors is
+not necessarily minimal.
+
+::
+
+	def greedy_coloring():
+		"""
+		Shows how to change colors of regions.
+		"""
+
+		# Create image
+		img = pi.newimage(ImageDataType.UINT8, 200, 200, 1)
+
+		# Plot some overlapping spheres.
+		# Each of the spheres has different color
+		pi.sphere(img, [100, 100, 0], 50, 7)
+		pi.sphere(img, [150, 100, 0], 50, 10)
+		pi.sphere(img, [50, 100, 0], 50, 15)
+		pi.sphere(img, [100, 50, 0], 50, 20)
+		pi.sphere(img, [150, 150, 0], 50, 25)
+
+		# Save the initial image
+		pi.writeraw(img, output_file("before_coloring"))
+
+		# Minimize number of colors in the image, still making
+		# sure that all neighbouring spheres have different color.
+		pi.greedycoloring(img)
+
+		# Save the result
+		pi.writeraw(img, output_file("after_coloring"))
+		
+		
+		
+.. figure:: figures/greedy_coloring_input.png
+   :scale: 100 %
+   :alt: Input image
+
+   Input image for greedy coloring. Pixel values are converted to colors using random look-up table, background is black.
+
+
+.. figure:: figures/greedy_coloring_output.png
+   :scale: 100 %
+   :alt: Output image
+
+   Output image from greedy coloring. Pixel values are converted to colors using random look-up table, background is black.
+   
+   

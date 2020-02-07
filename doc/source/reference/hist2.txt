@@ -1,0 +1,122 @@
+.. _hist2:
+
+hist2
+*****
+
+
+**Syntax:** :code:`hist2(first input image, min 1, max 1, bin count 1, second input image, min 2, max 2, bin count 2, histogram, bin starts 1, bin starts 2, output file, block index)`
+
+Calculate bivariate histogram of two images. In the bivariate histogram position (i, j) counts number of locations where the value of the first input image is i and the value of the second input image is j (assuming minimum = 0, maximum = data type max, and bin size = 1). If image sizes are different, only the region available in both images is included in the histogram. In this case, a warning message is shown.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+first input image [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+First image whose histogram will be calculated.
+
+min 1 [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Minimum value of first image to be included in the histogram.
+
+max 1 [input]
+~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+
+**Default value:** Shown along data types.
+
+The end of the last bin. This is the smallest value above minimum that is not included in the histogram.
+
+bin count 1 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 256
+
+Count of bins. The first dimension of the output image will be resized to contain this many pixels.
+
+second input image [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Second image whose histogram will be calculated.
+
+min 2 [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Minimum value of second image to be included in the histogram.
+
+max 2 [input]
+~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(3.40282e+38), real(127), real(32767), real(2.14748e+09), real(9.22337e+18)
+
+**Default value:** Shown along data types.
+
+The end of the last bin. This is the smallest value above minimum that is not included in the histogram.
+
+bin count 2 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 256
+
+Count of bins. The second dimension of the output image will be resized to contain this many pixels.
+
+histogram [output]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that will contain the histogram on output.
+
+bin starts 1 [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that will contain the histogram bin start coordinates in the first dimension when the function finishes.
+
+bin starts 2 [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that will contain the histogram bin start coordinates in the second dimension when the function finishes.
+
+output file [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Name of file where the histogram data is to be saved. Specify empty string to disable saving. This argument is used internally in distributed processing, but can be used to (conveniently?) save the histogram in .raw format.
+
+block index [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** -1
+
+Index of image block that we are currently processing. This argument is used internally in distributed processing and should normally be set to negative value. If positive, this number is appended to output file name.
+

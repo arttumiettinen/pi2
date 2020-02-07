@@ -7,14 +7,12 @@
 #include "math/numberutils.h"
 #include "math/mathutils.h"
 
-using namespace itl2;
-
-namespace math
+namespace itl2
 {
     /**
     Three-component vector.
     */
-    template <typename T, typename real_t = typename NumberUtils<T>::FloatType> class Vec3
+    template <typename T> class Vec3
     {
         public:
             /**
@@ -51,20 +49,10 @@ namespace math
                 this->z = z;
             }
 
-            /**
-            Copy constructor
-            */
-            Vec3(const Vec3& other) :
-                x(other.x),
-                y(other.y),
-                z(other.z)
-            {
-            }
-
 			/**
 			Constructor that makes it possible to cast/initialize vector from vector of another type.
 			*/
-			template<typename Tother, typename other_real_t> explicit Vec3(const Vec3<Tother, other_real_t>& other) :
+			template<typename Tother> explicit Vec3(const Vec3<Tother>& other) :
 				x(pixelRound<T, Tother>(other.x)),
 				y(pixelRound<T, Tother>(other.y)),
 				z(pixelRound<T, Tother>(other.z))
@@ -83,17 +71,6 @@ namespace math
 				y = other[1];
 				z = other[2];
 			}
-
-            /**
-            Assignment
-            */
-            Vec3& operator=(const Vec3& other)
-            {
-                x = other.x;
-                y = other.y;
-                z = other.z;
-                return *this;
-            }
 
 			/**
 			Array access operator
@@ -256,16 +233,17 @@ namespace math
             }
 
 			/**
-			Equality, uses equals(T, T) to test for equality of elements.
+			Equality, uses NumberUtils<T>::equals(...) to test for equality of elements.
 			*/
-			bool equals(const Vec3& r) const
+			bool equals(const Vec3& r, T tol = NumberUtils<T>::tolerance()) const
 			{
-				return NumberUtils<T>::equals(x, r.x) && NumberUtils<T>::equals(y, r.y) && NumberUtils<T>::equals(z, r.z);
+				return NumberUtils<T>::equals(x, r.x, tol) && NumberUtils<T>::equals(y, r.y, tol) && NumberUtils<T>::equals(z, r.z, tol);
 			}
 
 			/**
 			Calculates dot product between this vector and the given vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t dot(const Vec3& right) const
 			{
 				return ((real_t)x * (real_t)right.x) + ((real_t)y * (real_t)right.y) + ((real_t)z * (real_t)right.z);
@@ -274,17 +252,19 @@ namespace math
 			/**
 			Calculates the squared Euclidean norm of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t normSquared() const
 			{
-				return this->dot(*this);
+				return this->dot<real_t>(*this);
 			}
 
 			/**
 			Calculates the Euclidean norm of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t norm() const
 			{
-				return sqrt(normSquared());
+				return pixelRound<real_t>(sqrt(normSquared<real_t>()));
 			}
 
 			/**
@@ -301,6 +281,7 @@ namespace math
 			Rotates this vector counterclockwise around the given axis by the given angle (in radians).
 			Uses Rodrigues' rotation formula.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec3 rotate(const Vec3& axis, real_t angle) const
 			{
 				real_t c = cos(angle);
@@ -314,9 +295,10 @@ namespace math
 			/**
 			Returns normalized version of this vector and calculates its original length.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec3 normalized(real_t& length) const
 			{
-				length = norm();
+				length = norm<real_t>();
 				if (!NumberUtils<real_t>::equals(length, 0.0))
 				{
 					real_t m = 1 / length;
@@ -329,10 +311,40 @@ namespace math
 			/**
 			Returns normalized version of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec3 normalized() const
 			{
 				real_t dummy;
-				return normalized(dummy);
+				return normalized<real_t>(dummy);
+			}
+
+			/**
+			Calculates angle between this vector and the given vector.
+			Returns result in range [0, PI].
+			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
+			real_t angleTo(const Vec3<T>& r)
+			{
+				real_t dp = this->dot<real_t>(r) / (this->norm<real_t>() * r.norm<real_t>());
+				if (dp <= -1)
+					return (real_t)PI;
+				else if (dp >= 1)
+					return 0;
+				return acos(dp);
+			}
+
+			/**
+			Calculates sharp angle between this vector and the given vector.
+			Returns result in range [0, PI/2].
+			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
+			real_t sharpAngleTo(const Vec3<T>& r)
+			{
+				real_t theta = angleTo<real_t>(r);
+				if (theta < (real_t)(PI / 2))
+					return theta;
+				
+				return (real_t)PI - theta;
 			}
 
 			/**
@@ -346,9 +358,10 @@ namespace math
 			/**
 			Normalizes this vector and calculates its original length.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			void normalize(real_t& length)
 			{
-				*this = normalized(length);
+				*this = normalized<real_t>(length);
 			}
 
 			/**
@@ -364,7 +377,7 @@ namespace math
 			*/
 			T max() const
 			{
-				return math::max(x, math::max(y, z));
+				return std::max(x, std::max(y, z));
 			}
 
 			/**
@@ -372,7 +385,7 @@ namespace math
 			*/
 			T min() const
 			{
-				return math::min(x, math::min(y, z));
+				return std::min(x, std::min(y, z));
 			}
 
 			/**
@@ -396,17 +409,16 @@ namespace math
             /**
             Converts this object to string.
             */
-            friend std::ostream& operator<<(std::ostream& stream, const Vec3<T, real_t>& v)
+            friend std::ostream& operator<<(std::ostream& stream, const Vec3<T>& v)
             {
                 stream << "[" << v.x << ", " << v.y << ", " << v.z << "]";
                 return stream;
             }
     };
 
-	typedef Vec3<float> Vec3f;
+	typedef Vec3<itl2::float32_t> Vec3f;
     typedef Vec3<double> Vec3d;
-    typedef Vec3<int> Vec3i;
-	typedef Vec3<coord_t> Vec3c;
+	typedef Vec3<itl2::coord_t> Vec3c;
 	typedef Vec3<int32_t> Vec3sc; // This is for use in situations where signed coordinate vector is needed and Vec3<coord_t> requires too much memory.
 
 	/**
@@ -419,60 +431,58 @@ namespace math
 		clamp(value.z, lower.z, upper.z);
 	}
 
-	// TODO: We have componentWiseMax/Min and max/min that do the same thing!
+	///**
+	//Calculates componentwise minimum of a and b.
+	//*/
+	//template<typename T> Vec3<T> componentwiseMin(const Vec3<T>& a, const Vec3<T>& b)
+	//{
+	//	Vec3<T> res = a;
+	//	if (b.x < res.x)
+	//		res.x = b.x;
+	//	if (b.y < res.y)
+	//		res.y = b.y;
+	//	if (b.z < res.z)
+	//		res.z = b.z;
+	//	return res;
+	//}
 
-	/**
-	Calculates componentwise minimum of a and b.
-	*/
-	template<typename T> Vec3<T> componentwiseMin(const Vec3<T>& a, const Vec3<T>& b)
-	{
-		Vec3<T> res = a;
-		if (b.x < res.x)
-			res.x = b.x;
-		if (b.y < res.y)
-			res.y = b.y;
-		if (b.z < res.z)
-			res.z = b.z;
-		return res;
-	}
-
-	/**
-	Calculates componentwise maximum of a and b.
-	*/
-	template<typename T> Vec3<T> componentwiseMax(const Vec3<T>& a, const Vec3<T>& b)
-	{
-		Vec3<T> res = a;
-		if (b.x > res.x)
-			res.x = b.x;
-		if (b.y > res.y)
-			res.y = b.y;
-		if (b.z > res.z)
-			res.z = b.z;
-		return res;
-	}
+	///**
+	//Calculates componentwise maximum of a and b.
+	//*/
+	//template<typename T> Vec3<T> componentwiseMax(const Vec3<T>& a, const Vec3<T>& b)
+	//{
+	//	Vec3<T> res = a;
+	//	if (b.x > res.x)
+	//		res.x = b.x;
+	//	if (b.y > res.y)
+	//		res.y = b.y;
+	//	if (b.z > res.z)
+	//		res.z = b.z;
+	//	return res;
+	//}
 
 	/*
 	Calculates componentwise ceiling of a.
 	*/
-	template<typename T> Vec3c componentwiseCeil(const Vec3<T>& a)
+	template<typename T> Vec3c ceil(const Vec3<T>& a)
 	{
-		return Vec3c((coord_t)ceil(a.x), (coord_t)ceil(a.y), (coord_t)ceil(a.z));
+		return Vec3c(itl2::ceil(a.x), itl2::ceil(a.y), itl2::ceil(a.z));
 	}
 
 	/*
 	Calculates componentwise floor of a.
 	*/
-	template<typename T> Vec3c componentwiseFloor(const Vec3<T>& a)
+	template<typename T> Vec3c floor(const Vec3<T>& a)
 	{
-		return Vec3c((coord_t)floor(a.x), (coord_t)floor(a.y), (coord_t)floor(a.z));
+		return Vec3c(itl2::floor(a.x), itl2::floor(a.y), itl2::floor(a.z));
 	}
 
 	/**
-	Rounds double vector to coordinate vector.
+	Rounds floating point vector to coordinate vector.
 	*/
-	template<typename T> Vec3<coord_t> round(const Vec3<T>& value)
+	template<typename T> Vec3c round(const Vec3<T>& value)
 	{
-		return Vec3<coord_t>(round(value.x), round(value.y), round(value.z));
+		return Vec3c(itl2::round(value.x), itl2::round(value.y), itl2::round(value.z));
 	}
 
 	/*
@@ -504,7 +514,7 @@ namespace math
 	*/
 	template<typename T> Vec3<T> min(const Vec3<T>& a, const Vec3<T>& b)
 	{
-		return Vec3<T>(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+		return Vec3<T>(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z));
 	}
 
 	/**
@@ -512,7 +522,7 @@ namespace math
 	*/
 	template<typename T> Vec3<T> max(const Vec3<T>& a, const Vec3<T>& b)
 	{
-		return Vec3<T>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+		return Vec3<T>(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z));
 	}
 
 // *** Projections etc
@@ -554,6 +564,11 @@ namespace math
 		if (a.y != b.y)
 			return a.y < b.y;
 		return a.x < b.x;
+	}
+
+	namespace tests
+	{
+		void vectorAngles();
 	}
 }
 

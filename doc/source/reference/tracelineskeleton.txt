@@ -1,0 +1,185 @@
+.. _tracelineskeleton:
+
+tracelineskeleton
+*****************
+
+There are 2 forms of this command.
+
+:code:`tracelineskeleton(skeleton, original, vertices, edges, edge measurements, edge points, store all edge points, thread count, smoothing sigma, max displacement)`
+======================================================================================================================================================================
+
+Traces a line skeleton into a graph structure. Each branch intersection point becomes a vertex in the graph and each branch becomes an edge.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+skeleton [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image containing the skeleton. The pixels of the image will be set to zero.
+
+original [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Original image from which the skeleton has been calculated. This image is used for branch shape measurements.
+
+vertices [output]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. The size of the image is set to 3xN during processing, where N is the number of vertices in the graph.
+
+edges [output]
+~~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge will be set. The size of the image is set to 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array.
+
+edge measurements [output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores (pointCount, length, cross-sectional area) for each edge. The size of the image is set to 3xN during processing, where N is the number of edges in the graph. Each row contains properties of edge at corresponding row in the edges image. Area measurements are approximations if distributed processing is allowed.
+
+edge points [output]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. The points are required for skeleton filling commands to work correctly even if the skeleton is pruned. The points are stored such that the first edgeCount pixels of the image store count of points for each edge. The remaining pixels store (x, y, z) coordinates of each point and each edge sequentially. For example, the format for two edges that have 1 and 2 points is therefore '1 2 x11 y11 z11 x21 y21 z21 x22 y22 z22', where Aij is A-component of j:th point of edge i.
+
+store all edge points [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to store all points of each edge to edge points image. If set to false, only single point on each edge is stored. This argument is required to be set to true if the graph will be converted to points and lines format later.
+
+thread count [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Count of threads to use in the tracing process. Set to zero to determine count of threads automatically. Set to one to use single-threaded processing.
+
+smoothing sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Standard deviation value to be used in smoothing of the edges (using anchored convolution) before length measurements.
+
+max displacement [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.5
+
+Maximum displacement of points in anchored convolution done before length measurements.
+
+See also
+--------
+
+:ref:`surfaceskeleton`, :ref:`lineskeleton`, :ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`
+
+:code:`tracelineskeleton(skeleton, vertices, edges, edge measurements, edge points, store all edge points, thread count, smoothing sigma, max displacement)`
+============================================================================================================================================================
+
+Traces a line skeleton into a graph structure. Each branch intersection point becomes a vertex in the graph and each branch becomes an edge.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+skeleton [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image containing the skeleton. The pixels of the image will be set to zero.
+
+vertices [output]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. The size of the image is set to 3xN during processing, where N is the number of vertices in the graph.
+
+edges [output]
+~~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge will be set. The size of the image is set to 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array.
+
+edge measurements [output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that stores (pointCount, length, cross-sectional area) for each edge. The size of the image is set to 3xN during processing, where N is the number of edges in the graph. Each row contains properties of edge at corresponding row in the edges image.
+
+edge points [output]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. The points are required for skeleton filling commands to work correctly even if the skeleton is pruned. The points are stored such that the first edgeCount pixels of the image store count of points for each edge. The remaining pixels store (x, y, z) coordinates of each point and each edge sequentially. For example, the format for two edges that have 1 and 2 points is therefore '1 2 x11 y11 z11 x21 y21 z21 x22 y22 z22', where Aij is A-component of j:th point of edge i.
+
+store all edge points [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** False
+
+Set to true to store all points of each edge to edge points image. If set to false, only single point on each edge is stored. This argument is required to be set to true if the graph will be converted to points and lines format later.
+
+thread count [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Count of threads to use in the tracing process. Set to zero to determine count of threads automatically. Set to one to use single-threaded processing.
+
+smoothing sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Standard deviation value to be used in smoothing of the edges (using anchored convolution) before length measurements.
+
+max displacement [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.5
+
+Maximum displacement of points in anchored convolution done before length measurements.
+
+See also
+--------
+
+:ref:`surfaceskeleton`, :ref:`lineskeleton`, :ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`

@@ -11,19 +11,21 @@ namespace pilib
 	*/
 	class TrivialDistributable : public Distributable, virtual public Command
 	{
-	public:
+	protected:
+		friend class CommandList;
 
 		TrivialDistributable()
 		{
 
 		}
 
+	public:
 		using Distributable::runDistributed;
 
-		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			runInternal(distributor.getSystem(), args);
-			return vector<string>();
+			return std::vector<std::string>();
 		}
 	};
 }

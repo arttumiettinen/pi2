@@ -1,0 +1,40 @@
+.. _setafterheightmap:
+
+setafterheightmap
+*****************
+
+
+**Syntax:** :code:`setafterheightmap(geometry, height map, visualization color)`
+
+Sets values of all pixels located after (below) the given height map.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+geometry [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image where whose pixels are to be set.
+
+height map [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Height map. The size of the height map must be :math:`w \times h` where :math:`w` and :math:`h` are the width and the height of the geometry image.
+
+visualization color [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Color of the surface in the visualization.
+
+See also
+--------
+
+:ref:`findsurface`, :ref:`drawheightmap`, :ref:`setbeforeheightmap`, :ref:`setafterheightmap`, :ref:`shiftz`

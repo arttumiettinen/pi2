@@ -1,0 +1,29 @@
+.. _readvol:
+
+readvol
+*******
+
+
+**Syntax:** :code:`readvol(image name, filename)`
+
+Reads a .vol image from a file.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of image in the system.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of file to read.
+

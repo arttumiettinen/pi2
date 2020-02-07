@@ -1,0 +1,22 @@
+.. _rawinfo:
+
+rawinfo
+*******
+
+
+**Syntax:** :code:`rawinfo(filename)`
+
+Displays metadata of .raw file.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of .raw file.
+

@@ -6,8 +6,8 @@
 #include "pointprocess.h"
 
 #include <set>
-
-using namespace math;
+#include <unordered_set>
+#include <limits>
 
 namespace itl2
 {
@@ -147,6 +147,99 @@ namespace itl2
 	}
 
 
+
+	/**
+	Project one dimension of the image.
+	Use to create x, y and z projections that pick output value from second image.
+	*/
+	template<typename pixel_t, typename val_t, typename out_t, typename outval_t, void process(pixel_t, double&, val_t, val_t&)>
+	void projectDimension(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, double initialValue, val_t initialVal, bool showProgressInfo = true)
+	{
+		img.checkSize(valImg);
+
+		size_t counter = 0;
+		if (dimension == 2)
+		{
+			// Z project
+			out.init(img.width(), img.height());
+			outVal.init(img.width(), img.height());
+
+#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
+			for (coord_t y = 0; y < img.height(); y++)
+			{
+				for (coord_t x = 0; x < img.width(); x++)
+				{
+					double res = initialValue;
+					val_t val = initialVal;
+					for (coord_t z = 0; z < img.depth(); z++)
+					{
+						process(img(x, y, z), res, valImg(x, y, z), val);
+					}
+					out(x, y) = pixelRound<out_t>(res);
+					outVal(x, y) = val;
+				}
+
+				showThreadProgress(counter, img.height(), showProgressInfo);
+			}
+		}
+		else if (dimension == 1)
+		{
+
+			// Y project
+			out.init(img.width(), img.depth());
+			outVal.init(img.width(), img.depth());
+
+#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
+			for (coord_t z = 0; z < img.depth(); z++)
+			{
+				for (coord_t x = 0; x < img.width(); x++)
+				{
+					double res = initialValue;
+					val_t val = initialVal;
+					for (coord_t y = 0; y < img.height(); y++)
+					{
+						process(img(x, y, z), res, valImg(x, y, z), val);
+					}
+					out(x, z) = pixelRound<out_t>(res);
+					outVal(x, z) = val;
+				}
+
+				showThreadProgress(counter, img.depth(), showProgressInfo);
+			}
+		}
+		else if (dimension == 0)
+		{
+			// X project. Swap z and y in output to make the image more logical (in some sense...)
+			out.init(img.depth(), img.height());
+			outVal.init(img.depth(), img.height());
+
+#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
+			for (coord_t y = 0; y < img.height(); y++)
+			{
+				for (coord_t z = 0; z < img.depth(); z++)
+				{
+					double res = initialValue;
+					val_t val = initialVal;
+					for (coord_t x = 0; x < img.width(); x++)
+					{
+						process(img(x, y, z), res, valImg(x, y, z), val);
+					}
+					out(out.width() - z - 1, y) = pixelRound<out_t>(res);
+					outVal(out.width() - z - 1, y) = val;
+				}
+
+				showThreadProgress(counter, img.height(), showProgressInfo);
+			}
+		}
+		else
+		{
+			throw ITLException("Invalid dimension.");
+		}
+
+	}
+
+
+
 	namespace internals
 	{
 		template<typename pixel_t> void sumProjectionOp(pixel_t p, double& result)
@@ -164,6 +257,24 @@ namespace itl2
 		{
 			if (p > result)
 				result = (double)p;
+		}
+
+		template<typename pixel_t, typename val_t> void minProjectionValOp(pixel_t p, double& result, val_t val, val_t& outVal)
+		{
+			if (p < result)
+			{
+				result = (double)p;
+				outVal = val;
+			}
+		}
+
+		template<typename pixel_t, typename val_t> void maxProjectionValOp(pixel_t p, double& result, val_t val, val_t& outVal)
+		{
+			if (p > result)
+			{
+				result = (double)p;
+				outVal = val;
+			}
 		}
 
 		template<typename pixel_t> void squareSumProjectionOp(pixel_t val, double& result)
@@ -213,15 +324,57 @@ namespace itl2
 		return !equals(a, b);
 	}
 
+
+	/**
+	Determines if pixel values in the two images are equal.
+	@param a, b Images to compare
+	*/
+	template<typename pixel_t, typename = std::enable_if_t<std::is_floating_point_v<pixel_t> > > bool equals(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
+	{
+		a.checkSize(b);
+
+		bool eq = true;
+#pragma omp parallel for if(a.pixelCount() > PARALLELIZATION_THRESHOLD)
+		for (coord_t n = 0; n < a.pixelCount(); n++)
+		{
+			if (eq && !NumberUtils<pixel_t>::equals(a(n), b(n), tolerance))
+				eq = false;
+
+			// Showing progress info here would induce more processing than is done in the whole loop.
+		}
+
+		return eq;
+	}
+
+	/**
+	Determines if pixel values in the two images are not equal.
+	@param a, b Images to compare
+	*/
+	template<typename pixel_t, typename = std::enable_if_t<std::is_floating_point_v<pixel_t> > > bool differs(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
+	{
+		return !equals(a, b, tolerance);
+	}
+
+
 	/**
 	Finds all unique pixel values in the image and adds them to the set.
 	*/
 	template<typename pixel_t> void unique(const Image<pixel_t>& img, std::set<pixel_t>& values)
 	{
-		// TODO: Parallelize
-		for (coord_t n = 0; n < img.pixelCount(); n++)
+		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
-			values.emplace(img(n));
+			std::unordered_set<pixel_t> privateValues;
+			#pragma omp for nowait
+			for (coord_t n = 0; n < img.pixelCount(); n++)
+			{
+				privateValues.emplace(img(n));
+			}
+
+			#pragma omp critical(unique_reduction)
+			{
+				for (pixel_t v : privateValues)
+					values.emplace(v);
+			}
 		}
 	}
 
@@ -265,6 +418,37 @@ namespace itl2
 		//return res;
 
 	}
+
+
+
+	/**
+	Calculates sum of squares of all pixels in the image.
+	@param img Image to process.
+	@return Sum of all pixels.
+	*/
+	template<typename pixel_t, typename out_t = double> out_t squareSum(const Image<pixel_t>& img)
+	{
+		out_t res = out_t();
+		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+		{
+			out_t res_private = out_t();
+			#pragma omp for nowait
+			for (coord_t n = 0; n < img.pixelCount(); n++)
+			{
+				res_private += img(n) * img(n);
+
+				// Showing progress info here would induce more processing than is done in the whole loop.
+			}
+
+			#pragma omp critical(sum2_reduction)
+			{
+				res += res_private;
+			}
+		}
+
+		return res;
+	}
+
 
 	/*
 	Calculates sum of all pixels except those whose value is ignoreValue.
@@ -358,10 +542,10 @@ namespace itl2
 	*/
 	template<typename pixel_t> pixel_t min(const Image<pixel_t>& img)
 	{
-		pixel_t res = numeric_limits<pixel_t>::max();
+		pixel_t res = std::numeric_limits<pixel_t>::max();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
-			pixel_t res_private = numeric_limits<pixel_t>::max();
+			pixel_t res_private = std::numeric_limits<pixel_t>::max();
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
@@ -400,10 +584,10 @@ namespace itl2
 	*/
 	template<typename pixel_t> pixel_t max(const Image<pixel_t>& img)
 	{
-		pixel_t res = numeric_limits<pixel_t>::lowest();
+		pixel_t res = std::numeric_limits<pixel_t>::lowest();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
-			pixel_t res_private = numeric_limits<pixel_t>::lowest();
+			pixel_t res_private = std::numeric_limits<pixel_t>::lowest();
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
@@ -451,19 +635,22 @@ namespace itl2
 	@param ignoreValue Value that should not be accounted for when calculating mean.
 	@return Mean of all pixels.
 	*/
-	template<typename pixel_t, typename out_t = double> out_t maskedmean(const Image<pixel_t>& img, pixel_t ignoreValue)
+	template<typename pixel_t, typename out_t = double> out_t maskedmean(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
 	{
-		out_t count;
 		out_t s = maskedsum<pixel_t, out_t>(img, ignoreValue, count);
 		return s / count;
 	}
 
+	template<typename pixel_t, typename out_t = double> out_t maskedmean(const Image<pixel_t>& img, pixel_t ignoreValue)
+	{
+		out_t dummy;
+		return maskedmean<pixel_t, out_t>(img, ignoreValue, dummy);
+	}
+
 	/**
-	Calculates mean and standard deviation of all pixels in the image.
-	@param img Image to process.
-	@return Vec2 containing mean at Vec2::x and standard deviation at Vec2::y.
+	Calculates sum of all pixels and sum of squares of all pixels in the image.
 	*/
-	template<typename pixel_t, typename out_t = double> Vec2<out_t> meanAndStdDev(const Image<pixel_t>& img)
+	template<typename pixel_t, typename out_t = double> Vec2<out_t> sumAndSquareSum(const Image<pixel_t>& img)
 	{
 		// Non-threaded version
 		//out_t total = out_t();
@@ -500,12 +687,26 @@ namespace itl2
 				// Showing progress info here would induce more processing than is done in the whole loop.
 			}
 
-#pragma omp critical(sum_reduction)
+#pragma omp critical(meanandstddev_reduction)
 			{
 				total += total_private;
 				total2 += total2_private;
 			}
 		}
+
+		return Vec2<out_t>(total, total2);
+	}
+
+	/**
+	Calculates mean and standard deviation of all pixels in the image.
+	@param img Image to process.
+	@return Vec2 containing mean at Vec2::x and standard deviation at Vec2::y.
+	*/
+	template<typename pixel_t, typename out_t = double> Vec2<out_t> meanAndStdDev(const Image<pixel_t>& img)
+	{
+		Vec2<out_t> stats = sumAndSquareSum<pixel_t, out_t>(img);
+		out_t total = stats[0];
+		out_t total2 = stats[1];
 
 		out_t avg = total / img.pixelCount();
 		out_t std = sqrt((total2 - (total * total / img.pixelCount())) / (img.pixelCount() - 1));
@@ -545,7 +746,7 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t> void min(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, bool showProgressInfo = true)
 	{
-		projectDimension<pixel_t, out_t, internals::minProjectionOp<pixel_t> >(img, dimension, out, numeric_limits<double>::infinity(), showProgressInfo);
+		projectDimension<pixel_t, out_t, internals::minProjectionOp<pixel_t> >(img, dimension, out, std::numeric_limits<double>::infinity(), showProgressInfo);
 	}
 
 	/**
@@ -557,8 +758,40 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t> void max(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, bool showProgressInfo = true)
 	{
-		projectDimension<pixel_t, out_t, internals::maxProjectionOp<pixel_t> >(img, dimension, out, -numeric_limits<double>::infinity(), showProgressInfo);
+		projectDimension<pixel_t, out_t, internals::maxProjectionOp<pixel_t> >(img, dimension, out, -std::numeric_limits<double>::infinity(), showProgressInfo);
 	}
+
+
+	/**
+	Minimum projection in some coordinate direction.
+	Picks output value from second image from the location of the minimum.
+	@param img Input image.
+	@param val Image where second output value is picked.
+	@param dimension Zero-based dimension over which the projection should be made.
+	@param out Output image.
+	@param outVal Output where picked values will be placed.
+	@param showProgressInfo Set to true to show a progress bar.
+	*/
+	template<typename pixel_t, typename val_t, typename out_t> void min(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, bool showProgressInfo = true)
+	{
+		projectDimension<pixel_t, val_t, out_t, val_t, internals::minProjectionValOp<pixel_t, val_t> >(img, valImg, dimension, out, outVal, std::numeric_limits<double>::infinity(), val_t(), showProgressInfo);
+	}
+
+	/**
+	Maximum projection in some coordinate direction.
+	Picks output value from second image from the location of the maximum.
+	@param img Input image.
+	@param val Image where second output value is picked.
+	@param dimension Zero-based dimension over which the projection should be made.
+	@param out Output image.
+	@param outVal Output where picked values will be placed.
+	@param showProgressInfo Set to true to show a progress bar.
+	*/
+	template<typename pixel_t, typename val_t, typename out_t> void max(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, bool showProgressInfo = true)
+	{
+		projectDimension<pixel_t, val_t, out_t, val_t, internals::maxProjectionValOp<pixel_t, val_t> >(img, valImg, dimension, out, outVal, -std::numeric_limits<double>::infinity(), val_t(), showProgressInfo);
+	}
+
 
 	/**
 	Mean projection in some coordinate direction.

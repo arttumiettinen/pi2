@@ -1,0 +1,47 @@
+.. _gradientmagnitude:
+
+gradientmagnitude
+*****************
+
+
+**Syntax:** :code:`gradientmagnitude(input image, output image, spatial sigma, gamma)`
+
+Calculates norm of Gaussian gradient of image. The output image can be the same than the input image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Standard deviation of Gaussian derivative kernel.
+
+gamma [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Scale-space scaling exponent. Set to zero to disable scaling.
+

@@ -1,0 +1,44 @@
+.. _ramp:
+
+ramp
+****
+
+
+**Syntax:** :code:`ramp(image, dimension, block origin)`
+
+Fills image with ramp in given dimension, i.e. performs img[r] = r[dimension].
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+dimension [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Dimension of the ramp.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.
+
+See also
+--------
+
+:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`ramp`

@@ -1,0 +1,47 @@
+.. _cleanskeleton:
+
+cleanskeleton
+*************
+
+
+**Syntax:** :code:`cleanskeleton(vertices, edges, edge measurements, edge points)`
+
+Removes straight-through and isolated nodes from a network traced from a skeleton (i.e. all nodes that have either 0 or 2 neighbours, i.e. all nodes whose degree is 0 or 2).
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+vertices [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. See :ref:`tracelineskeleton` command.
+
+edges [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge measurements [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where properties of each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge points [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. See :ref:`tracelineskeleton` command.
+
+See also
+--------
+
+:ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`

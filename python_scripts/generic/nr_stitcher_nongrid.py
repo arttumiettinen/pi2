@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+
 # Non-rigid stitching script that does not assume that the sub-images are arranged in a grid.
 # In order to use this script, please make a stitch_settings_nongrid.txt file according to
 # the provided template. Place it into the directory where the output and temporary files
@@ -127,6 +128,8 @@ def main():
     # Redo displacement fields?
     settings.force_redo = get(config, 'redo', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
 
+    # Create stitch goodness output?
+    settings.create_goodness_file = get(config, 'create_goodness', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
 
     # Read image names and locations
     if not ('positions' in config):
@@ -153,14 +156,22 @@ def main():
 
 
     # Perform binning
-    auto_binning(relations, settings.binning)
+    while True:
+        if auto_binning(relations, settings.binning):
+            break;
 
-    if is_use_cluster():
-        if is_wait_for_jobs():
-            wait_for_cluster_jobs()
-        else:
-            print("Please run this program again when all the cluster jobs have finished.")
-            exit()
+        if is_use_cluster():
+            if is_wait_for_jobs():
+                wait_for_cluster_jobs()
+            else:
+                print("Please run this program again when all the cluster jobs have finished.")
+                exit()
+
+    if settings.binning != 1:
+        for node in relations.nodes():
+            node.rec_file = node.binned_file
+            node.dimensions = node.dimensions / settings.binning
+            node.position = node.position / settings.binning
 
     settings.point_spacing = int(np.round(settings.point_spacing / settings.binning))
     settings.coarse_block_radius = np.round(settings.coarse_block_radius / settings.binning).astype(int)
@@ -204,7 +215,7 @@ def main():
 
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations)
+    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file)
 
 
     if is_use_cluster() and is_wait_for_jobs():

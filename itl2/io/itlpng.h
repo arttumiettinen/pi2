@@ -5,10 +5,6 @@
 #include "image.h"
 #include "io/imagedatatype.h"
 
-#include <iostream>
-using std::cout;
-using std::endl;
-
 namespace itl2
 {
 
@@ -53,7 +49,7 @@ namespace itl2
 					return false;
 				}
 
-				png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, internals::pngErrorFunc, internals::pngErrorFunc);
+				png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, internals::pngErrorFunc, internals::pngErrorFunc);
 				if (!png)
 				{
 					errorMessage = "Unable to create png support data structure.";
@@ -66,7 +62,7 @@ namespace itl2
 				{
 					errorMessage = "Unable to create png info data structure.";
 					fclose(f);
-					png_destroy_read_struct(&png, NULL, NULL);
+					png_destroy_read_struct(&png, nullptr, nullptr);
 					return false;
 				}
 
@@ -82,7 +78,7 @@ namespace itl2
 					png_uint_32 pngWidth, pngHeight;
 					int bitDepth;
 					int colorType;
-					png_get_IHDR(png, pngInfo, &pngWidth, &pngHeight, &bitDepth, &colorType, NULL, NULL, NULL);
+					png_get_IHDR(png, pngInfo, &pngWidth, &pngHeight, &bitDepth, &colorType, nullptr, nullptr, nullptr);
 
 					// Check that image size is correct.
 					if (img.width() == pngWidth && img.height() == pngHeight)
@@ -149,7 +145,7 @@ namespace itl2
 
 				if(rowPointers)
 					delete[] rowPointers;
-				png_destroy_read_struct(&png, &pngInfo, NULL);
+				png_destroy_read_struct(&png, &pngInfo, nullptr);
 				fclose(f);
 
 				if (dataType != ImageDataType::Unknown)
@@ -175,6 +171,8 @@ namespace itl2
 					return false;
 				}
 
+				createFoldersFor(filename);
+
 				FILE *f;
 				if (fopen_s(&f, filename.c_str(), "wb") != 0)
 				{
@@ -182,7 +180,7 @@ namespace itl2
 					return false;
 				}
 
-				png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, internals::pngErrorFunc, internals::pngErrorFunc);
+				png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, internals::pngErrorFunc, internals::pngErrorFunc);
 				if (!png)
 				{
 					fclose(f);
@@ -194,7 +192,7 @@ namespace itl2
 				if (!png)
 				{
 					fclose(f);
-					png_destroy_write_struct(&png, NULL);
+					png_destroy_write_struct(&png, nullptr);
 					errorMessage = "Unable to create png info structure.";
 					return false;
 				}
@@ -214,7 +212,7 @@ namespace itl2
 
 					png_set_rows(png, pngInfo, rowPointers);
 
-					png_write_png(png, pngInfo, PNG_TRANSFORM_SWAP_ENDIAN, NULL);
+					png_write_png(png, pngInfo, PNG_TRANSFORM_SWAP_ENDIAN, nullptr);
 
 					result = true;
 				}
@@ -239,7 +237,7 @@ namespace itl2
 		@param dataType Pixel data type of the image.
 		@return True if the file seems to be an existing, valid .png file with supported pixel data type.
 		*/
-		bool getInfo(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType);
+		bool getInfo(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType, string& reason);
 
 		/*
 		Read a .png file.
@@ -247,7 +245,7 @@ namespace itl2
 		The image will be resized in x and y so that it has the same size than the .png image.
 		@param z Z-coordinate where the read data will be placed.
 		*/
-		template<typename pixel_t> void read(Image<pixel_t>& img, const string& filename, coord_t z)
+		template<typename pixel_t> void read(Image<pixel_t>& img, const string& filename, coord_t z = 0)
 		{
 			string errorMessage;
 			if (!internals::readNoThrow(img, filename, z, errorMessage))
@@ -259,7 +257,7 @@ namespace itl2
 		Supports only 8- and 16-bit grayscale images.
 		@param z Z-coordinate of the slice that will be written.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const string& filename, coord_t z)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const string& filename, coord_t z = 0)
 		{
 			string errorMessage;
 			if (!internals::writeNoThrow(img, filename, z, errorMessage))
@@ -271,9 +269,12 @@ namespace itl2
 		Supports only 8- and 16-bit grayscale images.
 		@param z Z-coordinate of the slice that will be written.
 		*/
-		template<typename pixel_t> void writed(const Image<pixel_t>& img, const string& filename, coord_t z)
+		template<typename pixel_t> void writed(const Image<pixel_t>& img, const string& filename, coord_t z = 0)
 		{
-			write(img, filename + ".png", z);
+			if(endsWithIgnoreCase(filename, ".png"))
+				write(img, filename, z);
+			else
+				write(img, filename + ".png", z);
 		}
 
 

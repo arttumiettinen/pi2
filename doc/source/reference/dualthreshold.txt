@@ -1,0 +1,36 @@
+.. _dualthreshold:
+
+dualthreshold
+*************
+
+
+**Syntax:** :code:`dualthreshold(image, lower threshold, upper threshold)`
+
+First sets all pixels with value over upper threshold to 1. Then sets all regions to 1 that have value over lower threshold and that are connected to region that has value over upper threshold.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+lower threshold [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Regions that have value below lower threshold value are discarded. Regions that have value between lower and upper thresholds are included in the result only if they touch some region that has value above upper threshold.
+
+upper threshold [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Regions that have value above upper threshold value are always included in the result. Regions that have value between lower and upper thresholds are included in the result only if they touch some regoin that has value above upper threshold.
+

@@ -1,5 +1,11 @@
 #pragma once
 /*
+Changes:
+Added (simplistic) floating point support.
+Added pragma once.
+*/
+
+/*
 
 Copyright (c) 2018, ITHare.com
 All rights reserved.
@@ -53,93 +59,97 @@ namespace intuitive {
 //                       but it is currently unclear how it may affect performance of the compiled code, so for now we prefer it this way 
 template<class TA, class TB>
 inline constexpr bool lt(TA a, TB b) {
-  static_assert(std::is_integral<TA>::value);
-  static_assert(std::is_integral<TB>::value);
-  constexpr bool aSigned = std::is_signed<TA>::value;
-  constexpr bool bSigned = std::is_signed<TB>::value;
-  if constexpr(aSigned == bSigned)
-    return a < b;//both signed or both unsigned - no casts required, C promotions will do just fine
-  else {//different is_signed, let's make TSIGNED always-signed, and TUNSIGNED - always-unsigned
-    using TSIGNED = typename std::conditional<aSigned,TA,TB>::type;
-    using TUNSIGNED = typename std::conditional<aSigned,TB,TA>::type;
- 
-    static_assert(sizeof(TSIGNED)+sizeof(TUNSIGNED)==sizeof(TA)+sizeof(TB));//self-check
-    if constexpr(sizeof(TSIGNED)>sizeof(TUNSIGNED))
-      return a < b;//again, no casts required, C promotions will do just fine (promoting b to TA which is signed)
-    if constexpr(sizeof(TUNSIGNED)<sizeof(int)) {
-      return a < b;//again, no casts required, C promotion-to-int will do just fine (promoting both to int which is signed) 
-    } 
-     
-    //at this point, we have sizeof(TUNSIGNED) >= sizeof(TSIGNED) => no-cast will be counterintuitive
-    if constexpr(sizeof(TUNSIGNED)<sizeof(MAX_EFFICIENT_INT)) {
-      //we can cast unsigned to MAX_EFFICIENT_INT
-      if constexpr(aSigned) {
-        ITHARE_UTIL_ASSERT(!bSigned);
-        return a < MAX_EFFICIENT_INT(b);
-      }
-      else {
-        ITHARE_UTIL_ASSERT(bSigned);
-        return MAX_EFFICIENT_INT(a) < b; 
-      } 
-     
-    }
-    else { //last resort: expression 
-	  ITHARE_UTIL_ASSERT(sizeof(TUNSIGNED)>=sizeof(TSIGNED));
-      if constexpr(aSigned) {
-        //return a<0 ? true : TUNSIGNED(a) < b;
-        return (a<0) | (TUNSIGNED(a) < b);//sic - single '|', seems to perform better under GCC (avoids branch)
-	  }
-      else {
-        ITHARE_UTIL_ASSERT(bSigned);
-        //return b<0 ? false : a < TUNSIGNED(b);
-        return (b>=0) & (a < TUNSIGNED(b));//sic - single '&', seems to perform better under GCC (avoids branch)
-      }
-    }
-  }
+	//static_assert(std::is_integral<TA>::value);
+	//static_assert(std::is_integral<TB>::value);
+	constexpr bool aFloat = std::is_floating_point<TA>::value;
+	constexpr bool bFloat = std::is_floating_point<TB>::value;
+	constexpr bool aSigned = std::is_signed<TA>::value;
+	constexpr bool bSigned = std::is_signed<TB>::value;
+	if constexpr (aFloat || bFloat || aSigned == bSigned)
+		return a < b;//both signed or both unsigned - no casts required, C promotions will do just fine
+	else {//different is_signed, let's make TSIGNED always-signed, and TUNSIGNED - always-unsigned
+		using TSIGNED = typename std::conditional<aSigned, TA, TB>::type;
+		using TUNSIGNED = typename std::conditional<aSigned, TB, TA>::type;
+
+		static_assert(sizeof(TSIGNED) + sizeof(TUNSIGNED) == sizeof(TA) + sizeof(TB));//self-check
+		if constexpr (sizeof(TSIGNED) > sizeof(TUNSIGNED))
+			return a < b;//again, no casts required, C promotions will do just fine (promoting b to TA which is signed)
+		if constexpr (sizeof(TUNSIGNED) < sizeof(int)) {
+			return a < b;//again, no casts required, C promotion-to-int will do just fine (promoting both to int which is signed) 
+		}
+
+		//at this point, we have sizeof(TUNSIGNED) >= sizeof(TSIGNED) => no-cast will be counterintuitive
+		if constexpr (sizeof(TUNSIGNED) < sizeof(MAX_EFFICIENT_INT)) {
+			//we can cast unsigned to MAX_EFFICIENT_INT
+			if constexpr (aSigned) {
+				ITHARE_UTIL_ASSERT(!bSigned);
+				return a < MAX_EFFICIENT_INT(b);
+			}
+			else {
+				ITHARE_UTIL_ASSERT(bSigned);
+				return MAX_EFFICIENT_INT(a) < b;
+			}
+
+		}
+		else { //last resort: expression 
+			ITHARE_UTIL_ASSERT(sizeof(TUNSIGNED) >= sizeof(TSIGNED));
+			if constexpr (aSigned) {
+				//return a<0 ? true : TUNSIGNED(a) < b;
+				return (a < 0) | (TUNSIGNED(a) < b);//sic - single '|', seems to perform better under GCC (avoids branch)
+			}
+			else {
+				ITHARE_UTIL_ASSERT(bSigned);
+				//return b<0 ? false : a < TUNSIGNED(b);
+				return (b >= 0) & (a < TUNSIGNED(b));//sic - single '&', seems to perform better under GCC (avoids branch)
+			}
+		}
+	}
 }
 
 //DUPLICATED CODE (2/2)
 template<class TA, class TB>
 inline constexpr bool eq(TA a, TB b) {
-  static_assert(std::is_integral<TA>::value);
-  static_assert(std::is_integral<TB>::value);
-  constexpr bool aSigned = std::is_signed<TA>::value;
-  constexpr bool bSigned = std::is_signed<TB>::value;
-  if constexpr(aSigned == bSigned)
-    return a == b;//both signed or both unsigned - no casts required, C promotions will do just fine
-  else {//different is_signed, let's make TSIGNED always-signed, and TUNSIGNED - always-unsigned
-    using TSIGNED = typename std::conditional<aSigned,TA,TB>::type;
-    using TUNSIGNED = typename std::conditional<aSigned,TB,TA>::type;
- 
-    static_assert(sizeof(TSIGNED)+sizeof(TUNSIGNED)==sizeof(TA)+sizeof(TB));//self-check
-    if constexpr(sizeof(TSIGNED)>sizeof(TUNSIGNED))
-      return a == b;//again, no casts required, C promotions will do just fine (promoting b to TA which is signed)
-    if constexpr(sizeof(TUNSIGNED)<sizeof(int)) {
-      return a == b;//again, no casts required, C promotion-to-int will do just fine (promoting both to int which is signed) 
-    } 
-     
-    //at this point, we have sizeof(TUNSIGNED) >= sizeof(TSIGNED) => no-cast will be counterintuitive
-    if constexpr(sizeof(TUNSIGNED)<sizeof(MAX_EFFICIENT_INT)) {
-      //we can cast unsigned to MAX_EFFICIENT_INT
-      if constexpr(aSigned) {
-        ITHARE_UTIL_ASSERT(!bSigned);
-        return a == MAX_EFFICIENT_INT(b);
-      }
-      else {
-        ITHARE_UTIL_ASSERT(bSigned);
-        return MAX_EFFICIENT_INT(a) == b; 
-      } 
-    }
-    else { //last resort: expression
-	  ITHARE_UTIL_ASSERT(sizeof(TUNSIGNED)>=sizeof(TSIGNED));
-      if constexpr(aSigned)
-        return a<0 ? false : TUNSIGNED(a) == b;
-      else {
-        ITHARE_UTIL_ASSERT(bSigned);
-        return b<0 ? false : a == TUNSIGNED(b);
-      }
-    }
-  }
+	//static_assert(std::is_integral<TA>::value);
+	//static_assert(std::is_integral<TB>::value);
+	constexpr bool aFloat = std::is_floating_point<TA>::value;
+	constexpr bool bFloat = std::is_floating_point<TB>::value;
+	constexpr bool aSigned = std::is_signed<TA>::value;
+	constexpr bool bSigned = std::is_signed<TB>::value;
+	if constexpr (aFloat || bFloat || aSigned == bSigned)
+		return a == b;//both signed or both unsigned - no casts required, C promotions will do just fine
+	else {//different is_signed, let's make TSIGNED always-signed, and TUNSIGNED - always-unsigned
+		using TSIGNED = typename std::conditional<aSigned, TA, TB>::type;
+		using TUNSIGNED = typename std::conditional<aSigned, TB, TA>::type;
+
+		static_assert(sizeof(TSIGNED) + sizeof(TUNSIGNED) == sizeof(TA) + sizeof(TB));//self-check
+		if constexpr (sizeof(TSIGNED) > sizeof(TUNSIGNED))
+			return a == b;//again, no casts required, C promotions will do just fine (promoting b to TA which is signed)
+		if constexpr (sizeof(TUNSIGNED) < sizeof(int)) {
+			return a == b;//again, no casts required, C promotion-to-int will do just fine (promoting both to int which is signed) 
+		}
+
+		//at this point, we have sizeof(TUNSIGNED) >= sizeof(TSIGNED) => no-cast will be counterintuitive
+		if constexpr (sizeof(TUNSIGNED) < sizeof(MAX_EFFICIENT_INT)) {
+			//we can cast unsigned to MAX_EFFICIENT_INT
+			if constexpr (aSigned) {
+				ITHARE_UTIL_ASSERT(!bSigned);
+				return a == MAX_EFFICIENT_INT(b);
+			}
+			else {
+				ITHARE_UTIL_ASSERT(bSigned);
+				return MAX_EFFICIENT_INT(a) == b;
+			}
+		}
+		else { //last resort: expression
+			ITHARE_UTIL_ASSERT(sizeof(TUNSIGNED) >= sizeof(TSIGNED));
+			if constexpr (aSigned)
+				return a < 0 ? false : TUNSIGNED(a) == b;
+			else {
+				ITHARE_UTIL_ASSERT(bSigned);
+				return b < 0 ? false : a == TUNSIGNED(b);
+			}
+		}
+	}
 }
 
 template<class TA, class TB>

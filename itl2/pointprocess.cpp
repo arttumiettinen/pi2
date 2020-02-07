@@ -2,11 +2,68 @@
 #include <cmath>
 #include "pointprocess.h"
 #include "projections.h"
+#include "generation.h"
+#include "testutils.h"
+
+#include <iostream>
+using namespace std;
 
 namespace itl2
 {
 	namespace tests
 	{
+
+		void intermediateTypes()
+		{
+			typeAssert<math_intermediate_type<uint8_t, uint8_t>::type, uint8_t>();
+			typeAssert<math_intermediate_type<uint8_t, uint8_t>::type, uint8_t>();
+			typeAssert<math_intermediate_type<uint16_t, uint8_t>::type, uint16_t>();
+			typeAssert<math_intermediate_type<uint8_t, uint16_t>::type, uint16_t>();
+			typeAssert<math_intermediate_type<uint8_t, float32_t>::type, float>();
+			typeAssert<math_intermediate_type<float32_t, uint8_t>::type, float>();
+			typeAssert<math_intermediate_type<float32_t, float32_t>::type, float>();
+			typeAssert<math_intermediate_type<float32_t, double>::type, double>();
+			typeAssert<math_intermediate_type<double, double>::type, double>();
+
+
+			typeAssert<math_intermediate_type<int8_t, uint8_t>::type, int16_t>();
+			typeAssert<math_intermediate_type<int16_t, int8_t>::type, int16_t>();
+			typeAssert<math_intermediate_type<uint8_t, int16_t>::type, int16_t>();
+			typeAssert<math_intermediate_type<int8_t, uint16_t>::type, int32_t>();
+
+			typeAssert<math_intermediate_type<int8_t, float32_t>::type, float>();
+			typeAssert<math_intermediate_type<float32_t, int8_t>::type, float>();
+
+			typeAssert<math_intermediate_type<complex32_t, int8_t>::type, complex32_t>();
+			typeAssert<math_intermediate_type<complex32_t, float32_t>::type, complex32_t>();
+			typeAssert<math_intermediate_type<complex32_t, complex32_t>::type, complex32_t>();
+		}
+
+		template<typename T> void byteOrder(const string& name)
+		{
+			Image<T> img(20, 20);
+			ramp(img, 0);
+			raw::writed(img, "./byteorder/" + name + "_little_endian");
+			swapByteOrder(img);
+			raw::writed(img, "./byteorder/" + name + "_big_endian");
+		}
+
+		void byteOrder()
+		{
+			byteOrder<uint8_t>("uint8_t");
+			byteOrder<uint16_t>("uint16_t");
+			byteOrder<uint32_t>("uint32_t");
+			byteOrder<uint64_t>("uint64_t");
+
+			byteOrder<int8_t>("int8_t");
+			byteOrder<int16_t>("int16_t");
+			byteOrder<int32_t>("int32_t");
+			byteOrder<int64_t>("int64_t");
+
+			byteOrder<float32_t>("float32_t");
+			byteOrder<complex32_t>("complex32_t");
+		}
+
 		void pointProcess()
 		{
 			Image<uint8_t> img(10, 10);
@@ -94,6 +151,19 @@ namespace itl2
 			divide(img, 2.0f + 0.0if);
 			testAssert(img(1, 1) == (5.0f + 5.0if), "add image");
 
+		}
+
+		void broadcast()
+		{
+			Image<uint8_t> img(100, 200, 300);
+			Image<uint8_t> slice(100, 200);
+
+			setValue(img, 255);
+			setValue(slice, 2);
+
+			divide(img, slice, true);
+
+			testAssert(min(img) == 128 && max(img) == 128, "broadcasted division");
 		}
 	}
 }

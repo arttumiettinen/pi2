@@ -1,6 +1,8 @@
 
 #include "resultstable.h"
 
+using namespace std;
+
 namespace itl2
 {
 	void Results::removeColumn(size_t columnIndex)

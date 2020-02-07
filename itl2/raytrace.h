@@ -6,8 +6,6 @@
 #include "io/raw.h"
 #include "math/geometry.h"
 
-using namespace math;
-
 namespace itl2
 {
 
@@ -28,17 +26,17 @@ namespace itl2
 
 		// Calculate first intersection with coordinate plane in each direction
 		Vec3<real_t> nextt(
-			(ray.x >= 0 ? (ceil(start.x) - start.x) : (start.x - floor(start.x))) * deltat.x,
-			(ray.y >= 0 ? (ceil(start.y) - start.y) : (start.y - floor(start.y))) * deltat.y,
-			(ray.z >= 0 ? (ceil(start.z) - start.z) : (start.z - floor(start.z))) * deltat.z);
+			(ray.x >= 0 ? (std::ceil(start.x) - start.x) : (start.x - std::floor(start.x))) * deltat.x,
+			(ray.y >= 0 ? (std::ceil(start.y) - start.y) : (start.y - std::floor(start.y))) * deltat.y,
+			(ray.z >= 0 ? (std::ceil(start.z) - start.z) : (start.z - std::floor(start.z))) * deltat.z);
 
 		// If there's no movement in some direction, make sure that the next t in that direction is infinity.
-		if (math::isinf(deltat.x))
-			nextt.x = numeric_limits<real_t>::infinity();
-		if (math::isinf(deltat.y))
-			nextt.y = numeric_limits<real_t>::infinity();
-		if (math::isinf(deltat.z))
-			nextt.z = numeric_limits<real_t>::infinity();
+		if (std::isinf(deltat.x))
+			nextt.x = std::numeric_limits<real_t>::infinity();
+		if (std::isinf(deltat.y))
+			nextt.y = std::numeric_limits<real_t>::infinity();
+		if (std::isinf(deltat.z))
+			nextt.z = std::numeric_limits<real_t>::infinity();
 
 		real_t t = 0;
 		real_t prevt = 0;
@@ -89,7 +87,7 @@ namespace itl2
 	*/
 	template<typename real_t, typename op> void siddonLineClip(Vec3<real_t>& start, Vec3<real_t>& end, op& operation, const Vec3<real_t>& dimensions)
 	{
-		if (clipLine(start, end, Vec3<real_t>(0, 0, 0), Vec3<real_t>(dimensions) - Vec3<real_t>(1, 1, 1)))
+		if (clipLine(start, end, Vec3<real_t>(0, 0, 0), Vec3<real_t>(dimensions)))// - Vec3<real_t>(1, 1, 1)))
 			siddonLine(start, end, operation);
 	}
 
@@ -110,10 +108,8 @@ namespace itl2
 
 		void operator()(const Vec3c& pos, const real_t length, const real_t totalLength)
 		{
-			if (!img.isInImage(pos))
-				throw ITLException("Point outside image.");
-
-			img(pos) = color;
+			if (img.isInImage(pos))
+				img(pos) = color;
 		}
 	};
 
@@ -133,10 +129,8 @@ namespace itl2
 
 		void operator()(const Vec3c& pos, const real_t length, const real_t totalLength)
 		{
-			if (!img.isInImage(pos))
-				throw ITLException("Point outside image.");
-
-			img(pos) = pixelRound<pixel_t>(length);
+			if (img.isInImage(pos))
+				img(pos) = pixelRound<pixel_t>(length);
 		}
 	};
 
@@ -164,15 +158,8 @@ namespace itl2
 
 		void operator()(const Vec3c& pos, const real_t length, const real_t totalLength)
 		{
-			//if (img.isInImage(pos))
-			//{
-			projectionValue += img(pos) * length;
-			//}
-			//else
-			//{
-			//	int k = 1;
-			//}
-			
+			if (img.isInImage(pos))
+				projectionValue += img(pos) * length;
 		}
 	};
 
@@ -195,7 +182,7 @@ namespace itl2
 
 		void operator()(const Vec3c& pos, const real_t length, const real_t totalLength)
 		{
-			//if (img.isInImage(pos))
+			if (img.isInImage(pos))
 				img(pos) += projectionValue * length / totalLength;
 		}
 	};

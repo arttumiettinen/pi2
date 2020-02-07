@@ -1,6 +1,7 @@
 #pragma once
 
-#include <math.h>
+//#include <math.h>
+#include <cmath>
 #include <limits>
 #include "datatypes.h"
 #include "type.h"
@@ -12,46 +13,35 @@
 	#undef max
 #endif
 
-using namespace itl2;
-
-namespace math
+namespace itl2
 {
 	const double PI = 3.14159265359;
 	const float PIf = 3.14159265359f;
-		
-#if defined(_MSC_VER)
-
-	template <typename T> bool isnan(const T &x)
+	
+	/**
+	Converts from degrees to radians.
+	*/
+	inline double degToRad(double deg)
 	{
-		return _isnan(x) != 0;
+		return deg / 180.0 * PI;
 	}
 
-	template <typename T> bool isinf(const T &x)
+	/**
+	Converts from radians to degrees.
+	*/
+	inline double radToDeg(double rad)
 	{
-		return _finite(x) == 0;
+		return rad / PI * 180.0;
 	}
-#else
-	template <typename T> bool isnan(const T &x)
-	{
-		return std::isnan(x);
-	}
-
-	template <typename T> bool isinf(const T &x)
-	{
-		return std::isinf(x);
-	}
-#endif
-
-
 
 	
 	/**
 	Returns largest integer value whose square is less than given value.
 	*/
-	inline int32_t largestIntWhoseSquareIsLessThan(int32_t square)
+	template<typename T> inline T largestIntWhoseSquareIsLessThan(T square)
 	{
 		// Initial guess using floating point math
-		int32_t result = (int32_t)sqrt(square);
+		T result = (T)std::floor(std::sqrt(square));
 
 		// Refine the result in the case there are floating point inaccuracies
 		while (result * result < square)
@@ -65,7 +55,7 @@ namespace math
 	*/
 	inline double realmod(double x, double y)
 	{
-		double result = fmod(x, y);
+		double result = std::fmod(x, y);
 		return result >= 0 ? result : result + y;
 	}
 
@@ -80,24 +70,41 @@ namespace math
 			value = upper;
 	}
 
-	/**
-	Calculates minimum of two values.
-	*/
-	template<typename T> T min(const T& a, const T& b)
-	{
-		if(a < b)
-			return a;
-		return b;
-	}
+	///**
+	//Calculates minimum of two values.
+	//*/
+	//template<typename T> T min(const T& a, const T& b)
+	//{
+	//	if(a < b)
+	//		return a;
+	//	return b;
+	//}
+
+	///**
+	//Calculates maximum of two values.
+	//*/
+	//template<typename T> T max(const T& a, const T& b)
+	//{
+	//	if(a > b)
+	//		return a;
+	//	return b;
+	//}
 
 	/**
-	Calculates maximum of two values.
+	Returns hypotenuse of a and b while avoiding underflow/overflow
+	using (a * sqrt( 1 + (b/a) * (b/a))), rather than sqrt(a*a + b*b).
 	*/
-	template<typename T> T max(const T& a, const T& b)
+	template<typename T> T hypot(const T &a, const T &b)
 	{
-		if(a > b)
-			return a;
-		return b;
+		if (a == 0)
+		{
+			return std::abs(b);
+		}
+		else
+		{
+			T c = b / a;
+			return std::abs(a) * std::sqrt(1 + c * c);
+		}
 	}
 
 // *** Conversion to/from spherical and polar coordinates.
@@ -110,9 +117,9 @@ namespace math
 	 */
 	inline void toSpherical(double x, double y, double z, double& r, double& azimuthal, double& polar)
 	{
-		r = sqrt(x * x + y * y + z * z);
-		azimuthal = atan2(y, x);
-		polar = acos(z / r);
+		r = std::sqrt(x * x + y * y + z * z);
+		azimuthal = std::atan2(y, x);
+		polar = std::acos(z / r);
 	}
 
 	/**
@@ -124,9 +131,9 @@ namespace math
 	 */
 	inline void toCartesian(double r, double azimuthal, double polar, double& x, double& y, double& z)
 	{
-		x = r * cos(azimuthal) * sin(polar);
-		y = r * sin(azimuthal) * sin(polar);
-		z = r * cos(polar);
+		x = r * std::cos(azimuthal) * std::sin(polar);
+		y = r * std::sin(azimuthal) * std::sin(polar);
+		z = r * std::cos(polar);
 	}
 
 	/**
@@ -137,8 +144,8 @@ namespace math
 	 */
 	inline void toPolar(double x, double y, double& r, double& azimuthal)
 	{
-		r = sqrt(x * x + y * y);
-		azimuthal = atan2(y, x);
+		r = std::sqrt(x * x + y * y);
+		azimuthal = std::atan2(y, x);
 	}
 
 	/**
@@ -149,8 +156,8 @@ namespace math
 	 */
 	inline void toCartesian(double r, double azimuthal, double& x, double& y)
 	{
-		x = r * cos(azimuthal);
-		y = r * sin(azimuthal);
+		x = r * std::cos(azimuthal);
+		y = r * std::sin(azimuthal);
 	}
 
 	
@@ -162,14 +169,18 @@ namespace math
 	*/
 	template<typename Tout, typename Tin> Tout pixelRound(Tin value)
 	{
-		if constexpr (std::is_integral<Tout>::value && std::is_integral<Tin>::value)
+		if constexpr (std::is_same<Tin, Tout>::value)
+		{
+			return value;
+		}
+		else if constexpr (std::is_integral<Tout>::value && std::is_integral<Tin>::value)
 		{
 			if (intuitive::ge(value, std::numeric_limits<Tout>::max()))
 				return std::numeric_limits<Tout>::max();
 			else if (intuitive::le(value, std::numeric_limits<Tout>::lowest()))
 				return std::numeric_limits<Tout>::lowest();
 
-			return (Tout)::round(value);
+			return (Tout)value;
 		}
 		else if constexpr(std::is_integral<Tout>::value)
 		{
@@ -180,62 +191,101 @@ namespace math
 
 			return (Tout)::round(value);
 		}
+		else if constexpr (std::is_same<Tout, complex32_t>::value)
+		{
+			// Convert real to complex
+			complex32_t c(pixelRound<itl2::float32_t>(value), 0);
+			return c;
+		}
 		else // Tout is floating point value
 		{
 			return (Tout)value;
 		}
 	}
 
-	///**
-	//* Returns the parameter as-is.
-	//*/
-	//template<> inline double pixelRound(double value)
-	//{
-	//	return value;
-	//}
-
-	///**
-	//* Returns the parameter converted to float.
-	//*/
-	//template<> inline float pixelRound(double value)
-	//{
-	//	return (float)value;
-	//}
-
-	///**
-	//* Returns the parameter as-is.
-	//*/
-	//template<> inline float pixelRound(float value)
-	//{
-	//	return value;
-	//}
-
-	///**
-	//* Returns the parameter as-is.
-	//*/
-	//template<> inline double pixelRound(float value)
-	//{
-	//	return (double)value;
-	//}
-
 	/**
 	* Returns the parameter as-is.
 	*/
-	template<> inline std::complex<float32_t> pixelRound(std::complex<float32_t> value)
+	//template<> inline std::complex<itl2::float32_t> pixelRound(std::complex<itl2::float32_t> value)
+	//{
+	//	return value;
+	//}
+
+	/**
+	This overload is needed so that some algorithms work with e.g. both Vec3<float32_t> and Vec3<coord_t> etc.
+	*/
+	inline itl2::coord_t round(itl2::coord_t value)
+	{
+		return value;
+	}
+	
+	/**
+	Round floating point value to coordinate type.
+	*/
+	inline itl2::coord_t round(double value)
+	{
+		return (itl2::coord_t)std::round(value);
+	}
+
+	/**
+	Round floating point value to coordinate type.
+	*/
+	inline itl2::coord_t round(float value)
+	{
+		return (itl2::coord_t)std::round(value);
+	}
+
+
+	/**
+	This overload is needed so that some algorithms work with e.g. both Vec3<float32_t> and Vec3<coord_t> etc.
+	*/
+	inline itl2::coord_t ceil(itl2::coord_t value)
 	{
 		return value;
 	}
 
-	
 	/**
-	Round double value to coordinate type.
+	Ceil floating point value to coordinate type.
 	*/
-	inline coord_t round(double value)
+	inline itl2::coord_t ceil(double value)
 	{
-		return (coord_t)::round(value);
+		return (itl2::coord_t)std::ceil(value);
 	}
 
-	
+	/**
+	Ceil floating point value to coordinate type.
+	*/
+	inline itl2::coord_t ceil(float value)
+	{
+		return (itl2::coord_t)std::ceil(value);
+	}
+
+
+	/**
+	This overload is needed so that some algorithms work with e.g. both Vec3<float32_t> and Vec3<coord_t> etc.
+	*/
+	inline itl2::coord_t floor(itl2::coord_t value)
+	{
+		return value;
+	}
+
+	/**
+	Floor floating point value to coordinate type.
+	*/
+	inline itl2::coord_t floor(double value)
+	{
+		return (itl2::coord_t)std::floor(value);
+	}
+
+	/**
+	Floor floating point value to coordinate type.
+	*/
+	inline itl2::coord_t floor(float value)
+	{
+		return (itl2::coord_t)std::floor(value);
+	}
+
+
 
 // *** Random number generation
 
@@ -266,15 +316,15 @@ namespace math
 	/**
 	Returns random coordinate in range [0, max-1] (== [0, max[).
 	*/
-	inline coord_t randc(coord_t max)
+	inline itl2::coord_t randc(itl2::coord_t max)
 	{
-		return math::round(frand() * (max - 1));
+		return round(frand() * (max - 1));
 	}
 
 	/**
 	Returns random coordinate in range [min, max-1] (== [min, max[).
 	*/
-	inline coord_t randc(coord_t min, coord_t max)
+	inline itl2::coord_t randc(itl2::coord_t min, itl2::coord_t max)
 	{
 		return min + randc(max - min);
 	}

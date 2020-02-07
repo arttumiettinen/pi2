@@ -4,17 +4,18 @@
 
 namespace pilib
 {
-	void addParticlesCommands(vector<Command*>& commands)
+	void addParticlesCommands()
 	{
-		commands.insert(commands.end(),
-			{
-			ADD_REAL(RegionRemovalCommand),
-			ADD_REAL(AnalyzeParticlesBlockCommand),
-			ADD_REAL(AnalyzeParticlesCommand),
-			new HeadersCommand(),
-			new ListAnalyzersCommand(),
-			ADD_REAL(FillParticlesCommand)
-			}
-		);
+		ADD_REAL(RegionRemovalCommand);
+		ADD_REAL(AnalyzeParticlesBlockCommand);
+		ADD_REAL(PrepareAnalyzeParticlesCommand);
+		ADD_REAL(AnalyzeParticlesCommand);
+		ADD_REAL(LabelCommand);
+		ADD_REAL(AnalyzeLabelsCommand);
+		CommandList::add<HeadersCommand>();
+		CommandList::add<ListAnalyzersCommand>();
+		ADD_REAL(FillParticlesCommand);
+		ADD_REAL(DrawEllipsoidsCommand);
+		ADD_REAL(GreedyColoringCommand);
 	}
 }

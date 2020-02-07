@@ -6,7 +6,7 @@
 #include "math/mathutils.h"
 #include "math/numberutils.h"
 
-namespace math
+namespace itl2
 {
 	/**
 	Calculate eigendecomposition of 2x2 real matrix A.

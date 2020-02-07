@@ -1,0 +1,65 @@
+.. _drawellipsoids:
+
+drawellipsoids
+**************
+
+
+**Syntax:** :code:`drawellipsoids(image, analyzers, results, fill color, ellipsoid type, block origin)`
+
+Visualizes particles that have been analyzed with the :ref:`analyzeparticles` command by drawing a (scaled) principal component ellipsoid of each particle. The semi-axis directions of the ellipsoid are the principal directions of the particle, and semi-axis lengths are derived from the size of the particle in the principal directions as detailed in the 'ellipsoid type' parameter. If ellipsoid type parameter is set to 'BoundingSphere', the bounding sphere of the particle is drawn instead of ellipsoid.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+analyzers [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+List of names of analyzers that have been used to analyze the particles in the :ref:`analyzeparticles` command. The analyzers argument must contain the 'pca' analyzer if the ellipsoid type argument is set to any type of ellipsoid. Additionally, 'volume' analyzer is required if the 'Volume' ellipsoid type is selected, and 'boundingsphere' analyzer is required if the 'BoundingSphere' ellipsoid type is selected.
+
+results [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Analysis results image.
+
+fill color [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Fill color.
+
+ellipsoid type [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** principal
+
+Type of ellipsoid to draw. 'Principal' denotes the principal axis ellipsoid without scaling, 'Bounding' results in an ellipsoid that covers all the points of the particle, and 'Volume' results in an ellipsoid whose volume equals the volume of the particle. 'BoundingSphere' denotes bounding sphere of the particle.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Shift that is to be applied to the image before filling the particles. This argument is used internally in distributed processing.
+
+See also
+--------
+
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`

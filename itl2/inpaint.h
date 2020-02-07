@@ -12,9 +12,6 @@
 #include "conversions.h"
 #include "pointprocess.h"
 
-using math::Vec3c;
-using math::pixelRound;
-
 namespace itl2
 {
 
@@ -25,14 +22,14 @@ namespace itl2
 
 	template<> inline bool isFlag(float32_t pix, float32_t val)
 	{
-		if (math::isnan(val))
+		if (std::isnan(val))
 		{
-			return math::isnan(pix);
+			return std::isnan(pix);
 		}
 
-		if (math::isinf(val))
+		if (std::isinf(val))
 		{
-			return math::isinf(pix);
+			return std::isinf(pix);
 		}
 
 		return pix == val;
@@ -40,14 +37,14 @@ namespace itl2
 
 	template<> inline bool isFlag(double pix, double val)
 	{
-		if (math::isnan(val))
+		if (std::isnan(val))
 		{
-			return math::isnan(pix);
+			return std::isnan(pix);
 		}
 
-		if (math::isinf(val))
+		if (std::isinf(val))
 		{
-			return math::isinf(pix);
+			return std::isinf(pix);
 		}
 
 		return pix == val;
@@ -80,7 +77,7 @@ namespace itl2
 			{
 				if (isFlag(image(n), val))
 				{
-					distance(n) = numeric_limits<float32_t>::max();
+					distance(n) = std::numeric_limits<float32_t>::max();
 				}
 				else
 				{
@@ -139,17 +136,17 @@ namespace itl2
 		#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < img.depth(); z++)
 		{
-			float32_t lz = (float32_t)std::cos(math::PI * z / img.depth());
+			float32_t lz = (float32_t)std::cos(PI * z / img.depth());
 			if (img.depth() <= 1)
 				lz = 0;
 			for (coord_t y = 0; y < img.height(); y++)
 			{
-				float32_t ly = (float32_t)std::cos(math::PI * y / img.height());
+				float32_t ly = (float32_t)std::cos(PI * y / img.height());
 				if (img.height() <= 1)
 					lz = 0;
 				for (coord_t x = 0; x < img.width(); x++)
 				{
-					float32_t lx = (float32_t)std::cos(math::PI * x / img.width());
+					float32_t lx = (float32_t)std::cos(PI * x / img.width());
 
 					lambda(x, y, z) = (float32_t)::pow(2 * (img.dimensionality() - (lz + ly + lx)), m);
 				}
@@ -227,7 +224,7 @@ namespace itl2
 			if (maxDiff <= tolerance)
 			{ 
 				if (indicateProgress)
-					cout << "\r" << flush;
+					std::cout << "\r" << std::flush;
 				break;
 			}
 

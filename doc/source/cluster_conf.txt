@@ -1,0 +1,98 @@
+.. _cluster_config:
+
+Distributed processing and cluster configuration
+================================================
+
+One of the main reasons for existence of the pi2 system is its ability to do user-transparent distributed processing.
+Let us look at a simple example in Python code::
+
+	# Initialization
+	from pi2py2 import *
+	pi = Pi2()
+	
+	# Read two images
+	img1 = pi.read('./first_image')
+	img2 = pi.read('./second_image')
+	
+	# Add them together
+	pi.add(img1, img2)
+	
+	# Save
+	pi.writeraw(img1, './added_image')
+	
+	
+This code initializes the pi2 system, reads two images from disk (in any supported format), adds :code:`img2` to :code:`img1` and finally saves the result to disk.
+
+If the images do not fit into the RAM of the computer, we have a problem.
+The input images must be read in smaller pieces, operations performed on the pieces, and the result must be written into the output file at the correct location.
+Doing all this is a bit complicated, particularly if the processing is something more complicated than simple addition.
+Luckily, pi2 is able to do all this with only minimal changes to the code::
+
+	# Initialization
+	from pi2py2 import *
+	pi = Pi2()
+	
+	# Enable distributed processing
+	pi.distribute(Distributor.LOCAL)
+	
+	# Read two images
+	img1 = pi.read('./first_image')
+	img2 = pi.read('./second_image')
+	
+	# Add them together
+	pi.add(img1, img2)
+	
+	# Save
+	pi.writeraw(img1, './added_image')
+
+We only need to add the line :code:`pi.distribute(...)` in order to enable the distributed computing mode.
+The argument specifies what kind of distribution strategy to use.
+Currently, supported strategies are :code:`Distributor.LOCAL` and :code:`Distributor.SLURM`.
+
+The local mode divides the input and output images into smaller pieces and processes the pieces one-by-one on your local computer.
+This mode can be used to process datasets that do not fit into the RAM of your computer.
+
+The Slurm mode assumes that you are running on a computer cluster using the `Slurm Workload Manager <https://slurm.schedmd.com>`_.
+It divides the datasets similarly to the local mode, but submits processing of each piece to the cluster as a Slurm job.
+This way all the cluster nodes available to you can be benefited from, and processing of very large (even terabyte-scale) images is pretty fast.
+
+The distributed operating mode is supported by most of the pi2 commands. See the :ref:`command_reference` for details.
+
+To fully benefit from the distributed mode, some settings must be tuned as detailed in the following sections.
+
+
+Configuration for local distribution mode
+-----------------------------------------
+
+Configuration for local distribution mode are found in file `local_config.txt <https://github.com/arttumiettinen/pi2/blob/master/example_config/local_config.txt>`__ found in the same folder than the pi2 executable.
+In the configuration file, lines starting with :code:`;`-character are comments.
+In the `default configuration file <https://github.com/arttumiettinen/pi2/blob/master/example_config/local_config.txt>`__ the comments are used to describe the different settings.
+The most important setting is :code:`max_memory` that gives the approximate amount of memory (in megabytes) that the pi2 system may use at once.
+If set to zero, pi2 uses 85 % of total RAM in the computer.
+For descriptions of the other settings, please refer to the comments in the `default configuration file <https://github.com/arttumiettinen/pi2/blob/master/example_config/local_config.txt>`__.
+
+For quick testing, the :code:`maxmemory` parameter can also be set using the :ref:`maxmemory` command, but changes made with the command are not saved into the configuration files.
+
+
+Configuration for SLURM cluster
+-------------------------------
+
+Slurm cluster configuration is located in file `slurm_config.txt <https://github.com/arttumiettinen/pi2/blob/master/example_config/slurm_config.txt>`__ found in the same folder than the pi2 executable.
+The file is similar to the `local_config.txt <https://github.com/arttumiettinen/pi2/blob/master/example_config/local_config.txt>`__ (see above), but it has more parameters available.
+
+The pi2 system divides the jobs into three categories: fast, normal, and slow.
+The :code:`extra_args_*` settings can be used to submit the jobs into different partitions.
+This is useful as partitions for fast jobs usually have shorter queueing time.
+
+The :code:`max_memory` setting (and :code:`maxmemory` command) works the same than in local processing, but now it should be set to the amount of usable RAM in a compute node.
+If set to zero, the system finds out the node with the smallest amount of memory using :code:`sinfo --Node --Format=memory`, and sets
+:code:`max_memory` to 90 % of that.
+In very large clusters the :code:`sinfo` command may be slow, so you might want to set the :code:`max_memory` parameter manually.
+
+If you encounter out-of-memory errors or jobs crash without reason, try decreasing the :code:`max_memory` parameter.
+
+When a job fails, the pi2 system will try to re-submit it a few times. The maximum number of re-submissions is given by the
+:code:`max_resubmit_count` parameter.
+
+For more thorough descriptions of the parameters please refer to comments in the `default configuration file <https://github.com/arttumiettinen/pi2/blob/master/example_config/slurm_config.txt>`__.
+

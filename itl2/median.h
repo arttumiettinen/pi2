@@ -1,6 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <numeric>
+
+#include "math/numberutils.h"
 
 namespace itl2
 {
@@ -28,10 +31,10 @@ namespace itl2
 					on the nature of the input signal.
 	 ---------------------------------------------------------------------------*/
 
-	template<typename pixel_t> double opt_med3(std::vector<pixel_t>& p)
+	template<typename pixel_t> pixel_t opt_med3(std::vector<pixel_t>& p)
 	{
 		PIX_SORT(p[0], p[1]); PIX_SORT(p[1], p[2]); PIX_SORT(p[0], p[1]);
-		return(p[1]);
+		return p[1];
 	}
 
 	/*----------------------------------------------------------------------------
@@ -44,11 +47,12 @@ namespace itl2
 					on the nature of the input signal.
 	 ---------------------------------------------------------------------------*/
 
-	template<typename pixel_t> double opt_med5(std::vector<pixel_t>& p)
+	template<typename pixel_t> pixel_t opt_med5(std::vector<pixel_t>& p)
 	{
 		PIX_SORT(p[0], p[1]); PIX_SORT(p[3], p[4]); PIX_SORT(p[0], p[3]);
 		PIX_SORT(p[1], p[4]); PIX_SORT(p[1], p[2]); PIX_SORT(p[2], p[3]);
-		PIX_SORT(p[1], p[2]); return(p[2]);
+		PIX_SORT(p[1], p[2]);
+		return p[2];
 	}
 
 	/*----------------------------------------------------------------------------
@@ -63,14 +67,14 @@ namespace itl2
 					If you need larger even length kernels check the paper
 	 ---------------------------------------------------------------------------*/
 
-	template<typename pixel_t> double opt_med6(std::vector<pixel_t>& p)
+	template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType opt_med6(std::vector<pixel_t>& p)
 	{
 		PIX_SORT(p[1], p[2]); PIX_SORT(p[3], p[4]);
 		PIX_SORT(p[0], p[1]); PIX_SORT(p[2], p[3]); PIX_SORT(p[4], p[5]);
 		PIX_SORT(p[1], p[2]); PIX_SORT(p[3], p[4]);
 		PIX_SORT(p[0], p[1]); PIX_SORT(p[2], p[3]); PIX_SORT(p[4], p[5]);
 		PIX_SORT(p[1], p[2]); PIX_SORT(p[3], p[4]);
-		return (p[2] + p[3]) * 0.5;
+		return (p[2] + p[3]) / (typename NumberUtils<pixel_t>::RealFloatType)2;
 		/* PIX_SORT(p[2], p[3]) results in lower median in p[2] and upper median in p[3] */
 	}
 
@@ -85,14 +89,14 @@ namespace itl2
 					on the nature of the input signal.
 	 ---------------------------------------------------------------------------*/
 
-	template<typename pixel_t> double opt_med7(std::vector<pixel_t>& p)
+	template<typename pixel_t> pixel_t opt_med7(std::vector<pixel_t>& p)
 	{
 		PIX_SORT(p[0], p[5]); PIX_SORT(p[0], p[3]); PIX_SORT(p[1], p[6]);
 		PIX_SORT(p[2], p[4]); PIX_SORT(p[0], p[1]); PIX_SORT(p[3], p[5]);
 		PIX_SORT(p[2], p[6]); PIX_SORT(p[2], p[3]); PIX_SORT(p[3], p[6]);
 		PIX_SORT(p[4], p[5]); PIX_SORT(p[1], p[4]); PIX_SORT(p[1], p[3]);
 		PIX_SORT(p[3], p[4]);
-		return (p[3]);
+		return p[3];
 	}
 
 	/*----------------------------------------------------------------------------
@@ -111,7 +115,7 @@ namespace itl2
 					in middle position, but other elements are NOT sorted.
 	 ---------------------------------------------------------------------------*/
 
-	template<typename pixel_t> double opt_med9(std::vector<pixel_t>& p)
+	template<typename pixel_t> pixel_t opt_med9(std::vector<pixel_t>& p)
 	{
 		PIX_SORT(p[1], p[2]); PIX_SORT(p[4], p[5]); PIX_SORT(p[7], p[8]);
 		PIX_SORT(p[0], p[1]); PIX_SORT(p[3], p[4]); PIX_SORT(p[6], p[7]);
@@ -120,7 +124,7 @@ namespace itl2
 		PIX_SORT(p[3], p[6]); PIX_SORT(p[1], p[4]); PIX_SORT(p[2], p[5]);
 		PIX_SORT(p[4], p[7]); PIX_SORT(p[4], p[2]); PIX_SORT(p[6], p[4]);
 		PIX_SORT(p[4], p[2]);
-		return(p[4]);
+		return p[4];
 	}
 
 
@@ -134,7 +138,7 @@ namespace itl2
 					Code taken from Graphic Gems.
 	 ---------------------------------------------------------------------------*/
 
-	template<typename pixel_t> double opt_med25(std::vector<pixel_t>& p)
+	template<typename pixel_t> pixel_t opt_med25(std::vector<pixel_t>& p)
 	{
 		PIX_SORT(p[0], p[1]);   PIX_SORT(p[3], p[4]);   PIX_SORT(p[2], p[4]);
 		PIX_SORT(p[2], p[3]);   PIX_SORT(p[6], p[7]);   PIX_SORT(p[5], p[7]);
@@ -169,7 +173,7 @@ namespace itl2
 		PIX_SORT(p[12], p[17]); PIX_SORT(p[7], p[17]);  PIX_SORT(p[7], p[10]);
 		PIX_SORT(p[12], p[18]); PIX_SORT(p[7], p[12]);  PIX_SORT(p[10], p[18]);
 		PIX_SORT(p[12], p[20]); PIX_SORT(p[10], p[20]); PIX_SORT(p[10], p[12]);
-		return (p[12]);
+		return p[12];
 	}
 
 
@@ -180,17 +184,17 @@ namespace itl2
 	/**
 	Calculates median of values in vector v.
 	*/
-	template<typename pixel_t> double calcMedian(vector<pixel_t>& v)
+	template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType calcMedian(std::vector<pixel_t>& v)
 	{
 		size_t i = v.size();
 
 		if (i == 9)
 		{
-			return opt_med9(v);
+			return (typename NumberUtils<pixel_t>::FloatType)opt_med9(v);
 		}
 		else if (i == 25)
 		{
-			return opt_med25(v);
+			return (typename NumberUtils<pixel_t>::FloatType)opt_med25(v);
 		}
 		else if (i == 6)
 		{
@@ -198,7 +202,7 @@ namespace itl2
 		}
 		else if (i == 3)
 		{
-			return opt_med3(v);
+			return (typename NumberUtils<pixel_t>::FloatType)opt_med3(v);
 		}
 		if (i == 0)
 		{
@@ -206,24 +210,81 @@ namespace itl2
 		}
 		else if (i == 1)
 		{
-			return v[0];
+			return (typename NumberUtils<pixel_t>::FloatType)v[0];
 		}
 		else
 		{
 			size_t n = i / 2;
-			nth_element(v.begin(), v.begin() + n, v.end());
+			std::nth_element(v.begin(), v.begin() + n, v.end());
 			pixel_t vn = v[n];
 
 			if (v.size() % 2 == 1)
 			{
-				return vn;
+				return (typename NumberUtils<pixel_t>::FloatType)vn;
 			}
 			else
 			{
-				nth_element(v.begin(), v.begin() + n - 1, v.end());
-				return 0.5 * (vn + v[n - 1]);
+				std::nth_element(v.begin(), v.begin() + n - 1, v.end());
+				return (vn + v[n - 1]) / (typename NumberUtils<pixel_t>::RealFloatType)2;
 			}
 		}
+	}
+
+
+	namespace internals
+	{
+		template <typename VectorType>
+		void sortIndexes(VectorType const& v, std::vector<size_t>& idx)
+		{
+			std::iota(std::begin(idx), std::end(idx), 0);
+
+			std::sort(std::begin(idx), std::end(idx), [&v](size_t i1, size_t i2) {return v[i1] < v[i2]; });
+		}
+	}
+
+	/**
+	Calculates weighted median of samples x, each having weight given by the corresponding item in weight array.
+	This code is from StackOverflow page
+	https://stackoverflow.com/questions/9794558/weighted-median-computation
+	*/
+	template<typename VectorType1, typename VectorType2>
+	auto weightedMedian(VectorType1 const& x, VectorType2 const& weight, std::vector<size_t>& ind)
+	{
+		double totalWeight = 0.0;
+		for (size_t i = 0; i < x.size(); ++i)
+		{
+			totalWeight += weight[i];
+		}
+
+		ind.resize(x.size());
+		internals::sortIndexes(x, ind);
+
+		size_t k = ind[0];
+		double sum = totalWeight - weight[k];
+
+		for (size_t i = 1; i < ind.size(); ++i)
+		{
+			k = ind[i];
+			sum -= weight[k];
+
+			if (sum <= 0.5 * totalWeight)
+			{
+				break;
+			}
+		}
+		return x[k];
+	}
+
+	/**
+	Calculates weighted median of samples x, each having weight given by the corresponding item in weight array.
+	This code is from StackOverflow page
+	https://stackoverflow.com/questions/9794558/weighted-median-computation
+	*/
+	template<typename VectorType1, typename VectorType2>
+	auto weightedMedian(VectorType1 const& x, VectorType2 const& weight)
+	{
+		std::vector<size_t> ind;
+		return weightedMedian(x, weight, ind);
 	}
 
 }

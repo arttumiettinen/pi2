@@ -1,0 +1,42 @@
+.. _analyzelabels:
+
+analyzelabels
+*************
+
+
+**Syntax:** :code:`analyzelabels(image, results, analyzers)`
+
+Analyzes labeled regions of the input image. The regions do not need to be connected. Region having value zero is skipped.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+The input image where each particle is labeled with different color.
+
+results [output]
+~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Analysis results image.
+
+analyzers [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** "coordinates, volume"
+
+List of names of analyzers to use. Use command :ref:`listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.
+
+See also
+--------
+
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`

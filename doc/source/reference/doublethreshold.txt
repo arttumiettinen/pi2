@@ -1,0 +1,36 @@
+.. _doublethreshold:
+
+doublethreshold
+***************
+
+
+**Syntax:** :code:`doublethreshold(image, first threshold, second threshold)`
+
+Sets pixel to 0 if its value is less than the first threshold. Sets pixel to 1 if pixel its is larger than or equal to the first threshold and less than the second threshold (if any). Sets pixel to 2 if pixel its is larger than or equal to the second threshold.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+first threshold [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Pixels whose value is larger than or equal to this threshold and less than the second threshold are set to 1.
+
+second threshold [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Pixels whose value is larger than or equal to this threshold are set to 2.
+

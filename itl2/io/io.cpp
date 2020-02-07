@@ -6,15 +6,48 @@ namespace itl2
 {
 	namespace io
 	{
+	
+	
+    	bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
+		{
+			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason;
+			if (vol::getInfo(filename, dimensions, dataType, volReason))
+			{
+				return true;
+			}
+			else if (tiff::getInfo(filename, dimensions, dataType, tiffReason))
+			{
+				return true;
+			}
+			else if (nrrd::getInfo(filename, dimensions, dataType, nrrdReason))
+			{
+				return true;
+			}
+			else if (sequence::getInfo(filename, dimensions, dataType, sequenceReason))
+			{
+				return true;
+			}
+			else if (raw::getInfo(filename, dimensions, dataType, rawReason))
+			{
+				return true;
+			}
+			else
+			{
+				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason);
+				return false;
+			}
+		}
+	
+	
 		namespace tests
 		{
 			void readWrite()
 			{
 				Image<uint8_t> img8;
 				Image<uint16_t> img;
-				io::read(img8, "uint8.png");
-				io::read(img8, "t1-head_bin_");
-				io::read(img, "t1-head.tif");
+				io::read(img8, "./input_data/uint8.png");
+				io::read(img8, "./input_data/t1-head_bin_");
+				io::read(img, "./input_data/t1-head.tif");
 
 				sequence::write(img, "./sequence/head/head_@(5)_test.tif");
 

@@ -1,0 +1,16 @@
+.. _info:
+
+info
+****
+
+
+**Syntax:** :code:`info()`
+
+Displays information about the computer and the PI system.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

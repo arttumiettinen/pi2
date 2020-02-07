@@ -1,0 +1,16 @@
+.. _waitreturn:
+
+waitreturn
+**********
+
+
+**Syntax:** :code:`waitreturn()`
+
+Waits until the user presses return key. Does not show any prompts on screen.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

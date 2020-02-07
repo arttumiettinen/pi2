@@ -7,24 +7,13 @@ namespace itl2
 {
 	namespace tests
 	{
-		void curvature()
-		{
-			// NOTE: No asserts!
-
-			Image<float32_t> img, curv;
-			raw::read(img, "./simple_structures_256x256x256.raw");
-
-			meanCurvature(img, 10, curv);
-
-			raw::writed(curv, "./structure/mean_curvature");
-		}
 
 		void structureTensor()
 		{
 			// NOTE: No asserts!
 
 			Image<float32_t> img, cyl, plan, energy, l1, l2, l3;
-			raw::read(img, "./simple_structures_128x128x128.raw");
+			raw::read(img, "./input_data/simple_structures_128x128x128.raw");
 
 			itl2::structureTensor<float32_t>(img, 3, 3, &l1, &l2, &l3, 0, 0, 0, 0, 0, 0, &cyl, &plan, &energy);
 
@@ -41,7 +30,7 @@ namespace itl2
 
 			// NOTE: No asserts!
 			Image<float32_t> img, lambda123, Vo;
-			raw::read(img, "./simple_structures_128x128x128.raw");
+			raw::read(img, "./input_data/simple_structures_128x128x128.raw");
 
 			//multiply(img, 255);
 
@@ -61,7 +50,7 @@ namespace itl2
 		void canny()
 		{
 			Image<uint16_t> head16;
-			raw::read(head16, "t1-head_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
 
 			//// 'Manual' Canny edge detection logic
 			//Image<float32_t> head;

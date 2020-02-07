@@ -9,10 +9,6 @@
 #include "math/numberutils.h"
 #include "interpolationmode.h"
 
-using math::Vec3;
-using math::pixelRound;
-using math::NumberUtils;
-
 namespace itl2
 {
 
@@ -28,10 +24,18 @@ namespace itl2
 			return input_t();
 
 		// bc == Nearest
-		math::clamp<coord_t>(x, 0, img.width() - 1);
-		math::clamp<coord_t>(y, 0, img.height() - 1);
-		math::clamp<coord_t>(z, 0, img.depth() - 1);
+		clamp<coord_t>(x, 0, img.width() - 1);
+		clamp<coord_t>(y, 0, img.height() - 1);
+		clamp<coord_t>(z, 0, img.depth() - 1);
 		return img(x, y, z);
+	}
+
+	/*
+	Gets a pixel value from the image, uses Nearest boundary condition.
+	*/
+	template<typename input_t> input_t getPixelSafe(const Image<input_t>& img, coord_t x, coord_t y, coord_t z)
+	{
+		return getPixelSafe(img, x, y, z, BoundaryCondition::Nearest);
 	}
 
 	/**
@@ -74,6 +78,14 @@ namespace itl2
 		{
 			return operator()(img, x.x, x.y, x.z);
 		}
+
+		/**
+		Returns boundary condition of this interpolator.
+		*/
+		BoundaryCondition boundaryCondition() const
+		{
+			return bc;
+		}
 	};
 
 	/**
@@ -87,7 +99,7 @@ namespace itl2
 
 		}
 
-		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const
+		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t ix = (coord_t)::round(x);
 			coord_t iy = (coord_t)::round(y);
@@ -117,11 +129,11 @@ namespace itl2
 
 		}
 
-		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const
+		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
-			coord_t u0 = (coord_t)floor(x);
-			coord_t v0 = (coord_t)floor(y);
-			coord_t w0 = (coord_t)floor(z);
+			coord_t u0 = itl2::floor(x);
+			coord_t v0 = itl2::floor(y);
+			coord_t w0 = itl2::floor(z);
 
 			intermediate_t r = intermediate_t();
 			for (int k = 0; k <= 1; k++)
@@ -177,7 +189,7 @@ namespace itl2
 
 		}
 
-		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const
+		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t u0 = (coord_t)floor(x);
 			coord_t v0 = (coord_t)floor(y);
@@ -268,7 +280,7 @@ namespace itl2
 
 		}
 
-		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const
+		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t u0 = (coord_t)floor(x);
 			coord_t v0 = (coord_t)floor(y);
@@ -340,7 +352,7 @@ namespace itl2
 
 		}
 
-		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const
+		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t u0 = (coord_t)floor(x);
 			coord_t v0 = (coord_t)floor(y);
@@ -401,13 +413,13 @@ namespace itl2
 	/**
 	Create Interpolator object from interpolation mode and boundary condition.
 	*/
-	template<typename output_t, typename input_t, typename real_t = typename NumberUtils<output_t>::RealFloatType> std::shared_ptr<Interpolator<output_t, input_t, real_t> > createInterpolator(InterpolationMode mode, BoundaryCondition bc)
+	template<typename output_t, typename input_t, typename real_t = typename NumberUtils<output_t>::RealFloatType, typename intermediate_t = typename NumberUtils<output_t>::FloatType> std::shared_ptr<Interpolator<output_t, input_t, real_t> > createInterpolator(InterpolationMode mode, BoundaryCondition bc)
 	{
 		switch (mode)
 		{
 			case InterpolationMode::Nearest: return std::make_shared<NearestNeighbourInterpolator<output_t, input_t, real_t> >(bc);
-			case InterpolationMode::Linear: return std::make_shared<LinearInterpolator<output_t, input_t, real_t> >(bc);
-			case InterpolationMode::Cubic: return std::make_shared<CubicInterpolator<output_t, input_t, real_t>>(bc);
+			case InterpolationMode::Linear: return std::make_shared<LinearInterpolator<output_t, input_t, real_t, intermediate_t> >(bc);
+			case InterpolationMode::Cubic: return std::make_shared<CubicInterpolator<output_t, input_t, real_t, intermediate_t> >(bc);
 		}
 		throw ITLException("Unsupported interpolation mode.");
 	}

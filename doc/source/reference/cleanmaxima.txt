@@ -1,0 +1,42 @@
+.. _cleanmaxima:
+
+cleanmaxima
+***********
+
+
+**Syntax:** :code:`cleanmaxima(image, maxima, radius multiplier)`
+
+Removes all maxima that are smaller in radius than neighbouring maximum. Maximum is neighbour to another maximum if distance between them is less than radius of the larger maximum multiplied by radiusMultiplier. Removes all maxima :math:`m` that satisfy :math:`distance(m, n) < radiusMultiplier * radius(n)` and :math:`radius(n) > radius(m)` for some :math:`n`. The distance is measured between centroids of the maxima. The maxima are removed by combining them to the larger maxima.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+The image where the maxima have been extracted (by :ref:`localmaxima` command).
+
+maxima [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that contains the maxima. See output from :ref:`localmaxima` command.
+
+radius multiplier [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Maxima are enlarged by this multiplier.
+
+See also
+--------
+
+:ref:`localmaxima`, :ref:`cleanmaxima`, :ref:`labelmaxima`, :ref:`growlabels`, :ref:`grow`

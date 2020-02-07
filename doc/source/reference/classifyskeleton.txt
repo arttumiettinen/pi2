@@ -1,0 +1,26 @@
+.. _classifyskeleton:
+
+classifyskeleton
+****************
+
+
+**Syntax:** :code:`classifyskeleton(image)`
+
+Classifies line skeleton to end points, curve points, branch points, junction points, internal points, and edge points according to Arcelli, From 3D Discrete Surface Skeletons to Curve Skeletons.End points are given value 2, curve points value 3, branch points value 4, junction points value 5, internal points value 6, and edge points value 7.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+See also
+--------
+
+:ref:`surfacethin`, :ref:`surfaceskeleton`, :ref:`linethin`, :ref:`lineskeleton`, :ref:`tracelineskeleton`, :ref:`classifyskeleton`

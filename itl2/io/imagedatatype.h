@@ -37,7 +37,23 @@ namespace itl2
 		/**
 		Complex value consisting of two 32-bit floating point values.
 		*/
-		Complex32 = 6
+		Complex32 = 6,
+		/**
+		Signed 8-bit integer pixel data type.
+		*/
+		Int8 = 7,
+		/**
+		Signed 16-bit integer pixel data type.
+		*/
+		Int16 = 8,
+		/**
+		Signed 32-bit integer pixel data type.
+		*/
+		Int32 = 9,
+		/**
+		Signed 64-bit integer pixel data type.
+		*/
+		Int64 = 10,
 	};
 
 	/*
@@ -69,6 +85,26 @@ namespace itl2
 		return ImageDataType::UInt64;
 	}
 
+	template<> inline ImageDataType imageDataType<int8_t>()
+	{
+		return ImageDataType::Int8;
+	}
+
+	template<> inline ImageDataType imageDataType<int16_t>()
+	{
+		return ImageDataType::Int16;
+	}
+
+	template<> inline ImageDataType imageDataType<int32_t>()
+	{
+		return ImageDataType::Int32;
+	}
+
+	template<> inline ImageDataType imageDataType<int64_t>()
+	{
+		return ImageDataType::Int64;
+	}
+
 	template<> inline ImageDataType imageDataType<float32_t>()
 	{
 		return ImageDataType::Float32;
@@ -93,6 +129,14 @@ namespace itl2
 			return ImageDataType::UInt32;
 		if (dt2 == "uint64")
 			return ImageDataType::UInt64;
+		if (dt2 == "int8")
+			return ImageDataType::Int8;
+		if (dt2 == "int16")
+			return ImageDataType::Int16;
+		if (dt2 == "int32")
+			return ImageDataType::Int32;
+		if (dt2 == "int64")
+			return ImageDataType::Int64;
 		if (dt2 == "float32")
 			return ImageDataType::Float32;
 		if (dt2 == "complex32")
@@ -108,9 +152,31 @@ namespace itl2
 		case ImageDataType::UInt16: return "uint16";
 		case ImageDataType::UInt32: return "uint32";
 		case ImageDataType::UInt64: return "uint64";
+		case ImageDataType::Int8: return "int8";
+		case ImageDataType::Int16: return "int16";
+		case ImageDataType::Int32: return "int32";
+		case ImageDataType::Int64: return "int64";
 		case ImageDataType::Float32: return "float32";
 		case ImageDataType::Complex32: return "complex32";
 		default: return "Unknown";
+		}
+	}
+
+	inline size_t pixelSize(ImageDataType dt)
+	{
+		switch (dt)
+		{
+		case ImageDataType::UInt8: return sizeof(uint8_t);
+		case ImageDataType::UInt16: return sizeof(uint16_t);
+		case ImageDataType::UInt32: return sizeof(uint32_t);
+		case ImageDataType::UInt64: return sizeof(uint64_t);
+		case ImageDataType::Int8: return sizeof(int8_t);
+		case ImageDataType::Int16: return sizeof(int16_t);
+		case ImageDataType::Int32: return sizeof(int32_t);
+		case ImageDataType::Int64: return sizeof(int64_t);
+		case ImageDataType::Float32: return sizeof(float32_t);
+		case ImageDataType::Complex32: return sizeof(complex32_t);
+		default: return 0;
 		}
 	}
 }

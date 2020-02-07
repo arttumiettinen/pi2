@@ -1,0 +1,42 @@
+.. _meancurvature:
+
+meancurvature
+*************
+
+
+**Syntax:** :code:`meancurvature(geometry, mean curvature, sigma)`
+
+Calculates mean curvature of surfaces defined by :math:`f(x, y, z) = 0`, multiplied by the norm of the gradient of the image :math:`f`. Without multiplication by :math:`|| \nabla f ||`, the curvature of :math:`f` is very hard to interpret as the values are only valid near the zero contour of :math:`f` (at least from the image processing point-of-view). This command calculates curvature as divergence of unit normal: :math:`-0.5 \nabla \cdot (\nabla f / ||\nabla f||) ||\nabla f||`. See also https://en.wikipedia.org/wiki/Mean_curvature#Implicit_form_of_mean_curvature for formulas that can be used to determine the mean curvature. (The corresponding 2D formula is found at https://en.wikipedia.org/wiki/Implicit_curve#Curvature.) Note that this function might produce invalid results for surfaces of structures whose thickness is similar to the value of the sigma parameter. See :ref:`curvature` command for a version that does not suffer from this deficiency and that can be used to calculate the principal curvatures of surfaces in binary images. 
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+geometry [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+The image containing the geometry. Non-zero pixels are assumed to be foreground. The image does not need to be a binary image.
+
+mean curvature [output]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+The mean curvature will be placed into this image.
+
+sigma [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Scale parameter for derivative calculation. Set to the preferred scale of edges that should be detected. Derivatives are calculated using convolutions with derivative of Gaussian function, and this parameter defines the standard deviation of the Gaussian.
+
+See also
+--------
+
+:ref:`curvature`, :ref:`derivative`

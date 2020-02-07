@@ -33,4 +33,19 @@ namespace itl2
 		}
 		throw ITLException("Invalid boundary condition.");
 	}
+
+	template<>
+	inline BoundaryCondition fromString(const string& dt)
+	{
+		string dt2 = dt;
+		trim(dt2);
+		toLower(dt2);
+		if (dt2 == "zero" || dt2 == "0")
+			return BoundaryCondition::Zero;
+
+		if (dt2 == "nearest" || dt2 == "1")
+			return BoundaryCondition::Nearest;
+
+		throw ITLException("Invalid boundary condition: " + dt);
+	}
 }

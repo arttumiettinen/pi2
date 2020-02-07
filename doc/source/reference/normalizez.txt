@@ -1,0 +1,31 @@
+.. _normalizez:
+
+normalizez
+**********
+
+
+**Syntax:** :code:`normalizez(image, target mean)`
+
+Makes sure that all z-slices of the image have the same mean value.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+target mean [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** nan
+
+Global mean that the image should have after normalization. Specify nothing or nan to retain global mean of the image.
+

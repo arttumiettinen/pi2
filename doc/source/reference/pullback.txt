@@ -1,0 +1,105 @@
+.. _pullback:
+
+pullback
+********
+
+There are 2 forms of this command.
+
+:code:`pullback(image, pullback image, file name prefix)`
+=========================================================
+
+Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image that will be pulled back.
+
+pullback image [output]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Will store the result of the pullback operation.
+
+file name prefix [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+File name prefix (and path) passed to blockmatch command.
+
+
+:code:`pullback(image, pullback image, grid start, grid step, grid max, x, y, z)`
+=================================================================================
+
+Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image that will be pulled back, i.e. the deformed image.
+
+pullback image [output]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Will store the result of the pullback operation, i.e. the deformed image transformed to coordinates of the reference image.
+
+grid start [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Start of reference point grid in the coordinates of the reference image.
+
+grid step [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Grid step in each coordinate direction.
+
+grid max [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+End of reference point grid in the coordinates of the reference image. The grid will contain floor((max - start) / step) + 1 points in each coordinate direction. Difference between maximum and minimum does not need to be divisible by step.
+
+x [input]
+~~~~~~~~~
+
+**Data type:** float32 image
+
+X-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.
+
+y [input]
+~~~~~~~~~
+
+**Data type:** float32 image
+
+Y-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.
+
+z [input]
+~~~~~~~~~
+
+**Data type:** float32 image
+
+Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.
+

@@ -4,14 +4,10 @@
 #include <map>
 #include "math/vec2.h"
 
-using std::vector;
-using std::map;
-using std::logic_error;
-
-namespace math
+namespace itl2
 {
 
-	inline void toPolar(vector<Vec2d>& v)
+	inline void toPolar(std::vector<Vec2d>& v)
 	{
 		for(size_t n = 0; n < v.size(); n++)
 		{
@@ -19,18 +15,32 @@ namespace math
 		}
 	}
 
-	inline void toCartesian(vector<Vec2d>& v)
+	inline void toCartesian(std::vector<Vec2d>& v)
 	{
 		for(size_t n = 0; n < v.size(); n++)
 		{
 			toCartesian(v[n]);
 		}
 	}
+	
+	/**
+	Cast all items in a std::vector to some other type.
+	*/
+	template<typename Tdest, typename Tsrc> std::vector<Tdest> cast(const std::vector<Tsrc>& v)
+	{
+		std::vector<Tdest> result;
+		result.reserve(v.size());
+		for(size_t n = 0; n < v.size(); n++)
+		{
+			result.push_back((Tdest)(v[n]));
+		}
+		return result;
+	}
 
 	/**
-	* Calculates product of elements of the vector.
+	Calculates product of elements of the std::vector.
 	*/
-	template<typename T> T product(const vector<T>& items)
+	template<typename T> T product(const std::vector<T>& items)
 	{
 		T result = 1;
 		for(size_t n = 0; n < items.size(); n++)
@@ -39,12 +49,12 @@ namespace math
 	}
 
 	/**
-	* Create vector containing cumulative product of the given vector.
-	* I.e. result[0] = items[0], result[1] = items[0] * items[1] etc.
+	Create std::vector containing cumulative product of the given std::vector.
+	I.e. result[0] = items[0], result[1] = items[0] * items[1] etc.
 	*/
-	template<typename T> vector<T> cumulativeProduct(const vector<T>& items)
+	template<typename T> std::vector<T> cumulativeProduct(const std::vector<T>& items)
 	{
-		vector<T> result;
+		std::vector<T> result;
 		T currVal = 1.0;
 		for(size_t n = 0; n < items.size(); n++)
 		{
@@ -55,12 +65,12 @@ namespace math
 	}
 
 	/**
-	* Calculates maximum element in the vector.
-	* Returns numeric_limits<T>::min() for empty list.
+	Calculates maximum element in the std::vector.
+	Returns std::numeric_limits<T>::min() for empty list.
 	*/
-	template<typename T> T max(const vector<T>& items)
+	template<typename T> T max(const std::vector<T>& items)
 	{
-		T result = numeric_limits<T>::lowest();
+		T result = std::numeric_limits<T>::lowest();
 		for(size_t n = 0; n < items.size(); n++)
 		{
 			if(items[n] > result)
@@ -70,12 +80,12 @@ namespace math
 	}
 
 	/**
-	* Calculates minimum element in the vector.
-	* Returns numeric_limits<T>::max() for empty list.
+	Calculates minimum element in the std::vector.
+	Returns std::numeric_limits<T>::max() for empty list.
 	*/
-	template<typename T> T min(const vector<T>& items)
+	template<typename T> T min(const std::vector<T>& items)
 	{
-		T result = numeric_limits<T>::max();
+		T result = std::numeric_limits<T>::max();
 		for(size_t n = 0; n < items.size(); n++)
 		{
 			if(items[n] < result)
@@ -85,14 +95,14 @@ namespace math
 	}
 
 	/**
-	* Calculate min(a, b) itemwise.
+	Calculate min(a, b) itemwise.
 	*/
-	template<typename T> vector<T> min(const vector<T>& a, const vector<T>& b)
+	template<typename T> std::vector<T> min(const std::vector<T>& a, const std::vector<T>& b)
 	{
 		if(a.size() != b.size())
-			throw ITLException("Sizes of vectors do not match.");
+			throw ITLException("Sizes of std::vectors do not match.");
 
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -102,14 +112,14 @@ namespace math
 	}
 
 	/**
-	* Calculate max(a, b) itemwise.
+	Calculate max(a, b) itemwise.
 	*/
-	template<typename T> vector<T> max(const vector<T>& a, const vector<T>& b)
+	template<typename T> std::vector<T> max(const std::vector<T>& a, const std::vector<T>& b)
 	{
 		if(a.size() != b.size())
-			throw ITLException("Sizes of vectors do not match.");
+			throw ITLException("Sizes of std::vectors do not match.");
 
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -119,14 +129,14 @@ namespace math
 	}
 
 	/**
-	* Calculate a+b itemwise.
+	Calculate a+b itemwise.
 	*/
-	template<typename T> vector<T> operator+(const vector<T>& a, const vector<T>& b)
+	template<typename T> std::vector<T> operator+(const std::vector<T>& a, const std::vector<T>& b)
 	{
 		if(a.size() != b.size())
-			throw ITLException("Sizes of vectors do not match.");
+			throw ITLException("Sizes of std::vectors do not match.");
 
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -138,7 +148,7 @@ namespace math
 	/**
 	Calculate a += const itemwise.
 	*/
-	template<typename T> vector<T>& operator+=(vector<T>& a, T b)
+	template<typename T> std::vector<T>& operator+=(std::vector<T>& a, T b)
 	{
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -148,22 +158,22 @@ namespace math
 	}
 
 	/**
-	* Calculate a+const itemwise.
+	Calculate a+const itemwise.
 	*/
-	template<typename T> vector<T> operator+(vector<T> a, T b)
+	template<typename T> std::vector<T> operator+(std::vector<T> a, T b)
 	{
 		return a += b;
 	}
 
 	/**
-	* Calculate a-b itemwise.
+	Calculate a-b itemwise.
 	*/
-	template<typename T> vector<T> operator-(const vector<T>& a, const vector<T>& b)
+	template<typename T> std::vector<T> operator-(const std::vector<T>& a, const std::vector<T>& b)
 	{
 		if(a.size() != b.size())
-			throw ITLException("Sizes of vectors do not match.");
+			throw itl2::ITLException("Sizes of std::vectors do not match.");
 
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -175,7 +185,7 @@ namespace math
 	/**
 	Calculate a -= const itemwise.
 	*/
-	template<typename T> vector<T>& operator-=(vector<T>& a, T b)
+	template<typename T> std::vector<T>& operator-=(std::vector<T>& a, T b)
 	{
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -185,19 +195,19 @@ namespace math
 	}
 
 	/**
-	* Calculate a-const itemwise.
+	Calculate a-const itemwise.
 	*/
-	template<typename T> vector<T> operator-(vector<T> a, T b)
+	template<typename T> std::vector<T> operator-(std::vector<T> a, T b)
 	{
 		return a -= b;
 	}
 
 	/**
-	 * Calculate -a itemwise.
-	 */
-	template<typename T> vector<T> operator-(const vector<T>& a)
+	Calculate -a itemwise.
+	*/
+	template<typename T> std::vector<T> operator-(const std::vector<T>& a)
 	{
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -207,11 +217,11 @@ namespace math
 	}
 
 	/**
-	 * Calculates absolute value itemwise.
-	 */
-	template<typename T> vector<T> abs(const vector<T>& a)
+	Calculates absolute value itemwise.
+	*/
+	template<typename T> std::vector<T> abs(const std::vector<T>& a)
 	{
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -221,11 +231,11 @@ namespace math
 	}
 
 	/**
-	* Calculate a*const itemwise.
+	Calculate a*const itemwise.
 	*/
-	template<typename T> vector<double> operator*(const vector<T>& a, double b)
+	template<typename T> std::vector<double> operator*(const std::vector<T>& a, double b)
 	{
-		vector<double> result;
+		std::vector<double> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -235,14 +245,14 @@ namespace math
 	}
 
 	/**
-	* Calculate a*b itemwise.
+	Calculate a*b itemwise.
 	*/
-	template<typename T1, typename T2, typename Tresult> vector<Tresult> multiply(const vector<T1>& a, const vector<T2>& b)
+	template<typename T1, typename T2, typename Tresult> std::vector<Tresult> multiply(const std::vector<T1>& a, const std::vector<T2>& b)
 	{
 		if(a.size() != b.size())
-			throw ITLException("Sizes of vectors do not match.");
+			throw ITLException("Sizes of std::vectors do not match.");
 
-		vector<Tresult> result;
+		std::vector<Tresult> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -254,12 +264,12 @@ namespace math
 	/**
 	Calculates sum of values of the vector.
 	*/
-	template<typename T> T sum(const vector<T>& a)
+	template<typename T, typename Tresult> Tresult sum(const std::vector<T>& a)
 	{
-		T result = T();
+		Tresult result = Tresult();
 		for(size_t n = 0; n < a.size(); n++)
 		{
-			result += a[n];
+			result += (Tresult)a[n];
 		}
 		return result;
 	}
@@ -267,7 +277,7 @@ namespace math
 	/**
 	Calculate squared norm of the given vector.
 	*/
-	template<typename T, typename Tresult> Tresult norm2(const vector<T>& a)
+	template<typename T, typename Tresult> Tresult norm2(const std::vector<T>& a)
 	{
 		return sum<Tresult>(multiply<T, T, Tresult>(a, a));
 	}
@@ -275,26 +285,26 @@ namespace math
 	/**
 	Calculate norm of the given vector.
 	*/
-	template<typename T, typename Tresult> Tresult norm(const vector<T>& a)
+	template<typename T, typename Tresult> Tresult norm(const std::vector<T>& a)
 	{
 		return sqrt(norm2<T, Tresult>(a));
 	}
 
 
 	/**
-	* Calculate a*b itemwise.
+	Calculate a*b itemwise.
 	*/
-	template<typename T> vector<double> operator*(double b, const vector<T>& a)
+	template<typename T> std::vector<double> operator*(double b, const std::vector<T>& a)
 	{
 		return a * b;
 	}
 
 	/**
-	* Calculate a/const itemwise.
+	Calculate a/const itemwise.
 	*/
-	template<typename T> vector<double> operator/(const vector<T>& a, double b)
+	template<typename T> std::vector<double> operator/(const std::vector<T>& a, double b)
 	{
-		vector<double> result;
+		std::vector<double> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -304,14 +314,14 @@ namespace math
 	}
 
 	/**
-	* Calculate a/b itemwise.
+	Calculate a/b itemwise.
 	*/
-	template<typename T1, typename T2, typename Tresult> vector<Tresult> divide(const vector<T1>& a, const vector<T2>& b)
+	template<typename T1, typename T2, typename Tresult> std::vector<Tresult> divide(const std::vector<T1>& a, const std::vector<T2>& b)
 	{
 		if(a.size() != b.size())
-			throw ITLException("Sizes of vectors do not match.");
+			throw ITLException("Sizes of std::vectors do not match.");
 
-		vector<Tresult> result;
+		std::vector<Tresult> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -325,17 +335,29 @@ namespace math
 	/**
 	Calculates mean of values of the vector.
 	*/
-	template<typename T> T mean(const vector<T>& a)
+	template<typename T, typename Tresult = T, typename Treal = double> Tresult mean(const std::vector<T>& a)
 	{
-		return sum(a) / (double)a.size();
+		return pixelRound<Tresult>(sum<T, Tresult>(a) / (Treal)a.size());
 	}
 
 	/**
 	Calculates mean of values of the vector using given weights.
 	*/
-	template<typename T> T mean(const vector<T>& a, const vector<T>& weights)
+	template<typename T1, typename T2> T1 mean(const std::vector<T1>& a, const std::vector<T2>& weights)
 	{
-		return sum(multiply<T, T, T>(a, weights)) / sum(weights);
+		return pixelRound<T1>(sum<double, double>(multiply<T1, T2, double>(a, weights)) / sum<T2, double>(weights));
+	}
+
+	template<typename T, typename Tresult = double> Tresult variance(const std::vector<T>& a)
+	{
+		double mu = mean<T, double>(a);
+		auto diff = cast<double, T>(a) - mu;
+		return pixelRound<Tresult>(mean<double, double>(multiply<double, double, double>(diff, diff)));
+	}
+
+	template<typename T> T stddev(const std::vector<T>& a)
+	{
+		return sqrt(variance(a));
 	}
 
 	/**
@@ -358,12 +380,12 @@ namespace math
 	/**
 	Calculates mode of samples.
 	*/
-	template<typename T> T mode(const vector<T>& data)
+	template<typename T> T mode(const std::vector<T>& data)
 	{
 		if (data.size() <= 0)
-			throw logic_error("Mode of no data");
+			throw std::logic_error("Mode of no data");
 
-		map<T, size_t> counts;
+		std::map<T, size_t> counts;
 		for (const T& x : data)
 			counts[x]++;
 
@@ -371,26 +393,14 @@ namespace math
 	}
 
 
-	/**
-	 * Cast all items in a vector to some other type.
-	 */
-	template<typename Tdest, typename Tsrc> vector<Tdest> cast(const vector<Tsrc>& v)
-	{
-		vector<Tdest> result;
-		result.reserve(v.size());
-		for(size_t n = 0; n < v.size(); n++)
-		{
-			result.push_back((Tdest)(v[n]));
-		}
-		return result;
-	}
+	
 
 	/**
 	Round all values in a vector.
 	*/
-	template<typename Tout, typename Tin> vector<Tout> roundv(const vector<Tin>& a)
+	template<typename Tout, typename Tin> std::vector<Tout> roundv(const std::vector<Tin>& a)
 	{
-		vector<Tout> result;
+		std::vector<Tout> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -402,9 +412,9 @@ namespace math
 	/**
 	Ceil all values in a vector.
 	*/
-	template<typename Tout, typename Tin> vector<Tout> ceilv(const vector<Tin>& a)
+	template<typename Tout, typename Tin> std::vector<Tout> ceilv(const std::vector<Tin>& a)
 	{
-		vector<Tout> result;
+		std::vector<Tout> result;
 		result.reserve(a.size());
 		for(size_t n = 0; n < a.size(); n++)
 		{
@@ -416,9 +426,9 @@ namespace math
 	/**
 	Create vector containing three values.
 	*/
-	template<typename T> vector<T> createv(const T& a, const T& b, const T& c)
+	template<typename T> std::vector<T> createv(const T& a, const T& b, const T& c)
 	{
-		vector<T> result;
+		std::vector<T> result;
 		result.reserve(3);
 		result.push_back(a);
 		result.push_back(b);

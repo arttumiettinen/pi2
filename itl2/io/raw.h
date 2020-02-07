@@ -11,6 +11,7 @@
 #include "io/imagedatatype.h"
 #include "io/sequence.h"
 #include "io/fileutils.h"
+#include "math/vec3.h"
 
 
 namespace itl2
@@ -25,7 +26,7 @@ namespace itl2
 			/**
 			Tries to find pixel data type based on file size and dimensions.
 			*/
-			inline ImageDataType estimateDataType(size_t fileSize, const math::Vec3c& dimensions, size_t& pixelSizeBytes)
+			inline ImageDataType estimateDataType(size_t fileSize, const Vec3c& dimensions, size_t& pixelSizeBytes)
 			{
 				size_t pixelCount = (size_t)dimensions.x * (size_t)dimensions.y * (size_t)dimensions.z;
 
@@ -59,28 +60,18 @@ namespace itl2
 			/**
 			Tries to find pixel data type based on file size and dimensions.
 			*/
-			inline ImageDataType estimateDataType(const std::string& filename, const math::Vec3c& dimensions, size_t& pixelSizeBytes)
+			inline ImageDataType estimateDataType(const std::string& filename, const Vec3c& dimensions, size_t& pixelSizeBytes)
 			{
 				size_t fileSize = (size_t)itl2::fileSize(filename);
 				return estimateDataType(fileSize, dimensions, pixelSizeBytes);
 			}
 
 			/**
-			Adds image dimensions to file name.
-			*/
-			inline std::string concatDimensions(const std::string& baseName, const math::Vec3c& dimensions)
-			{
-				std::stringstream name;
-				name << baseName << "_" << dimensions.x << "x" << dimensions.y << "x" << dimensions.z << ".raw";
-				return name.str();
-			}
-
-			/**
-			Adds image dimensions to file name.
+			Adds .raw image dimensions to file name.
 			*/
 			template<typename pixel_t> std::string concatDimensions(const std::string& baseName, const Image<pixel_t>& img)
 			{
-				return concatDimensions(baseName, img.dimensions());
+				return itl2::concatDimensions(baseName, img.dimensions());
 			}
 
 			/**
@@ -89,14 +80,14 @@ namespace itl2
 			If it matches multiple files, tries again with template "{filename}_@x@x@.raw", where @ is one or more numerical digits.
 			If unique match is still not found, throws and ITLException.
 			*/
-			inline void expandRawFilename(string& filename)
+			inline void expandRawFilename(::std::string& filename)
 			{
 				if (!fileExists(filename))
 				{
-					vector<string> candidates = sequence::internals::buildFileList(filename + "*.raw");
+					::std::vector<::std::string> candidates = sequence::internals::buildFileList(filename + "*.raw");
 
 					if (candidates.size() == 0)
-						throw ITLException(string("No file found matching to template ") + filename + "*.raw");
+						throw ITLException(::std::string("No file found matching to template ") + filename + "*.raw");
 
 					if (candidates.size() == 1)
 						filename = candidates[0];
@@ -104,7 +95,7 @@ namespace itl2
 					{
 						// Try with more restricting template, but first make sure that the file name does not end with "_"
 						// as that is part of template we add to it.
-						string reducedFilename = filename;
+						::std::string reducedFilename = filename;
 						if (endsWith(reducedFilename, "_"))
 							reducedFilename = reducedFilename.substr(0, reducedFilename.length() - 1);
 
@@ -128,48 +119,48 @@ namespace itl2
 			and
 			image_name_100x200.raw
 			*/
-			inline bool parseDimensions(const string& filename, math::Vec3c& dimensions)
+			inline bool parseDimensions(const ::std::string& filename, Vec3c& dimensions)
 			{
-				std::string::size_type startpos = filename.find_last_of('_');
-				if (startpos == std::string::npos)
+				::std::string::size_type startpos = filename.find_last_of('_');
+				if (startpos == ::std::string::npos)
 					return false;
 
-				std::string::size_type endpos = filename.find('x', startpos);
-				if (endpos == std::string::npos)
+				::std::string::size_type endpos = filename.find('x', startpos);
+				if (endpos == ::std::string::npos)
 					return false;
 
-				std::string ws = filename.substr(startpos + 1, endpos - startpos - 1);
+				::std::string ws = filename.substr(startpos + 1, endpos - startpos - 1);
 				size_t w = itl2::fromString<size_t>(ws);
 
-				std::string::size_type startpos2 = endpos;
-				std::string::size_type endpos2 = filename.find('x', startpos2 + 1);
-				if (endpos2 == std::string::npos)
+				::std::string::size_type startpos2 = endpos;
+				::std::string::size_type endpos2 = filename.find('x', startpos2 + 1);
+				if (endpos2 == ::std::string::npos)
 				{
 					// 2D image
 					endpos2 = filename.find('.', startpos);
-					if (endpos2 == std::string::npos)
+					if (endpos2 == ::std::string::npos)
 						return false;
 
 
-					std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
+					::std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
 					size_t h = itl2::fromString<size_t>(hs);
-					dimensions = math::Vec3c((coord_t)w, (coord_t)h, 1);
+					dimensions = Vec3c((coord_t)w, (coord_t)h, 1);
 
 					return true;
 				}
 
-				std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
+				::std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
 				size_t h = itl2::fromString<size_t>(hs);
 
-				std::string::size_type startpos3 = endpos2;
-				std::string::size_type endpos3 = filename.find('.', startpos3 + 1);
-				if (endpos3 == std::string::npos)
+				::std::string::size_type startpos3 = endpos2;
+				::std::string::size_type endpos3 = filename.find('.', startpos3 + 1);
+				if (endpos3 == ::std::string::npos)
 					return false;
 
-				std::string ds = filename.substr(startpos3 + 1, endpos3 - startpos3 - 1);
+				::std::string ds = filename.substr(startpos3 + 1, endpos3 - startpos3 - 1);
 				size_t d = itl2::fromString<size_t>(ds);
 
-				dimensions = math::Vec3c((coord_t)w, (coord_t)h, (coord_t)d);
+				dimensions = Vec3c((coord_t)w, (coord_t)h, (coord_t)d);
 				return true;
 			}
 		}
@@ -180,34 +171,113 @@ namespace itl2
 		image_name_100x200.raw
 		@return True if the file name could be parsed and the file exists.
 		*/
-		inline bool getInfo(std::string filename, math::Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes)
+		inline bool getInfo(::std::string filename, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason)
 		{
 			try
 			{
 				internals::expandRawFilename(filename);
 			}
-			catch (ITLException)
+			catch (ITLException e)
 			{
+				reason = e.message();
 				return false;
 			}
 
 			if (!internals::parseDimensions(filename, dimensions))
+			{
+				reason = "Unable to find dimensions from file name in [name]_[width]x[height]x[depth].raw format.";
 				return false;
+			}
 
 			if (!itl2::fileExists(filename))
+			{
+				reason = "Input file does not exist.";
 				return false;
+			}
 
 			dataType = internals::estimateDataType(filename, dimensions, pixelSizeBytes);
 			//return dataType != ImageDataType::Unknown;
 			return true;
 		}
 
-		inline bool getInfo(std::string filename, math::Vec3c& dimensions, ImageDataType& dataType)
+		inline bool getInfo(::std::string filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
 			size_t pixelSizeBytes;
-			return getInfo(filename, dimensions, dataType, pixelSizeBytes);
+			return getInfo(filename, dimensions, dataType, pixelSizeBytes, reason);
 		}
 
+        /**
+		Writes any trivially copyable value to stream.
+		*/
+		template<typename T>
+		typename ::std::enable_if<std::is_trivially_copyable_v<T> >::type writePixel(std::ofstream& out, const T& item)
+		{
+			out.write((char*)&item, sizeof(T));
+		}
+
+		/**
+		Reads any trivially copyable value from stream.
+		*/
+		template<typename T>
+		typename ::std::enable_if<std::is_trivially_copyable_v<T> >::type readPixel(std::ifstream& in, T& item)
+		{
+			in.read((char*)&item, sizeof(T));
+		}
+
+
+		/**
+		Reads raw file to given image.
+		If the pixel data type is trivially copyable, the pixels are read directly from the file to the image memory buffer.
+		In this case the pixels are assumed to be stored in native byte order.
+		If the pixel data type is NOT trivially copyable, suitable function readPixel(ifstream& in, pixel_t& target)
+		must be passed as parameter, and the function must read one pixel from the stream and assign its value to target.
+		@param img Image where the data is placed. The size of the image must be correct.
+		@param filename The name of the file to read.
+		@param bytesToSkip Skip this many bytes from the beginning of the file.
+		@param readPixel Pixel reading function. Relevant only for non-trivially copyable pixel data types.
+		*/
+		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+		{
+			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
+
+			if(!in)
+            {
+                throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+            }
+
+			in.seekg(bytesToSkip, std::ios::beg);
+
+			if constexpr (std::is_trivially_copyable_v<pixel_t>)
+			{
+				// Load directly to the buffer
+				size_t READ_SIZE = 200 * 1024 * 1024;
+				size_t read_start = 0;
+				char* pBuffer = (char*)img.getData();
+				while (read_start < img.pixelCount() * sizeof(pixel_t))
+				{
+					size_t read_size = READ_SIZE;
+					if (read_start + read_size > img.pixelCount() * sizeof(pixel_t))
+						read_size = img.pixelCount() * sizeof(pixel_t) - read_start;
+
+					in.read(pBuffer + read_start, read_size);
+
+					if (in.bad())
+					{
+						throw ITLException(std::string("Read .raw failed, file size is incorrect: ") + filename);
+					}
+
+					read_start += read_size;
+				}
+			}
+			else
+			{
+				for (coord_t n = 0; n < img.pixelCount(); n++)
+				{
+					readPixel(in, img(n));
+				}
+			}
+		}
+		
 		/**
 		Reads part of a .raw file to given image.
 		NOTE: Does not support out of bounds start position.
@@ -216,104 +286,112 @@ namespace itl2
 		@param dimensions Dimensions of the whole file.
 		@param start Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlockNoParse(Image<pixel_t>& img, const std::string& filename, const math::Vec3c& dimensions, const math::Vec3c& start, bool showProgressInfo = false, size_t bytesToSkip = 0)
+		template<typename pixel_t> void readBlockNoParse(Image<pixel_t>& img, const std::string& filename, const Vec3c& dimensions, const Vec3c& start, bool showProgressInfo = false, size_t bytesToSkip = 0)
 		{
-			ifstream in(filename.c_str(), ios_base::in | ios_base::binary);
-
-			if(!in)
-			{
-				throw ITLException(std::string("Unable to open ") + filename + string(", ") + getStreamErrorMessage());
-			}
-
-			in.seekg(bytesToSkip, ios::beg);
-
 			if (start.x < 0 || start.y < 0 || start.z < 0 || start.x >= dimensions.x || start.y >= dimensions.y || start.z >= dimensions.z)
 				throw ITLException("Out of bounds start position in raw::readBlock.");
 
-			math::Vec3c cStart = start;
-			clamp(cStart, math::Vec3c(0, 0, 0), dimensions);
-			math::Vec3c cEnd = start + img.dimensions();
-			clamp(cEnd, math::Vec3c(0, 0, 0), dimensions);
+			Vec3c cStart = start;
+			clamp(cStart, Vec3c(0, 0, 0), dimensions);
+			Vec3c cEnd = start + img.dimensions();
+			clamp(cEnd, Vec3c(0, 0, 0), dimensions);
+
+			if (cStart == Vec3c(0, 0, 0) && cEnd == dimensions)
+			{
+				// Reading whole file, use the whole file reading function.
+				raw::readNoParse(img, filename, bytesToSkip);
+				return;
+			}
+
+
+			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
+
+			if (!in)
+			{
+				throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+			}
+
+			in.seekg(bytesToSkip, std::ios::beg);
 
 			pixel_t* pBuffer = img.getData();
-			for (coord_t z = cStart.z; z < cEnd.z; z++)
+
+			if (cStart.x == 0 && cEnd.x == dimensions.x)
 			{
-				for (coord_t y = cStart.y; y < cEnd.y; y++)
+				// Reading whole scan lines.
+				// We can read one slice per one read call.
+				for (coord_t z = cStart.z; z < cEnd.z; z++)
 				{
-					size_t filePos = (z * dimensions.x * dimensions.y + y * dimensions.x + cStart.x) * sizeof(pixel_t);
+					size_t filePos = (z * dimensions.x * dimensions.y + cStart.y * dimensions.x + cStart.x) * sizeof(pixel_t);
 					in.seekg(filePos);
 
-					size_t imgPos = img.getLinearIndex(0, y - cStart.y, z - cStart.z);
-					in.read((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * sizeof(pixel_t));
+					size_t imgPos = img.getLinearIndex(0, 0, z - cStart.z);
+					in.read((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * (cEnd.y - cStart.y) * sizeof(pixel_t));
 
 					if (in.bad())
 					{
-						throw ITLException(std::string("Failed to read block of ") + filename + string(", ") + getStreamErrorMessage());
+						showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+						throw ITLException(std::string("Failed to read (slice at a time) block of ") + filename + std::string(", ") + getStreamErrorMessage());
 					}
+
+					showProgress(z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
 				}
-
-				if (showProgressInfo)
-					showProgress(z - cStart.z, cEnd.z - cStart.z);
 			}
-		}
-		
-		/**
-		Reads raw file to given image.
-		@param img Image where the data is placed. The size of the image must be correct.
-		@param filename The name of the file to read.
-		@param bytesToSkip Skip this many bytes from the beginning of the file.
-		*/
-		template<typename pixel_t> void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0)
-		{
-			ifstream in(filename.c_str(), ios_base::in | ios_base::binary);
-
-			if(!in)
-            {
-                throw ITLException(std::string("Unable to open ") + filename + string(", ") + getStreamErrorMessage());
-            }
-
-			in.seekg(bytesToSkip, ios::beg);
-
-			// Load directly to the buffer
-			size_t READ_SIZE = 200 * 1024 * 1024;
-			size_t read_start = 0;
-			char* pBuffer = (char*)img.getData();
-			while(read_start < img.pixelCount() * sizeof(pixel_t))
+			else
 			{
-				size_t read_size = READ_SIZE;
-				if(read_start + read_size > img.pixelCount() * sizeof(pixel_t))
-					read_size = img.pixelCount() * sizeof(pixel_t) - read_start;
-
-				in.read(pBuffer + read_start, read_size);
-
-				if(in.bad())
+				// Reading partial scan lines.
+				for (coord_t z = cStart.z; z < cEnd.z; z++)
 				{
-					throw ITLException(std::string("Read .raw failed, file size is incorrect: ") + filename);
-				}
+					for (coord_t y = cStart.y; y < cEnd.y; y++)
+					{
+						size_t filePos = (z * dimensions.x * dimensions.y + y * dimensions.x + cStart.x) * sizeof(pixel_t);
+						in.seekg(filePos);
 
-				read_start += read_size;
+						size_t imgPos = img.getLinearIndex(0, y - cStart.y, z - cStart.z);
+						in.read((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * sizeof(pixel_t));
+
+						if (in.bad())
+						{
+							showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+							throw ITLException(std::string("Failed to read block of ") + filename + std::string(", ") + getStreamErrorMessage());
+						}
+					}
+
+					
+					showProgress(z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+				}
 			}
+
 		}
 
-		template<typename pixel_t> void getInfoAndCheck(const std::string& filename, math::Vec3c& dimensions)
+		template<typename pixel_t> void getInfoAndCheck(const std::string& filename, Vec3c& dimensions)
 		{
 			ImageDataType dataType;
 			size_t pixelSizeBytes;
 
-			if (!getInfo(filename, dimensions, dataType, pixelSizeBytes))
-				throw ITLException(std::string("The file is not a .raw file, its name does not contain dimensions in [name]_[width]x[height]x[depth].raw format, or it cannot be read: ") + filename);
+			std::string reason;
+			if (!getInfo(filename, dimensions, dataType, pixelSizeBytes, reason))
+				throw ITLException("Unable to read " + filename + ". " + reason);
 
-			if (dataType != ImageDataType::Unknown)
+			// Only check pixel size if the pixels are trivially copyable.
+			if constexpr (std::is_trivially_copyable_v<pixel_t>)
 			{
-				if (dataType != imageDataType<pixel_t>())
-					throw ITLException(string("Expected data type is ") + toString(imageDataType<pixel_t>()) + " but the .raw file contains data of type " + toString(dataType) + ".");
+				// Check that pixel size is correct.
+				if (pixelSizeBytes != sizeof(pixel_t))
+					throw ITLException(std::string("Expected pixel size is ") + toString(sizeof(pixel_t)) + " bytes but the .raw file contains pixels of size " + toString(pixelSizeBytes) + " bytes.");
 			}
-			else
-			{
-				// Unknown data types can be read if the pixel size is correct.
-				if(pixelSizeBytes != sizeof(pixel_t))
-					throw ITLException(string("Expected pixel size is ") + toString(sizeof(pixel_t)) + " but the .raw file contains pixels of size " + toString(pixelSizeBytes) + ".");
-			}
+
+			// NOTE: This does not work for e.g. int32_t images as getInfo assumes they are float32_t images.
+			//if (dataType != ImageDataType::Unknown)
+			//{
+			//	if (dataType != imageDataType<pixel_t>())
+			//		throw ITLException(string("Expected data type is ") + toString(imageDataType<pixel_t>()) + " but the .raw file contains data of type " + toString(dataType) + ".");
+			//}
+			//else
+			//{
+			//	// Unknown data types can be read if the pixel size is correct.
+			//	if(pixelSizeBytes != sizeof(pixel_t))
+			//		throw ITLException(string("Expected pixel size is ") + toString(sizeof(pixel_t)) + " but the .raw file contains pixels of size " + toString(pixelSizeBytes) + ".");
+			//}
 		}
 		
 		/**
@@ -322,15 +400,16 @@ namespace itl2
 		@param img Image where the data is placed. The size of the image will be set based on the .raw file name.
 		@param filename The name of the file to read.
 		@param bytesToSkip Skip this many bytes from the beginning of the file.
+		@param readPixel Function that reads one pixel. Relevant only for non-trivially copyable pixel data types.
 		*/
-		template<typename pixel_t> void read(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0)
+		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void read(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 		{
-			math::Vec3c dimensions;
+			Vec3c dimensions;
 			getInfoAndCheck<pixel_t>(filename, dimensions);
 
 			img.ensureSize(dimensions);
 			internals::expandRawFilename(filename);
-			readNoParse(img, filename);
+			readNoParse<pixel_t, ReadPixel>(img, filename, bytesToSkip, readPixel);
 		}
 
 		/**
@@ -341,9 +420,9 @@ namespace itl2
 		@param filename The name of the file to read.
 		@param start Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const math::Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& start, bool showProgressInfo = false)
 		{
-			math::Vec3c dimensions;
+			Vec3c dimensions;
 			getInfoAndCheck<pixel_t>(filename, dimensions);
 
 			internals::expandRawFilename(filename);
@@ -364,18 +443,18 @@ namespace itl2
 		@param imageDimensions Dimensions of the block of the source image to write.
 		@param showProgressInfo Set to true to show a progress bar.
 		*/
-		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const math::Vec3c& filePosition, const math::Vec3c& fileDimensions,
-			const math::Vec3c& imagePosition, const math::Vec3c& imageDimensions,
+		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions,
+			const Vec3c& imagePosition, const Vec3c& imageDimensions,
 			bool showProgressInfo = false)
 		{
-			math::Vec3c cStart = filePosition;
-			clamp(cStart, math::Vec3c(0, 0, 0), fileDimensions);
-			math::Vec3c cEnd = filePosition + imageDimensions;
-			clamp(cEnd, math::Vec3c(0, 0, 0), fileDimensions);
+			Vec3c cStart = filePosition;
+			clamp(cStart, Vec3c(0, 0, 0), fileDimensions);
+			Vec3c cEnd = filePosition + imageDimensions;
+			clamp(cEnd, Vec3c(0, 0, 0), fileDimensions);
 
 			if (!img.isInImage(imagePosition))
 				throw ITLException("Block start position must be inside the image.");
-			if (!img.isInImage(imagePosition + imageDimensions - math::Vec3c(1, 1, 1)))
+			if (!img.isInImage(imagePosition + imageDimensions - Vec3c(1, 1, 1)))
 				throw ITLException("Block end position must be inside the image.");
 
 			createFoldersFor(filename);
@@ -383,10 +462,10 @@ namespace itl2
 			// Create file if it does not exist, otherwise set file size to correct value.
 			setFileSize(filename, fileDimensions.x * fileDimensions.y * fileDimensions.z * sizeof(pixel_t));
 
-			ofstream out(filename.c_str(), ios_base::in | ios_base::out | ios_base::binary);
+			std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
 
 			if(!out)
-				throw ITLException(std::string("Unable to open ") + filename + string(", ") + getStreamErrorMessage());
+				throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 
 			const pixel_t* pBuffer = img.getData();
 			for (coord_t z = cStart.z; z < cEnd.z; z++)
@@ -402,7 +481,10 @@ namespace itl2
 					out.write((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * (cEnd.y - cStart.y) * sizeof(pixel_t));
 
 					if (!out)
-						throw ITLException(std::string("Unable to write (fast) to ") + filename + string(", ") + getStreamErrorMessage());
+					{
+						showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+						throw ITLException(std::string("Unable to write (fast) to ") + filename + std::string(", ") + getStreamErrorMessage());
+					}
 				}
 				else
 				{
@@ -417,11 +499,14 @@ namespace itl2
 						out.write((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * sizeof(pixel_t));
 
 						if (!out)
-							throw ITLException(std::string("Unable to write to ") + filename + string(", ") + getStreamErrorMessage());
+						{
+							showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+							throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
+						}
 					}
 				}
-				if (showProgressInfo)
-					showProgress(z - cStart.z, cEnd.z - cStart.z);
+				
+				showProgress(z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
 			}
 		}
 
@@ -436,52 +521,68 @@ namespace itl2
 		@param fileDimension Total dimensions of the output file.
 		@param showProgressInfo Set to true to show a progress bar.
 		*/
-		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const math::Vec3c& filePosition, const math::Vec3c& fileDimensions, bool showProgressInfo = false)
+		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions, bool showProgressInfo = false)
 		{
-			writeBlock(img, filename, filePosition, fileDimensions, math::Vec3c(0, 0, 0), img.dimensions(), showProgressInfo);
+			writeBlock(img, filename, filePosition, fileDimensions, Vec3c(0, 0, 0), img.dimensions(), showProgressInfo);
 		}
 
 		/**
 		Write image to .raw file.
-		The pixels are written in native byte order.
+		If the pixel data type is trivially copyable, the pixels are written directly to the file from the image memory buffer.
+		In this case the pixels are written in native byte order.
+		If the pixel data type is not trivially copyable, suitable overload of itl2::raw::write(ofstream& out, pixel_type& p)
+		is called, and that overload should write the pixel to the file.
+		Therefore, by providing the overload of itl2::raw::write to each non-trivially copyable pixel type any type of pixel data
+		can be written to the .raw file.
 		@param img Image to write.
 		@param filename Name of file to write.
 		@param truncate Set to false to add to existing file.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& filename, bool truncate = true)
+		template<typename pixel_t, typename WritePixel = decltype(raw::writePixel<pixel_t>)> void write(const Image<pixel_t>& img, const std::string& filename, bool truncate = true, WritePixel writePixel = raw::writePixel<pixel_t>)
 		{
 			createFoldersFor(filename);
 
-			ios::openmode mode;
+			std::ios::openmode mode;
 			if(truncate)
-				mode = ios_base::out | ios_base::trunc | ios_base::binary;
+				mode = std::ios_base::out | std::ios_base::trunc | std::ios_base::binary;
 			else
-				mode = ios_base::out | ios_base::app | ios_base::binary;
+				mode = std::ios_base::out | std::ios_base::app | std::ios_base::binary;
 
-			ofstream out(filename.c_str(), mode);
+			std::ofstream out(filename.c_str(), mode);
 
 			// If the file does not exist, create it.
 			if(!out.is_open())
-				out.open(filename.c_str(), ios_base::out | ios_base::trunc | ios_base::binary);
+				out.open(filename.c_str(), std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
 
 			if(!out)
-                throw ITLException(std::string("Unable to write to ") + filename + string(", ") + getStreamErrorMessage());
+                throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
 
 
-			// Write directly from the native buffer
-			// Writing everything at once does not work for big files.
-
-			size_t WRITE_SIZE = 200 * 1024 * 1024;
-			size_t write_start = 0;
-			const char* pBuffer = (const char*)img.getData();
-			while(write_start < img.pixelCount() * sizeof(pixel_t))
+			if constexpr (std::is_trivially_copyable_v<pixel_t>)
 			{
-				size_t write_size = WRITE_SIZE;
-				if(write_start + write_size > img.pixelCount() * sizeof(pixel_t))
-					write_size = img.pixelCount() * sizeof(pixel_t) - write_start;
 
-				out.write(pBuffer + write_start, write_size);
-				write_start += write_size;
+				// Write directly from the native buffer
+				// Writing everything at once does not work for big files.
+
+				size_t WRITE_SIZE = 200 * 1024 * 1024;
+				size_t write_start = 0;
+				const char* pBuffer = (const char*)img.getData();
+				while (write_start < img.pixelCount() * sizeof(pixel_t))
+				{
+					size_t write_size = WRITE_SIZE;
+					if (write_start + write_size > img.pixelCount() * sizeof(pixel_t))
+						write_size = img.pixelCount() * sizeof(pixel_t) - write_start;
+
+					out.write(pBuffer + write_start, write_size);
+					write_start += write_size;
+				}
+			}
+			else
+			{
+				for (coord_t n = 0; n < img.pixelCount(); n++)
+				{
+					writePixel(out, img(n));
+				}
 			}
 		}
 
@@ -493,12 +594,32 @@ namespace itl2
 		 @param truncate Set to false to add to existing file.
 		 @return The name of the file that was written.
 		 */
-		template<typename pixel_t> std::string writed(const Image<pixel_t>& img, const std::string& filename, bool truncate = true)
+		template<typename pixel_t, typename WritePixel = decltype(raw::writePixel<pixel_t>)> std::string writed(const Image<pixel_t>& img, const std::string& filename, bool truncate = true, WritePixel writePixel = raw::writePixel<pixel_t>)
 		{
 			std::string cf = internals::concatDimensions(filename, img);
-			write(img, cf, truncate);
+			write(img, cf, truncate, writePixel);
 			return cf;
 		}
+
+
+
+		/**
+		Write an RGB image to a .raw file.
+		@param r, g, b Red, green and blue color component images.
+		@param filename Name of file to write.
+		@param truncate Set to false to add to existing file.
+		*/
+		void write(const Image<uint8_t>& r, const Image<uint8_t>& g, const Image<uint8_t>& b, const std::string& filename, bool truncate = true);
+
+		/**
+		 Write an RGB image to .raw file.
+		 Concatenates image dimensions to file name automatically.
+		 @param r, g, b Red, green and blue color component images.
+		 @param filename Template of file name. The full file name will be [template]_[width]x[height]x[depth].raw.
+		 @param truncate Set to false to add to existing file.
+		 @return The name of the file that was written.
+		 */
+		std::string writed(const Image<uint8_t>& r, const Image<uint8_t>& g, const Image<uint8_t>& b, const std::string& filename, bool truncate = true);
 
 
 		namespace tests

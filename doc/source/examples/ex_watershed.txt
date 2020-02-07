@@ -1,0 +1,53 @@
+.. _watershed_example:
+
+Watershed segmentation
+======================
+
+This example demonstrates how to perform watershed segmentation.
+
+In pi2, you will have to first generate seeds image that contains
+colored regions that will be :ref:`grown <grow>` in the watershed process.
+The filling priority of pixels must also be calculated somehow, :ref:`usually <watershed_particles_example>`
+this is the :ref:`gradient <gradientmagnitude>` of the input image, but in
+this example we use the input image itself.
+
+::
+
+	def watershed():
+		"""
+		Demonstrates Meyer's flooding algorithm for calculation of watershed.
+		"""
+
+		# Read image
+		weights = pi.read(input_file('t1-head.tif'))
+
+		# Create new image, taking unspecified properties from the old image
+		labels = pi.newlike(weights, 'uint8')
+
+		# Set some seeds
+		pi.set(labels, [110, 90, 63], 100) # Brain
+		pi.set(labels, [182, 165, 63], 200) # Skull
+
+		# Save seeds so that they can be viewed later
+		pi.writetif(labels, output_file('meyer_grow_seeds'))
+
+		# Grow the seeds. (Normally you would use gradient of input image etc. as weight)
+		pi.grow(labels, weights)
+
+		# Save result
+		pi.writetif(labels, output_file('meyer_grow'))
+		
+		
+		
+.. figure:: figures/t1-head_slice.png
+   :scale: 100 %
+   :alt: Input image
+
+   One slice of the input image.
+
+
+.. figure:: figures/meyer_grow.png
+   :scale: 100 %
+   :alt: Result of watershed segmentation.
+
+   Result of watershed segmentation.

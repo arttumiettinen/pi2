@@ -1,0 +1,49 @@
+.. _noise:
+
+noise
+*****
+
+
+**Syntax:** :code:`noise(image, mean, standard deviation, seed)`
+
+Adds Gaussian noise to the image.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+mean [input]
+~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Mean value of the noise to add.
+
+standard deviation [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Standard deviation of the noise to add.
+
+seed [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Seed value. Set to zero to use time-based seed.
+

@@ -17,7 +17,7 @@ Calvin R. Maurer, Vijay Raghavan, A Linear Time Algorithm for Computing Exact Eu
 #include "math/mathutils.h"
 #include "pointprocess.h"
 #include "utilities.h"
-
+#include "type.h"
 
 namespace itl2
 {
@@ -28,13 +28,26 @@ namespace itl2
 	{
 		template<typename pixel_t> bool remove(pixel_t d1, pixel_t d2, pixel_t df, pixel_t x1, pixel_t x2, pixel_t xf)
 		{
-			pixel_t a = x2 - x1;
-			pixel_t b = xf - x2;
-			pixel_t c = xf - x1;
+			using signed_t = typename NumberUtils<pixel_t>::SignedType;
+			//using signed_t = pixel_t;
 
-			pixel_t value = (c * ::abs(d2) - b * ::abs(d1) - a * ::abs(df) - a * b * c);
+			signed_t a = (signed_t)x2 - (signed_t)x1;
+			signed_t b = (signed_t)xf - (signed_t)x2;
+			signed_t c = (signed_t)xf - (signed_t)x1;
+
+			//pixel_t value = (c * ::abs(d2) - b * ::abs(d1) - a * ::abs(df) - a * b * c);
+			signed_t value = (c * (signed_t)d2 - b * (signed_t)d1 - a * (signed_t)df - a * b * c);
 
 			return value > 0;
+		}
+
+		template<typename pixel_t, typename signed_t> pixel_t calcD(signed_t gl, signed_t hl, signed_t iw)
+		{
+			signed_t d1 = gl + (hl - iw) * (hl - iw);
+			
+			if (intuitive::ge(d1, std::numeric_limits<pixel_t>::max()))
+				throw ITLException("Pixel data type " + toString(imageDataType<pixel_t>()) + " cannot contain large enough values for calculating the distance map.");
+			return (pixel_t)d1;
 		}
 
 		/*
@@ -43,8 +56,10 @@ namespace itl2
 		Optimized version that does not store nearest object point for each dmap point.
 		g and h are temporary images whose size must be output.dimension(d) x 1 x 1
 		*/
-		template<typename pixel_t> void voronoi(size_t d, math::Vec3c idx, Image<pixel_t>& output, Image<pixel_t>& g, Image<pixel_t>& h)
+		template<typename pixel_t> void voronoi(size_t d, Vec3c idx, Image<pixel_t>& output, Image<pixel_t>& g, Image<pixel_t>& h)
 		{
+			using signed_t = typename NumberUtils<pixel_t>::SignedType;
+
 			coord_t nd = output.dimension(d);
 
 			//Image<float32_t> g(nd);
@@ -60,7 +75,7 @@ namespace itl2
 
 				pixel_t iw = static_cast<pixel_t>(i);
 
-				if (di < numeric_limits<pixel_t>::max())
+				if (di < std::numeric_limits<pixel_t>::max())
 				{
 					if (l < 1)
 					{
@@ -94,12 +109,25 @@ namespace itl2
 			{
 				pixel_t iw = static_cast<pixel_t>(i);
 
-				pixel_t d1 = ::abs(g(l)) + (h(l) - iw) * (h(l) - iw);
+				//pixel_t d1 = ::abs(g(l)) + (h(l) - iw) * (h(l) - iw);
+				//pixel_t d1 = g(l) + (pixel_t)(((signed_t)h(l) - (signed_t)iw) * ((signed_t)h(l) - (signed_t)iw));
+				//signed_t d1_tmp = (signed_t)g(l) + ((signed_t)h(l) - (signed_t)iw) * ((signed_t)h(l) - (signed_t)iw);
+				//if (d1_tmp >= std::numeric_limits<pixel_t>::max())
+				//	throw ITLException("Pixel data type cannot contain large enough values for calculating the distance map.");
+				//pixel_t d1 = (pixel_t)d1_tmp;
+				pixel_t d1 = calcD<pixel_t, signed_t>(g(l), h(l), iw);
 
 				while (l < ns)
 				{
 					// be sure to compute d2 *only* if l < ns
-					pixel_t d2 = ::abs(g(l + 1)) + (h(l + 1) - iw) * (h(l + 1) - iw);
+					//pixel_t d2 = ::abs(g(l + 1)) + (h(l + 1) - iw) * (h(l + 1) - iw);
+					//pixel_t d2 = g(l + 1) + (pixel_t)(((signed_t)h(l + 1) - (signed_t)iw) * ((signed_t)h(l + 1) - (signed_t)iw));
+					//signed_t d2_tmp = (signed_t)g(l + 1) + ((signed_t)h(l + 1) - (signed_t)iw) * ((signed_t)h(l + 1) - (signed_t)iw);
+					//if (d2_tmp >= std::numeric_limits<pixel_t>::max())
+					//	throw ITLException("Pixel data type cannot contain large enough values for calculating the distance map.");
+					//pixel_t d2 = (pixel_t)d2_tmp;
+					pixel_t d2 = calcD<pixel_t, signed_t>(g(l + 1), h(l + 1), iw);
+
 					// then compare d1 and d2
 					if (d1 <= d2)
 					{
@@ -121,8 +149,10 @@ namespace itl2
 		Fills also nearestObjectPoint image by locations of nearest object point for each dmap point.
 		g, P, and h are temporary images whose size must be output.dimension(d) x 1 x 1
 		*/
-		template<typename pixel_t> void voronoi(size_t d, math::Vec3c idx, Image<pixel_t>& output, Image<math::Vec3c>& nearestObjectPoint, Image<pixel_t>& g, Image<math::Vec3c>& P, Image<pixel_t>& h)
+		template<typename pixel_t> void voronoi(size_t d, Vec3c idx, Image<pixel_t>& output, Image<Vec3c>& nearestObjectPoint, Image<pixel_t>& g, Image<Vec3c>& P, Image<pixel_t>& h)
 		{
+			using signed_t = typename NumberUtils<pixel_t>::SignedType;
+
 			coord_t nd = output.dimension(d);
 
 			//Image<float32_t> g(nd);
@@ -139,7 +169,7 @@ namespace itl2
 
 				pixel_t iw = static_cast<pixel_t>(i);
 				
-				if (di < numeric_limits<pixel_t>::max())
+				if (di < std::numeric_limits<pixel_t>::max())
 				{
 					if (l < 1)
 					{
@@ -175,13 +205,18 @@ namespace itl2
 			{
 				pixel_t iw = static_cast<pixel_t>(i);
 
-				pixel_t d1 = ::abs(g(l)) + (h(l) - iw) * (h(l) - iw);
-				math::Vec3c Pc = P(l);
+				//pixel_t d1 = ::abs(g(l)) + (h(l) - iw) * (h(l) - iw);
+				//pixel_t d1 = g(l) + (pixel_t)(((signed_t)h(l) - (signed_t)iw) * ((signed_t)h(l) - (signed_t)iw));
+				pixel_t d1 = calcD<pixel_t, signed_t>(g(l), h(l), iw);
+				Vec3c Pc = P(l);
 
 				while (l < ns)
 				{
 					// be sure to compute d2 *only* if l < ns
-					pixel_t d2 = ::abs(g(l + 1)) + (h(l + 1) - iw) * (h(l + 1) - iw);
+					//pixel_t d2 = ::abs(g(l + 1)) + (h(l + 1) - iw) * (h(l + 1) - iw);
+					//pixel_t d2 = g(l + 1) + (pixel_t)(((signed_t)h(l + 1) - (signed_t)iw) * ((signed_t)h(l + 1) - (signed_t)iw));
+					pixel_t d2 = calcD<pixel_t, signed_t>(g(l + 1), h(l + 1), iw);
+
 					// then compare d1 and d2
 					if (d1 <= d2)
 					{
@@ -201,20 +236,22 @@ namespace itl2
 		}
 
 
-		template<typename pixel_t>  void processDimension(Image<pixel_t>& output, size_t currentDimension, Image<math::Vec3c>* nearestObjectPoint, bool showProgressInfo = false)
+		template<typename pixel_t>  void processDimension(Image<pixel_t>& output, size_t currentDimension, Image<Vec3c>* nearestObjectPoint, bool showProgressInfo = false)
 		{
 			// Determine count of pixels to process
-			math::Vec3c reducedDimensions = output.dimensions();
+			Vec3c reducedDimensions = output.dimensions();
 			reducedDimensions[currentDimension] = 1;
 			coord_t rowCount = reducedDimensions.x * reducedDimensions.y * reducedDimensions.z;
 
+			bool failed = false;
+			ITLException error("");
 			size_t counter = 0;
 			#pragma omp parallel if(!omp_in_parallel() && output.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
 				// Temporary buffer
 				coord_t nd = output.dimension(currentDimension);
 				Image<pixel_t> g(nd);
-				Image<math::Vec3c> P;
+				Image<Vec3c> P;
 				if (nearestObjectPoint)
 					P.ensureSize(nd);
 				Image<pixel_t> h(nd);
@@ -223,25 +260,37 @@ namespace itl2
 				#pragma omp for
 				for (coord_t n = 0; n < rowCount; n++)
 				{
-					math::Vec3c start = indexToCoords(n, reducedDimensions);
+				    if(!failed)
+				    {
+					    try
+					    {
+						    Vec3c start = indexToCoords(n, reducedDimensions);
 
-					// Process the current row
-					if (!nearestObjectPoint)
-					{
-						voronoi(currentDimension, start, output, g, h);
-					}
-					else
-					{
-						voronoi(currentDimension, start, output, *nearestObjectPoint, g, P, h);
-					}
-					
-
+						    // Process the current row
+						    if (!nearestObjectPoint)
+						    {
+							    voronoi(currentDimension, start, output, g, h);
+						    }
+						    else
+						    {
+							    voronoi(currentDimension, start, output, *nearestObjectPoint, g, P, h);
+						    }
+					    }
+					    catch (ITLException ex)
+					    {
+						    error = ex;
+						    failed = true;
+					    }
+                    }
 					showThreadProgress(counter, rowCount, showProgressInfo);
 				}
 			}
+
+			if (failed)
+				throw error;
 		}
 
-	//	inline void processDimension(Image<float32_t>& output, size_t currentDimension, Image<math::Vec3c>* nearestObjectPoint)
+	//	inline void processDimension(Image<float32_t>& output, size_t currentDimension, Image<Vec3c>* nearestObjectPoint)
 	//	{
 	//		// compute the number of rows first, so we can setup a progress reporter
 	//		std::vector<coord_t> numberOfRows;
@@ -279,7 +328,7 @@ namespace itl2
 	//			// Temporary buffers. P is not needed if nearest object (zero-set) point is not determined.
 	//			coord_t nd = output.dimension(currentDimension);
 	//			Image<float32_t> g(nd);
-	//			Image<math::Vec3c> P;
+	//			Image<Vec3c> P;
 	//			if (nearestObjectPoint)
 	//				P.ensureSize(nd);
 	//			Image<float32_t> h(nd);
@@ -290,7 +339,7 @@ namespace itl2
 	//				// Determine first point of the row that should be processed
 	//				size_t index = n;
 	//				size_t count = 0;
-	//				math::Vec3c idx;
+	//				Vec3c idx;
 	//				for (size_t d = currentDimension + 1; d < currentDimension + output.dimensionality(); d++)
 	//				{
 	//					idx[d % output.dimensionality()] = static_cast<coord_t>(static_cast<double>(index) / static_cast<double>(k[count]));
@@ -318,9 +367,9 @@ namespace itl2
 	/**
 	Calculates squared distance transform of image in-place.
 	Template argument pixel_t is usually float32_t or uint32_t.
-	@param img Input and output image. Pixels belonging to the background must be set to zero, and all other pixels must be set to numeric_limits<pixel_t>::max(). See also prepareDistanceTransform.
+	@param img Input and output image. Pixels belonging to the background must be set to zero, and all other pixels must be set to std::numeric_limits<pixel_t>::max(). See also prepareDistanceTransform.
 	*/
-	template<typename pixel_t> void distanceTransform2(Image<pixel_t>& img, Image<math::Vec3c>* nearestObjectPoint = 0)
+	template<typename pixel_t> void distanceTransform2(Image<pixel_t>& img, Image<Vec3c>* nearestObjectPoint = 0)
 	{
 		if (nearestObjectPoint)
 		{
@@ -335,7 +384,7 @@ namespace itl2
 					for (coord_t x = 0; x < img.width(); x++)
 					{
 						if(img(x, y, z) == 0)
-							(*nearestObjectPoint)(x, y, z) = math::Vec3c(x, y, z);
+							(*nearestObjectPoint)(x, y, z) = Vec3c(x, y, z);
 					}
 				}
 			}
@@ -350,9 +399,9 @@ namespace itl2
 
 	/**
 	Calculates distance transform of image in-place.
-	@param img Input and output image. Pixels belonging to the background must be set to zero, and all other pixels must be set to numeric_limits<float32_t>::max(). See also prepareDistanceTransform.
+	@param img Input and output image. Pixels belonging to the background must be set to zero, and all other pixels must be set to std::numeric_limits<float32_t>::max(). See also prepareDistanceTransform.
 	*/
-	inline void distanceTransform(Image<float32_t>& img, Image<math::Vec3c>* nearestObjectPoint = 0)
+	template<typename pixel_t> void distanceTransform(Image<pixel_t>& img, Image<Vec3c>* nearestObjectPoint = 0)
 	{
 		distanceTransform2(img, nearestObjectPoint);
 		squareRoot(img);
@@ -366,12 +415,13 @@ namespace itl2
 	{
 		output.ensureSize(input);
 
+		#pragma omp parallel for if(!omp_in_parallel() && output.pixelCount() > PARALLELIZATION_THRESHOLD)
 		for (coord_t n = 0; n < output.pixelCount(); n++)
 		{
 			if (input(n) == backgroundValue)
 				output(n) = 0;
 			else
-				output(n) = numeric_limits<dmap_t>::max();
+				output(n) = std::numeric_limits<dmap_t>::max();
 		}
 	}
 
@@ -380,11 +430,11 @@ namespace itl2
 	Template argument out_t is usually int32_t.
 	If nearestObjectPoint is nonzero, feature transformation is placed into that.
 	@param input Input image containing the geometry. Pixels whose value equals backgroundValue are assumed to belong to background (zero distance set).
-	@param output Will contain the distance transform.
+	@param output Will contain the distance transform. Input and output can be the same image.
 	@param nearestObjectPoint If nonzero, will contain feature transform.
 	@param backgroundValue Value of background pixels in input image.
 	*/
-	template<typename pixel_t, typename out_t> void distanceTransform2(const Image<pixel_t>& input, Image<out_t>& output, Image<math::Vec3c>* nearestObjectPoint = 0, pixel_t backgroundValue = 0)
+	template<typename pixel_t, typename dmap_t> void distanceTransform2(const Image<pixel_t>& input, Image<dmap_t>& output, Image<Vec3c>* nearestObjectPoint = nullptr, pixel_t backgroundValue = 0)
 	{
 		prepareDistanceTransform(input, output, backgroundValue);
 		distanceTransform2(output, nearestObjectPoint);
@@ -394,11 +444,11 @@ namespace itl2
 	Calculates distance transform of input and places it to output.
 	If nearestObjectPoint is nonzero, feature transformation is placed into that.
 	@param input Input image containing the geometry. Pixels whose value equals backgroundValue are assumed to belong to background (zero distance set).
-	@param output Will contain the distance transform.
+	@param output Will contain the distance transform. Input and output can be the same image.
 	@param nearestObjectPoint If nonzero, will contain feature transform.
 	@param backgroundValue Value of background pixels in input image.
 	*/
-	template<typename pixel_t> void distanceTransform(const Image<pixel_t>& input, Image<float32_t>& output, Image<math::Vec3c>* nearestObjectPoint = 0, pixel_t backgroundValue = 0)
+	template<typename pixel_t, typename dmap_t> void distanceTransform(const Image<pixel_t>& input, Image<dmap_t>& output, Image<Vec3c>* nearestObjectPoint = nullptr, pixel_t backgroundValue = 0)
 	{
 		prepareDistanceTransform(input, output, backgroundValue);
 		distanceTransform(output, nearestObjectPoint);

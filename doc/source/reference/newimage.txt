@@ -1,0 +1,100 @@
+.. _newimage:
+
+newimage
+********
+
+There are 2 forms of this command.
+
+:code:`newimage(image name, data type, width, height, depth)`
+=============================================================
+
+Creates a new, empty image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the image in the system.
+
+data type [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** uint8
+
+Data type of the image. Can be uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, or complex32.
+
+width [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Width of the image.
+
+height [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Height of the image.
+
+depth [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Depth of the image.
+
+See also
+--------
+
+:ref:`ensuresize`, :ref:`newlike`
+
+:code:`newimage(image name, data type, dimensions)`
+===================================================
+
+Creates a new, empty image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the image in the system.
+
+data type [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Data type of the image. Can be uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, or complex32.
+
+dimensions [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Dimensions of the image.
+
+See also
+--------
+
+:ref:`ensuresize`, :ref:`newlike`

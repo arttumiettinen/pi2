@@ -1,0 +1,65 @@
+.. _derivative:
+
+derivative
+**********
+
+
+**Syntax:** :code:`derivative(input image, output image, spatial sigma, dimension 1, dimension 2, boundary condition)`
+
+Calculates Gaussian partial derivative of image, either :math:`\partial f / \partial x_i` or :math:`\partial^2 f / (\partial x_i \partial x_j)`.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+Standard deviation of Gaussian kernel.
+
+dimension 1 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+Dimension where the first partial derivative should be calculated (index :math:`i` in the example above).
+
+dimension 2 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** -1
+
+Dimension where the second partial derivative should be calculated (index :math:`j` in the example above). Pass negative value to calculate only the first derivative.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Nearest
+
+Type of boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+See also
+--------
+
+:ref:`gaussfilter`, :ref:`gradient`, :ref:`gradientmagnitude`

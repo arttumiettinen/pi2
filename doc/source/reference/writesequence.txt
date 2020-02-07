@@ -1,0 +1,29 @@
+.. _writesequence:
+
+writesequence
+*************
+
+
+**Syntax:** :code:`writesequence(input image, filename)`
+
+Write an image sequence to disk.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to save.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of file to write. Existing files are overwritten. Specify file name as a template where @ signifies the location where the slice number should be added. Use @(n) to specify field width, e.g., if n = 4, slice number 7 would be labeled 0007. Specify @(-) to select suitable field width automatically. Specify empty file name to save using default template '@.png' that corresponds to file names 0.png, 1.png, 2.png etc.
+

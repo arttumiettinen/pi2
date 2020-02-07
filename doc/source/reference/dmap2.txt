@@ -1,0 +1,42 @@
+.. _dmap2:
+
+dmap2
+*****
+
+
+**Syntax:** :code:`dmap2(input image, output image, background value)`
+
+Calculates squared distance map or squared distance transform of a binary image. In order to calculate (non-squared) distance map, use the :ref:`dmap` command or take a square root of the result using the :ref:`squareroot` command.  Uses algorithm from Maurer - A Linear Time Algorithm for Computing Exact Euclidean Distance Transforms of Binary Images in Arbitrary Dimensions.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image where background is marked with background value given by the third argument.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Output image (squared distance map) where pixel value equals squared Euclidean distance to the nearest background pixel. Input and output can be the same image if in-place transformation is preferred and input data type is suitable. For exact result, use integer type. Please note that squared values require relatively large pixel data type, e.g. int32, depending on the magnitude of distances in the image. If floating point pixel type is used, the results might contain artifacts for very large images due to floating point inaccuracy. If that is encountered, consider calculating squared distance map using integer data type and then converting to floating point format, possibly followed by square root operation. That is, dmap2(img, img); convert(img, float32); squareroot(img); Notice that this sequence may require more memory than the standard operation of this command because of the explicit conversion step.
+
+background value [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Pixels belonging to the background are marked with this value in the input image.
+
+See also
+--------
+
+:ref:`dmap`, :ref:`dmap2`, :ref:`tmap`

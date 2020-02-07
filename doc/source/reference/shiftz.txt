@@ -1,0 +1,58 @@
+.. _shiftz:
+
+shiftz
+******
+
+
+**Syntax:** :code:`shiftz(image, shift map, subtract mean, interpolation mode, boundary condition)`
+
+Shift each :math:`z`-directional column of input image by amount given in the shift map.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image whose :math:`z`-directional columns are to be shifted.
+
+shift map [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Shift map that gives the amount of shift to apply in each :math:`z`-directional column. The size of the shift map must be :math:`w \times h` where :math:`w` and :math:`h` are the width and the height of the geometry image.
+
+subtract mean [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+Set to true to automatically subtract the average value of the shift map from each shift. This is useful if the shift map is negation of a surface map found using the findsurface command, and the intent is to make the surface straight.
+
+interpolation mode [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** interpolation mode
+
+**Default value:** Linear
+
+Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Zero
+
+Boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+See also
+--------
+
+:ref:`findsurface`, :ref:`drawheightmap`, :ref:`setbeforeheightmap`, :ref:`setafterheightmap`, :ref:`shiftz`

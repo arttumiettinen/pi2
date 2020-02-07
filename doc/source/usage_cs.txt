@@ -1,0 +1,36 @@
+.. _usage_cs:
+
+Using pi2 from .NET programs
+============================
+
+Pi2 can be used from .NET languages like C# and Visual Basic .NET.
+In short, you will need to add a reference to pi2cs library and create an instance of the Pi2 class.
+The methods of the class can then be used to access Pi2 functionality.
+
+In practice, all this is done using code like this::
+
+	Pi2 pi = new Pi2();
+	Pi2Image img = pi.NewImage(ImageDataType.UInt8, 100, 100, 100);
+	pi.Noise(img, 100, 25);
+	pi.WriteTif(img, "./noise");
+
+The methods of the Pi2 class are documented in the standard XML documentation and they mostly correspond to
+what is found in :ref:`command_reference`.
+
+
+Depending on the agenda of the authors, the functionality in the Pi2 class might lag behind what is available in the Python interface.
+However, all functionality is available through a low-level wrapper class PiLib.
+In particular, it exposes method :code:`RunAndCheck` that can be used to run arbitrary Pi2 commands (see :ref:`command_reference`),
+and :code:`GetImage` that returns pointer to image data stored in the Pi2 system.
+
+
+Viewing Pi2 images
+------------------
+
+The pi2cs library contains controls Pi2PictureViewer, Pi2PictureToolStrip and Pi2PictureBox that can be used to show Pi2 images
+on Windows Forms.
+Of these three, Pi2PictureBox is a simple picture box mostly corresponding to the standard Windows Forms PictureBox, but it shows
+image from the Pi2 system.
+Pi2PictureViewer and Pi2PictureToolStrip provide more advanced user interface with functionality such as zooming and annotations.
+At the time of writing, work with these controls is still very much in progress.
+

@@ -1,0 +1,38 @@
+.. _sumproject:
+
+sumproject
+**********
+
+
+**Syntax:** :code:`sumproject(input image, output image, dimension)`
+
+Calculates projection of the input image. The dimensionality of the output image is the dimensionality of the input image subtracted by one.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+dimension [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 2
+
+Dimension to project over, zero corresponding to :math:`x`, one corresponding to :math:`y`, and 2 corresponding to :math:`z`.
+

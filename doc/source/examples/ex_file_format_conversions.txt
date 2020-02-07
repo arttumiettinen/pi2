@@ -1,0 +1,17 @@
+File format conversions
+=======================
+
+File format can be changed by reading the file and then writing in desired format.
+In many cases the conversion works in distributed mode, too::
+
+	def convert_format():
+		"""
+		Demonstrates file format conversion.
+		"""
+
+		# Read image
+		img = pi.read(input_file('simple_structures.vol'))
+
+		# Write in any supported format
+		pi.writeraw(img, output_file('vol_to_raw'))
+		pi.writetif(img, output_file('vol_to_tif'))

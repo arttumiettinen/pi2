@@ -1,0 +1,88 @@
+.. _minproject:
+
+minproject
+**********
+
+There are 2 forms of this command.
+
+:code:`minproject(input image, output image, dimension)`
+========================================================
+
+Calculates projection of the input image. The dimensionality of the output image is the dimensionality of the input image subtracted by one.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+dimension [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 2
+
+Dimension to project over, zero corresponding to :math:`x`, one corresponding to :math:`y`, and 2 corresponding to :math:`z`.
+
+
+:code:`minproject(input image, output image, dimension, input value image, output value image)`
+===============================================================================================
+
+Calculates projection of the input image. The dimensionality of the output image is the dimensionality of the input image subtracted by one. Constructs another image from values of second input image taken at location of the extrema.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+dimension [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 2
+
+Dimension to project over, zero corresponding to x, one corresponding to y, and 2 corresponding to z.
+
+input value image [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Image where values of the extra output are taken.
+
+output value image [output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Value of this image will equal value of 'input value image' at location of the extrema (whose value is stored in the corresponding output image).
+

@@ -1,0 +1,40 @@
+.. _setedges:
+
+setedges
+********
+
+
+**Syntax:** :code:`setedges(image, edge value, radius)`
+
+Set edges of the image to specified value.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+edge value [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+The edges are set to this value.
+
+radius [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Pixels whose distance to the image edge is less than or equal to this value are set.
+

@@ -1,111 +1,120 @@
 #pragma once
 
 #include "math/vec3.h"
-
-#include <vector>
-#include <limits>
+#include "math/matrix3x3.h"
+#include "aabox.h"
 
 namespace itl2
 {
-
-    template<typename T>
-    class Box
-    {
-    public:
-        /**
-        Minimum and maximum coordinates of the box.
-        */
-        math::Vec3<T> minc, maxc;
-        
-        Box(const math::Vec3<T>& minc, const math::Vec3<T>& maxc) :
-            minc(minc),
-            maxc(maxc)
-        {
-        }
-        
-        /**
-        Enlarges the box in all directions by given amount.
-        */
-        void inflate(T amount)
-        {
-            inflate(math::Vec3<T>(amount, amount, amount));
-        }
-        
-        /**
-        Enlarges the box in all directions by given amount.
-        */
-        void inflate(const math::Vec3<T>& amount)
-        {
-            minc -= amount;
-            maxc += amount;
-        }
-        
-        /**
-        Tests if this box and the given box overlap.
-        */
-        bool overlaps(const Box<T>& r) const
-        {
-            return maxc.x >= r.minc.x && r.maxc.x >= minc.x &&
-                    maxc.y >= r.minc.y && r.maxc.y >= minc.y &&
-                    maxc.z >= r.minc.z && r.maxc.z >= minc.z;
-        }
+	/**
+	Box in generic orientation (not axis-aligned).
+	See also class AABox that represents an axis-aligned box.
+	*/
+	class Box
+	{
+	private:
+		/**
+		Position of the center of the box.
+		*/
+		Vec3d center;
 
 		/**
-		Calculates intersection of this box and the given box.
+		Half-width, height and depth of the box.
 		*/
-		Box intersection(const Box<T>& r) const
+		Vec3d radius;
+
+		/**
+		Rotation matrix that rotates the box so that its axes are aligned with the coordinate axes.
+		*/
+		Matrix3x3d Rinv;
+
+	public:
+
+		/**
+		Constructs box located at origin and whose semi-axis lengths are zeroes.
+		*/
+		Box() :
+			center(0, 0, 0),
+			radius(0, 0, 0),
+			Rinv(Matrix3x3d::identity())
 		{
-			return Box(componentwiseMax(minc, r.minc), componentwiseMin(maxc, r.maxc));
 		}
 
 		/**
-		Calculates width of the box.
+		Constructs axis-aligned box with given center points and radius.
 		*/
-		coord_t width() const
+		Box(const Vec3d& center, const Vec3d& radius) :
+			center(center),
+			radius(radius),
+			Rinv(Matrix3x3d::identity())
 		{
-			return maxc.x - minc.x;
 		}
 
 		/**
-		Calculates height of the box.
+		Constructs box located at the given center point, with given radius and
+		orientation vectors.
 		*/
-		coord_t height() const
+		Box(const Vec3d& center, const Vec3d& radius,
+			const Vec3d& u1, const Vec3d& u2) :
+			center(center),
+			radius(radius)
 		{
-			return maxc.y - minc.y;
+			Rinv = Matrix3x3d::rotationMatrix(u1, u2);
+			Rinv.transpose(); // Invert the rotation matrix
 		}
 
 		/**
-		Calculates depth of the box.
+		Tests if given point is inside this box.
+		The test is exclusive, i.e. returns false at the edge of the box.
 		*/
-		coord_t depth() const
+		bool contains(const Vec3d& p) const
 		{
-			return maxc.z - minc.z;
+			// Transform to coordinates where the box is centered at the origin
+			Vec3d pdot = p - center;
+
+			// Rotate pdot such that box axes are aligned with coordinate axes
+			pdot = Rinv * pdot;
+
+			// See if pdot is inside box radius
+			return NumberUtils<double>::lessThan(abs(pdot.x), radius.x) &&
+				   NumberUtils<double>::lessThan(abs(pdot.y), radius.y) &&
+				   NumberUtils<double>::lessThan(abs(pdot.z), radius.z);
 		}
 
 		/**
-		Calculates volume of the box.
+		Calculates the axis-aligned bounding box of this box.
 		*/
-		size_t volume() const
+		AABox<double> boundingBox() const
 		{
-			return (size_t)abs(width()) * (size_t)abs(height()) * (size_t)abs(depth());
-		}
-        
-        /**
-        Calculates bounding box of points in the given list.
-        */
-        static Box<T> boundingBox(const std::vector<math::Vec3<T> >& points)
-        {
-            math::Vec3<T> minc(std::numeric_limits<T>::max(), std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
-            math::Vec3<T> maxc(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
-            
-            for(const math::Vec3<T>& p : points)
-            {
-                minc = min(minc, p);
-                maxc = max(maxc, p);
-            }
-            
-            return Box(minc, maxc);
-        }
-    };
+			// Corners of the box in coordinates where the box is axis-aligned at the origin.
+			Vec3d corners[] = {
+				Vec3d(-radius.x, -radius.y, -radius.z),
+				Vec3d( radius.x, -radius.y, -radius.z),
+				Vec3d(-radius.x,  radius.y, -radius.z),
+				Vec3d( radius.x,  radius.y, -radius.z),
+				Vec3d(-radius.x, -radius.y,  radius.z),
+				Vec3d( radius.x, -radius.y,  radius.z),
+				Vec3d(-radius.x,  radius.y,  radius.z),
+				Vec3d( radius.x,  radius.y,  radius.z)
+			};
 
+			// Rotate and translate the corners of the axis-aligned box to the correct orientation
+			// and location
+			Matrix3x3d R = Rinv;
+			R.transpose();
+			for (size_t n = 0; n < 8; n++)
+				corners[n] = R * corners[n] + center;
+
+			// Find componentwise bounds
+			Vec3d minc = corners[0];
+			Vec3d maxc = corners[0];
+			for (size_t n = 1; n < 8; n++)
+			{
+				minc = min(minc, corners[n]);
+				maxc = max(maxc, corners[n]);
+			}
+
+			return AABox<double>(minc, maxc);
+		}
+	};
 }

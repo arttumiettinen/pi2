@@ -1,0 +1,78 @@
+.. _skeleton_example:
+
+Skeleton, saving to VTK format
+==============================
+
+This example demonstrates determination of a :ref:`line skeleton <lineskeleton>` of a binary image.
+The skeletonization process reduces all foreground structures into their approximate centerlines.
+
+The skeleton can be :ref:`traced <tracelineskeleton>` into a `graph <https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)>`__ structure,
+where skeleton branches are edges and their intersections are vertices.
+The traced branches contain information about the branch, e.g., its length.
+
+Finally, the traced skeleton is saved into a .vtk file.
+The generated .vtk file is compatible, e.g., with `ParaView <https://www.paraview.org/>`__::
+
+	def skeleton_vtk():
+		"""
+		Creates skeleton, traces it to a graph/network structure, and saves
+		the skeleton branches in a .vtk file.
+		"""
+
+		# Generate a simple image for demonstration
+		geometry = pi.newimage(ImageDataType.UINT8, 100, 100)
+
+		p0 = [1, 1, 0]
+		p1 = [25, 50, 0]
+		p2 = [75, 50, 0]
+		p3 = [5, 95, 0]
+		p4 = [95, 95, 0]
+		
+		pi.line(geometry, p0, p1, 255)
+		pi.line(geometry, p1, p2, 255)
+		pi.line(geometry, p0, p2, 255)
+		pi.line(geometry, p1, p3, 255)
+		pi.line(geometry, p2, p4, 255)
+
+		# Save the geometry
+		pi.writeraw(geometry, output_file("geometry"));
+
+		# Convert geometry to line skeleton
+		pi.lineskeleton(geometry);
+
+		# Write the skeleton so that it can be visualized
+		pi.writeraw(geometry, output_file("skeleton"));
+
+		# Create images for tracing the skeleton into a graph
+		vertices = pi.newimage(ImageDataType.FLOAT32)
+		edges = pi.newimage(ImageDataType.UINT64)
+		measurements = pi.newimage(ImageDataType.FLOAT32)
+		points = pi.newimage(ImageDataType.INT32)
+
+		# Trace the skeleton
+		# The last 1 gives count of threads. For images with small number of branches
+		# (like here) single-threaded processing is faster.
+		pi.tracelineskeleton(geometry, vertices, edges, measurements, points, True, 1)
+
+		# Convert the traced skeleton into points and lines format, as the .vtk files
+		# need that format.
+		vtkpoints = pi.newimage()
+		vtklines = pi.newimage()
+		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
+
+		pi.writevtk(vtkpoints, vtklines, output_file("vtk_test_file"))
+
+
+
+.. figure:: figures/simple_skeleton_geometry.png
+   :scale: 200 %
+   :alt: Input image
+
+   Input image.
+
+
+.. figure:: figures/simple_skeleton_paraview.png
+   :scale: 75 %
+   :alt: Skeleton in ParaView.
+
+   Traced skeleton visualized in ParaView.

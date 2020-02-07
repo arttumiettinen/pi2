@@ -1,0 +1,136 @@
+.. _box:
+
+box
+***
+
+There are 2 forms of this command.
+
+:code:`box(image, position, size, value, block origin)`
+=======================================================
+
+Draws a filled axis-aligned box into the image. The filling is performed such that the left-, top- and front-faces of the box are filled but the right-, back- and bottom-faces are not. Notice that this convention is different from what is used to draw a non-axis-aligned box with the version of this command that takes box orientation vectors as arguments.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Position of the left-top corner of the box.
+
+size [input]
+~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[10, 10, 10]"
+
+Size of the box.
+
+value [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Value for pixels inside the box.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.
+
+See also
+--------
+
+:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`ramp`
+
+:code:`box(image, position, size, value, direction 1, direction 2, block origin)`
+=================================================================================
+
+Draws a filled generic non-axis-aligned box into the image. The filling is performed such that pixels on the surface of the box are not filled. Notice that this convention is different than what is used in the version of the command that does not take box orientation vectors as arguments.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 0, 0]"
+
+Position of the left-top corner of the box.
+
+size [input]
+~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[10, 10, 10]"
+
+Size of the box.
+
+value [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Value for pixels inside the box.
+
+direction 1 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+Direction vector for the first axis of the box.
+
+direction 2 [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+Direction vector for the second axis of the box.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.
+
+See also
+--------
+
+:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`ramp`

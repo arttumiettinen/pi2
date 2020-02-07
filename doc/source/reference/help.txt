@@ -1,0 +1,37 @@
+.. _help:
+
+help
+****
+
+
+**Syntax:** :code:`help(topic, format)`
+
+Shows usage information.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+topic [input]
+~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Name of command whose help is to be retrieved. Specify nothing to show general help.
+
+format [input]
+~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** text
+
+Output format. Can be text for textual output or rst for ReStructuredText output. The latter is more complex format.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

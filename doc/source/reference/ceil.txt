@@ -1,0 +1,22 @@
+.. _ceil:
+
+ceil
+****
+
+
+**Syntax:** :code:`ceil(image)`
+
+Calculates ceiling of pixel values, i.e. the greatest integer less than or equal to the pixel value.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+

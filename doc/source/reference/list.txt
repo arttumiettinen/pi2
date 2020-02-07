@@ -1,0 +1,16 @@
+.. _list:
+
+list
+****
+
+
+**Syntax:** :code:`list()`
+
+Displays information about images loaded to memory, or images prepared for distributed processing.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

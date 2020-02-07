@@ -1,7 +1,5 @@
 
 #include <map>
-#include <mutex>
-#include <shared_mutex>
 
 #include "dmap.h"
 #include "io/raw.h"
@@ -18,14 +16,14 @@ namespace itl2
 
 	namespace tests
 	{
-		void dmap(const string& binFile, const string& dmapOutFile, const string& dmapGTFile)
+		template<typename dmap_t> void dmap(const string& binFile, const string& dmapOutFile, const string& dmapGTFile, double tolerance)
 		{
 			Image<uint8_t> head;
 			raw::read(head, binFile);
 
 			//raw::writed(head, "./dmap/head_bin");
 
-			Image<float32_t> dmap;
+			Image<dmap_t> dmap;
 
 			distanceTransform(head, dmap);
 
@@ -35,14 +33,22 @@ namespace itl2
 			Image<float32_t> gt;
 			raw::read(gt, dmapGTFile);
 
-			checkDifference(dmap, gt, "Difference between ground truth and distance map.");
+			checkDifference(dmap, gt, "Difference between ground truth and distance map. (" + toString(imageDataType<dmap_t>()) + ")", tolerance);
 		}
 
 		void dmap1()
 		{
-			dmap("./t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./t1-head_bin_dmap_256x256x129.raw");
-			dmap("./test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./test_piece_dmap_GT_256x256x256.raw");
-			dmap("./test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./test_piece_dmap_GT_512x512x512.raw");
+			dmap<float32_t>("./input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./input_data/t1-head_bin_dmap_256x256x129.raw", 1e-6);
+			dmap<float32_t>("./input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_256x256x256.raw", 1e-6);
+			dmap<float32_t>("./input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_512x512x512.raw", 1e-6);
+
+			dmap<int32_t>("./input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./input_data/t1-head_bin_dmap_256x256x129.raw", 0.5);
+			dmap<int32_t>("./input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_256x256x256.raw", 0.5);
+			dmap<int32_t>("./input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_512x512x512.raw", 0.5);
+
+			dmap<uint32_t>("./input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./input_data/t1-head_bin_dmap_256x256x129.raw", 0.5);
+			dmap<uint32_t>("./input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_256x256x256.raw", 0.5);
+			dmap<uint32_t>("./input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_512x512x512.raw", 0.5);
 		}
 		
 	}

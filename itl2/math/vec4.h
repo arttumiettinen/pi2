@@ -5,13 +5,13 @@
 #include "itlexception.h"
 #include "math/numberutils.h"
 
-namespace math
+namespace itl2
 {
     /**
     Four-component vector.
     @param T Storage type of elements.
     */
-    template <typename T, typename real_t = typename NumberUtils<T>::FloatType> class Vec4
+    template <typename T> class Vec4
     {
         public:
             /**
@@ -51,17 +51,6 @@ namespace math
                 this->w = w;
             }
 
-            /**
-            Copy constructor
-            */
-            Vec4(const Vec4& other) :
-                x(other.x),
-                y(other.y),
-                z(other.z),
-                w(other.w)
-            {
-            }
-
 			/**
 			Constructs Vec4 from vector<T>. Throws exception if the vector does not contain 4 elements.
 			*/
@@ -75,18 +64,6 @@ namespace math
 				z = other[2];
 				w = other[3];
 			}
-
-            /**
-            Assignment
-            */
-            Vec4& operator=(const Vec4& other)
-            {
-                x = other.x;
-                y = other.y;
-                z = other.z;
-                w = other.w;
-                return *this;
-            }
 
 			/**
 			Array access operator
@@ -231,6 +208,7 @@ namespace math
 			/**
 			Calculates dot product between this vector and the given vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t dot(const Vec4& right) const
 			{
 				return ((real_t)x * (real_t)right.x) + ((real_t)y * (real_t)right.y) + ((real_t)z * (real_t)right.z) + ((real_t)w * (real_t)right.w);
@@ -239,25 +217,28 @@ namespace math
 			/**
 			Calculates the squared Euclidean norm of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t normSquared() const
 			{
-				return this->dot(*this);
+				return this->dot<real_t>(*this);
 			}
 
 			/**
 			Calculates the Euclidean norm of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t norm() const
 			{
-				return sqrt(normSquared());
+				return pixelRound<real_t>(sqrt(normSquared<real_t>()));
 			}
 
 			/**
 			Returns normalized version of this vector and calculates its original length.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec4 normalized(real_t& length) const
 			{
-				length = normSquared();
+				length = normSquared<real_t>();
 				if (!NumberUtils<real_t>::equals(length, 0.0))
 				{
 					real_t m = 1 / sqrt(length);
@@ -270,26 +251,29 @@ namespace math
 			/**
 			Returns normalized version of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec4 normalized() const
 			{
 				real_t dummy;
-				return normalized(dummy);
+				return normalized<real_t>(dummy);
 			}
 
 			/**
 			Normalizes this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			void normalize()
 			{
-				*this = normalized();
+				*this = normalized<real_t>();
 			}
 
 			/**
 			Normalizes this vector and calculates its original length.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			void normalize(real_t& length)
 			{
-				*this = normalized(length);
+				*this = normalized<real_t>(length);
 			}
 
             /**
@@ -302,9 +286,8 @@ namespace math
             }
     };
 
-	typedef Vec4<float> Vec4f;
+	typedef Vec4<float32_t> Vec4f;
     typedef Vec4<double> Vec4d;
-    typedef Vec4<int> Vec4i;
 
 }
 

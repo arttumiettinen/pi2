@@ -1,5 +1,6 @@
 
-#include "hybridskeleton.h"
+#include "surfaceskeleton.h"
+#include "surfaceskeleton2.h"
 #include "lineskeleton.h"
 
 #include "io/raw.h"
@@ -8,24 +9,51 @@
 
 namespace itl2
 {
+	namespace experimental
+	{
+		namespace tests
+		{
+			void surfaceSkeleton2()
+			{
+				// NOTE: No asserts!
+
+				Image<uint8_t> head;
+				raw::read(head, "./input_data/t1-head_bin_256x256x129.raw");
+
+				experimental::surfaceSkeleton2(head);
+
+				raw::writed(head, "./skeleton/head_surface_skeleton2");
+
+				//Image<uint8_t> img;
+				//raw::read(img, "./skeleton/in/planes");
+
+				//surfaceSkeleton2(img);
+
+				//raw::writed(img, "./skeleton/skele");
+			}
+		}
+	}
+
 	namespace tests
 	{
-		void hybridSkeleton()
+
+		void surfaceSkeleton()
 		{
-			Image<uint8_t> head;
-			raw::read(head, "t1-head_bin_256x256x129.raw");
+			// NOTE: No asserts!
 
-			hybridSkeleton(head);
+			Image<uint8_t> img;
+			raw::read(img, "./input_data/t1-head_bin_256x256x129.raw");
+			//raw::read(img, "./skeleton/in/planes");
 
-			raw::writed(head, "./skeleton/head_hybrid_skeleton");
+			surfaceSkeleton(img);
 
-			Image<uint8_t> gt;
-			raw::read(gt, "./fiji_hybrid_skeleton_256x256x129.raw");
+			raw::writed(img, "./skeleton/surface_skeleton");
 
-			subtract(head, gt);
-			double diff = max(head);
-
-			testAssert(diff == 0, "skeleton compared to Fiji skeleton");
+			for (size_t n = 0; n < 10; n++)
+			{
+				thin(img, false);
+				raw::writed(img, "./skeleton/surface_skeleton_to_line_skeleton_iteration_" + toString(n));
+			}
 		}
 
 		void lineSkeleton()
@@ -33,7 +61,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint8_t> head;
-			raw::read(head, "t1-head_bin_256x256x129.raw");
+			raw::read(head, "./input_data/t1-head_bin_256x256x129.raw");
 			
 			lineSkeleton(head);
 

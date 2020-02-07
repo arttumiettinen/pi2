@@ -24,7 +24,7 @@ namespace itl2
 		if (preserveEdges)
 			analyzers.push_back(new analyzers::IsOnEdge<Vec3sc, pixel_t>(img.dimensions()));
 
-		cout << "Searching for particles..." << endl;
+		std::cout << "Searching for particles..." << std::endl;
 		analyzeParticles<pixel_t>(img, analyzers, results, connectivity, volumeLimit);
 
 		if (preserveEdges)
@@ -43,7 +43,7 @@ namespace itl2
 		}
 
 		// Fill those with too small volume
-		cout << "Filling small particles..." << endl;
+		std::cout << "Filling small particles..." << std::endl;
 		//fillParticles<pixel_t>(img, results, 0, 3, (double)volumeLimit, connectivity, false);
 		fillParticles<pixel_t>(img, results, 0, connectivity);
 

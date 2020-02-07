@@ -9,7 +9,10 @@
 
 namespace itl2
 {
-	
+
+	/**
+	Encapsulates center point and radius of a sphere.
+	*/
 	template<typename T> class Sphere
 	{
 	private:
@@ -19,7 +22,7 @@ namespace itl2
 			return 1.0e-6;
 		}
 
-		void init(const math::Vec3<T>& p1, const math::Vec3<T>& p2)
+		void init(const Vec3<T>& p1, const Vec3<T>& p2)
 		{
 			center = (p1 + p2) / 2;
 			radius = (p1 - p2).norm() / 2 + radiusEpsilon();
@@ -32,7 +35,7 @@ namespace itl2
 		/**
 		Center of the sphere.
 		*/
-		math::Vec3<T> center;
+		Vec3<T> center;
 		
 		/**
 		Radius of the sphere.
@@ -61,7 +64,7 @@ namespace itl2
 		/**
 		Constructs a sphere whose position is the given point and radius = 0.
 		*/
-		Sphere(const math::Vec3<T>& center) :
+		Sphere(const Vec3<T>& center) :
 			center(center),
 			radius(0 + radiusEpsilon())
 		{
@@ -70,7 +73,7 @@ namespace itl2
 		/**
 		Constructs a sphere located at the given point and having the given radius.
 		*/
-		Sphere(const math::Vec3<T>& center, T radius) :
+		Sphere(const Vec3<T>& center, T radius) :
 			center(center),
 			radius(radius)
 		{
@@ -79,7 +82,7 @@ namespace itl2
 		/**
 		Constructs a sphere through the two given points.
 		*/
-		Sphere(const math::Vec3<T>& p1, const math::Vec3<T>& p2)
+		Sphere(const Vec3<T>& p1, const Vec3<T>& p2)
 		{
 			init(p1, p2);
 		}
@@ -87,16 +90,16 @@ namespace itl2
 		/**
 		Constructs a sphere through the three given points.
 		*/
-		Sphere(const math::Vec3<T>& p1, const math::Vec3<T>& p2, const math::Vec3<T>& p3)
+		Sphere(const Vec3<T>& p1, const Vec3<T>& p2, const Vec3<T>& p3)
 		{
-			math::Vec3<T> a = p2 - p1;
-			math::Vec3<T> b = p3 - p1;
+			Vec3<T> a = p2 - p1;
+			Vec3<T> b = p3 - p1;
 
 			T denom = 2 * (a.cross(b)).dot(a.cross(b));
 
-			if(!math::NumberUtils<T>::equals(denom, 0))
+			if(!NumberUtils<T>::equals(denom, 0))
 			{
-				math::Vec3<T> o = ((b.normSquared()) * ((a.cross(b)).cross(a)) +
+				Vec3<T> o = ((b.normSquared()) * ((a.cross(b)).cross(a)) +
 							(a.normSquared()) * (b.cross(a.cross(b)))) / denom;
 
 				radius = o.norm() + radiusEpsilon();
@@ -129,21 +132,21 @@ namespace itl2
 		/**
 		Constructs a sphere through four given points.
 		*/
-		Sphere(const math::Vec3<T>& p1, const math::Vec3<T>& p2, const math::Vec3<T>& p3, const math::Vec3<T>& p4)
+		Sphere(const Vec3<T>& p1, const Vec3<T>& p2, const Vec3<T>& p3, const Vec3<T>& p4)
 		{
-			math::Vec3<T> a = p2 - p1;
-			math::Vec3<T> b = p3 - p1;
-			math::Vec3<T> c = p4 - p1;
+			Vec3<T> a = p2 - p1;
+			Vec3<T> b = p3 - p1;
+			Vec3<T> c = p4 - p1;
 
-			math::Matrix3x3<T> A(a.x, a.y, a.z,
+			Matrix3x3<T> A(a.x, a.y, a.z,
 						   b.x, b.y, b.z,
 						   c.x, c.y, c.z);
 
 			T denom = 2.0f * A.det();
 
-			if(!math::NumberUtils<T>::equals(denom, 0.0))
+			if(!NumberUtils<T>::equals(denom, 0.0))
 			{
-				math::Vec3<T> o = ((c.normSquared()) * (a.cross(b)) +
+				Vec3<T> o = ((c.normSquared()) * (a.cross(b)) +
 							(b.normSquared()) * (c.cross(a)) +
 							(a.normSquared()) * (b.cross(c))) / denom;
 
@@ -184,7 +187,7 @@ namespace itl2
 					// All four points are on the edge of a circle in the plane where the points lie.
 					// TODO: Does this ever happen?
 					center = (p1 + p2 + p3 + p4) / 4;
-					radius = math::max(math::max((p1 - center).norm(), (p2 - center).norm()), math::max((p3 - center).norm(), (p4 - center).norm()));
+					radius = std::max(std::max((p1 - center).norm(), (p2 - center).norm()), std::max((p3 - center).norm(), (p4 - center).norm()));
 				}
 			}
 		}
@@ -192,7 +195,7 @@ namespace itl2
 		/**
 		Tests if this sphere contains the given point, assumes that all points x that satisfy (center - x) <= r belong to the sphere.
 		*/
-		bool containsInclusive(const math::Vec3<T>& x) const
+		bool containsInclusive(const Vec3<T>& x) const
 		{
 			return (x - center).norm() <= radius;
 		}
@@ -200,7 +203,7 @@ namespace itl2
 		/**
 		Tests if this sphere contains the given point, assumes that all points x that satisfy (center - x) < r belong to the sphere.
 		*/
-		bool contains(const math::Vec3<T>& x) const
+		bool contains(const Vec3<T>& x) const
 		{
 			return (x - center).norm() < radius;
 		}
@@ -219,7 +222,7 @@ namespace itl2
 		The result is negative if the point is inside the sphere, zero if it is on the surface of the sphere
 		and positive if it is outside of the sphere.
 		*/
-		double distance(const math::Vec3<T>& p) const
+		double distance(const Vec3<T>& p) const
 		{
 			return (p - center).norm() - radius;
 		} 
@@ -230,7 +233,7 @@ namespace itl2
 		/**
 		Helper method for miniball method.
 		*/
-		template<typename POINTT> static Sphere<T> recurseMini(math::Vec3<POINTT> const* P[], size_t p, size_t b = 0)
+		template<typename POINTT> static Sphere<T> recurseMini(Vec3<POINTT> const* P[], size_t p, size_t b = 0)
 		{
 			Sphere<T> MB;
 
@@ -260,7 +263,7 @@ namespace itl2
 				{
 					for(size_t j = i; j > 0; j--)
 					{
-						math::Vec3<POINTT> const* temp = P[j];
+						Vec3<POINTT> const* temp = P[j];
 						P[j] = P[j - 1];
 						P[j - 1] = temp;
 					}
@@ -281,14 +284,14 @@ namespace itl2
 		http://www.flipcode.com/archives/Smallest_Enclosing_Spheres.shtml
 		TODO: Remove unsafe memory allocation.
 		*/
-		template<typename POINTT> static Sphere<T> miniball(const std::vector<math::Vec3<POINTT>>& P)
+		template<typename POINTT> static Sphere<T> miniball(const std::vector<Vec3<POINTT>>& P)
 		{
-			std::vector<math::Vec3<T> > conv;
+			std::vector<Vec3<T> > conv;
 			conv.reserve(P.size());
 			for (size_t n = 0; n < P.size(); n++)
-				conv.push_back(math::Vec3<T>(P[n]));
+				conv.push_back(Vec3<T>(P[n]));
 
-			math::Vec3<T> const* *L = new math::Vec3<T> const*[P.size()];
+			Vec3<T> const* *L = new Vec3<T> const*[P.size()];
 
 			for (size_t i = 0; i < P.size(); i++)
 				L[i] = &conv[i];
@@ -301,6 +304,35 @@ namespace itl2
 			return MB;
 		}
 
+	};
+
+
+
+
+	/**
+	Encapsulates center point and squared (integer) radius of a sphere.
+	*/
+	class Sphere2
+	{
+	public:
+		/**
+		Position of the sphere.
+		*/
+		Vec3sc pos;
+
+		/**
+		Squared radius.
+		*/
+		int32_t r2;
+
+		/**
+		Constructor
+		*/
+		Sphere2(const Vec3sc& pos, int32_t squaredRadius) :
+			pos(pos),
+			r2(squaredRadius)
+		{
+		}
 	};
 
 }

@@ -1,0 +1,44 @@
+.. _bandpassfilter:
+
+bandpassfilter
+**************
+
+
+**Syntax:** :code:`bandpassfilter(image, minimum size, maximum size)`
+
+Bandpass filtering. Removes gray value variations smaller or larger in spatial extent than specified.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image to process.
+
+minimum size [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 3
+
+Variations smaller than than this value are removed.
+
+maximum size [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 40
+
+Variations larger than this value are removed.
+
+See also
+--------
+
+:ref:`fft`, :ref:`ifft`, :ref:`bandpassfilter`, :ref:`highpassfilter`

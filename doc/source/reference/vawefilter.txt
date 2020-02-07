@@ -1,0 +1,67 @@
+.. _vawefilter:
+
+vawefilter
+**********
+
+
+**Syntax:** :code:`vawefilter(input image, output image, radius, noise standard deviation, neighbourhood type, boundary condition)`
+
+Variance Weighted mean filtering. Removes noise from the image while trying to preserve edges. Edge preservation is achieved by filtering less aggressively in regions where local variance of pixel values is high. The filter thus assumes that high local variance corresponds to details of interest, and low local variance corresponds to regions containing solely noise.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+radius [input]
+~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[1, 1, 1]"
+
+Radius of neighbourhood. Diameter will be :math:`2r+1`.
+
+noise standard deviation [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of noise. For a rough order of magnitude estimate, measure standard deviation from a region that does not contain any features.
+
+neighbourhood type [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** neighbourhood type
+
+**Default value:** Ellipsoidal
+
+Type of neighbourhood. Can be Ellipsoidal for ellipsoidal or spherical neighbourhood; or Rectangular for rectangular neighbourhood.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Nearest
+
+Type of boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+See also
+--------
+
+:ref:`gaussfilter`, :ref:`bilateralfilter`, :ref:`bilateralfilterapprox`, :ref:`vawefilter`, :ref:`openingfilter`, :ref:`closingfilter`, :ref:`minfilter`, :ref:`maxfilter`, :ref:`medianfilter`, :ref:`variancefilter`, :ref:`stddevfilter`, :ref:`bandpassfilter`, :ref:`highpassfilter`

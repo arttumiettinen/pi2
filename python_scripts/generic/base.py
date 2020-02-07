@@ -239,7 +239,7 @@ class Scan:
         Tests if reconstructed image file exists.
         """
         
-        pi_script = f"fileinfo({self.rec_file});"
+        pi_script = f"showfileinfo({self.rec_file});"
         s = run_pi2_locally(pi_script)
         s = s.decode('ASCII')
         lines = s.splitlines()
@@ -256,7 +256,7 @@ def get_image_size(filename):
     Finds out size of given image and returns it as numpy array.
     """
 
-    pi_script = f"fileinfo({filename});"
+    pi_script = f"showfileinfo({filename});"
     s = run_pi2_locally(pi_script)
     s = s.decode('ASCII')
     lines = s.splitlines()
@@ -281,11 +281,13 @@ def raw_exists(prefix):
 def auto_binning(relations, binning):
     """
     Makes binned versions of the original input files if they do not exist yet.
+    Returns true if all binned files are already done.
     """
 
     if binning < 1:
         raise RuntimeError("Value of binning must be greater than or equal to 1.")
 
+    result = True
     if binning != 1:
 
         # Find common part in all the input file names so that we can remove that
@@ -305,11 +307,11 @@ def auto_binning(relations, binning):
             binned_file = binned_file.replace('\\', '-').replace('/', '-')
             binned_file = f"bin{binning}_{binned_file}"
 
-            node.rec_file = binned_file
+            node.binned_file = binned_file
 
             # TODO: If dimensions are used in non-computational context (file names etc.) they should be rounded/read from file again.
-            node.dimensions = node.dimensions / binning
-            node.position = node.position / binning
+            #node.dimensions = node.dimensions / binning
+            #node.position = node.position / binning
 
             if not raw_exists(binned_file):
 
@@ -323,7 +325,9 @@ def auto_binning(relations, binning):
 
                 run_pi2(params, f"binning_{binned_file}")
 
+                result = False
 
+    return result
 
 
 def displacement_file_prefix(sample_name, scan1, scan2):
@@ -1523,7 +1527,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
 
 
 
-def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations):
+def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
     """
     Prepares and runs pi2 stitching process for connected component 'comp' of scan relations tree 'tree'.
     - determines final world to image transformations
@@ -1584,6 +1588,7 @@ def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotat
     start_node = find_first_node(comp)
     out_template = f"{sample_name}_{start_node.position[0]}_{start_node.position[1]}_{start_node.position[2]}"
     out_file = f"{out_template}_{out_width}x{out_height}x{out_depth}.raw"
+    out_goodness_file = f"{out_template}_goodness_{out_width}x{out_height}x{out_depth}.raw"
 
     # Make index file
     index_file = out_template + "_index.txt"
@@ -1609,34 +1614,29 @@ def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotat
                 curr_height = min(block_size, out_height - (ystart - miny))
                 curr_depth = min(block_size, out_depth - (zstart - minz))
 
-                # Old version that requires knowledge of data type.
-                #pi_script = (f"echo;"
-                #             f"newimage(outimg, {data_type});"
-                #             f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize});"
-                #             f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
-                #            )
-                pi_script = (f"echo;"
+                if not create_goodness_file:
+                    pi_script = (f"echo;"
+                                 f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
+                                 f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize});"
+                                 f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                                )
+                else:
+                    # f"newimage(goodnessimg, Float32, 1, 1, 1);"
+                    pi_script = (f"echo;"
                              f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
-                             f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize});"
+                             f"newlikefile(goodnessimg, {first_file_name}, Unknown, 1, 1, 1);"
+                             f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize});"
                              f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                             f"writerawblock(goodnessimg, {out_goodness_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
                             )
 
                 run_pi2(pi_script, f"{out_template}_{jobs_started}")
                 jobs_started = jobs_started + 1
 
-    # This version does the stitching without cutting the sample into blocks.
-    # NOTE: Uses old version of stitching function in pi2.
-    #pi_script = (f"echo;"
-    #             f"newimage(outimg, {data_type});"
-    #             f"stitch(outimg, {index_file}, {minx}, {miny}, {minz}, {out_width}, {out_height}, {out_depth});"
-    #             f"writeraw(outimg, {out_template});"
-    #            )
-    #run_pi2(pi_script)
-
     return jobs_started
 
 
-def run_stitching_for_all_connected_components(relations, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations):
+def run_stitching_for_all_connected_components(relations, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
     """
     Calls run_stitching for each connected component in relations network.
     """
@@ -1644,7 +1644,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
-        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations)
+        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file)
 
     if (jobs_started > 0) and use_cluster:
         return False

@@ -1,128 +1,801 @@
 
 #include "floodfill.h"
 #include "io/raw.h"
+#include "io/itlpng.h"
 #include "pointprocess.h"
 #include "transform.h"
 #include "generation.h"
+#include "dmap.h"
 
 #include "testutils.h"
 
 #include <algorithm>
 
-using namespace math;
+
 using namespace std;
 
 namespace itl2
 {
+	namespace internals
+	{
+		template<typename weight_t> class SimpleSeed
+		{
+		private:
+			Vec3c pos;
+
+			weight_t myWeight;
+			size_t birthday;
+
+		public:
+
+			/**
+			Constructor
+			@param p The point.
+			@param w Weight of the point. Used to prioritize points with larger weight before points with smaller weight.
+			@param birthday The filling round number. Used to prioritize older points before newer points so that points near seeds are filled first.
+			*/
+			SimpleSeed(const Vec3c& p, weight_t w, size_t birthday) :
+				pos(p),
+				myWeight(w),
+				birthday(birthday)
+			{
+			}
+
+			/**
+			Gets position.
+			*/
+			const Vec3c& position() const
+			{
+				return pos;
+			}
+
+			/**
+			Compares weights.
+			*/
+			bool operator < (const SimpleSeed& right) const
+			{
+				// Large weights first, small birthdays first
+				if (!NumberUtils<weight_t>::equals(myWeight, right.myWeight))
+					return NumberUtils<weight_t>::lessThan(myWeight, right.myWeight);
+				else
+					return birthday > right.birthday;
+			}
+
+			const weight_t weight() const
+			{
+				return myWeight;
+			}
+
+		};
+	}
+
+
+	/**
+	Stores elements in a map where priority is the key.
+	Groups multiple elements of the same priority to the same map entry.
+	Good if there are small number of priorities but large number of elements per priority.
+	*/
+	template<typename item_t, typename priority_t> class BucketMap
+	{
+	private:
+		map<priority_t, deque<item_t> > items;
+
+	public:
+
+		/**
+		Pushes the given element value to the priority queue.
+		*/
+		void push(const priority_t priority, const item_t& value)
+		{
+			items[priority].push_back(value);
+		}
+
+		/**
+		Returns reference to the item on the top of the priority queue.
+		*/
+		const item_t& topItem() const
+		{
+			return items.rbegin()->second.front();
+		}
+
+		/**
+		Returns priority of the item on the top of the priority queue.
+		*/
+		const priority_t topPriority() const
+		{
+			return items.rbegin()->first;
+		}
+
+
+		/**
+		Removes the top element from the priority queue.
+		*/
+		void pop()
+		{
+			auto& l = items.rbegin()->second;
+			l.pop_front();
+			if (l.empty())
+				items.erase(items.rbegin()->first);
+		}
+
+		/**
+		Checks if the container has no elements.
+		*/
+		bool empty() const
+		{
+			return items.empty();
+		}
+	};
+
+	/**
+	Grouped heap
+	When multiple items are pushed with the same priority, they are mapped to single element in the underlying queue
+	*/
+	template<typename item_t, typename priority_t> class GHeap
+	{
+	public:
+
+		struct Entry
+		{
+			priority_t priority;
+			size_t birthday;
+			deque<item_t> items;
+
+			bool operator < (const Entry& right) const
+			{
+				// Large priorities first, small birthdays first
+				if (!NumberUtils<priority_t>::equals(priority, right.priority))
+					return NumberUtils<priority_t>::lessThan(priority, right.priority);
+				else
+					return birthday > right.birthday;
+			}
+		};
+
+	private:
+
+		priority_queue<Entry> queue;
+
+		/**
+		Next birthday value to use.
+		*/
+		size_t nextBirthday;
+
+		Entry lastPushEntry;
+
+	public:
+
+		/**
+		Constructor.
+		*/
+		GHeap() :
+			nextBirthday(1)
+		{
+			lastPushEntry.priority = 0;
+			lastPushEntry.birthday = 0;
+		}
+
+		/**
+		Pushes the given element value to the priority queue.
+		*/
+		void push(const priority_t priority, const item_t& value)
+		{
+			if (lastPushEntry.priority != priority)
+			{
+				// Push lastPushItems to the queue and make new 
+				if (lastPushEntry.items.size() > 0)
+				{
+					// NOTE: This reveals that addition pattern is many times A, B, A, B, A, B... and so this implementation fails!
+					//cout << "Pushing " << lastPushEntry.items.size() << " values with priority " << lastPushEntry.priority << endl;
+					queue.push(lastPushEntry);
+				}
+				lastPushEntry.priority = priority;
+				lastPushEntry.birthday = nextBirthday;
+				lastPushEntry.items.clear();
+				nextBirthday++;
+			}
+
+			lastPushEntry.items.push_back(value);
+		}
+
+
+		/**
+		Returns reference to the top element in the priority queue. This element will be removed on a call to pop().
+		Calling top on empty queue is undefined behaviour.
+		*/
+		const Entry& top() const
+		{
+			if (queue.empty() || lastPushEntry.priority >= queue.top().priority)
+				return lastPushEntry;
+
+			return queue.top();
+		}
+
+		/**
+		Returns reference to the item on the top of the priority queue.
+		*/
+		const item_t& topItem() const
+		{
+			return top().items.front();
+		}
+
+		/**
+		Returns priority of the item on the top of the priority queue.
+		*/
+		const priority_t topPriority() const
+		{
+			return top().priority;
+		}
+
+		/**
+		Removes the top element from the priority queue.
+		*/
+		void pop()
+		{
+			if (queue.empty() || lastPushEntry.priority >= queue.top().priority)
+			{
+				lastPushEntry.items.pop_front();
+				if (lastPushEntry.items.size() <= 0 && !queue.empty())
+				{
+					lastPushEntry = queue.top();
+					queue.pop();
+				}
+			}
+			else
+			{
+				const_cast<Entry&>(queue.top()).items.pop_front();
+				if (queue.top().items.size() <= 0)
+					queue.pop();
+			}
+		}
+
+		/**
+		Checks if the container has no elements.
+		*/
+		bool empty() const
+		{
+			return queue.empty();
+		}
+
+
+	};
+
+	/**
+	Hierarchical heap.
+	*/
+	template<typename item_t, typename priority_t> class HHeap
+	{
+	public:
+
+		struct Entry
+		{
+			priority_t priority;
+			size_t birthday;
+			item_t item;
+
+			bool operator < (const Entry& right) const
+			{
+				// Large priorities first, small birthdays first
+				if (!NumberUtils<priority_t>::equals(priority, right.priority))
+					return NumberUtils<priority_t>::lessThan(priority, right.priority);
+				else
+					return birthday > right.birthday;
+			}
+		};
+
+
+	private:
+
+		vector<priority_queue<Entry> > queues;
+
+		/**
+		Expected minimum and maximum priority values.
+		*/
+		priority_t minp, maxp;
+
+		/**
+		Next birthday value to use.
+		*/
+		size_t nextBirthday;
+
+		/**
+		Index of the highest-priority non-empty queue.
+		*/
+		size_t topQueueIndex;
+
+		/**
+		Calculates index of bucket for given priority.
+		*/
+		size_t bucket_index(priority_t priority) const
+		{
+			coord_t i = (coord_t)floor(((double)priority - (double)minp) / ((double)maxp - (double)minp) * queues.size());
+			if (i < 0)
+				i = 0;
+			else if (intuitive::gt(i, queues.size() - 1))
+				i = (coord_t)queues.size() - 1;
+			return i;
+		}
+
+	public:
+		/**
+		Constructor.
+		@param minp Minimum expected priority value.
+		@param maxp Maximum expected priority value.
+		@param bucketCount Count of buckets.
+		*/
+		HHeap(priority_t minp, priority_t maxp, size_t bucketCount = 256) :
+			minp(minp),
+			maxp(maxp),
+			nextBirthday(0),
+			topQueueIndex(0)
+		{
+			queues.reserve(bucketCount);
+			for (size_t n = 0; n < bucketCount; n++)
+				queues.push_back(priority_queue<Entry>());
+		}
+
+		/**
+		Pushes the given element value to the priority queue.
+		*/
+		void push(const priority_t priority, const item_t& value)
+		{
+			size_t bi = bucket_index(priority);
+			queues[bi].push({ priority, nextBirthday, value });
+			nextBirthday++;
+			if (bi > topQueueIndex)
+				topQueueIndex = bi;
+		}
+
+
+		/**
+		Returns reference to the top element in the priority queue. This element will be removed on a call to pop().
+		Calling top on empty queue is undefined behaviour.
+		*/
+		const Entry& top() const
+		{
+			return queues[topQueueIndex].top();
+		}
+
+		/**
+		Returns reference to the item on the top of the priority queue.
+		*/
+		const item_t& topItem() const
+		{
+			return queues[topQueueIndex].top().item;
+		}
+
+		/**
+		Returns priority of the item on the top of the priority queue.
+		*/
+		const priority_t topPriority() const
+		{
+			return queues[topQueueIndex].top().priority;
+		}
+
+		/**
+		Returns birthday of the item on the top of the priority queue.
+		*/
+		const size_t topBirthday() const
+		{
+			return queues[topQueueIndex].top().birthday;
+		}
+
+		/**
+		Removes the top element from the priority queue.
+		*/
+		void pop()
+		{
+			queues[topQueueIndex].pop();
+			while(topQueueIndex > 0 && queues[topQueueIndex].empty())
+				topQueueIndex--;
+		}
+
+		/**
+		Checks if the container has no elements.
+		*/
+		bool empty() const
+		{
+			return queues[topQueueIndex].empty();
+		}
+
+		/**
+		Calculates measure of non-uniformity of item counts in buckets.
+		Zero corresponds to totally uniform item counts.
+		*/
+		double nonUniformity() const
+		{
+			vector<double> counts;
+			counts.reserve(queues.size());
+			for (const auto& q : queues)
+				counts.push_back((double)q.size());
+			return stddev(counts);
+		}
+
+		/**
+		Calculates total count of elements in the heap.
+		Complexity is linear in bucket count.
+		*/
+		size_t size() const
+		{
+			size_t count = 0;
+			for (const auto& q : queues)
+				count += q.size();
+			return count;
+		}
+	};
+
+
 	namespace tests
 	{
-		/**
-		Flood fill beginning from the given seed points.
-		@param origColor Original color that we are filling. (the color of the region where the fill is allowed to proceed)
-		@param fillColor Fill color. The filled pixels will be colored with this color.
-		@param stopColor Set to value different from fillColor to stop filling when a pixel of this color is encountered.
-		@return Count of pixels filled if the fill was terminated naturally; -1 times count of pixels filled if the fill was terminated by reaching fillLimit in filled pixel count or by encountering pixel with stopColor value.
-		*/
-		template<typename pixel_t> coord_t slowFloodfill(Image<pixel_t>& image, const vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, std::vector<math::Vec3sc>* pFilledPoints = 0, size_t fillLimit = numeric_limits<size_t>::max(), std::set<pixel_t>* pNeighbouringColors = 0)
+		inline void hheap()
 		{
-			std::queue<Vec3sc> points;
-			for(const Vec3sc& p : seeds)
-				points.push(p);
+			//HHeap<Vec3c, int> points(0, 10, 10);
+			//GHeap<Vec3c, int> points;
+			BucketMap<Vec3c, int> points;
 
-			size_t lastPrinted = 0;
-			coord_t filledPoints = 0;
+
+			points.push(1, Vec3c(1, 0, 0));
+			points.push(1, Vec3c(2, 0, 0));
+			points.push(1, Vec3c(3, 0, 0));
+
+			points.push(0, Vec3c(4, 0, 0));
+			points.push(0, Vec3c(5, 0, 0));
+			points.push(0, Vec3c(6, 0, 0));
+
+			points.push(7, Vec3c(-2, 0, 0));
+			points.push(7, Vec3c(-1, 0, 0));
+			points.push(7, Vec3c(0, 0, 0));
+
+
+			points.push(-1, Vec3c(7, 0, 0));
+
+			points.push(15, Vec3c(-3, 0, 0));
+
+			int topPriority = points.topPriority();
 			while (!points.empty())
 			{
-				const math::Vec3sc p = points.front();
+				testAssert(points.topPriority() <= topPriority, "Invalid retrieval order");
 
-				pixel_t pixelValue = image(p);
-				if (pixelValue == origColor)
+				topPriority = points.topPriority();
+				cout << points.topItem() << ", priority = " << points.topPriority() << endl;
+
+				points.pop();
+			}
+
+			return;
+		}
+	}
+
+
+
+	template<typename label_t, typename weight_t> void growHHeap(Image<label_t>& labels, const Image<weight_t>& weights, label_t inQueue = numeric_limits<label_t>::max())
+	{
+		weights.checkSize(labels);
+		weights.mustNotBe(labels);
+
+		//HHeap<Vec3c, weight_t> points(min(weights), max(weights), 100);
+		//GHeap<Vec3c, weight_t> points;
+		BucketMap<Vec3c, weight_t> points;
+		//queue<internals::SimpleSeed<weight_t> > pits;
+		
+
+		// Add all neighbours of seed points to the priority queue
+		for (coord_t z = 0; z < labels.depth(); z++)
+		{
+			for (coord_t y = 0; y < labels.height(); y++)
+			{
+				for (coord_t x = 0; x < labels.width(); x++)
 				{
-					filledPoints++;
-					image(p) = fillColor;
-					if (pFilledPoints)
-						pFilledPoints->push_back(p);
+					Vec3 p(x, y, z);
 
-					// Add items to queue
-					if (connectivity == Connectivity::NearestNeighbours)
+					if (labels(p) == inQueue)
+						throw ITLException(string("Value ") + toString(inQueue) + " must not be used in the labels image, it is needed as a temporary value.");
+
+					if (labels(p) == 0) // Only background points can be neighbours of seeds
 					{
-						for (size_t n = 0; n < 3; n++)
-						{
-							if (p[n] > 0)
-							{
-								Vec3sc np = p;
-								np[n]--;
-								points.push(np);
-							}
+						bool hasSeedNeighbour = false;
 
-							if (p[n] < image.dimension(n) - 1)
+						for (size_t n = 0; n < labels.dimensionality(); n++)
+						{
+							for (int delta = -1; delta <= 1; delta += 2)
 							{
-								Vec3sc np = p;
-								np[n]++;
-								points.push(np);
+								Vec3c np = p;
+								np[n] += delta;
+
+								if (np[n] >= 0 && np[n] < labels.dimension(n))
+								{
+									label_t lbl = labels(np);
+									weight_t w = weights(np);
+									if (w > 0 && lbl != 0 && lbl != inQueue)
+									{
+										hasSeedNeighbour = true;
+									}
+								}
 							}
 						}
-					}
-					else
-					{
-						// All neighbours
-						for (int32_t dx = -1; dx <= 1; dx++)
+
+						if (hasSeedNeighbour)
 						{
-							for (int32_t dy = -1; dy <= 1; dy++)
+							points.push(weights(p), p);
+							labels(p) = inQueue;
+						}
+					}
+				}
+			}
+		}
+
+		size_t round = 0;
+
+		//size_t maxPriorityQueueDepth = points.size();
+		//size_t maxQueueDepth = points.size();
+		// Grow from the point p to all directions if they are not filled yet.
+		while (!points.empty() /*|| !pits.empty()*/)
+		{
+			//maxQueueDepth = std::max(maxQueueDepth, pits.size());
+			//maxPriorityQueueDepth = std::max(maxPriorityQueueDepth, points.size());
+
+			//weight_t myw;
+			Vec3c p;
+			//if (!pits.empty())
+			//{
+			//	const auto& obj = pits.front();
+			//	p = obj.position();
+			//	myw = obj.weight();
+			//	pits.pop();
+			//}
+			//else
+			//{
+				p = points.topItem();
+				//const auto& obj = points.top();
+				//p = obj.item;
+				//myw = obj.priority;
+				points.pop();
+			//}
+
+			// Find label for this pixel from the surrounding pixels.
+			// Add adjacent unlabeled pixels to the queue.
+			label_t currPixelLabel = 0;
+			weight_t currPixelLabelWeight = 0;
+			for (size_t n = 0; n < labels.dimensionality(); n++)
+			{
+				for (int delta = -1; delta <= 1; delta += 2)
+				{
+					Vec3c np = p;
+					np[n] += delta;
+
+					if (np[n] >= 0 && np[n] < labels.dimension(n))
+					{
+						label_t& lbl = labels(np);
+						
+						if (lbl == 0)
+						{
+							// This is a non-labeled neighbour. It goes to the queue.
+							weight_t w = weights(np);
+							if (w > 0)
 							{
-								for (int32_t dz = -1; dz <= 1; dz++)
+								//if(w > myw)
+								//	pits.push(internals::SimpleSeed<weight_t>(np, myw, round));
+								//else
+									points.push(w, np);
+
+								lbl = inQueue;
+							}
+						}
+						else
+						{
+							// This is a labeled neighbour, find if the label of this point should be the label of the neighbour.
+							if (lbl != inQueue)
+							{
+								weight_t w = weights(np);
+								if (currPixelLabelWeight == 0 || w > currPixelLabelWeight) // If there are multiple possibilities, choose the one with the highest weight.
 								{
-									Vec3sc np(p.x + dx, p.y + dy, p.z + dz);
-									if (np.x >= 0 && np.y >= 0 && np.z >= 0 &&
-										np.x < image.dimension(0) &&
-										np.y < image.dimension(1) &&
-										np.z < image.dimension(2)
-										)
-										points.push(np);
+									currPixelLabel = lbl;
+									currPixelLabelWeight = w;
 								}
 							}
 						}
 					}
 				}
-				else if (fillColor != stopColor && pixelValue == stopColor)
-				{
-					// Stop color has been encountered.
-					return -filledPoints;
-				}
-				else
-				{
-					if (pNeighbouringColors != 0)
-						pNeighbouringColors->insert(pixelValue);
-				}
+			}
 
+			// Fill current pixel
+			labels(p) = currPixelLabel;
+
+			round++;
+			//if (round % 10 == 0)
+				//cout << "Non-uniformity = " << points.nonUniformity() << endl;
+				//png::writed(labels, "./grow_comparison/animation/round_" + toString(round), 0);
+		}
+
+		//cout << "Max pits queue depth = " << maxQueueDepth << endl;
+		//cout << "Max priority queue depth = " << maxPriorityQueueDepth << endl;
+	}
+
+
+
+	/**
+	This function is inspired by OpenCV implementation of watershed, found in file \opencv\modules\imgproc\src\segmentation.cpp.
+	This was chosen as it is quite fast according to Kornilov - An Overview ofWatershed Algorithm Implementations in Open Source Libraries.
+	OpenCV implementation is licensed with the following text:
+
+								   License Agreement
+					For Open Source Computer Vision Library
+
+	 Copyright (C) 2000, Intel Corporation, all rights reserved.
+	 Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+	 Third party copyrights are property of their respective owners.
+
+	 Redistribution and use in source and binary forms, with or without modification,
+	 are permitted provided that the following conditions are met:
+
+	   * Redistribution's of source code must retain the above copyright notice,
+		 this list of conditions and the following disclaimer.
+
+	   * Redistribution's in binary form must reproduce the above copyright notice,
+		 this list of conditions and the following disclaimer in the documentation
+		 and/or other materials provided with the distribution.
+
+	   * The name of the copyright holders may not be used to endorse or promote products
+		 derived from this software without specific prior written permission.
+
+	 This software is provided by the copyright holders and contributors "as is" and
+	 any express or implied warranties, including, but not limited to, the implied
+	 warranties of merchantability and fitness for a particular purpose are disclaimed.
+	 In no event shall the Intel Corporation or contributors be liable for any direct,
+	 indirect, incidental, special, exemplary, or consequential damages
+	 (including, but not limited to, procurement of substitute goods or services;
+	 loss of use, data, or profits; or business interruption) however caused
+	 and on any theory of liability, whether in contract, strict liability,
+	 or tort (including negligence or otherwise) arising in any way out of
+	 the use of this software, even if advised of the possibility of such damage.
+
+
+	*/
+	template<typename label_t, typename weight_t> void growCVTypeAlgorithm(Image<label_t>& labels, const Image<weight_t>& weights, label_t inQueue = numeric_limits<label_t>::max())
+	{
+		weights.checkSize(labels);
+		weights.mustNotBe(labels);
+
+		priority_queue<internals::SimpleSeed<weight_t> > points;
+		//queue<internals::SimpleSeed<weight_t> > pits;
+		
+
+		// Add all neighbours of seed points to the priority queue
+		for (coord_t z = 0; z < labels.depth(); z++)
+		{
+			for (coord_t y = 0; y < labels.height(); y++)
+			{
+				for (coord_t x = 0; x < labels.width(); x++)
+				{
+					Vec3 p(x, y, z);
+
+					if (labels(p) == inQueue)
+						throw ITLException(string("Value ") + toString(inQueue) + " must not be used in the labels image, it is needed as a temporary value.");
+
+					if (labels(p) == 0) // Only background points can be neighbours of seeds
+					{
+						bool hasSeedNeighbour = false;
+
+						for (size_t n = 0; n < labels.dimensionality(); n++)
+						{
+							for (int delta = -1; delta <= 1; delta += 2)
+							{
+								Vec3c np = p;
+								np[n] += delta;
+
+								if (np[n] >= 0 && np[n] < labels.dimension(n))
+								{
+									label_t lbl = labels(np);
+									weight_t w = weights(np);
+									if (w > 0 && lbl != 0 && lbl != inQueue)
+									{
+										hasSeedNeighbour = true;
+									}
+								}
+							}
+						}
+
+						if (hasSeedNeighbour)
+						{
+							points.push(internals::SimpleSeed<weight_t>(p, weights(p), 0));
+							labels(p) = inQueue;
+						}
+					}
+				}
+			}
+		}
+
+
+		long round = 0;
+		//size_t maxPriorityQueueDepth = points.size();
+		//size_t maxQueueDepth = points.size();
+		// Grow from the point p to all directions if they are not filled yet.
+		while (!points.empty() /*|| !pits.empty()*/)
+		{
+			//maxQueueDepth = std::max(maxQueueDepth, pits.size());
+			//maxPriorityQueueDepth = std::max(maxPriorityQueueDepth, points.size());
+
+			round++;
+
+			weight_t myw;
+			Vec3c p;
+			//if (!pits.empty())
+			//{
+			//	const auto& obj = pits.front();
+			//	p = obj.position();
+			//	myw = obj.weight();
+			//	pits.pop();
+			//}
+			//else
+			//{
+				const auto& obj = points.top();
+				p = obj.position();
+				myw = obj.weight();
 				points.pop();
+			//}
 
-				if ((size_t)filledPoints > fillLimit)
-					return -filledPoints; // Fill volume limit has been encountered.
-
-				// Progress report for large fills
-				size_t s = points.size();
-				if (s > 0 && s % 50000 == 0 && lastPrinted != s)
+			// Find label for this pixel from the surrounding pixels.
+			// Add adjacent unlabeled pixels to the queue.
+			label_t currPixelLabel = 0;
+			weight_t currPixelLabelWeight = 0;
+			for (size_t n = 0; n < labels.dimensionality(); n++)
+			{
+				for (int delta = -1; delta <= 1; delta += 2)
 				{
-					lastPrinted = s;
-					cout << s << " seed points...\r" << flush;
+					Vec3c np = p;
+					np[n] += delta;
+
+					if (np[n] >= 0 && np[n] < labels.dimension(n))
+					{
+						label_t& lbl = labels(np);
+						
+						if (lbl == 0)
+						{
+							// This is a non-labeled neighbour. It goes to the queue.
+							weight_t w = weights(np);
+							if (w > 0)
+							{
+								//if(w > myw)
+								//	pits.push(internals::SimpleSeed<weight_t>(np, myw, round));
+								//else
+									points.push(internals::SimpleSeed<weight_t>(np, w, round));
+
+								lbl = inQueue;
+							}
+						}
+						else
+						{
+							// This is a labeled neighbour, find if the label of this point should be the label of the neighbour.
+							if (lbl != inQueue)
+							{
+								weight_t w = weights(np);
+								if (currPixelLabelWeight == 0 || w > currPixelLabelWeight) // If there are multiple possibilities, choose the one with the highest weight.
+								{
+									currPixelLabel = lbl;
+									currPixelLabelWeight = w;
+								}
+							}
+						}
+					}
 				}
 			}
 
-			return filledPoints;
+			// Fill current pixel
+			labels(p) = currPixelLabel;
+
+			//if (round % 10 == 0)
+			//	png::writed(labels, "./grow_comparison/animation/round_" + toString(round), 0);
 		}
 
-		template<typename pixel_t> coord_t slowFloodfill(Image<pixel_t>& image, const math::Vec3c& start, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, std::vector<math::Vec3sc>* pFilledPoints = 0, size_t fillLimit = numeric_limits<size_t>::max(), std::set<pixel_t>* pNeighbouringColors = 0)
-		{
-			pixel_t origColor = image(start);
-			if (origColor == fillColor)
-				return true;
+		//cout << "Max pits queue depth = " << maxQueueDepth << endl;
+		//cout << "Max priority queue depth = " << maxPriorityQueueDepth << endl;
+	}
 
-			vector<Vec3sc> seeds;
-			seeds.push_back(Vec3sc(start));
 
-			return slowFloodfill(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPoints, fillLimit, pNeighbouringColors);
-		}
+
+
+	namespace tests
+	{
+		
 
 /*
 		bool vecComp(const Vec3c&a, const Vec3c& b)
@@ -167,15 +840,15 @@ namespace itl2
 			cout << "Fast version: " << timer.getTime() << " ms" << endl;
 
 			timer.start();
-			coord_t count2 = itl2::tests::slowFloodfill(filled2, start, (uint8_t)128, (uint8_t)128, conn, &filledPoints2, numeric_limits<size_t>::max(), &neighbours2);
+			coord_t count2 = itl2::slowFloodfill(filled2, start, (uint8_t)128, (uint8_t)128, conn, &filledPoints2, numeric_limits<size_t>::max(), &neighbours2);
 			timer.stop();
 			cout << "Slow version: " << timer.getTime() << " ms" << endl;
 			
 
 			testAssert(count1 == count2, "filled point count");
 
-			sort(filledPoints1.begin(), filledPoints1.end(), math::vecComparer<int32_t>);
-			sort(filledPoints2.begin(), filledPoints2.end(), math::vecComparer<int32_t>);
+			sort(filledPoints1.begin(), filledPoints1.end(), vecComparer<int32_t>);
+			sort(filledPoints2.begin(), filledPoints2.end(), vecComparer<int32_t>);
 			testAssert(filledPoints1 == filledPoints2, "filled points");
 
 			// The 'new' version does not return fillColor in neighbouring points list!
@@ -253,7 +926,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint8_t> head;
-			raw::read(head, "t1-head_bin_256x256x129.raw");
+			raw::read(head, "input_data/t1-head_bin_256x256x129.raw");
 
 			itl2::floodfill(head, Vec3c(110, 110, 25), (uint8_t)128, (uint8_t)128);
 
@@ -265,8 +938,8 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img(3, 2);
-				draw(img, Box(Vec3c(), Vec3c(1, 1, 1)), (uint8_t)255);
-				draw(img, Box(Vec3c(2, 1, 0), img.dimensions()), (uint8_t)255);
+				draw(img, AABox(Vec3c(), Vec3c(1, 1, 1)), (uint8_t)255);
+				draw(img, AABox(Vec3c(2, 1, 0), img.dimensions()), (uint8_t)255);
 
 				singleTest(img, Vec3c(0, 0, 0), Connectivity::AllNeighbours);
 				singleTest(img, Vec3c(0, 0, 0), Connectivity::NearestNeighbours);
@@ -274,8 +947,8 @@ namespace itl2
 
 			{
 				Image<uint8_t> img(3, 2);
-				draw(img, Box(Vec3c(2, 0, 0), Vec3c(3, 1, 1)), (uint8_t)255);
-				draw(img, Box(Vec3c(0, 1, 0), Vec3c(1, 2, 1)), (uint8_t)255);
+				draw(img, AABox(Vec3c(2, 0, 0), Vec3c(3, 1, 1)), (uint8_t)255);
+				draw(img, AABox(Vec3c(0, 1, 0), Vec3c(1, 2, 1)), (uint8_t)255);
 				
 
 				singleTest(img, Vec3c(0, 0, 0), Connectivity::AllNeighbours);
@@ -284,7 +957,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> full;
-				raw::read(full, "complicated_particles_1");
+				raw::read(full, "./input_data/complicated_particles_1");
 
 				Image<uint8_t> img(full.width(), full.height(), 10);
 				itl2::crop(full, img, Vec3c(0, 0, 10));
@@ -295,13 +968,120 @@ namespace itl2
 			
 			{
 				Image<uint8_t> full;
-				raw::read(full, "complicated_particles_1");
+				raw::read(full, "./input_data/complicated_particles_1");
 
 				Image<uint8_t> img(full, 10, 19); // view of full image
 
 				singleTest(img, Vec3c(7, 0, 0), Connectivity::AllNeighbours);
 				singleTest(img, Vec3c(7, 0, 0), Connectivity::NearestNeighbours);
 			}
+		}
+
+		void growPriority()
+		{
+			Image<uint16_t> weights;
+			raw::read(weights, "./input_data/t1-head_256x256x129.raw");
+
+			Image<uint8_t> labels(weights.dimensions());
+
+			labels(110, 90, 63) = 100;
+			labels(182, 165, 63) = 200;
+
+			raw::writed(labels, "./grow_priority/labels");
+
+			itl2::grow(labels, weights);
+
+			raw::writed(labels, "./grow_priority/grown");
+		}
+
+		void growAll()
+		{
+			Image<uint8_t> img;
+			//raw::read(img, "./input_data/t1-head_bin_256x256x129.raw");
+			img.ensureSize(1000, 1000, 1000);
+			setValue(img, 255);
+
+			img(110, 90, 63) = 100;
+			img(182, 165, 63) = 200;
+
+			raw::writed(img, "./grow_all/before_grow");
+
+			itl2::growAll(img, (uint8_t)255, (uint8_t)0);
+
+			raw::writed(img, "./grow_all/after_grow");
+		}
+
+		void growComparison()
+		{
+			//hheap();
+			//return;
+
+			
+			//coord_t m = 2;
+			coord_t m = 4;
+			coord_t d = 50;
+			
+			float32_t mf = (float32_t)m;
+			float32_t df = (float32_t)d;
+			//Vec3c delta(30, 30, 0);
+			Vec3c delta(0, 0, 0);
+
+			Image<uint8_t> geometry(m*100, m*100, m*2*d+1);
+			draw(geometry, Sphere<float32_t>(mf*Vec3f(30, 30, df) - Vec3f(delta), mf*11.0f), (uint8_t)255);
+			draw(geometry, Sphere<float32_t>(mf*Vec3f(50, 30, df) - Vec3f(delta), mf*11.0f), (uint8_t)255);
+			draw(geometry, Sphere<float32_t>(mf*Vec3f(60, 70, df) - Vec3f(delta), mf*30.0f), (uint8_t)255);
+			draw(geometry, Sphere<float32_t>(mf*Vec3f(15, 60, df) - Vec3f(delta), mf*20.0f), (uint8_t)255);
+
+			Image<uint8_t> labels(geometry.dimensions());
+			labels(m * Vec3c(25, 30, d) - delta) = 80;
+			labels(m * Vec3c(52, 30, d) - delta) = 120;
+			labels(m * Vec3c(60, 50, d) - delta) = 200;
+
+			labels(m * Vec3c(51, 80, d) - delta) = 250;
+
+			Image<float32_t> weights;
+			distanceTransform(geometry, weights);
+
+			raw::writed(geometry, "./grow_comparison/geometry");
+			
+
+			/*
+			Image<uint16_t> weights;
+			raw::read(weights, "C:/mytemp/big_vessel_segmentation_tests/bin4_piece1.2_100x100x100.raw");
+			Image<uint8_t> labels;
+			raw::read(labels, "C:/mytemp/big_vessel_segmentation_tests/bin4_piece1.2_seeds_100x100x100.raw");
+			divide(labels, 2);
+			*/
+			
+			raw::writed(weights, "./grow_comparison/weights");
+			raw::writed(labels, "./grow_comparison/labels");
+
+			Timer t;
+
+			Image<uint8_t> labelsMeyer;
+			setValue(labelsMeyer, labels);
+			t.start();
+			grow(labelsMeyer, weights);
+			t.stop();
+			cout << "Original version took " << t.getSeconds() << " s." << endl;
+			raw::writed(labelsMeyer, "./grow_comparison/watershed_orig");
+
+			Image<uint8_t> labelsOpt;
+			setValue(labelsOpt, labels);
+			t.start();
+			growCVTypeAlgorithm(labelsOpt, weights);
+			t.stop();
+			cout << "CV type algorithm took " << t.getSeconds() << " s." << endl;
+			raw::writed(labelsOpt, "./grow_comparison/watershed_cv");
+
+			Image<uint8_t> labelsHH;
+			setValue(labelsHH, labels);
+			t.start();
+			growHHeap(labelsHH, weights);
+			t.stop();
+			cout << "CV type algorithm + hheap took " << t.getSeconds() << " s." << endl;
+			raw::writed(labelsHH, "./grow_comparison/watershed_hh");
+
 		}
 	}
 }

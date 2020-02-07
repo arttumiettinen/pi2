@@ -7,35 +7,55 @@
 #include <omp.h>
 #include "io/vol.h"
 #include "io/io.h"
-
+#include "pick.h"
+#include "pilibutilities.h"
+#include "whereamicpp.h"
 #include "commandmacros.h"
+
+using namespace std;
 
 namespace pilib
 {
-	void addSpecialCommands(vector<Command*>& commands)
+	void addSpecialCommands()
 	{
-		commands.insert(commands.end(),
-			{
-			new ClearCommand(),
-			new DistributeCommand(),
-			new EchoCommandsCommand(),
-			new HelloCommand(),
-			new HelpCommand(),
-			new InfoCommand(),
-			new ListCommand(),
-			new LicenseCommand(),
-			new ReadCommand(),
-			new MapRawCommand(),
-			new NewImageCommand(),
-			new ReadBlockCommand(),
-			new ReadRawBlockCommand(),
-			new ReadRawCommand(),
-			new ReadSequenceBlockCommand(),
-			new ReadSequenceCommand(),
-			new ReadVolCommand(),
-			new WaitReturnCommand()
-			}
-		);
+		CommandList::add<ClearCommand>();
+		CommandList::add<DistributeCommand>();
+		CommandList::add<MaxMemoryCommand>();
+		CommandList::add<DelayingCommand>();
+		CommandList::add<PrintTaskScriptsCommand>();
+		CommandList::add<EchoCommandsCommand>();
+		CommandList::add<HelloCommand>();
+		CommandList::add<PrintCommand>();
+		CommandList::add<HelpCommand>();
+		CommandList::add<CommandReferenceCommand>();
+		CommandList::add<InfoCommand>();
+		CommandList::add<ListCommand>();
+		CommandList::add<LicenseCommand>();
+		CommandList::add<ReadCommand>();
+		CommandList::add<ReadSequenceCommand>();
+		CommandList::add<ReadVolCommand>();
+		CommandList::add<WaitReturnCommand>();
+
+		CommandList::add<MapRawCommand>();
+		CommandList::add<MapRaw2Command>();
+
+		CommandList::add<NewImageCommand>();
+		CommandList::add<NewImage2Command>();
+
+		CommandList::add<ReadRawCommand>();
+		CommandList::add<ReadRaw2Command>();
+
+		CommandList::add<ReadBlockCommand>();
+		CommandList::add<ReadBlock2Command>();
+
+		CommandList::add<ReadRawBlockCommand>();
+		CommandList::add<ReadRawBlock2Command>();
+
+		CommandList::add<ReadSequenceBlockCommand>();
+		CommandList::add<ReadSequenceBlock2Command>();
+		
+		ADD_ALL(EnsureSizeCommand);
+		ADD_ALL(EnsureSize2Command);
 	}
 
 
@@ -43,16 +63,19 @@ namespace pilib
 
 	void InfoCommand::run(vector<ParamVariant>& args) const
 	{
-		cout << "Process Image = pi2 Copyright (C) 2018 Arttu Miettinen" << endl;
+		cout << "Process Image = pi2" << endl;
+		cout << "Copyright(C) 2011- Arttu Miettinen" << endl;
 		cout << "This program comes with ABSOLUTELY NO WARRANTY." << endl;
 		cout << "This is free software, and you are welcome to redistribute it" << endl;
 		cout << "under certain conditions; run `license()' command for more details." << endl;
 		cout << endl;
+		cout << "Contact: arttu.miettinen@psi.ch" << endl;
+		cout << endl;
 		cout << "Based on work done at" << endl;
-		cout << "X-ray tomography research group, TOMCAT beamline, Swiss Light Source, Paul Scherrer Institute, Switzerland" << endl;
+		cout << "X-ray tomography research group, TOMCAT beamline, Swiss Light Source (SLS), Paul Scherrer Institute (PSI), Switzerland" << endl;
+		cout << "Institute for Biomedical Engineering, Swiss Federal Institute of Technology Zurich (ETH Zurich), Switzerland" << endl;
 		cout << "Centre d'Imagerie BioMedicale (CIBM), Ecole Polytechnique Federale de Lausanne (EPFL), Switzerland" << endl;
 		cout << "Complex materials research group, Department of Physics, University of Jyvaskyla, Finland" << endl;
-		cout << "Contact: arttu.miettinen@psi.ch" << endl;
 		cout << endl;
 
 		if (sizeof(void*) == 4)
@@ -68,9 +91,118 @@ namespace pilib
 
 	void LicenseCommand::run(vector<ParamVariant>& args) const
 	{
-		cout << "This program is licensed under GNU General Public License Version 3." << endl;
-		cout << "Please see LICENSE.txt bundled with this software or" << endl;
-		cout << "https://www.gnu.org/licenses/gpl-3.0.html for more information." << endl;
+		cout << "This program is licensed under GNU General Public License Version 3:" << endl;
+
+		fs::path path = getModulePath();
+		string gpl3 = readText(path.replace_filename("LICENSE.txt").string(), false);
+		if (gpl3.length() > 0)
+		{
+			cout << endl << gpl3 << endl;
+		}
+		else
+		{
+			cout << "Please see LICENSE.txt bundled with this software or" << endl;
+			cout << "https://www.gnu.org/licenses/gpl-3.0.html for full license text." << endl;
+		}
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This program contains code from PStreams library, licensed under the following license:" << endl;
+		cout << R"END(
+PStreams - POSIX Process I/O for C++
+
+Copyright (C) 2001 - 2017 Jonathan Wakely
+Distributed under the Boost Software License, Version 1.0.
+	
+Boost Software License - Version 1.0 - August 17th, 2003
+
+Permission is hereby granted, free of charge, to any person or organization
+obtaining a copy of the software and accompanying documentation covered by
+this license(the "Software") to use, reproduce, display, distribute,
+execute, and transmit the Software, and to prepare derivative works of the
+Software, and to permit third - parties to whom the Software is furnished to
+do so, all subject to the following :
+
+The copyright notices in the Software and this entire statement, including
+the above license grant, this restriction and the following disclaimer,
+must be included in all copies of the Software, in whole or in part, and
+all derivative works of the Software, unless such copies or derivative
+works are solely in the form of machine - executable object code generated by
+a source language processor.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON - INFRINGEMENT. IN NO EVENT
+SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
+FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+)END" << endl;
+		cout << endl;
+
+
+
+
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This program contains code ported from public-domain reference implementation of JAMA : A Java Matrix Package." << endl;
+		cout << "The original code is available at https://math.nist.gov/javanumerics/jama/" << endl;
+		cout << endl;
+
+
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This program contains code ported from a public-domain library TNT : Template Numerical Toolkit." << endl;
+		cout << "The original code is available at https://math.nist.gov/tnt/" << endl;
+		cout << endl;
+
+
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This program contains optimized median calculation code by N. Devillard." << endl;
+		cout << "The original code is downloadable from http://ndevilla.free.fr/median/ and is licensed under the following statement:" << endl;
+		cout << R"END(
+The following routines have been built from knowledge gathered
+around the Web. I am not aware of any copyright problem with
+them, so use it as you want.
+N. Devillard - 1998
+)END" << endl;
+		cout << endl;
+
+
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This program contains 'whereami' library by Gregory Pakosz, licened under the MIT license:" << endl;
+		cout << R"END(
+Copyright Gregory Pakosz
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files(the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+)END" << endl;
+		cout << endl;
 
 
 
@@ -105,6 +237,7 @@ OF THIS SOFTWARE.
 
 
 
+
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
 		cout << R"END(This program contains code owned by Joachim Kopp, used for some matrix operations and licensed
@@ -118,6 +251,8 @@ arXiv.org: physics/0610206)END" << endl;
 		cout << endl;
 
 
+
+
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
 		cout << "This program contains code from https://github.com/ITHare/util with the following license:" << endl;
@@ -128,7 +263,7 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met :
 
-*Redistributions of source code must retain the above copyright notice, this
+* Redistributions of source code must retain the above copyright notice, this
 list of conditions and the following disclaimer.
 
 * Redistributions in binary form must reproduce the above copyright notice,
@@ -142,7 +277,7 @@ this software without specific prior written permission.
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
 FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
 DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
 SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
@@ -150,6 +285,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.)END" << endl;
 		cout << endl;
+
+
 
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
@@ -175,6 +312,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.)END" << endl;
 		cout << endl;
+
+
 
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
@@ -311,6 +450,10 @@ September 29, 2017)END" << endl;
 		cout << endl;
 
 
+
+
+
+
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
 		cout << "Windows versions of this program contain code from zlib library licensed with the following notice:" << endl;
@@ -318,7 +461,7 @@ September 29, 2017)END" << endl;
 (C)1995 - 2017 Jean - loup Gailly and Mark Adler
 
 This software is provided 'as-is', without any express or implied
-warranty.In no event will the authors be held liable for any damages
+warranty. In no event will the authors be held liable for any damages
 arising from the use of this software.
 
 Permission is granted to anyone to use this software for any purpose,
@@ -333,18 +476,21 @@ appreciated but is not required.
 misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 
-Jean - loup Gailly        Mark Adler
+Jean-loup Gailly        Mark Adler
 jloup@gzip.org          madler@alumni.caltech.edu
 
-If you use the zlib library in a product, we would appreciate * not* receiving
-lengthy legal documents to sign.The sources are provided for free but without
-warranty of any kind.The library has been entirely written by Jean - loup
-Gailly and Mark Adler; it does not include third - party code.
+If you use the zlib library in a product, we would appreciate *not* receiving
+lengthy legal documents to sign. The sources are provided for free but without
+warranty of any kind. The library has been entirely written by Jean-loup
+Gailly and Mark Adler; it does not include third-party code.
 
 If you redistribute modified sources, we would appreciate that you include in
-the file ChangeLog history information documenting your changes.Please read
+the file ChangeLog history information documenting your changes. Please read
 the FAQ for more information on the distribution of modified source versions.)END" << endl;
 		cout << endl;
+
+
+
 
 
 		cout << endl << endl;
@@ -362,58 +508,13 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		for (const string& name : system->getImageNames())
 		{
 			ImageBase* img = system->getImage(name);
-			auto img8 = dynamic_cast<Image<uint8_t>*>(img);
-			auto img16 = dynamic_cast<Image<uint16_t>*>(img);
-			auto img32 = dynamic_cast<Image<uint32_t>*>(img);
-			auto img64 = dynamic_cast<Image<uint64_t>*>(img);
-			auto imgf32 = dynamic_cast<Image<float32_t>*>(img);
-			auto imgC32 = dynamic_cast<Image<complex32_t>*>(img);
-
-			Vec3c dimensions = img->dimensions();
-			ImageDataType dt;
-			double pixelSize = 0;
-
-			if (img8)
-			{
-				dt = ImageDataType::UInt8;
-				pixelSize = 1;
-			}
-			else if (img16)
-			{
-				dt = ImageDataType::UInt16;
-				pixelSize = 2;
-			}
-			else if (img32)
-			{
-				dt = ImageDataType::UInt32;
-				pixelSize = 4;
-			}
-			else if (img64)
-			{
-				dt = ImageDataType::UInt64;
-				pixelSize = 8;
-			}
-			else if (imgf32)
-			{
-				dt = ImageDataType::Float32;
-				pixelSize = 4;
-			}
-			else if (imgC32)
-			{
-				dt = ImageDataType::Complex32;
-				pixelSize = 8;
-			}
-			else
-			{
-				dimensions = Vec3c(0, 0, 0);
-				dt = ImageDataType::Unknown;
-				pixelSize = 0;
-			}
 			
-			double dataSize = dimensions.x * dimensions.y * dimensions.z * pixelSize;
+			Vec3c dimensions = img->dimensions();
+			size_t pixelSize = img->pixelSize();
+			size_t dataSize = img->pixelCount() * pixelSize;
 			totalSize += dataSize;
 
-			cout << name << ", " << dimensions << ", " << itl2::toString(dt) << ", " << bytesToString(dataSize) << endl;
+			cout << name << ", " << dimensions << ", " << itl2::toString(img->dataType()) << ", " << bytesToString((double)dataSize) << endl;
 		}
 		cout << "Total " << bytesToString(totalSize) << endl;
 	}
@@ -425,62 +526,24 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		for (const string& name : system->getDistributedImageNames())
 		{
 			DistributedImageBase* img = system->getDistributedImage(name);
-			auto img8 = dynamic_cast<DistributedImage<uint8_t>*>(img);
-			auto img16 = dynamic_cast<DistributedImage<uint16_t>*>(img);
-			auto img32 = dynamic_cast<DistributedImage<uint32_t>*>(img);
-			auto img64 = dynamic_cast<DistributedImage<uint64_t>*>(img);
-			auto imgf32 = dynamic_cast<DistributedImage<float32_t>*>(img);
-			auto imgC32 = dynamic_cast<DistributedImage<complex32_t>*>(img);
 
 			Vec3c dimensions = img->dimensions();
-			ImageDataType dt;
-			double pixelSize = 0;
-
-			if (img8)
-			{
-				dt = ImageDataType::UInt8;
-				pixelSize = 1;
-			}
-			else if (img16)
-			{
-				dt = ImageDataType::UInt16;
-				pixelSize = 2;
-			}
-			else if (img32)
-			{
-				dt = ImageDataType::UInt32;
-				pixelSize = 4;
-			}
-			else if (img64)
-			{
-				dt = ImageDataType::UInt64;
-				pixelSize = 8;
-			}
-			else if (imgf32)
-			{
-				dt = ImageDataType::Float32;
-				pixelSize = 4;
-			}
-			else if (imgC32)
-			{
-				dt = ImageDataType::Complex32;
-				pixelSize = 8;
-			}
-			else
-			{
-				dimensions = Vec3c(0, 0, 0);
-				dt = ImageDataType::Unknown;
-				pixelSize = 0;
-			}
-
-			double dataSize = dimensions.x * dimensions.y * dimensions.z * pixelSize;
+			size_t pixelSize = img->pixelSize();
+			size_t dataSize = img->pixelCount() * pixelSize;
 			totalSize += dataSize;
 
-			cout << name << ", " << dimensions << ", " << itl2::toString(dt) << ", " << bytesToString(dataSize) << endl;
+			cout << name << ", " << dimensions << ", " << itl2::toString(img->dataType()) << ", " << bytesToString((double)dataSize) << endl;
 		}
 
 		return vector<string>();
 	}
+
+	
+
+
+	
+
+
 
 	void NewImageCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
@@ -490,22 +553,9 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
 
-		ImageDataType dt = fromString<ImageDataType>(dts);
+		Vec3c dimensions(w, h, d);
 
-		if (dt == ImageDataType::UInt8)
-			system->replaceImage(name, new itl2::Image<uint8_t>(w, h, d));
-		else if (dt == ImageDataType::UInt16)
-			system->replaceImage(name, new itl2::Image<uint16_t>(w, h, d));
-		else if (dt == ImageDataType::UInt32)
-			system->replaceImage(name, new itl2::Image<uint32_t>(w, h, d));
-		else if (dt == ImageDataType::UInt64)
-			system->replaceImage(name, new itl2::Image<uint64_t>(w, h, d));
-		else if (dt == ImageDataType::Float32)
-			system->replaceImage(name, new itl2::Image<float32_t>(w, h, d));
-		else if(dt == ImageDataType::Complex32)
-			system->replaceImage(name, new itl2::Image<complex32_t>(w, h, d));
-		else
-			throw ParseException(string("Invalid data type: ") + dts);
+		pick<CreateImage>(dts, dimensions, name, system);
 	}
 
 	vector<string> NewImageCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
@@ -516,418 +566,349 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
 
-		ImageDataType dt = fromString<ImageDataType>(dts);
-
+		Vec3c dimensions(w, h, d);
 		PISystem* system = distributor.getSystem();
 
-		if (dt == ImageDataType::UInt8)
-			system->replaceDistributedImage(name, new DistributedImage<uint8_t>(name, w, h, d));
-		else if (dt == ImageDataType::UInt16)
-			system->replaceDistributedImage(name, new DistributedImage<uint16_t>(name, w, h, d));
-		else if (dt == ImageDataType::UInt32)
-			system->replaceDistributedImage(name, new DistributedImage<uint32_t>(name, w, h, d));
-		else if (dt == ImageDataType::UInt64)
-			system->replaceDistributedImage(name, new DistributedImage<uint64_t>(name, w, h, d));
-		else if (dt == ImageDataType::Float32)
-			system->replaceDistributedImage(name, new DistributedImage<float32_t>(name, w, h, d));
-		else if (dt == ImageDataType::Complex32)
-			system->replaceDistributedImage(name, new DistributedImage<complex32_t>(name, w, h, d));
-		else
-			throw ParseException(string("Invalid data type: ") + dts);
+		pick<CreateEmptyDistributedImage>(dts, name, dimensions, system);
 
 		return vector<string>();
 	}
 
-	/**
-	Parse arguments from parameter vector.
-	Throws exception if arguments cannot be parsed or if file dimension parsing is requested but cannot be done.
-	*/
-	void ReadRawCommand::parseArgs(vector<ParamVariant>& args, string& name, string& fname, coord_t& w, coord_t& h, coord_t& d, ImageDataType& dt)
+	void NewImage2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
-		name = pop<string>(args);
-		fname = pop<string>(args);
+		string name = pop<string>(args);
 		string dts = pop<string>(args);
-		w = pop<coord_t>(args);
-		h = pop<coord_t>(args);
-		d = pop<coord_t>(args);
+		Vec3c dimensions = pop<Vec3c>(args);
 
-		dt = fromString<ImageDataType>(dts);
-
-		// Parse dimensions from file name if no dimensions are provided
-		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
-		{
-			Vec3c dims;
-			ImageDataType dt2;
-			if (!raw::getInfo(fname, dims, dt2))
-				throw ParseException(string("Unable to find dimensions from file name: ") + fname);
-
-			if (dt == ImageDataType::Unknown)
-				dt = dt2;
-
-			w = dims.x;
-			h = dims.y;
-			d = dims.z;
-		}
+		pick<CreateImage>(dts, dimensions, name, system);
 	}
 
+	vector<string> NewImage2Command::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string dts = pop<string>(args);
+		Vec3c dimensions = pop<Vec3c>(args);
+
+		PISystem* system = distributor.getSystem();
+
+		pick<CreateEmptyDistributedImage>(dts, name, dimensions, system);
+
+		return vector<string>();
+	}
+
+
+
+
+	template<typename pixel_t> struct CreateDistributedImageFromFile
+	{
+		static void run(const string& imgName, const Vec3c& dimensions, const string& filename, PISystem* system)
+		{
+			shared_ptr<DistributedImageBase> ptr = make_shared<DistributedImage<pixel_t> >(*system->getDistributor(), imgName, dimensions, filename);
+			system->replaceDistributedImage(imgName, ptr);
+		}
+	};
+	
+
+
+	template<typename pixel_t> struct CreateImageAndRead
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename)
+		{
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			io::read<pixel_t>(img, filename);
+		}
+	};
 
 	void ReadCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
 		string name = pop<string>(args);
 		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+
+		ImageDataType dt = fromString<ImageDataType>(dts);
 
 		Vec3c dimensions;
-		ImageDataType dt;
-		if (!io::getInfo(filename, dimensions, dt))
-			throw ITLException(string("File type cannot be automatically recognized: ") + filename);
+		ImageDataType dt2;
+		string reason;
+		if (!io::getInfo(filename, dimensions, dt2, reason))
+			throw ITLException(string("File type cannot be automatically recognized, the given template does not uniquely identify any file, or the file is not found: ") + filename + ". \n" + reason);
 
-		if (dt == ImageDataType::UInt8)
-		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(dimensions);
-			system->replaceImage(name, img);
-			io::read(*img, filename);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(dimensions);
-			system->replaceImage(name, img);
-			io::read(*img, filename);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(dimensions);
-			system->replaceImage(name, img);
-			io::read(*img, filename);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(dimensions);
-			system->replaceImage(name, img);
-			io::read(*img, filename);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(dimensions);
-			system->replaceImage(name, img);
-			io::read(*img, filename);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(dimensions);
-			system->replaceImage(name, img);
-			io::read(*img, filename);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+		if (dt == ImageDataType::Unknown)
+			dt = dt2;
+		
+		pick<CreateImageAndRead>(dt, dimensions, name, system, filename);
 	}
 
+
 	vector<string> ReadCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		Vec3c dimensions;
+		ImageDataType dt2;
+		string reason;
+		if (!io::getInfo(filename, dimensions, dt2, reason))
+			throw ITLException(string("File type cannot be automatically recognized, the given template does not uniquely identify any file, or the file is not found: ") + filename + ". \n" + reason);
+
+		if (dt == ImageDataType::Unknown)
+			dt = dt2;
+
+		pick<CreateDistributedImageFromFile>(dt, name, dimensions, filename, distributor.getSystem());
+
+		return vector<string>();
+	}
+
+	
+
+
+	///**
+	//Parse arguments from parameter vector.
+	//Throws exception if arguments cannot be parsed or if file dimension parsing is requested but cannot be done.
+	//*/
+	//void ReadRawCommand::parseArgs(vector<ParamVariant>& args, string& name, string& fname, coord_t& w, coord_t& h, coord_t& d, ImageDataType& dt)
+	//{
+	//	name = pop<string>(args);
+	//	fname = pop<string>(args);
+	//	string dts = pop<string>(args);
+	//	w = pop<coord_t>(args);
+	//	h = pop<coord_t>(args);
+	//	d = pop<coord_t>(args);
+
+	//	dt = fromString<ImageDataType>(dts);
+
+	//	// Parse dimensions from file name if no dimensions are provided
+	//	if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
+	//	{
+	//		Vec3c dims;
+	//		ImageDataType dt2;
+	//		string reason;
+	//		if (!raw::getInfo(fname, dims, dt2, reason))
+	//			throw ParseException(string("Unable to find dimensions from file name or file not found: ") + fname + ". " + reason);
+
+	//		// Not required in this command. This is done later in raw::read.
+	//		//internals::expandRawFilename(filename);
+
+	//		if (dt == ImageDataType::Unknown)
+	//			dt = dt2;
+
+	//		w = dims.x;
+	//		h = dims.y;
+	//		d = dims.z;
+	//	}
+	//}
+
+	/**
+	Parse arguments from parameter vector.
+	Throws exception if arguments cannot be parsed or if file dimension parsing is requested but cannot be done.
+	*/
+	void parseArgs(string& name, string& fname, Vec3c& dimensions, ImageDataType& dt)
+	{
+		// Parse dimensions from file name if no dimensions are provided
+		if (dimensions.x <= 0 || dimensions.y <= 0 || dimensions.z <= 0 || dt == ImageDataType::Unknown)
+		{
+			Vec3c dims;
+			ImageDataType dt2;
+			string reason;
+			if (!raw::getInfo(fname, dims, dt2, reason))
+				throw ParseException(string("Unable to find dimensions from file name or file not found: ") + fname + ". " + reason);
+
+			// Not required in this command. This is done later in raw::read.
+			//internals::expandRawFilename(filename);
+
+			if (dt == ImageDataType::Unknown)
+				dt = dt2;
+
+			dimensions = dims;
+		}
+	}
+
+	template<typename pixel_t> struct CreateImageAndReadRaw
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename)
+		{
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			raw::read<pixel_t>(img, filename);
+		}
+	};
+
+	void ReadRawCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+		coord_t w = pop<coord_t>(args);
+		coord_t h = pop<coord_t>(args);
+		coord_t d = pop<coord_t>(args);
+
+		Vec3c dimensions(w, h, d);
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		parseArgs(name, filename, dimensions, dt);
+
+		pick<CreateImageAndReadRaw>(dt, dimensions, name, system, filename);
+	}
+
+	vector<string> ReadRawCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+		coord_t w = pop<coord_t>(args);
+		coord_t h = pop<coord_t>(args);
+		coord_t d = pop<coord_t>(args);
+
+		Vec3c dimensions(w, h, d);
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		parseArgs(name, filename, dimensions, dt);
+
+		pick<CreateDistributedImageFromFile>(dt, name, dimensions, filename, distributor.getSystem());
+
+		return vector<string>();
+	}
+
+
+
+
+	void ReadRaw2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+		Vec3c dimensions = pop<Vec3c>(args);
+		
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		parseArgs(name, filename, dimensions, dt);
+
+		pick<CreateImageAndReadRaw>(dt, dimensions, name, system, filename);
+	}
+
+	vector<string> ReadRaw2Command::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		string dts = pop<string>(args);
+		Vec3c dimensions = pop<Vec3c>(args);
+
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		parseArgs(name, filename, dimensions, dt);
+
+		pick<CreateDistributedImageFromFile>(dt, name, dimensions, filename, distributor.getSystem());
+
+		return vector<string>();
+	}
+
+
+
+
+
+
+
+
+
+
+	template<typename pixel_t> struct CreateImageAndReadSequence
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename)
+		{
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			sequence::read<pixel_t>(img, filename);
+		}
+	};
+
+	void ReadSequenceCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+
+		coord_t w, h, d;
+		ImageDataType dt;
+		string reason;
+		if (!sequence::getInfo(filename, w, h, d, dt, reason))
+			throw ITLException(string("Unable to recognize sequence: ") + filename + ". " + reason);
+
+		Vec3c dimensions(w, h, d);
+
+		pick<CreateImageAndReadSequence>(dt, dimensions, name, system, filename);
+	}
+
+	vector<string> ReadSequenceCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string filename = pop<string>(args);
+		
+		coord_t w, h, d;
+		ImageDataType dt;
+		string reason;
+		if (!sequence::getInfo(filename, w, h, d, dt, reason))
+			throw ITLException(string("Unable to recognize sequence: ") + filename + ". " + reason);
+
+		Vec3c dimensions(w, h, d);
+
+		pick<CreateDistributedImageFromFile>(dt, name, dimensions, filename, distributor.getSystem());
+
+		return vector<string>();
+	}
+
+
+
+	template<typename pixel_t> struct CreateImageAndReadVol
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename)
+		{
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			vol::read<pixel_t>(img, filename);
+		}
+	};
+
+	void ReadVolCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
 		string name = pop<string>(args);
 		string filename = pop<string>(args);
 
 		Vec3c dimensions;
 		ImageDataType dt;
-		if (!io::getInfo(filename, dimensions, dt))
-			throw ITLException(string("File type cannot be automatically recognized: ") + filename);
-
-		PISystem* system = distributor.getSystem();
-
-		if (dt == ImageDataType::UInt8)
-		{
-			DistributedImage<uint8_t>* img = new DistributedImage<uint8_t>(name, dimensions, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			DistributedImage<uint16_t>* img = new DistributedImage<uint16_t>(name, dimensions, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			DistributedImage<uint32_t>* img = new DistributedImage<uint32_t>(name, dimensions, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			DistributedImage<uint64_t>* img = new DistributedImage<uint64_t>(name, dimensions, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			DistributedImage<float32_t>* img = new DistributedImage<float32_t>(name, dimensions, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			DistributedImage<complex32_t>* img = new DistributedImage<complex32_t>(name, dimensions, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
-
-		return vector<string>();
-	}
-
-
-	void ReadRawCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
-	{
-		string name;
-		string filename;
-		coord_t w;
-		coord_t h;
-		coord_t d;
-		ImageDataType dt;
-		parseArgs(args, name, filename, w, h, d, dt);
-
-		if (dt == ImageDataType::UInt8)
-		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(w, h, d);
-			system->replaceImage(name, img);
-			raw::read(*img, filename);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(w, h, d);
-			system->replaceImage(name, img);
-			raw::read(*img, filename);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(w, h, d);
-			system->replaceImage(name, img);
-			raw::read(*img, filename);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(w, h, d);
-			system->replaceImage(name, img);
-			raw::read(*img, filename);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(w, h, d);
-			system->replaceImage(name, img);
-			raw::read(*img, filename);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(w, h, d);
-			system->replaceImage(name, img);
-			raw::read(*img, filename);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
-	}
-
-	vector<string> ReadRawCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
-	{
-		string name;
-		string filename;
-		coord_t w;
-		coord_t h;
-		coord_t d;
-		ImageDataType dt;
-		parseArgs(args, name, filename, w, h, d, dt);
-
-		PISystem* system = distributor.getSystem();
-
-		if (dt == ImageDataType::UInt8)
-		{
-			DistributedImage<uint8_t>* img = new DistributedImage<uint8_t>(name, w, h, d, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			DistributedImage<uint16_t>* img = new DistributedImage<uint16_t>(name, w, h, d, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			DistributedImage<uint32_t>* img = new DistributedImage<uint32_t>(name, w, h, d, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			DistributedImage<uint64_t>* img = new DistributedImage<uint64_t>(name, w, h, d, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			DistributedImage<float32_t>* img = new DistributedImage<float32_t>(name, w, h, d, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			DistributedImage<complex32_t>* img = new DistributedImage<complex32_t>(name, w, h, d, filename);
-			system->replaceDistributedImage(name, img);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
-
-		return vector<string>();
-	}
-
-	void ReadSequenceCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
-	{
-		string name = pop<string>(args);
-		string fname = pop<string>(args);
-		//coord_t z0 = pop<coord_t>(args);
-		//coord_t z1 = pop<coord_t>(args);
-
-		//if (z1 < 0)
-		//	z1 = numeric_limits<coord_t>::max();
-
-		coord_t w, h, d;
-		ImageDataType dt;
-		sequence::getInfo(fname, w, h, d, dt);
-
-		//math::clamp<coord_t>(z0, 0, d - 1);
-		//math::clamp<coord_t>(z1, 0, d - 1);
-
-		//d = z1 - z0 + 1;
-
-		if (dt == ImageDataType::UInt8)
-		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(w, h, d);
-			system->replaceImage(name, img);
-			sequence::read(*img, fname);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(w, h, d);
-			system->replaceImage(name, img);
-			sequence::read(*img, fname);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(w, h, d);
-			system->replaceImage(name, img);
-			sequence::read(*img, fname);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(w, h, d);
-			system->replaceImage(name, img);
-			sequence::read(*img, fname);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(w, h, d);
-			system->replaceImage(name, img);
-			sequence::read(*img, fname);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(w, h, d);
-			system->replaceImage(name, img);
-			sequence::read(*img, fname);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
-	}
-
-	vector<string> ReadSequenceCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
-	{
-		string name = pop<string>(args);
-		string fname = pop<string>(args);
-		
-		coord_t w, h, d;
-		ImageDataType dt;
-		sequence::getInfo(fname, w, h, d, dt);
-
-		PISystem* system = distributor.getSystem();
-		
-		if (dt == ImageDataType::UInt8)
-		{
-			DistributedImage<uint8_t>* img = new DistributedImage<uint8_t>(name, w, h, d, fname);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			DistributedImage<uint16_t>* img = new DistributedImage<uint16_t>(name, w, h, d, fname);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			DistributedImage<uint32_t>* img = new DistributedImage<uint32_t>(name, w, h, d, fname);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			DistributedImage<uint64_t>* img = new DistributedImage<uint64_t>(name, w, h, d, fname);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			DistributedImage<float32_t>* img = new DistributedImage<float32_t>(name, w, h, d, fname);
-			system->replaceDistributedImage(name, img);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			DistributedImage<complex32_t>* img = new DistributedImage<complex32_t>(name, w, h, d, fname);
-			system->replaceDistributedImage(name, img);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
-
-		return vector<string>();
-	}
-
-	void ReadVolCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
-	{
-		string name = pop<string>(args);
-		string fname = pop<string>(args);
-
-		Vec3c dimensions;
-		ImageDataType dt;
 		string endianness;
 		size_t headerSize;
-		if (!vol::getInfo(fname, dimensions, dt, endianness, headerSize))
-			throw ITLException(string("Not a .vol file: ") + fname);
+		string reason;
+		if (!vol::getInfo(filename, dimensions, dt, endianness, headerSize, reason))
+			throw ITLException(string("Not a .vol file: ") + filename + ". " + reason);
 
-		coord_t w = dimensions.x;
-		coord_t h = dimensions.y;
-		coord_t d = dimensions.z;
+		pick<CreateImageAndReadVol>(dt, dimensions, name, system, filename);
+	}
 
-		if (dt == ImageDataType::UInt8)
+
+
+
+	template<typename pixel_t> struct CreateImageAndReadBlock
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
 		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(w, h, d);
-			system->replaceImage(name, img);
-			vol::read(*img, fname);
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			io::readBlock<pixel_t>(img, filename, blockStart, true);
 		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(w, h, d);
-			system->replaceImage(name, img);
-			vol::read(*img, fname);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(w, h, d);
-			system->replaceImage(name, img);
-			vol::read(*img, fname);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(w, h, d);
-			system->replaceImage(name, img);
-			vol::read(*img, fname);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(w, h, d);
-			system->replaceImage(name, img);
-			vol::read(*img, fname);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(w, h, d);
-			system->replaceImage(name, img);
-			vol::read(*img, fname);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+	};
+
+	void readBlock(string name, string fname, Vec3c blockStart, Vec3c blockDims, string dts, PISystem* system)
+	{
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		Vec3c dims;
+		ImageDataType dt2;
+		string reason;
+		if (!io::getInfo(fname, dims, dt2, reason))
+			throw ITLException(string("File type cannot be automatically recognized, the given template does not uniquely identify any file, or the file is not found: ") + fname + ". \n" + reason);
+
+		if (dt == ImageDataType::Unknown)
+			dt = dt2;
+
+		pick<CreateImageAndReadBlock>(dt, blockDims, name, system, fname, blockStart);
 	}
 
 	void ReadBlockCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
@@ -940,50 +921,59 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t bw = pop<coord_t>(args);
 		coord_t bh = pop<coord_t>(args);
 		coord_t bd = pop<coord_t>(args);
+		string dts = pop<string>(args);
 
-		Vec3c dims;
-		ImageDataType dt;
-		if (!io::getInfo(fname, dims, dt))
-			throw ITLException(string("Unable to read file dimensions: ") + fname);
+		Vec3c blockStart(x, y, z);
+		Vec3c blockDims(bw, bh, bd);
 
-		if (dt == ImageDataType::UInt8)
+		readBlock(name, fname, blockStart, blockDims, dts, system);
+	}
+
+	void ReadBlock2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		Vec3c blockStart = pop<Vec3c>(args);
+		Vec3c blockDims = pop<Vec3c>(args);
+		string dts = pop<string>(args);
+
+		readBlock(name, fname, blockStart, blockDims, dts, system);
+	}
+
+
+
+
+	template<typename pixel_t> struct CreateImageAndReadRawBlock
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& fileDims, const Vec3c& blockStart)
 		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			raw::readBlockNoParse<pixel_t>(img, filename, fileDims, blockStart, true);
 		}
-		else if (dt == ImageDataType::UInt16)
+	};
+
+	void readRawBlock(string name, string fname, const Vec3c& blockStart, const Vec3c& blockDims, Vec3c fileDims, ImageDataType dt, PISystem* system)
+	{
+		// Parse dimensions from file name if no dimensions are provided
+		if (fileDims.x <= 0 || fileDims.y <= 0 || fileDims.z <= 0 || dt == ImageDataType::Unknown)
 		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			io::readBlock(*img, fname, Vec3c(x, y, z), true);
+			Vec3c dims;
+			ImageDataType dt2;
+			string reason;
+			if (!raw::getInfo(fname, dims, dt2, reason))
+				throw ParseException(string("Unable to read file: ") + fname + ". " + reason);
+
+			raw::internals::expandRawFilename(fname);
+
+			if (dt == ImageDataType::Unknown)
+				dt = dt2;
+
+			fileDims.x = dims.x;
+			fileDims.y = dims.y;
+			fileDims.z = dims.z;
 		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			io::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			io::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			io::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			io::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+
+		pick<CreateImageAndReadRawBlock>(dt, blockDims, name, system, fname, fileDims, blockStart);
 	}
 
 	void ReadRawBlockCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
@@ -1003,61 +993,35 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 		ImageDataType dt = fromString<ImageDataType>(dts);
 
-		// Parse dimensions from file name if no dimensions are provided
-		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
-		{
-			Vec3c dims;
-			ImageDataType dt2;
-			if (!raw::getInfo(fname, dims, dt2))
-				throw ParseException(string("Unable to find dimensions from file name: ") + fname);
-
-			if (dt == ImageDataType::Unknown)
-				dt = dt2;
-
-			w = dims.x;
-			h = dims.y;
-			d = dims.z;
-		}
-
-		if (dt == ImageDataType::UInt8)
-		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			raw::readBlockNoParse(*img, fname, Vec3c(w, h, d), Vec3c(x, y, z), true);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+		readRawBlock(name, fname, Vec3c(x, y, z), Vec3c(bw, bh, bd), Vec3c(w, h, d), dt, system);
 	}
+
+	void ReadRawBlock2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		Vec3c blockStart = pop<Vec3c>(args);
+		Vec3c blockDims = pop<Vec3c>(args);
+		string dts = pop<string>(args);
+		Vec3c fileDims = pop<Vec3c>(args);
+
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		readRawBlock(name, fname, blockStart, blockDims, fileDims, dt, system);
+	}
+
+
+
+
+
+	template<typename pixel_t> struct CreateImageAndReadSequenceBlock
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
+		{
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			sequence::readBlock<pixel_t>(img, filename, blockStart, true);
+		}
+	};
 
 	void ReadSequenceBlockCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
@@ -1072,47 +1036,90 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 		coord_t w, h, d;
 		ImageDataType dt;
-		sequence::getInfo(fname, w, h, d, dt);
+		string reason;
+		if(!sequence::getInfo(fname, w, h, d, dt, reason))
+			throw ParseException(string("Unable to read sequence: ") + fname + ". " + reason);
 
-		if (dt == ImageDataType::UInt8)
+		Vec3c blockDims(bw, bh, bd);
+
+		Vec3c blockStart(x, y, z);
+
+		pick<CreateImageAndReadSequenceBlock>(dt, blockDims, name, system, fname, blockStart);
+	}
+
+	void ReadSequenceBlock2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		Vec3c blockStart = pop<Vec3c>(args);
+		Vec3c blockDims = pop<Vec3c>(args);
+		
+		coord_t w, h, d;
+		ImageDataType dt;
+		string reason;
+		if(!sequence::getInfo(fname, w, h, d, dt, reason))
+			throw ParseException(string("Unable to read sequence: ") + fname + ". " + reason);
+
+		pick<CreateImageAndReadSequenceBlock>(dt, blockDims, name, system, fname, blockStart);
+	}
+
+
+
+	template<typename pixel_t> struct CreateImageAndMapRaw
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, const string& filename, bool readOnly, PISystem* system)
 		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
+			shared_ptr<itl2::Image<pixel_t>> img = make_shared<Image<pixel_t>>(filename, readOnly, dimensions);
+			system->replaceImage(imgName, img);
 		}
-		else if (dt == ImageDataType::UInt16)
+	};
+
+
+	void mapRaw(const string& name, string fname, const string& dts, coord_t w, coord_t h, coord_t d, bool readOnly, PISystem* system)
+	{
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		// Parse dimensions from file name if no dimensions are provided
+		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
 		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(bw, bh, bd);
-			system->replaceImage(name, img);
-			sequence::readBlock(*img, fname, Vec3c(x, y, z), true);
+			Vec3c dims;
+			ImageDataType dt2;
+			string reason;
+			if (raw::getInfo(fname, dims, dt2, reason))
+			{
+				// File is found, use that.
+				raw::internals::expandRawFilename(fname);
+
+				if (dt == ImageDataType::Unknown)
+					dt = dt2;
+
+				w = dims.x;
+				h = dims.y;
+				d = dims.z;
+
+				// Make sure that the fname is just the prefix.
+				fname = itl2::getPrefix(fname);
+			}
+			else
+			{
+				// No file found, create new image with (1, 1, 1) dimensions and fname as prefix.
+				w = 1;
+				h = 1;
+				d = 1;
+				//throw ParseException(string("Unable to find dimensions from file name or file not found: ") + fname);
+			}
 		}
 		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+		{
+			// Dimensions are given, the file name is assumed to be a prefix.
+			// Everything should be ok.
+		}
+
+		Vec3c dimensions(w, h, d);
+
+		pick<CreateImageAndMapRaw>(dt, dimensions, name, fname, readOnly, system);
 	}
+
 
 	void MapRawCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
@@ -1122,73 +1129,38 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		coord_t w = pop<coord_t>(args);
 		coord_t h = pop<coord_t>(args);
 		coord_t d = pop<coord_t>(args);
+		bool readOnly = pop<bool>(args);
 
-		ImageDataType dt = fromString<ImageDataType>(dts);
-
-		// Parse dimensions from file name if no dimensions are provided
-		if (w <= 0 || h <= 0 || d <= 0 || dt == ImageDataType::Unknown)
-		{
-			Vec3c dims;
-			ImageDataType dt2;
-			if (!raw::getInfo(fname, dims, dt2))
-				throw ParseException(string("Unable to find dimensions from file name: ") + fname);
-
-			if (dt == ImageDataType::Unknown)
-				dt = dt2;
-
-			w = dims.x;
-			h = dims.y;
-			d = dims.z;
-		}
-
-		if (dt == ImageDataType::UInt8)
-		{
-			itl2::Image<uint8_t>* img = new itl2::Image<uint8_t>(fname, w, h, d);
-			system->replaceImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt16)
-		{
-			itl2::Image<uint16_t>* img = new itl2::Image<uint16_t>(fname, w, h, d);
-			system->replaceImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt32)
-		{
-			itl2::Image<uint32_t>* img = new itl2::Image<uint32_t>(fname, w, h, d);
-			system->replaceImage(name, img);
-		}
-		else if (dt == ImageDataType::UInt64)
-		{
-			itl2::Image<uint64_t>* img = new itl2::Image<uint64_t>(fname, w, h, d);
-			system->replaceImage(name, img);
-		}
-		else if (dt == ImageDataType::Float32)
-		{
-			itl2::Image<float32_t>* img = new itl2::Image<float32_t>(fname, w, h, d);
-			system->replaceImage(name, img);
-		}
-		else if (dt == ImageDataType::Complex32)
-		{
-			itl2::Image<complex32_t>* img = new itl2::Image<complex32_t>(fname, w, h, d);
-			system->replaceImage(name, img);
-		}
-		else
-			throw ParseException(string("Invalid data type: ") + itl2::toString(dt));
+		mapRaw(name, fname, dts, w, h, d, readOnly, system);
 	}
+
+	void MapRaw2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		string dts = pop<string>(args);
+		Vec3c dims = pop<Vec3c>(args);
+		bool readOnly = pop<bool>(args);
+
+		mapRaw(name, fname, dts, dims.x, dims.y, dims.z, readOnly, system);
+	}
+
+
 
 	void ClearCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
 		string name = pop<string>(args);
 		if (name != "")
 		{
-			system->replaceImage(name, 0);
-			system->replaceDistributedImage(name, 0);
+			system->replaceImage(name, nullptr);
+			system->replaceDistributedImage(name, nullptr);
 		}
 		else
 		{
 			for (auto name : system->getImageNames())
 			{
-				system->replaceImage(name, 0);
-				system->replaceDistributedImage(name, 0);
+				system->replaceImage(name, nullptr);
+				system->replaceDistributedImage(name, nullptr);
 			}
 		}
 	}
@@ -1197,58 +1169,79 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	{
 		PISystem* system = distributor.getSystem();
 		runInternal(system, args);
-		//string name = pop<string>(args);
-		//if (name != "")
-		//{
-		//	system->replaceDistributedImage(name, 0);
-		//}
-		//else
-		//{
-		//	for (auto name : system->getDistributedImageNames())
-		//		system->replaceDistributedImage(name, 0);
-		//}
 
 		return vector<string>();
 	}
 
-	void HelpCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	string HelpCommand::run(const string& name, HelpFormat format) const
+	{
+		vector<string> topics = CommandList::help(name, format);
+
+		stringstream out;
+
+		if (format == HelpFormat::Rst)
+		{
+			out << ".. _" << name << ":" << endl << endl;
+			printTitle(out, name, 0);
+
+			if (topics.size() > 1)
+				out << "There are " << topics.size() << " forms of this command." << endl << endl;
+		}
+
+		for (size_t n = 0; n < topics.size(); n++)
+		{
+			if (n > 0)
+				out << endl;
+			out << topics[n];
+		}
+
+		return out.str();
+	}
+
+	void HelpCommand::run(vector<ParamVariant>& args) const
 	{
 		string name = pop<string>(args);
-		string term = pop<string>(args);
+		//string term = pop<string>(args);
+		string sformat = pop<string>(args);
+
+		// TODO: Do this with HelpFormat fromString(const string& str)
+		HelpFormat format = HelpFormat::Text;
+		toLower(sformat);
+		if (sformat == "rst" || sformat == "restructuredtext")
+			format = HelpFormat::Rst;
+
 
 		if (name.length() > 0)
 		{
-			vector<string> topics = system->getHelp(name);
+			string help = run(name, format);
 
-			if (topics.size() <= 0)
+			if (help.length() > 0)
+			{
+				cout << help << endl;
+			}
+			else
 			{
 				cout << "Command " << name << " not found." << endl;
-				return;
-			}
 
-			int printedCount = 0;
-			for (size_t n = 0; n < topics.size(); n++)
-			{
-				if (term.length() <= 0 || topics[n].find(term, 0) < topics[n].length())
+				vector<string> apro = CommandList::apropos(name);
+				if (apro.size() > 0)
 				{
-					if (n > 0)
-						cout << endl;
-					//	cout << "--------------------" << endl << endl;
-					cout << topics[n];
-					printedCount++;
+					cout << "Maybe one of these commands is related:" << endl;
+					for (size_t n = 0; n < apro.size(); n++)
+					{
+						cout << apro[n] << endl;
+					}
+					cout << "Use help(command_name) to retrieve help for specific command." << endl;
 				}
-			}
 
-			if (printedCount <= 0)
-			{
-				cout << "No topics contained term " << term << "." << endl;
+				return;
 			}
 		}
 		else
 		{
 			cout << "List of commands follows. Use help(command_name) to retrieve help for specific command." << endl << endl;
 
-			cout << system->commandList(true) << endl;
+			cout << CommandList::list(true) << endl;
 		}
 
 	}
@@ -1260,9 +1253,63 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		system->showCommands(echo, timing);
 	}
 
+	void DelayingCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		bool enable = pop<bool>(args);
+		if(system->getDistributor())
+			system->getDistributor()->delaying(enable);
+	}
+
+	void PrintTaskScriptsCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		bool enable = pop<bool>(args);
+		if (system->getDistributor())
+			system->getDistributor()->showScripts(enable);
+	}
+
+	void MaxMemoryCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		double maxMem = pop<double>(args);
+		if (system->getDistributor())
+			system->getDistributor()->allowedMemory(itl2::round(maxMem * 1024.0 * 1024.0));
+	}
+
 	void DistributeCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
 		string provider = pop<string>(args);
 		system->distributedProcessing(provider);
+	}
+
+
+	void CommandReferenceCommand::run(vector<ParamVariant>& args) const
+	{
+		string path = pop<string>(args);
+
+		// Get names of commands (without args)
+		vector<string> names;
+		const vector<unique_ptr<Command> >& commands = CommandList::all();
+		for (size_t n = 0; n < commands.size(); n++)
+		{
+			if (!commands[n]->isInternal())
+				names.push_back(commands[n]->name());
+		}
+		removeDuplicates(names);
+		sort(names.begin(), names.end());
+
+		for(const auto& name : names)
+		{
+			string help = CommandList::get<HelpCommand>().run(name, HelpFormat::Rst);
+			if (help.length() > 0)
+			{
+				fs::path p = path;
+				writeText((p / (name + ".txt")).string(), help);
+			}
+			else
+			{
+				cout << "WARNING: No help for command " << name << endl;
+			}
+		}
+
+
 	}
 }

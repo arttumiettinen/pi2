@@ -1,0 +1,51 @@
+.. _fbp:
+
+fbp
+***
+
+
+**Syntax:** :code:`fbp(input image, output image, reconstruction settings, use GPU)`
+
+Performs filtered backprojection of data for which fbppreprocess has been called. This command is experimental and may change in the near future.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image.
+
+reconstruction settings [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Settings for the reconstruction. If this string contains only a name of an existing file, the settings are read from that file. Otherwise, the string is treated as contents of the settings file.
+
+use GPU [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to allow processing on a GPU.
+
+See also
+--------
+
+:ref:`fbppreprocess`

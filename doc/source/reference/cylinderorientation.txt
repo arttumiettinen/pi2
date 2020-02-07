@@ -1,0 +1,58 @@
+.. _cylinderorientation:
+
+cylinderorientation
+*******************
+
+
+**Syntax:** :code:`cylinderorientation(geometry, phi, theta, derivative sigma, smoothing sigma)`
+
+Estimates local orientation of cylindrical structures using the structure tensor method.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+geometry [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+At input, an image that contains the geometry for which local orientation should be determined. At output, the orientation 'energy' will be stored in this image. It equals the sum of the eigenvalues of the structure tensor, and can be used to distinguish regions without any interfaces (i.e. no orientation, low energy value) from regions with interfaces (i.e. orientation available, high energy value).
+
+phi [output]
+~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+The azimuthal angle of orientation direction will be stored in this image. The angle is given in radians and measured from positive :math:`x`-axis towards positive :math:`y`-axis and is given in range :math:`[-\pi, \pi]`.
+
+theta [output]
+~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+The polar angle of orientation direction will be stored in this image. The angle is given in radians and measured from positive :math:`z`-axis towards :math:`xy`-plane. The values are in range :math:`[0, \pi]`.
+
+derivative sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Scale parameter. Set to the preferred scale of edges that define the cylinders. Derivatives required in the stucture tensor are calculated using convolutions with derivative of a Gaussian function, and this parameter defines the standard deviation of the Gaussian.
+
+smoothing sigma [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+The structure tensor is smoothed by convolution with a Gaussian. This parameter defines the standard deviation of the smoothing Gaussian.
+
+See also
+--------
+
+:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`

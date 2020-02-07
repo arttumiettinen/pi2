@@ -30,4 +30,23 @@ namespace itl2
 		}
 		throw ITLException("Invalid connectivity.");
 	}
+
+	template<>
+	inline Connectivity fromString(const string& dt)
+	{
+		string str = dt;
+		trim(str);
+		toLower(str);
+		if (str == "nearest" || str == "nearestneigbours" || str == "nearest_neighbours" ||
+			str == "nearestneigbors" || str == "nearest_neighbors" ||
+			str == "4" || str == "6" || str == "0")
+			return Connectivity::NearestNeighbours;
+
+		if (str == "all" || str == "allneigbours" || str == "all_neighbours" ||
+			str == "allneigbors" || str == "all_neighbors" ||
+			str == "8" || str == "27" || str == "1")
+			return Connectivity::AllNeighbours;
+
+		throw ITLException("Invalid connectivity: " + dt);
+	}
 }

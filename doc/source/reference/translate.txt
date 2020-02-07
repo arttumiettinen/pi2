@@ -1,0 +1,40 @@
+.. _translate:
+
+translate
+*********
+
+
+**Syntax:** :code:`translate(input image, output image, shift)`
+
+Translates input image by specified amount.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Output image.
+
+shift [input]
+~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+Translation that will be applied to the input image.
+
+See also
+--------
+
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`

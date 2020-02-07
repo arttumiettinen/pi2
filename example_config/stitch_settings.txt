@@ -152,6 +152,13 @@ redo_x = False
 redo_y = False
 redo_z = False
 
+# Set to true to create an output image that shows the local amount of
+# deviation from perfect stitching.
+# The output is standard deviation of all overlapping images in each pixel.
+# The data type of the goodness output is the same as the stitched image.
+# If set to true, you might need to decrease max_block_size accordingly.
+create_goodness = False
+
 
 # Indicates if the calculations should be performed on a cluster
 use_cluster = True
@@ -163,8 +170,11 @@ wait_for_jobs = True
 
 
 # Maximum size of image block that is processed in one process is max_block_size^3.
-# Set to such a value that (2 * pixel_size_in_bytes + 4) * max_block_size^3 < available memory in bytes.
-max_block_size = 2500
+# If create_goodness is false, set to such a value that
+# (2 * pixel_size_in_bytes + 4) * max_block_size^3 + (size_of_single_subimage_in_bytes) < (available_memory_in_bytes).
+# If create_goodness is true, set to such a value that 
+# (2 * pixel_size_in_bytes + 4 + 4) * max_block_size^3 + (size_of_single_subimage_in_bytes) < (available_memory_in_bytes).
+max_block_size = 2100
 
 
 # Partition of cluster that should be used

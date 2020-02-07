@@ -1,0 +1,22 @@
+.. _imag:
+
+imag
+****
+
+
+**Syntax:** :code:`imag(image)`
+
+Calculates imaginary part of pixel values.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** complex32 image
+
+Image to process.
+

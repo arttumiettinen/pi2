@@ -5,14 +5,12 @@
 #include "math/numberutils.h"
 #include "math/mathutils.h"
 
-using namespace itl2;
-
-namespace math
+namespace itl2
 {
     /**
     Three-component vector.
     */
-    template <typename T, typename real_t = typename NumberUtils<T>::FloatType> class Vec2
+    template <typename T> class Vec2
     {
         public:
             /**
@@ -26,11 +24,6 @@ namespace math
 					T y;
 				};
 				T components[2];
-				struct // If the vector is used as range.
-				{
-					T min;
-					T max;
-				};
 			};
 
             /**
@@ -51,34 +44,14 @@ namespace math
                 this->y = y;
             }
 
-            /**
-            Copy constructor
-            */
-            Vec2(const Vec2& other) :
-                x(other.x),
-                y(other.y)
-            {
-            }
-
 			/**
-			Constructor that makes it possible to initialize vector from vector of another type.
-			Compiler warning identifies the cases where the conversion could lose precision.
+			Constructor that makes it possible to cast/initialize vector from vector of another type.
 			*/
-			template<typename Tother> Vec2(const Vec2<Tother>& other) :
-				x(other.x),
-				y(other.y)
+			template<typename Tother> explicit Vec2(const Vec2<Tother>& other) :
+				x(pixelRound<T, Tother>(other.x)),
+				y(pixelRound<T, Tother>(other.y))
 			{
 			}
-
-            /**
-            Assignment
-            */
-            Vec2& operator=(const Vec2& other)
-            {
-                x = other.x;
-                y = other.y;
-                return *this;
-            }
 
 			/**
 			Array access operator
@@ -222,6 +195,7 @@ namespace math
 			/**
 			Calculates dot product between this vector and the given vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t dot(const Vec2& right) const
 			{
 				return (real_t)x * (real_t)right.x + (real_t)y * (real_t)right.y;
@@ -230,25 +204,28 @@ namespace math
 			/**
 			Calculates the squared Euclidean norm of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t normSquared() const
 			{
-				return this->dot(*this);
+				return this->dot<real_t>(*this);
 			}
 
 			/**
 			Calculates the Euclidean norm of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			real_t norm() const
 			{
-				return sqrt(normSquared());
+				return pixelRound<real_t>(sqrt(normSquared<real_t>()));
 			}
 
 			/**
 			Returns normalized version of this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec2 normalized() const
 			{
-				real_t l = normSquared();
+				real_t l = normSquared<real_t>();
 				if (!NumberUtils<real_t>::equals(l, 0.0))
 					return *this / sqrt(l);
 				else
@@ -258,9 +235,10 @@ namespace math
 			/**
 			Returns normalized version of this vector and calculates its original length.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			Vec2 normalized(real_t& length) const
 			{
-				length = norm();
+				length = norm<real_t>();
 				if (!NumberUtils<real_t>::equals(length, 0.0))
 					return *this / length;
 				else
@@ -270,17 +248,19 @@ namespace math
 			/**
 			Normalizes this vector.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			void normalize()
 			{
-				*this = normalized();
+				*this = normalized<real_t>();
 			}
 
 			/**
 			Normalizes this vector and calculates its original length.
 			*/
+			template<typename real_t = typename NumberUtils<T>::FloatType>
 			void normalize(real_t& length)
 			{
-				*this = normalized(length);
+				*this = normalized<real_t>(length);
 			}
 
             /**
@@ -340,19 +320,34 @@ namespace math
 			{
 				return !(*this < rhs);
 			}
+
+			/**
+			Returns largest component of this vector.
+			*/
+			T max() const
+			{
+				return std::max(x, y);
+			}
+
+			/**
+			Returns smallest component of this vector.
+			*/
+			T min() const
+			{
+				return std::min(x, y);
+			}
     };
 
     typedef Vec2<double> Vec2d;
-	typedef Vec2<float> Vec2f;
-    typedef Vec2<int> Vec2i;
-	typedef Vec2<coord_t> Vec2c;
+	typedef Vec2<itl2::float32_t> Vec2f;
+	typedef Vec2<itl2::coord_t> Vec2c;
 
 	/**
-	Rounds double vector to coordinate vector.
+	Rounds floating point vector to coordinate vector.
 	*/
-	template<typename T> Vec2<coord_t> round(Vec2<T> value)
+	template<typename T> Vec2<itl2::coord_t> round(Vec2<T> value)
 	{
-		return Vec2<coord_t>(round(value.x), round(value.y));
+		return Vec2<itl2::coord_t>(round(value.x), round(value.y));
 	}
 
 	/**
@@ -385,6 +380,38 @@ namespace math
 		toCartesian(v.x, v.y, x, y);
 		v.x = x;
 		v.y = y;
+	}
+
+	/*
+	Calculates componentwise ceiling of a.
+	*/
+	template<typename T> Vec2c ceil(const Vec2<T>& a)
+	{
+		return Vec2c(itl2::ceil(a.x), itl2::ceil(a.y));
+	}
+
+	/*
+	Calculates componentwise floor of a.
+	*/
+	template<typename T> Vec2c floor(const Vec2<T>& a)
+	{
+		return Vec2c(itl2::floor(a.x), itl2::floor(a.y));
+	}
+
+	/**
+	Calculates componentwise minimum of a and b.
+	*/
+	template<typename T> Vec2<T> min(const Vec2<T>& a, const Vec2<T>& b)
+	{
+		return Vec2<T>(std::min(a.x, b.x), std::min(a.y, b.y));
+	}
+
+	/**
+	Calculates componentwise maximum of a and b.
+	*/
+	template<typename T> Vec2<T> max(const Vec2<T>& a, const Vec2<T>& b)
+	{
+		return Vec2<T>(std::max(a.x, b.x), std::max(a.y, b.y));
 	}
 }
 

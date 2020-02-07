@@ -1,11 +1,10 @@
 #pragma once
 
 #include "image.h"
-
 #include "boundarycondition.h"
 #include "math/vec3.h"
 
-using namespace math;
+#include <vector>
 
 namespace itl2
 {
@@ -15,7 +14,7 @@ namespace itl2
 		Calculates minimum or maximum filtering (defined by function op) of array of values using van Herk algorithm.
 		See van Herk - A fast algorithm for local minimum and maximum filters on rectangular and octagonal kernels.
 		*/
-		template<typename pixel_t, class Operation> void lineOp(vector<pixel_t>& img, coord_t r, BoundaryCondition bc, Operation op, pixel_t padValue, vector<pixel_t>& g, vector<pixel_t>& h)
+		template<typename pixel_t, class Operation> void lineOp(std::vector<pixel_t>& img, coord_t r, BoundaryCondition bc, Operation op, pixel_t padValue, std::vector<pixel_t>& g, std::vector<pixel_t>& h)
 		{
 			// This function is implemented with img as separate array. It is very easy to change that to pointer + stride if that is
 			// good for performance.
@@ -37,7 +36,7 @@ namespace itl2
 			{
 				g[x] = img[x];
 				coord_t xx = x + 1;
-				coord_t xxmax = math::min(count, x + 2 * r + 1);
+				coord_t xxmax = std::min(count, x + 2 * r + 1);
 				while (xx < xxmax)
 				{
 					g[xx] = op(g[xx - 1], img[xx]);
@@ -73,7 +72,7 @@ namespace itl2
 				//}
 
 				// Left boundary
-				for (coord_t x = 0; x < math::min<coord_t>(r, count); x++)
+				for (coord_t x = 0; x < std::min<coord_t>(r, count); x++)
 				{
 					pixel_t res;
 					if (x + r < count && x - r >= 0)
@@ -93,7 +92,7 @@ namespace itl2
 					img[x] = op(g[x + r], h[x - r]);
 
 				// Right boundary
-				for (coord_t x = math::max<coord_t>(0, count - r); x < count; x++)
+				for (coord_t x = std::max<coord_t>(0, count - r); x < count; x++)
 				{
 					pixel_t res;
 					if (x + r < count && x - r >= 0)
@@ -126,7 +125,7 @@ namespace itl2
 				//}
 
 				// Left boundary
-				for (coord_t x = 0; x < math::min<coord_t>(r, count); x++)
+				for (coord_t x = 0; x < std::min<coord_t>(r, count); x++)
 				{
 					pixel_t res;
 					if (x + r < count && x - r >= 0)
@@ -146,7 +145,7 @@ namespace itl2
 					img[x] = op(g[x + r], h[x - r]);
 
 				// Right boundary
-				for (coord_t x = math::max<coord_t>(0, count - r); x < count; x++)
+				for (coord_t x = std::max<coord_t>(0, count - r); x < count; x++)
 				{
 					pixel_t res;
 					if (x + r < count && x - r >= 0)
@@ -177,7 +176,7 @@ namespace itl2
 		template<typename pixel_t, typename Operation> void lineOp(Image<pixel_t>& img, coord_t r, const Vec3c& step, pixel_t padValue, BoundaryCondition bc, Operation op)
 		{
 			// Find all start points and process each, making sure each of them is processed only once.
-			vector<Vec3c> startPoints;
+			std::vector<Vec3c> startPoints;
 			for (coord_t z = 0; z < img.depth(); z++)
 			{
 				for (coord_t y = 0; y < img.height(); y++)
@@ -234,9 +233,9 @@ namespace itl2
 			size_t counter = 0;
 			#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
-				vector<pixel_t> g(img.width() + img.height() + img.depth(), 0);
-				vector<pixel_t> h(g.size(), 0);
-				vector<pixel_t> row;
+				std::vector<pixel_t> g(img.width() + img.height() + img.depth(), 0);
+				std::vector<pixel_t> h(g.size(), 0);
+				std::vector<pixel_t> row;
 
 				#pragma omp for
 				for (coord_t m = 0; m < (coord_t)startPoints.size(); m++)
@@ -285,8 +284,8 @@ namespace itl2
 		if (bc == BoundaryCondition::Zero)
 			padValue = 0;
 		else
-			padValue = numeric_limits<pixel_t>::lowest();
-		internals::lineOp<pixel_t, pixel_t(const pixel_t&, const pixel_t&)>(img, r, step, padValue, bc, math::max<pixel_t>);
+			padValue = std::numeric_limits<pixel_t>::lowest();
+		internals::lineOp<pixel_t, const pixel_t&(const pixel_t&, const pixel_t&)>(img, r, step, padValue, bc, std::max<pixel_t>);
 	}
 
 	/**
@@ -300,8 +299,8 @@ namespace itl2
 		if (bc == BoundaryCondition::Zero)
 			padValue = 0;
 		else
-			padValue = numeric_limits<pixel_t>::max();
-		internals::lineOp<pixel_t, pixel_t(const pixel_t&, const pixel_t&)>(img, r, step, padValue, bc, math::min<pixel_t>);
+			padValue = std::numeric_limits<pixel_t>::max();
+		internals::lineOp<pixel_t, const pixel_t&(const pixel_t&, const pixel_t&)>(img, r, step, padValue, bc, std::min<pixel_t>);
 	}
 
 
@@ -319,17 +318,17 @@ namespace itl2
 			/**
 			Direction vectors.
 			*/
-			vector<Vec3c> dirs;
+			::std::vector<Vec3c> dirs;
 
 			/**
 			Indices to dirs array giving end of each direction group forming a set of symmetrical lines (that all have the same length).
 			*/
-			vector<coord_t> Ns;
+			::std::vector<coord_t> Ns;
 
 			/**
 			Radius value for each direction group.
 			*/
-			vector<coord_t> rls;
+			::std::vector<coord_t> rls;
 		};
 
 		/**
@@ -362,9 +361,9 @@ namespace itl2
 			if (bc == BoundaryCondition::Zero)
 				padValue = 0;
 			else
-				padValue = numeric_limits<pixel_t>::lowest();
+				padValue = std::numeric_limits<pixel_t>::lowest();
 
-			sphereOpApprox<pixel_t, pixel_t(const pixel_t&, const pixel_t&)>(img, directions, bc, math::max<pixel_t>, padValue);
+			sphereOpApprox<pixel_t, const pixel_t&(const pixel_t&, const pixel_t&)>(img, directions, bc, std::max<pixel_t>, padValue);
 		}
 
 		/**
@@ -376,9 +375,9 @@ namespace itl2
 			if (bc == BoundaryCondition::Zero)
 				padValue = 0;
 			else
-				padValue = numeric_limits<pixel_t>::max();
+				padValue = std::numeric_limits<pixel_t>::max();
 
-			sphereOpApprox<pixel_t, pixel_t(const pixel_t&, const pixel_t&)>(img, directions, bc, math::min<pixel_t>, padValue);
+			sphereOpApprox<pixel_t, const pixel_t&(const pixel_t&, const pixel_t&)>(img, directions, bc, std::min<pixel_t>, padValue);
 		}
 
 		/**

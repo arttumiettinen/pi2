@@ -13,6 +13,7 @@
 #include <map>
 using namespace std;
 
+
 namespace itl2
 {
 
@@ -107,7 +108,7 @@ namespace itl2
 
 			// Generate ground truth image
 			// TODO: This is actually not required, we may use the analytical expression of sphere instead of image.
-			coord_t radj = math::round(1.1 * r + 2);
+			coord_t radj = itl2::round(1.1 * r + 2);
 			coord_t size = 2 * radj + 1;
 			Vec3c c(radj, radj, radj);
 			Image<uint8_t> gt(size, size, size);
@@ -408,7 +409,7 @@ namespace itl2
 		void sphereMaxSpeed()
 		{
 			Image<uint16_t> head;
-			raw::read(head, "t1-head_256x256x129.raw");
+			raw::read(head, "./input_data/t1-head_256x256x129.raw");
 
 			Image<uint16_t> result(head.dimensions());
 
@@ -422,7 +423,7 @@ namespace itl2
 			cout << "Decomposed approximate max takes " << timer.getSeconds() << " s" << endl;
 			raw::writed(head, "filters/max_sphere_decomp");
 
-			raw::read(head, "t1-head_256x256x129.raw");
+			raw::read(head, "./input_data/t1-head_256x256x129.raw");
 			timer.start();
 			//maxFilter(head, result, r, NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);
 			filter<uint16_t, uint16_t, internals::maxOp<uint16_t> >(head, result, Vec3c(r, r, r), NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);

@@ -1,0 +1,77 @@
+.. _watershed_particles_example:
+
+Watershed segmentation of particles
+===================================
+
+This example shows how to make a watershed segmentation where seeds
+come from local maxima of distance map.
+The maxima may be filtered to avoid over-segmentation.
+
+The image data is generated similarly to what was done in :ref:`particle analysis example <particle_analysis>`.
+
+::
+
+	def particle_segmentation():
+		"""
+		Demonstrates segmentation of particles using watershed seeded
+		by (filtered) local maxima of distance map.
+		"""
+
+		# Generate particle image
+		generate_particles(1000, 0)
+
+		
+		# Read generated data file
+		img = pi.read(output_file('particles'))
+
+		# Convert to wider data type so that we can label each particle
+		pi.convert(img, ImageDataType.UINT16)
+
+		# Calculate distance map
+		dmap = pi.newimage(ImageDataType.FLOAT32)
+		pi.dmap(img, dmap)
+
+		# Find maxima
+		# Note that in some cases the system is able to automatically
+		# change the data type of output images, so we don't have to
+		# specify any data type in the pi.newimage() command.
+		# This does not work always, though, as there might be many
+		# possible output data types.
+		maxima = pi.newimage()
+		pi.localmaxima(dmap, maxima)
+
+		# Remove unnecessary maxima to avoid over-segmentation
+		pi.cleanmaxima(dmap, maxima)
+
+		# Create image with labeled maxima only.
+		# First set all pixels to zero, then label maxima.
+		pi.set(img, 0)
+		pi.labelmaxima(img, maxima)
+
+		# Grow labels back to original geometry, using distance map value
+		# as filling priority.
+		pi.grow(img, dmap)
+
+		# Save result
+		pi.writeraw(img, output_file('particles_watershed'))
+		
+		
+.. figure:: figures/watershed_original.png
+   :scale: 100 %
+   :alt: Input image
+
+   One slice of the input image.
+
+
+.. figure:: figures/watershed_no_filtering.png
+   :scale: 100 %
+   :alt: Result of watershed segmentation.
+
+   Result of watershed segmentation without using :ref:`cleanmaxima`. Random colors have been assigned to the segmented regions. Notice extraneous regions between some of the spheres.
+   
+   
+.. figure:: figures/watershed_with_filtering.png
+   :scale: 100 %
+   :alt: Result of watershed segmentation.
+
+   Result of watershed segmentation after using :ref:`cleanmaxima`. Random colors have been assigned to the segmented regions. There are no extraneous regions between the spheres as in the previous figure.

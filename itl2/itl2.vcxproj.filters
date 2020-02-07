@@ -22,8 +22,14 @@
     <Filter Include="Source Files\math">
       <UniqueIdentifier>{92840ad0-f6c4-4b97-860a-5debd57719c5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\tomo">
+      <UniqueIdentifier>{2ed858d0-e047-4181-9619-04739004f4f4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files\buffer">
       <UniqueIdentifier>{eee8b01c-a320-4906-abfc-3852e0231855}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\tomo">
+      <UniqueIdentifier>{aafab113-9a53-4cb1-97ad-ee7f31ff516f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\io">
       <UniqueIdentifier>{69206810-3fa0-42b6-a3a3-fed176cb14d7}</UniqueIdentifier>
@@ -51,7 +57,7 @@
     <ClInclude Include="io\raw.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
-    <ClInclude Include="math\complex.h">
+    <ClInclude Include="math\conjugategradient.h">
       <Filter>Header Files\math</Filter>
     </ClInclude>
     <ClInclude Include="math\eig2.h">
@@ -83,6 +89,9 @@
     </ClInclude>
     <ClInclude Include="pointprocess.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tomo\siddonprojections.h">
+      <Filter>Header Files\tomo</Filter>
     </ClInclude>
     <ClInclude Include="projections.h">
       <Filter>Header Files</Filter>
@@ -162,9 +171,6 @@
     <ClInclude Include="regionremoval.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="hybridskeleton.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lineskeleton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -174,10 +180,10 @@
     <ClInclude Include="traceskeleton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="box.h">
+    <ClInclude Include="structure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="structure.h">
+    <ClInclude Include="surfacecurvature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="generation.h">
@@ -237,6 +243,9 @@
     <ClInclude Include="line.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tomo\fbp.h">
+      <Filter>Header Files\tomo</Filter>
+    </ClInclude>
     <ClInclude Include="median.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -244,6 +253,9 @@
       <Filter>Header Files\io</Filter>
     </ClInclude>
     <ClInclude Include="danielsson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thickmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="interpolationmode.h">
@@ -254,6 +266,63 @@
     </ClInclude>
     <ClInclude Include="io\itltiff.h">
       <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="ompatomic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fastbilateralfilter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="minhash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="surfaceskeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="surfaceskeleton2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="capsule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fillskeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math\ludecomposition.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\qrdecomposition.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="autothreshold.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="traceskeletonpoints.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\nrrd.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="maxima.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="carpet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="marchingcubes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ellipsoid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="aabox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="montage.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -284,6 +353,9 @@
     <ClCompile Include="registration.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="stitching.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="dmap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -302,9 +374,6 @@
     <ClCompile Include="skeleton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="io\sequence.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="regionremoval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -312,6 +381,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="structure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="surfacecurvature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="network.cpp">
@@ -341,7 +413,13 @@
     <ClCompile Include="resultstable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tomo\fbp.cpp">
+      <Filter>Source Files\tomo</Filter>
+    </ClCompile>
     <ClCompile Include="danielsson.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="thickmap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="io\png.cpp">
@@ -361,6 +439,54 @@
     </ClCompile>
     <ClCompile Include="io\tiff.cpp">
       <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="fastbilateralfilter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="minhash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fillskeleton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="math\vec3.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\matrix.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="diskmappedbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="autothreshold.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="traceskeletonpoints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stringutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="numberutils.cpp">
+      <Filter>Source Files\math</Filter>
+    </ClCompile>
+    <ClCompile Include="io\nrrd.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\sequence.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="maxima.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="carpet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="generation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="montage.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

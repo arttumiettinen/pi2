@@ -39,9 +39,9 @@ namespace itl2
 
 	/**
 	Calculates inverse FFT of the input image and places it to the output image.
-	Initializes output image to correct size.
+	Output image size must be set to the size of the original image where the FFT was calculated from.
 	Calculates 1D FFT if img is 1-dimensional, 2D FFT if img is 2-dimensional etc.
-	Input image is not modified.
+	Input image data is used as a temporary buffer.
 	*/
 	void ifft(Image<complex32_t>& img, Image<float32_t>& out);
 
@@ -51,7 +51,7 @@ namespace itl2
 	Produces the same results than ImageJ Gaussian Blur 3D, except at image edges.
 	@param zeroEdges Set to true to avoid having remnants of left side of the image at the right side in the filtered image etc. Causes zero edges to the image.
 	*/
-	void gaussFilter(Image<float32_t>& img, math::Vec3d sigma, bool zeroEdges = true);
+	void gaussFilterFFT(Image<float32_t>& img, Vec3d sigma, bool zeroEdges = true);
 
 	/**
 	Gaussian filtering.
@@ -59,9 +59,9 @@ namespace itl2
 	Produces the same results than ImageJ Gaussian Blur 3D, except at image edges.
 	@param zeroEdges Set to true to avoid having remnants of left side of the image at the right side in the filtered image etc. Causes zero edges to the image.
 	*/
-	inline void gaussFilter(Image<float32_t>& img, double sigma, bool zeroEdges = true)
+	inline void gaussFilterFFT(Image<float32_t>& img, double sigma, bool zeroEdges = true)
 	{
-		gaussFilter(img, math::Vec3d(sigma, sigma, sigma), zeroEdges);
+		gaussFilterFFT(img, Vec3d(sigma, sigma, sigma), zeroEdges);
 	}
 
 	/**
@@ -88,7 +88,7 @@ namespace itl2
 	@param goodness Estimate of goodness of fit between img1 and shifted img2.
 	@return Shift between img1 and img2.
 	*/
-	math::Vec3d phaseCorrelation(Image<float32_t>& img1, Image<float32_t>& img2, const math::Vec3c& maxShift, double& goodness);
+	Vec3d phaseCorrelation(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, double& goodness);
 
 	namespace tests
 	{

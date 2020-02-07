@@ -4,15 +4,17 @@
 
 namespace pilib
 {
-	void addGenerationCommands(vector<Command*>& commands)
+	void addGenerationCommands()
 	{
-		commands.insert(commands.end(),
-			{
-			ADD_REAL(RampCommand),
-			ADD_REAL(SphereCommand),
-			ADD_REAL(BoxCommand),
-			ADD_REAL(LineCommand)
-			}
-		);
+		ADD_REAL(RampCommand);
+		ADD_REAL(SetPixelCommand);
+		ADD_REAL(SphereCommand);
+		ADD_REAL(EllipsoidCommand);
+		ADD_REAL(BoxCommand);
+		ADD_REAL(GenericBoxCommand);
+		ADD_REAL(LineCommand);
+		ADD_REAL(CapsuleCommand);
+		ADD_REAL(DrawGraphCommand);
+		ADD_REAL(DrawGraph2Command);
 	}
 }

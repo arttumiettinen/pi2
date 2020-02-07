@@ -1,0 +1,63 @@
+.. _gradient:
+
+gradient
+********
+
+
+**Syntax:** :code:`gradient(f, spatial sigma, dfdx, dfdy, dfdz, gamma)`
+
+Calculates Gaussian gradient :math:`(\partial f / \partial x, \partial f / \partial y, \partial f / \partial z)` of an image :math:`f`. Each of the derivatives is calculated by convolving the image with the corresponding derivative of the Gaussian function.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+f [input]
+~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image whose gradient is to be calculated.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel.
+
+dfdx [output]
+~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Derivative in :math:`x`-direction
+
+dfdy [output]
+~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Derivative in :math:`y`-direction
+
+dfdz [output]
+~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Derivative in :math:`z`-direction
+
+gamma [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Scale-space scaling exponent according to Lindeberg. Set to zero to disable scaling.
+
+See also
+--------
+
+:ref:`derivative`, :ref:`gradientmagnitude`

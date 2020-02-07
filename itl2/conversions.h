@@ -19,7 +19,7 @@ namespace itl2
 		#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD)
 		for (coord_t n = 0; n < in.pixelCount(); n++)
 		{
-			out(n) = math::pixelRound<newPixel_t>(in(n));
+			out(n) = pixelRound<newPixel_t>(in(n));
 
 			// Showing progress info here would induce more processing than is done in the whole loop.
 		}

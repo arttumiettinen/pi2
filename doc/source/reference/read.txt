@@ -1,0 +1,38 @@
+.. _read:
+
+read
+****
+
+
+**Syntax:** :code:`read(image name, filename, data type)`
+
+Reads an image or image sequence from disk. Determines type of file automatically.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of image in the system.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of file to read or a sequence definition. If a directory name is given, all files in the directory will be read. If the a file name is given, it can contain wildcards *, ? and @. Wildcard * corresponds to any sequence of characters, wildcard ? corresponds to any character, and wildcard @ corresponds to sequence of numerical digits. For example, sequence containing files xyz_000.png, xyz_001.png, xyz_002.png, etc. could be read with template 'xyz_@.png'.
+
+data type [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Data type of the image. Can be uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, or complex32. Specify empty value to infer data type from file content.
+

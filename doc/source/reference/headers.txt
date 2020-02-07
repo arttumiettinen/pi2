@@ -1,0 +1,26 @@
+.. _headers:
+
+headers
+*******
+
+
+**Syntax:** :code:`headers(analyzers)`
+
+Shows headers of particle analysis result table.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+analyzers [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+List of names of analyzers that were used. Use the same value that was passed to analyzeparticles command. Separate the analyzer names with any non-alphanumeric character sequence.
+
+See also
+--------
+
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`

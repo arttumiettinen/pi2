@@ -1,0 +1,182 @@
+.. _rotate:
+
+rotate
+******
+
+There are 2 forms of this command.
+
+:code:`rotate(input image, output image, angle, axis, input center, output center, interpolation mode, boundary condition, block origin, full input dimensions)`
+================================================================================================================================================================
+
+Rotates input image around given axis. NOTE: This command does not set the size of the output image automatically. Please set the size of the output to the desired value before calling this command.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Output image.
+
+angle [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+Rotation angle in radians.
+
+axis [input]
+~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 0, 1]"
+
+Rotation axis. Does not need to be unit vector.
+
+input center [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+Rotation center in the input image.
+
+output center [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+The rotation center in the input image is mapped to this point in the output image.
+
+interpolation mode [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** interpolation mode
+
+**Default value:** Linear
+
+Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Zero
+
+Boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+This argument is used internally in distributed processing. It is assigned the origin of the current calculation block. In normal operation it should be assigned to zero vector.
+
+full input dimensions [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+This argument is used internally in distributed processing. It is assigned the full dimensions of the input image. In normal operation it should be assigned to zero vector.
+
+See also
+--------
+
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`
+
+:code:`rotate(input image, output image, angle, axis, interpolation mode, boundary condition, block origin, full input dimensions)`
+===================================================================================================================================
+
+Rotates input image around given axis. Rotation center is in the center of the input image, and it is mapped to the center of the output image. NOTE: This command does not set the size of the output image automatically. Please set the size of the output to the desired value before calling this command.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Output image.
+
+angle [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+Rotation angle in radians.
+
+axis [input]
+~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 0, 1]"
+
+Rotation axis. Does not need to be unit vector.
+
+interpolation mode [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** interpolation mode
+
+**Default value:** Linear
+
+Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Zero
+
+Boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+This argument is used internally in distributed processing. It is assigned the origin of the current calculation block. In normal operation it should be assigned to zero vector.
+
+full input dimensions [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+This argument is used internally in distributed processing. It is assigned the full dimensions of the input image. In normal operation it should be assigned to zero vector.
+
+See also
+--------
+
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`

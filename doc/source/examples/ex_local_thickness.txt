@@ -1,0 +1,46 @@
+.. _local_thickness_example:
+
+Local thickness / opening transform
+===================================
+
+This example demonstrates how to calculate :ref:`local thickness map <tmap>`::
+
+	def thickmap():
+		"""
+		Demonstrates use of thickness map functions.
+		"""
+
+		# Read input image. Input must be binary (or it must be made binary,
+		# see e.g. 'threshold' command)
+		geom = pi.read(input_file_bin())
+
+		# Create output image
+		tmap = pi.newimage(ImageDataType.FLOAT32)
+
+		# Convert the input to large enough data type so that it can hold squared distance values.
+		# If the data type is too small, an error is raised.
+		pi.convert(geom, ImageDataType.UINT32)
+		pi.tmap(geom, tmap)
+		pi.writeraw(tmap, output_file('head_tmap'))
+
+		# If the default version consumes too much memory, there is also a slower memory-saver version.
+		# It is activated by setting last parameter of tmap to True:
+		geom2 = pi.read(input_file_bin())
+		tmap2 = pi.newimage(ImageDataType.FLOAT32)
+		pi.convert(geom2, ImageDataType.UINT32)
+		pi.tmap(geom2, tmap2, 0, True)
+		pi.writeraw(tmap, output_file('head_tmap_memsave'))
+	
+	
+.. figure:: figures/t1-head_slice_bin.png
+   :scale: 100 %
+   :alt: Input image
+
+   One slice of the input image.
+		
+		
+.. figure:: figures/head_tmap.png
+   :scale: 100 %
+   :alt: Local thickness map
+
+   Local thickness map of the input. Brighter colors correspond to thicker regions.

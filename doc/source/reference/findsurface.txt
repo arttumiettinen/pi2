@@ -1,0 +1,153 @@
+.. _findsurface:
+
+findsurface
+***********
+
+There are 2 forms of this command.
+
+:code:`findsurface(geometry, height map, stopping gray value, direction, surface tension, iterations, visualization, visualization y, visualization color)`
+===========================================================================================================================================================
+
+Surface recognition algorithm 'Carpet' according to Turpeinen - Interface Detection Using a Quenched-Noise Version of the Edwards-Wilkinson Equation. The algorithm places a surface above (alternatively below) the image, and moves it towards larger (alternatively smaller) :math:`z` values while controlling its dynamics according to the Edwards-Wilkinson equation. The movement of the surface stops when it encounters enough pixels with value above specific stopping gray level. The surface does not move through small holes in the object as it has controllable amount of surface tension. 
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+geometry [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Geometry image. This image does not need to be binary image (but it can be).
+
+height map [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Height map that defines the initial position of the surface, or an empty image. The height map gives :math:`z`-position of the surface for each :math:`(x,y)`-position of the geometry image. The final position of the surface is also saved into this height map. The size of the height map must be :math:`w \times h` where :math:`w` and :math:`h` are the width and the height of the geometry image.
+
+stopping gray value [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+The movement of the surface stops when it encounters pixels whose value is above this gray level.
+
+direction [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** Down
+
+Direction where the surface moves. 'Down' corresponds to direction towards larger :math:`z` values, and 'Up' corresponds to direction towards smaller :math:`z` values.
+
+surface tension [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Value that indicates how smooth the surface will be. Larger value results in smoother surface.
+
+iterations [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 150
+
+Count of iterations to perform.
+
+visualization [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+An image where a visualization of the evolution of the surface will be saved. The dimensions of the visualization will be set to :math:`w \times d \times N`, where :math:`w` and :math:`d` are width and depth of the geometry image, and :math:`N` is the count of iterations to perform.
+
+visualization y [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+Indicates the :math:`y`-coordinate of the :math:`xz`-slice that will be visualized.
+
+visualization color [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Color of the surface in the visualization. If set to zero, the color will be set to one above the maximum in geometry image.
+
+See also
+--------
+
+:ref:`findsurface`, :ref:`drawheightmap`, :ref:`setbeforeheightmap`, :ref:`setafterheightmap`, :ref:`shiftz`
+
+:code:`findsurface(geometry, height map, stopping gray value, direction, surface tension, iterations)`
+======================================================================================================
+
+Surface recognition algorithm 'Carpet' according to Turpeinen - Interface Detection Using a Quenched-Noise Version of the Edwards-Wilkinson Equation. The algorithm places a surface above (alternatively below) the image, and moves it towards larger (alternatively smaller) :math:`z` values while controlling its dynamics according to the Edwards-Wilkinson equation. The movement of the surface stops when it encounters enough pixels with value above specific stopping gray level. The surface does not move through small holes in the object as it has controllable amount of surface tension. 
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+geometry [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Geometry image. This image does not need to be binary image (but it can be).
+
+height map [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Height map that defines the initial position of the surface, or an empty image. The height map gives :math:`z`-position of the surface for each :math:`(x,y)`-position of the geometry image. The final position of the surface is also saved into this height map. The size of the height map must be :math:`w \times h` where :math:`w` and :math:`h` are the width and the height of the geometry image.
+
+stopping gray value [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+The movement of the surface stops when it encounters pixels whose value is above this gray level.
+
+direction [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** Down
+
+Direction where the surface moves. 'Down' corresponds to direction towards larger :math:`z` values, and 'Up' corresponds to direction towards smaller :math:`z` values.
+
+surface tension [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Value that indicates how smooth the surface will be. Larger value results in smoother surface.
+
+iterations [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 150
+
+Count of iterations to perform.
+
+See also
+--------
+
+:ref:`findsurface`, :ref:`drawheightmap`, :ref:`setbeforeheightmap`, :ref:`setafterheightmap`, :ref:`shiftz`

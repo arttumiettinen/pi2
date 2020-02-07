@@ -1,0 +1,28 @@
+.. _hello:
+
+hello
+*****
+
+
+**Syntax:** :code:`hello(name)`
+
+Shows a greetings message. This command is used for testing things.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+name [input]
+~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** there
+
+Name of caller. Omit to output a generic greeting.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

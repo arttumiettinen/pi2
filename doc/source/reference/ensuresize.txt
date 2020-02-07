@@ -1,0 +1,84 @@
+.. _ensuresize:
+
+ensuresize
+**********
+
+There are 2 forms of this command.
+
+:code:`ensuresize(image, width, height, depth)`
+===============================================
+
+Makes sure that the size of the parameter image equals dimensions given as an arguments. The parameter image is re-allocated only if its size must be changed.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+width [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Desired width of the image.
+
+height [input]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Desired height of the image.
+
+depth [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 1
+
+Desired depth of the image.
+
+See also
+--------
+
+:ref:`newimage`
+
+:code:`ensuresize(image, size)`
+===============================
+
+Makes sure that the size of the parameter image equals dimensions given as an argument. The parameter image is re-allocated only if its size must be changed.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+size [input]
+~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Desired image dimensions.
+
+See also
+--------
+
+:ref:`newimage`

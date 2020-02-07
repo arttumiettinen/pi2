@@ -1,0 +1,53 @@
+.. _growlabels:
+
+growlabels
+**********
+
+
+**Syntax:** :code:`growlabels(image, allowed color, background color, connectivity)`
+
+Grows all colored regions as much as possible into pixels that have a specific color. In practice, this command first finds all unique colors in the image, and uses each set of pixels having the same color as seed points for a flood fill that proceeds to pixels whose value is given in the 'allowed color' argument. 
+
+This growing method is suited only for situations where separate parts of the original structure are labelled and the labels must be grown back to the original structure. **If there are multiple labels in a connected component, non-labeled pixels are assigned the smallest label in the non-distributed version and (mostly) random label among all the possibilities in the distributed version.** Therefore, **this function is suited only for images containing separate blobs or particles**, where each particle contains seed point(s) of only single value. 
+
+An alternative to this command is :ref:`morphorec`. It works such that each pixel will get the label of the nearest labeled pixel.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+allowed color [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Color where other colors will be grown into.
+
+background color [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Background color. Values of pixels having this color are not changed. Set to the same value than allowed color to fill to all pixels.
+
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** Nearest
+
+Connectivity of the regions to grow. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+See also
+--------
+
+:ref:`grow`, :ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`, :ref:`morphorec`

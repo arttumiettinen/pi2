@@ -1,12 +1,10 @@
 #pragma once
 
 #include "image.h"
-#include "hybridskeleton.h"
+#include "surfaceskeleton.h"
 #include "math/vec3.h"
 
 #include <deque>
-
-using math::Vec3c;
 
 namespace itl2
 {
@@ -42,7 +40,7 @@ namespace itl2
 					return img(x, y, z + 1) == (pixel_t)0;
 				return false;
 			default:
-				throw runtime_error("Impossible direction value.");
+				throw std::runtime_error("Impossible direction value.");
 			}
 		}
 
@@ -558,7 +556,7 @@ namespace itl2
 
 			// This is required to make the result exactly the same than in Fiji (non-threaded version)
 			// Otherwise, the point removal order may change the skeleton points.
-			std::sort(points.begin(), points.end(), math::vecComparer<coord_t>);
+			std::sort(points.begin(), points.end(), vecComparer<coord_t>);
 
 			// Process all points
 			size_t counter = 0;
@@ -603,15 +601,21 @@ namespace itl2
 	and use hybrid skeleton as that algorithm seems to produce cleaner looking skeletons.
 	@param img Image that should be skeletonized.
 	*/
-	template<typename pixel_t> void lineSkeleton(Image<pixel_t>& img)
+	template<typename pixel_t> void lineSkeleton(Image<pixel_t>& img, size_t maxIterations = std::numeric_limits<size_t>::max())
 	{
 
+		size_t it = 0;
 		size_t changes;
 		do
 		{
 			changes = lineThin(img);
 
-			cout << changes << " pixels removed." << endl;
+			std::cout << changes << " pixels removed." << std::endl;
+
+			it++;
+			//raw::writed(img, string("./skeleton/line_skeleton_sequence") + toString(it));
+			if (it >= maxIterations)
+				break;
 
 		} while (changes > 0);
 

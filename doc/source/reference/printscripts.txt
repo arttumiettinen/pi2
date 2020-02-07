@@ -1,0 +1,28 @@
+.. _printscripts:
+
+printscripts
+************
+
+
+**Syntax:** :code:`printscripts(enable)`
+
+Enables or disables printing of pi2 script run for each task in compute node/process. Has effect only if distributed processing is enabled.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+enable [input]
+~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to enable printing.
+
+See also
+--------
+
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`

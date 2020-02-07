@@ -15,18 +15,20 @@ namespace pilib
 		/**
 		Stores output of each subprocess that has been run since last call to waitForJobs.
 		*/
-		vector<string> outputs;
+		std::vector<std::string> outputs;
 
-		virtual void submitJob(const string& piCode, JobType jobType);
+	public:
+		LocalDistributor(PISystem* system);
 
-		virtual vector<string> waitForJobs();
+		virtual void submitJob(const std::string& piCode, JobType jobType) override;
 
-		virtual size_t allowedMemory() const
+		virtual std::vector<std::string> waitForJobs() override;
+
+		virtual size_t allowedMemory() const override
 		{
 			return allowedMem;
 		}
 
-	public:
-		LocalDistributor(PISystem* system);
+		virtual void allowedMemory(size_t maxMem) override;
 	};
 }

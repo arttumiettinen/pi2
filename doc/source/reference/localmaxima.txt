@@ -1,0 +1,42 @@
+.. _localmaxima:
+
+localmaxima
+***********
+
+
+**Syntax:** :code:`localmaxima(input image, output image, connectivity)`
+
+Finds local maxima in the input image. Maxima migh be individual pixels or larger regions that have the same value and that are bordered by pixels of smaller value. The output image will be in format [count of regions][count of pixels in region 1][x1][y1][z1][zx2][y2][z2]...[count of items in region 2][x1][y1][z1][zx2][y2][z2]...
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Output image.
+
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** All
+
+Connectivity of the maxima regions. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+See also
+--------
+
+:ref:`localmaxima`, :ref:`cleanmaxima`, :ref:`labelmaxima`, :ref:`growlabels`, :ref:`grow`

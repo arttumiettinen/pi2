@@ -1,0 +1,81 @@
+.. _hist:
+
+hist
+****
+
+
+**Syntax:** :code:`hist(input image, histogram, bin starts, histogram minimum, histogram maximum, bin count, output file, block index)`
+
+Calculate histogram of an image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image whose histogram will be calculated.
+
+histogram [output]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Image that will contain the histogram on output. The number of pixels in this image will be set to match bin count. Please use pixel data type that can hold large enough values, e.g. float32 or uint64.
+
+bin starts [output]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that will contain the histogram bin start coordinates when the function finishes.
+
+histogram minimum [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Minimum value to be included in the histogram. Values less than minimum are included in the first bin.
+
+histogram maximum [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+
+**Default value:** Shown along data types.
+
+The end of the last bin. Values greater than maximum are included in the last bin.
+
+bin count [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 256
+
+Count of bins. The output image will be resized to contain this many pixels.
+
+output file [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Name of file where the histogram data is to be saved. Specify empty string to disable saving. This argument is used internally in distributed processing, but can be used to (conveniently?) save the histogram in .raw format.
+
+block index [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** -1
+
+Index of image block that we are currently processing. This argument is used internally in distributed processing and should normally be set to negative value. If positive, this number is appended to output file name.
+

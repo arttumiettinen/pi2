@@ -1,0 +1,28 @@
+.. _clear:
+
+clear
+*****
+
+
+**Syntax:** :code:`clear(image name)`
+
+Dispose image from the system (and free memory that the image consumes).
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image name [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Name of image to erase. Specify empty name to clear everything.
+
+See also
+--------
+
+:ref:`list`

@@ -1,0 +1,51 @@
+.. _crop:
+
+crop
+****
+
+
+**Syntax:** :code:`crop(input image, output image, position, size)`
+
+Crops the input image. If size parameter is set to zero, crops to current size of the output image.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Output image.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Position in input image where the top-left corner of the cropped image is placed.
+
+size [input]
+~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Size of output image. Specify zeroes or nothing to crop to the current size of the output image.
+
+See also
+--------
+
+:ref:`scale`, :ref:`bin`, :ref:`scalelabels`

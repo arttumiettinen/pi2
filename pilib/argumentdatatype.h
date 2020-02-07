@@ -15,17 +15,18 @@
 #include "math/vec3.h"
 
 using std::string;
-using std::runtime_error;
-using itl2::uint8_t;
-using itl2::uint16_t;
 using itl2::float32_t;
+using itl2::complex32_t;
 using itl2::coord_t;
 using itl2::NeighbourhoodType;
 using itl2::BoundaryCondition;
 using itl2::Connectivity;
 using itl2::Image;
-using math::Vec3c;
-using math::Vec3d;
+using itl2::InterpolationMode;
+using itl2::Vec3d;
+using itl2::Vec3c;
+
+
 
 namespace pilib
 {
@@ -50,6 +51,10 @@ namespace pilib
 		ImageUInt16,
 		ImageUInt32,
 		ImageUInt64,
+		ImageInt8,
+		ImageInt16,
+		ImageInt32,
+		ImageInt64,
 		ImageFloat32,
 		ImageComplex32,
 		Vect3d,
@@ -58,6 +63,10 @@ namespace pilib
 		DImageUInt16,
 		DImageUInt32,
 		DImageUInt64,
+		DImageInt8,
+		DImageInt16,
+		DImageInt32,
+		DImageInt64,
 		DImageFloat32,
 		DImageComplex32,
 	};
@@ -132,6 +141,26 @@ namespace pilib
 		return ArgumentDataType::ImageUInt64;
 	}
 
+	template<> inline ArgumentDataType parameterType<Image<int8_t> >()
+	{
+		return ArgumentDataType::ImageInt8;
+	}
+
+	template<> inline ArgumentDataType parameterType<Image<int16_t> >()
+	{
+		return ArgumentDataType::ImageInt16;
+	}
+
+	template<> inline ArgumentDataType parameterType<Image<int32_t> >()
+	{
+		return ArgumentDataType::ImageInt32;
+	}
+
+	template<> inline ArgumentDataType parameterType<Image<int64_t> >()
+	{
+		return ArgumentDataType::ImageInt64;
+	}
+
 	template<> inline ArgumentDataType parameterType<Image<float32_t> >()
 	{
 		return ArgumentDataType::ImageFloat32;
@@ -170,6 +199,26 @@ namespace pilib
 	template<> inline ArgumentDataType parameterType<DistributedImage<uint64_t> >()
 	{
 		return ArgumentDataType::DImageUInt64;
+	}
+
+	template<> inline ArgumentDataType parameterType<DistributedImage<int8_t> >()
+	{
+		return ArgumentDataType::DImageInt8;
+	}
+
+	template<> inline ArgumentDataType parameterType<DistributedImage<int16_t> >()
+	{
+		return ArgumentDataType::DImageInt16;
+	}
+
+	template<> inline ArgumentDataType parameterType<DistributedImage<int32_t> >()
+	{
+		return ArgumentDataType::DImageInt32;
+	}
+
+	template<> inline ArgumentDataType parameterType<DistributedImage<int64_t> >()
+	{
+		return ArgumentDataType::DImageInt64;
 	}
 
 	template<> inline ArgumentDataType parameterType<DistributedImage<float32_t> >()
@@ -213,6 +262,14 @@ namespace pilib
 			return "uint32 image";
 		if (t == ArgumentDataType::ImageUInt64)
 			return "uint64 image";
+		if (t == ArgumentDataType::ImageInt8)
+			return "int8 image";
+		if (t == ArgumentDataType::ImageInt16)
+			return "int16 image";
+		if (t == ArgumentDataType::ImageInt32)
+			return "int32 image";
+		if (t == ArgumentDataType::ImageInt64)
+			return "int64 image";
 		if (t == ArgumentDataType::ImageFloat32)
 			return "float32 image";
 		if (t == ArgumentDataType::ImageComplex32)
@@ -229,11 +286,99 @@ namespace pilib
 			return "distributed uint32 image";
 		if (t == ArgumentDataType::DImageUInt64)
 			return "distributed uint64 image";
+		if (t == ArgumentDataType::DImageInt8)
+			return "distributed int8 image";
+		if (t == ArgumentDataType::DImageInt16)
+			return "distributed int16 image";
+		if (t == ArgumentDataType::DImageInt32)
+			return "distributed int32 image";
+		if (t == ArgumentDataType::DImageInt64)
+			return "distributed int64 image";
 		if (t == ArgumentDataType::DImageFloat32)
 			return "distributed float32 image";
 		if (t == ArgumentDataType::DImageComplex32)
 			return "distributed complex32 image";
-		throw runtime_error("Not implemented");
+		throw std::runtime_error("Not implemented");
+	}
+
+	/**
+	Gets pixel size of image of given data type.
+	Returns 0 if the data type does not describe image.
+	*/
+	//static inline size_t pixelSize(ArgumentDataType t)
+	//{
+	//	switch (t)
+	//	{
+	//	case ArgumentDataType::ImageUInt8:
+	//	case ArgumentDataType::ImageInt8:
+	//	case ArgumentDataType::DImageUInt8:
+	//	case ArgumentDataType::DImageInt8:
+	//		return 1;
+	//	case ArgumentDataType::ImageUInt16:
+	//	case ArgumentDataType::ImageInt16:
+	//	case ArgumentDataType::DImageUInt16:
+	//	case ArgumentDataType::DImageInt16:
+	//		return 2;
+	//	case ArgumentDataType::ImageUInt32:
+	//	case ArgumentDataType::ImageInt32:
+	//	case ArgumentDataType::DImageUInt32:
+	//	case ArgumentDataType::DImageInt32:
+	//		return 4;
+	//	case ArgumentDataType::ImageUInt64:
+	//	case ArgumentDataType::ImageInt64:
+	//	case ArgumentDataType::DImageUInt64:
+	//	case ArgumentDataType::DImageInt64:
+	//		return 8;
+	//	case ArgumentDataType::ImageFloat32:
+	//	case ArgumentDataType::DImageFloat32:
+	//		return 4;
+	//	case ArgumentDataType::ImageComplex32:
+	//	case ArgumentDataType::DImageComplex32:
+	//		return 2*4;
+	//	}
+	//	
+	//	return 0;
+	//}
+
+	/**
+	String that can be shown to the user to list supported image data types.
+	*/
+	inline string listSupportedImageDataTypes()
+	{
+		return "uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, or complex32";
+	}
+
+	/**
+	Converts argument data type to image data type.
+	*/
+	static inline ImageDataType argumentDataTypeToImageDataType(ArgumentDataType t)
+	{
+		switch (t)
+		{
+		case ArgumentDataType::ImageUInt8: return ImageDataType::UInt8;
+		case ArgumentDataType::ImageUInt16: return ImageDataType::UInt16;
+		case ArgumentDataType::ImageUInt32: return ImageDataType::UInt32;
+		case ArgumentDataType::ImageUInt64: return ImageDataType::UInt64;
+		case ArgumentDataType::ImageInt8: return ImageDataType::Int8;
+		case ArgumentDataType::ImageInt16: return ImageDataType::Int16;
+		case ArgumentDataType::ImageInt32: return ImageDataType::Int32;
+		case ArgumentDataType::ImageInt64: return ImageDataType::Int64;
+		case ArgumentDataType::ImageFloat32: return ImageDataType::Float32;
+		case ArgumentDataType::ImageComplex32: return ImageDataType::Complex32;
+
+		case ArgumentDataType::DImageUInt8: return ImageDataType::UInt8;
+		case ArgumentDataType::DImageUInt16: return ImageDataType::UInt16;
+		case ArgumentDataType::DImageUInt32: return ImageDataType::UInt32;
+		case ArgumentDataType::DImageUInt64: return ImageDataType::UInt64;
+		case ArgumentDataType::DImageInt8: return ImageDataType::Int8;
+		case ArgumentDataType::DImageInt16: return ImageDataType::Int16;
+		case ArgumentDataType::DImageInt32: return ImageDataType::Int32;
+		case ArgumentDataType::DImageInt64: return ImageDataType::Int64;
+		case ArgumentDataType::DImageFloat32: return ImageDataType::Float32;
+		case ArgumentDataType::DImageComplex32: return ImageDataType::Complex32;
+		}
+
+		return ImageDataType::Unknown;
 	}
 
 	/**
@@ -242,20 +387,7 @@ namespace pilib
 	*/
 	static inline size_t pixelSize(ArgumentDataType t)
 	{
-		if (t == ArgumentDataType::ImageUInt8 || t == ArgumentDataType::DImageUInt8)
-			return 1;
-		if (t == ArgumentDataType::ImageUInt16 || t == ArgumentDataType::DImageUInt16)
-			return 2;
-		if (t == ArgumentDataType::ImageUInt32)
-			return 4;
-		if (t == ArgumentDataType::ImageUInt64)
-			return 8;
-		if (t == ArgumentDataType::ImageFloat32 || t == ArgumentDataType::DImageFloat32)
-			return 4;
-		if (t == ArgumentDataType::ImageComplex32 || t == ArgumentDataType::DImageComplex32)
-			return 2*4;
-
-		return 0;
+		return pixelSize(argumentDataTypeToImageDataType(t));
 	}
 
 	/**
@@ -277,31 +409,103 @@ namespace pilib
 		InterpolationMode,
 		Vec3d,
 		Vec3c,
-		Image<uint8_t>*, Image<uint16_t>*, Image<uint32_t>*, Image<uint64_t>*, Image<float32_t>*, Image<complex32_t>*,
-		DistributedImage<uint8_t>*, DistributedImage<uint16_t>*, DistributedImage<uint32_t>*, DistributedImage<uint64_t>*, DistributedImage<float32_t>*, DistributedImage<complex32_t>*>
+		Image<uint8_t>*, Image<uint16_t>*, Image<uint32_t>*, Image<uint64_t>*,
+		Image<int8_t>*, Image<int16_t>*, Image<int32_t>*, Image<int64_t>*,
+		Image<float32_t>*,
+		Image<complex32_t>*,
+		DistributedImage<uint8_t>*, DistributedImage<uint16_t>*, DistributedImage<uint32_t>*, DistributedImage<uint64_t>*,
+		DistributedImage<int8_t>*, DistributedImage<int16_t>*, DistributedImage<int32_t>*, DistributedImage<int64_t>*,
+		DistributedImage<float32_t>*,
+		DistributedImage<complex32_t>*>
 		ParamVariant;
+
+	/**
+	Gets ImageBase* from ParamVariant. Returns 0 if the variant does not contain ImageBase*.
+	*/
+	static inline ImageBase* getImageNoThrow(ParamVariant& v)
+	{
+		ImageBase* p = 0;
+
+		std::visit(
+			[&p](auto& item)
+				{
+					using T = std::decay_t<decltype(item)>;
+					if constexpr (std::is_convertible_v<T, ImageBase*>)
+					{
+						p = (ImageBase*)item;
+					}
+				},
+			v);
+
+		return p;
+	}
+
+	/**
+	Gets DistributedImageBase* from ParamVariant. Returns 0 if the variant does not contain DistributedImageBase*.
+	*/
+	static inline DistributedImageBase* getDistributedImageNoThrow(ParamVariant& v)
+	{
+		DistributedImageBase* p = 0;
+
+		std::visit(
+			[&p](auto& item)
+				{
+					using T = std::decay_t<decltype(item)>;
+					if constexpr (std::is_convertible_v<T, DistributedImageBase*>)
+					{
+						p = (DistributedImageBase*)item;
+					}
+				},
+			v);
+
+		return p;
+	}
+
+
+	/**
+	Gets DistributedImage* from ParamVariant. Returns 0 if the variant does not contain DistributedImage*.
+	*/
+	static inline const DistributedImageBase* getDistributedImageNoThrow(const ParamVariant& v)
+	{
+		const DistributedImageBase* p = 0;
+
+		std::visit(
+			[&p](auto& item)
+				{
+					using T = std::decay_t<decltype(item)>;
+					if constexpr (std::is_convertible_v<T, const DistributedImageBase*>)
+					{
+						p = (const DistributedImageBase*)item;
+					}
+				},
+			v);
+
+		return p;
+	}
 
 	/**
 	Gets DistributedImage* from ParamVariant. Throws ITLException if the variant does not contain any DistributedImage*.
 	*/
 	static inline DistributedImageBase* getDistributedImage(ParamVariant& v)
 	{
-		DistributedImageBase* p = 0;
-
-		std::visit(
-			[&p](auto& item)
-			{
-				using T = std::decay_t<decltype(item)>;
-				if constexpr (std::is_convertible_v<T, DistributedImageBase*>)
-				{
-					p = (DistributedImageBase*)item;
-				}
-			},
-			v);
+		DistributedImageBase* p = getDistributedImageNoThrow(v);
 
 		if (p == 0)
 			throw ITLException("No DistributedImage found in variant.");
 		
+		return p;
+	}
+
+	/**
+	Gets DistributedImage* from ParamVariant. Throws ITLException if the variant does not contain any DistributedImage*.
+	*/
+	static inline const DistributedImageBase* getDistributedImage(const ParamVariant& v)
+	{
+		const DistributedImageBase* p = getDistributedImageNoThrow(v);
+
+		if (p == 0)
+			throw ITLException("No DistributedImage found in variant.");
+
 		return p;
 	}
 

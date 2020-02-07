@@ -30,4 +30,19 @@ namespace itl2
 		}
 		throw ITLException("Invalid neighbourhood type value.");
 	}
+
+	template<>
+	inline NeighbourhoodType fromString(const string& dt)
+	{
+		string dt2 = dt;
+		trim(dt2);
+		toLower(dt2);
+		if (dt2 == "rectangular" || dt2 == "rect" || dt2 == "box")
+			return NeighbourhoodType::Rectangular;
+
+		if (dt2 == "ell" || dt2 == "ellipsoidal" || dt2 == "ellipsoid" || dt2 == "spherical" || dt2 == "sphere" || dt2 == "sph")
+			return NeighbourhoodType::Ellipsoidal;
+
+		throw ITLException("Invalid neighbourhood type string: " + dt);
+	}
 }

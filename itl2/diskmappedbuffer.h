@@ -5,6 +5,7 @@
 #include "buffer.h"
 #include "itlexception.h"
 #include "io/fileutils.h"
+#include "utilities.h"
 
 #if defined(__linux__)
 
@@ -31,6 +32,11 @@ namespace itl2
 {
 
 #if defined(__linux__)
+
+    /**
+	Reads errno and converts it to error message.
+	*/
+    std::string getErrNoMessage();
 
 	/**
 	Disk-mapped buffer.
@@ -72,37 +78,78 @@ namespace itl2
 			pUserBuffer = 0;
 		}
 
+		/**
+		Reads file size from file descriptor.
+		*/
+		size_t getFileSize(int fd)
+		{
+			struct stat s;
+			if (fstat(fd, &s) == -1)
+				throw ITLException(std::string("Unable to read file size. ") + " (" + getErrNoMessage() + ")");
+			return s.st_size;
+		}
+
 	public:
+
+		DiskMappedBuffer(const DiskMappedBuffer&) = delete;
+		DiskMappedBuffer& operator=(DiskMappedBuffer const&) = delete;
 
 		/**
 		Constructor
+		If readOnly is false, resizes input file to specified size and maps it to memory.
+		Otherwise just maps the file to memory.
 		@param size Size to map, pass zero to map the whole file.
 		@param filename Name of file to map to.
+		@param readOnly Specify true to map a read-only view. Writing to read-only view leads to undefined behaviour.
 		*/
-		DiskMappedBuffer(size_t size, const std::string& filename, size_t bytesToSkip = 0) :
+		DiskMappedBuffer(size_t size, const std::string& filename, bool readOnly, size_t bytesToSkip = 0) :
 			pDummy(0),
 			mappedSize(size * sizeof(T))
 		{
-			createFoldersFor(filename);
+    		int fd;
+		    if(!readOnly)
+		    {
+		
+    			createFoldersFor(filename);
 
-			// Open file (if the file is created, user has read and write permissions, group has read permissions.
-			int fd = open(filename.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
-			if (fd == -1)
-				throw ITLException(std::string("Unable to open file ") + filename);
+			    // Open file (if the file is created, user has read and write permissions, group has read permissions.
+			    fd = open(filename.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
+			    
+			    if (fd == -1)
+				    throw ITLException(std::string("Unable to open file for reading and writing: ") + filename + " (" + getErrNoMessage() + ")");
+			
+				if (mappedSize <= 0)
+					mappedSize = getFileSize(fd);
 
-			// Resize
-			if (ftruncate(fd, mappedSize) == -1)
-			{
-				::close(fd);
-				throw ITLException(std::string("Unable to set size of ") + filename);
+			    // Resize to correct size
+    		    if (ftruncate(fd, mappedSize) == -1)
+			    {
+			    	::close(fd);
+			    	throw ITLException(std::string("Unable to set size of ") + filename + " (" + getErrNoMessage() + ")");
+			    }
+
+			    // Create memory map
+			    pBuffer = (T*)mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 			}
+			else
+			{
+			    // Open read-only
+			    fd = open(filename.c_str(), O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP);
+			    
+			    if (fd == -1)
+				    throw ITLException(std::string("Unable to open file for reading: ") + filename + " (" + getErrNoMessage() + ")");
+				
+				if (mappedSize <= 0)
+					mappedSize = getFileSize(fd);
 
-			// Create memory map
-			pBuffer = (T*)mmap(0, mappedSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+				// Create read-only mapping
+    			pBuffer = (T*)mmap(0, mappedSize, PROT_READ, MAP_SHARED, fd, 0);
+    		}
+			
 			if (pBuffer == MAP_FAILED)
 			{
 				::close(fd);
-				throw ITLException(std::string("Unable to create view for file ") + filename);
+				throw ITLException(std::string("Unable to create view for file ") + filename + ". " + getErrNoMessage() + " Size = " + itl2::toString(mappedSize) + ".");
 			}
 
 			::close(fd);
@@ -120,12 +167,12 @@ namespace itl2
 			close();
 		}
 
-		virtual T* getBufferPointer()
+		virtual T* getBufferPointer() override
 		{
 			return pUserBuffer;
 		}
 
-		virtual void prefetch(size_t start, size_t end) const
+		virtual void prefetch(size_t start, size_t end) const override
 		{
 			madvise(pUserBuffer + start, end - start, MADV_WILLNEED);
 		}
@@ -166,6 +213,14 @@ namespace itl2
 		*/
 		void close()
 		{
+			pUserBuffer = 0;
+
+			if (pBuffer)
+			{
+				UnmapViewOfFile(pBuffer);
+				pBuffer = 0;
+			}
+
 			if(fileMappingHandle != INVALID_HANDLE_VALUE)
 			{
 				CloseHandle(fileMappingHandle);
@@ -180,85 +235,126 @@ namespace itl2
 
 			delete pDummy;
 			pDummy = 0;
-
-			pUserBuffer = 0;
 		}
 
 	public:
 
+		DiskMappedBuffer(const DiskMappedBuffer&) = delete;
+		DiskMappedBuffer& operator=(DiskMappedBuffer const&) = delete;
+
 		/**
 		Constructor
-		Resizes input file to specified size and maps it to memory.
+		If readOnly is false, resizes input file to specified size and maps it to memory.
+		Otherwise just maps the file to memory.
 		@param size Size to map, pass zero to map the whole file.
 		@param filename Name of file to map to.
+		@param readOnly Specify true to map a read-only view. Writing to read-only view leads to undefined behaviour.
 		*/
-		DiskMappedBuffer(size_t size, const std::string& filename, size_t bytesToSkip = 0) :
-		  fileHandle(INVALID_HANDLE_VALUE),
-		  fileMappingHandle(INVALID_HANDLE_VALUE),
-		  pDummy(0)
+		DiskMappedBuffer(size_t size, const std::string& filename, bool readOnly, size_t bytesToSkip = 0) :
+			pBuffer(0),
+			pUserBuffer(0),
+			fileHandle(INVALID_HANDLE_VALUE),
+			fileMappingHandle(INVALID_HANDLE_VALUE),
+			pDummy(0)
 		{
 			try
 			{
 				// TODO: Add GetLastError messages to exception text.
 
-				createFoldersFor(filename);
+				if (!readOnly)
+				{
+					createFoldersFor(filename);
 
-				// Copy string to wstring.
-				//std::wstring wfilename(filename.length(), L' '); // Make room for characters
-				//std::copy(filename.begin(), filename.end(), wfilename.begin());
+					// Copy string to wstring.
+					//std::wstring wfilename(filename.length(), L' '); // Make room for characters
+					//std::copy(filename.begin(), filename.end(), wfilename.begin());
 
-				fileHandle = CreateFileA(filename.c_str(),					// filename
-										GENERIC_READ | GENERIC_WRITE,		// access mode
-										FILE_SHARE_READ | FILE_SHARE_WRITE,	// share mode
-										NULL,								// security attributes
-										OPEN_ALWAYS,						// creation/opening mode
-										FILE_ATTRIBUTE_NORMAL,				// attributes
-										NULL);								// template file
+					fileHandle = CreateFileA(filename.c_str(),					// filename
+						GENERIC_READ | GENERIC_WRITE,		// access mode
+						FILE_SHARE_READ | FILE_SHARE_WRITE,	// share mode
+						NULL,								// security attributes
+						OPEN_ALWAYS,						// creation/opening mode
+						FILE_ATTRIBUTE_NORMAL,				// attributes
+						NULL);								// template file
 
-				if(fileHandle == INVALID_HANDLE_VALUE)
-					throw ITLException("Unable to open file " + filename + " for disk mapping.");
+					if (fileHandle == INVALID_HANDLE_VALUE)
+						throw ITLException("Unable to open file " + filename + " for disk mapping.");
 
-				//// Get file size
-				//LARGE_INTEGER filesize;
-				//if(!GetFileSizeEx(fileHandle, &filesize))
-				//	throw ITLException("Unable to get file size " + filename);
+					//// Get file size
+					//LARGE_INTEGER filesize;
+					//if(!GetFileSizeEx(fileHandle, &filesize))
+					//	throw ITLException("Unable to get file size " + filename);
 
-				//// Make sure file size is not zero.
-				//if(filesize.QuadPart == 0)
-				//{
-				//	T buffer = T();
-				//	DWORD written;
-				//	WriteFile(fileHandle, &buffer, sizeof(T), &written, NULL);
-				//	SetFilePointer(fileHandle, 0, 0, FILE_BEGIN);
-				//}
+					//// Make sure file size is not zero.
+					//if(filesize.QuadPart == 0)
+					//{
+					//	T buffer = T();
+					//	DWORD written;
+					//	WriteFile(fileHandle, &buffer, sizeof(T), &written, NULL);
+					//	SetFilePointer(fileHandle, 0, 0, FILE_BEGIN);
+					//}
 
-				LARGE_INTEGER datasize;
-				datasize.QuadPart = size * sizeof(T);
+					LARGE_INTEGER datasize;
+					datasize.QuadPart = size * sizeof(T);
 
-				// Resize file to requested size
-				SetFilePointer(fileHandle, datasize.LowPart, &datasize.HighPart, FILE_BEGIN);
-				SetEndOfFile(fileHandle);
-				SetFilePointer(fileHandle, 0, 0, FILE_BEGIN);
+					// Resize file to requested size
+					SetFilePointer(fileHandle, datasize.LowPart, &datasize.HighPart, FILE_BEGIN);
+					SetEndOfFile(fileHandle);
+					SetFilePointer(fileHandle, 0, 0, FILE_BEGIN);
 
-				// Create mapping
-				fileMappingHandle = CreateFileMappingA(fileHandle,			// file handle
-													  NULL,					// security attributes
-													  PAGE_READWRITE,		// mapping attributes
-													  datasize.HighPart,	// maximum size h-dword
-													  datasize.LowPart,		// maximum size l-dword
-													  NULL);				// name
+					// Create mapping
+					fileMappingHandle = CreateFileMappingA(fileHandle,			// file handle
+						NULL,					// security attributes
+						PAGE_READWRITE,			// mapping attributes
+						datasize.HighPart,		// maximum size h-dword
+						datasize.LowPart,		// maximum size l-dword
+						NULL);					// name
 
-				if(fileMappingHandle == NULL)	// NULL, not INVALID_HANDLE_VALUE
-					throw ITLException("Unable to open file mapping for " + filename);
+					if (fileMappingHandle == NULL)	// NULL, not INVALID_HANDLE_VALUE
+						throw ITLException("Unable to open file mapping for " + filename + ". Is there enough free disk space available?");
 
-				pBuffer = (T*)MapViewOfFile(fileMappingHandle,						// file mapping
-											FILE_MAP_ALL_ACCESS,					// access
-											0,										// offset h-dword
-											0,										// offset l-dword
-											0);										// size of view, 0-whole mapping
+					pBuffer = (T*)MapViewOfFile(fileMappingHandle,						// file mapping
+						FILE_MAP_ALL_ACCESS,					// access
+						0,										// offset h-dword
+						0,										// offset l-dword
+						0);										// size of view, 0-whole mapping
+				}
+				else
+				{
+					fileHandle = CreateFileA(filename.c_str(),					// filename
+						GENERIC_READ,						// access mode
+						FILE_SHARE_READ | FILE_SHARE_WRITE,	// share mode
+						NULL,								// security attributes
+						OPEN_ALWAYS,						// creation/opening mode
+						FILE_ATTRIBUTE_NORMAL,				// attributes
+						NULL);								// template file
+
+					if (fileHandle == INVALID_HANDLE_VALUE)
+						throw ITLException("Unable to open file " + filename + " for read-only disk mapping.");
+
+					LARGE_INTEGER datasize;
+					datasize.QuadPart = size * sizeof(T);
+
+					// Create mapping
+					fileMappingHandle = CreateFileMappingA(fileHandle,			// file handle
+						NULL,					// security attributes
+						PAGE_READONLY,			// mapping attributes
+						datasize.HighPart,		// maximum size h-dword
+						datasize.LowPart,		// maximum size l-dword
+						NULL);					// name
+
+					if (fileMappingHandle == NULL)	// NULL, not INVALID_HANDLE_VALUE
+						throw ITLException("Unable to open read-only file mapping for " + filename + ".");
+
+					pBuffer = (T*)MapViewOfFile(fileMappingHandle,						// file mapping
+						FILE_MAP_READ,							// access
+						0,										// offset h-dword
+						0,										// offset l-dword
+						0);										// size of view, 0-whole mapping
+				}
 
 				if(pBuffer == NULL)
-					throw ITLException("Unable to create view for file " + filename);
+					throw ITLException(string("Unable to create view for file ") + filename);
 
                 pUserBuffer = (T*)((uint8_t*)(pBuffer) + bytesToSkip);
 
@@ -280,12 +376,12 @@ namespace itl2
 			close();
 		}
 
-		virtual T* getBufferPointer()
+		virtual T* getBufferPointer() override
 		{
 			return pUserBuffer;
 		}
 
-		virtual void prefetch(size_t start, size_t end) const
+		virtual void prefetch(size_t start, size_t end) const override
 		{
 			// TODO: This does not work in Windows 7 (no support => runtime error)
 			// Enable when no Win7 support is required anymore.

@@ -16,7 +16,7 @@ namespace itl2
 	{
 		namespace internals
 		{
-			bool getInfo(TIFF* tif, math::Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes);
+			bool getInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason);
 
 			/**
 			Initialize .tiff reading library.
@@ -39,15 +39,16 @@ namespace itl2
 			{
 				internals::initTIFF();
 
-				auto tifObj = unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
+				auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 				TIFF* tif = tifObj.get();
 
 				if (tif)
 				{
-					math::Vec3c dimensions;
+					Vec3c dimensions;
 					ImageDataType dataType;
 					size_t pixelSizeBytes;
-					if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes))
+					string reason;
+					if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes, reason))
 					{
 						if (dataType != imageDataType<pixel_t>() && pixelSizeBytes != sizeof(pixel_t))
 							throw ITLException(string("Pixel data type in .tiff file is ") + toString(dataType) + " (" + toString(pixelSizeBytes) + " bytes per pixel), but image data type is " + toString(imageDataType<pixel_t>()) + " (" + toString(sizeof(pixel_t)) + " bytes per pixel).");
@@ -90,7 +91,7 @@ namespace itl2
 									tileDepth = 1;
 
 								tmsize_t tiffTileSize = TIFFTileSize(tif);
-								unique_ptr<pixel_t, decltype(_TIFFfree)*> buf = unique_ptr<pixel_t, decltype(_TIFFfree)*>( (pixel_t*)_TIFFmalloc(tiffTileSize), _TIFFfree );
+								auto buf = std::unique_ptr<pixel_t, decltype(_TIFFfree)*>( (pixel_t*)_TIFFmalloc(tiffTileSize), _TIFFfree );
 
 								for (coord_t z0 = z; z0 < dimensions.z; z0 += tileDepth)
 								{
@@ -102,11 +103,11 @@ namespace itl2
 
 											// Plot tile to image
 											size_t n = 0;
-											for (coord_t zz = z0; zz < math::min(z0 + tileDepth, img.depth()); zz++)
+											for (coord_t zz = z0; zz < std::min(z0 + tileDepth, img.depth()); zz++)
 											{
-												for (coord_t yy = y0; yy < math::min(y0 + tileHeight, img.height()); yy++)
+												for (coord_t yy = y0; yy < std::min(y0 + tileHeight, img.height()); yy++)
 												{
-													for (coord_t xx = x0; xx < math::min(x0 + tileWidth, img.width()); xx++)
+													for (coord_t xx = x0; xx < std::min(x0 + tileWidth, img.width()); xx++)
 													{
 														img(xx, yy, zz) = buf.get()[n];
 														n++;
@@ -143,6 +144,10 @@ namespace itl2
 
 						return;
 					}
+					else
+					{
+						throw ITLException(reason);
+					}
 				}
 
 				throw ITLException(string("Error while reading .tif image: ") + internals::tiffLastError());
@@ -155,7 +160,7 @@ namespace itl2
 		@param dataType Pixel data type of the image.
 		@return True if the file seems to be an existing, valid .tiff file with supported pixel data type.
 		*/
-		bool getInfo(const std::string& filename, math::Vec3c& dimensions, ImageDataType& dataType);
+		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason);
 		
 		template<typename pixel_t> void read2D(Image<pixel_t>& img, const std::string& filename, coord_t z)
 		{
@@ -179,30 +184,31 @@ namespace itl2
 		@param filename The name of the file to read.
 		@param start Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const math::Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
 		{
 			internals::initTIFF();
 
-			if (img.width() >= numeric_limits<uint32_t>::max() ||
-				img.height() >= numeric_limits<uint32_t>::max() ||
-				img.depth() >= numeric_limits<uint16_t>::max())
+			if (img.width() >= std::numeric_limits<uint32_t>::max() ||
+				img.height() >= std::numeric_limits<uint32_t>::max() ||
+				img.depth() >= std::numeric_limits<uint16_t>::max())
 				throw ITLException("The image is too large to be read as a block of .tif file.");
 
 
-			if ((start.x + img.width()) >= numeric_limits<uint32_t>::max() ||
-				(start.y + img.height()) >= numeric_limits<uint32_t>::max() ||
-				(start.z + img.depth()) >= numeric_limits<uint16_t>::max())
+			if ((start.x + img.width()) >= std::numeric_limits<uint32_t>::max() ||
+				(start.y + img.height()) >= std::numeric_limits<uint32_t>::max() ||
+				(start.z + img.depth()) >= std::numeric_limits<uint16_t>::max())
 				throw ITLException("The block to be read is too far from origin to be located from a .tif file.");
 
-			auto tifObj = unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
+			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 			TIFF* tif = tifObj.get();
 
 			if (tif)
 			{
-				math::Vec3c dimensions;
+				Vec3c dimensions;
 				ImageDataType dataType;
 				size_t pixelSizeBytes;
-				if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes))
+				string reason;
+				if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes, reason))
 				{
 					if (dataType != imageDataType<pixel_t>() && pixelSizeBytes != sizeof(pixel_t))
 						throw ITLException(string("Pixel data type in .tiff file is ") + toString(dataType) + " (" + toString(pixelSizeBytes) + " bytes per pixel), but image data type is " + toString(imageDataType<pixel_t>()) + " (" + toString(sizeof(pixel_t)) + " bytes per pixel).");
@@ -232,7 +238,7 @@ namespace itl2
 
 							tmsize_t stripSize = TIFFStripSize(tif);
 							tstrip_t stripCount = TIFFNumberOfStrips(tif);
-							unique_ptr<pixel_t, decltype(_TIFFfree)*> buf = unique_ptr<pixel_t, decltype(_TIFFfree)*>((pixel_t*)_TIFFmalloc(stripSize), _TIFFfree);
+							auto buf = std::unique_ptr<pixel_t, decltype(_TIFFfree)*>((pixel_t*)_TIFFmalloc(stripSize), _TIFFfree);
 							uint32_t rowsPerStrip = 0;
 							TIFFGetFieldDefaulted(tif, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
 
@@ -262,6 +268,10 @@ namespace itl2
 
 					return;
 				}
+				else
+				{
+					throw ITLException(reason);
+				}
 			}
 
 			throw ITLException(string("Error while reading .tif image: ") + internals::tiffLastError());
@@ -269,19 +279,21 @@ namespace itl2
 
 
 
-		/*
+		/**
 		Writes a .tif file.
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& filename)
 		{
+			createFoldersFor(filename);
+
 			internals::initTIFF();
 
-			if (img.width() >= numeric_limits<uint32_t>::max() ||
-				img.height() >= numeric_limits<uint32_t>::max() ||
-				img.depth() >= numeric_limits<uint16_t>::max())
+			if (img.width() >= std::numeric_limits<uint32_t>::max() ||
+				img.height() >= std::numeric_limits<uint32_t>::max() ||
+				img.depth() >= std::numeric_limits<uint16_t>::max())
 				throw ITLException("The image is too large to be written to .tif file.");
 
-			auto tifObj = unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "w"), TIFFClose);
+			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "w"), TIFFClose);
 			TIFF* tif = tifObj.get();
 
 			if (tif)
@@ -296,6 +308,7 @@ namespace itl2
 
 					TIFFSetField(tif, TIFFTAG_IMAGEDEPTH, 1);
 					TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
+
 
 					uint16_t bitsPerSample = sizeof(pixel_t) * 8;
 					TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
@@ -319,6 +332,22 @@ namespace itl2
 					case ImageDataType::UInt64:
 						tiffDataType = TIFF_LONG8;
 						sampleFormat = SAMPLEFORMAT_UINT;
+						break;
+					case ImageDataType::Int8:
+						tiffDataType = TIFF_BYTE;
+						sampleFormat = SAMPLEFORMAT_INT;
+						break;
+					case ImageDataType::Int16:
+						tiffDataType = TIFF_SHORT;
+						sampleFormat = SAMPLEFORMAT_INT;
+						break;
+					case ImageDataType::Int32:
+						tiffDataType = TIFF_LONG;
+						sampleFormat = SAMPLEFORMAT_INT;
+						break;
+					case ImageDataType::Int64:
+						tiffDataType = TIFF_LONG8;
+						sampleFormat = SAMPLEFORMAT_INT;
 						break;
 					case ImageDataType::Float32:
 						tiffDataType = TIFF_FLOAT;
@@ -374,11 +403,14 @@ namespace itl2
 		}
 
 		/*
-		Write a .tif file, adds .tif to the file name.
+		Write a .tif file, adds .tif to the file name if it does not end with .tif or .tiff.
 		*/
 		template<typename pixel_t> void writed(const Image<pixel_t>& img, const std::string& filename)
 		{
-			write(img, filename + ".tif");
+			if (endsWithIgnoreCase(filename, ".tif") || endsWithIgnoreCase(filename, ".tiff"))
+				write(img, filename);
+			else
+				write(img, filename + ".tif");
 		}
 
 

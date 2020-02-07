@@ -1,0 +1,97 @@
+.. _montage:
+
+montage
+*******
+
+
+**Syntax:** :code:`montage(input image, output image, columns, rows, scale, first slice, last slice, step, border width, border color)`
+
+Makes a 2D montage of a 3D image.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Output image.
+
+columns [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+Number of 2D slices in the montage in the horizontal direction.
+
+rows [input]
+~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+Number of 2D slices in the montage in the vertical direction.
+
+scale [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Scaling factor between slices in the original image and the slices in the montage.
+
+first slice [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+First slice to include in the montage.
+
+last slice [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 18446744073709551615
+
+Last slice to include in the montage. Note that the columns and rows parameters define the maximum number of slices that will fit into the montage.
+
+step [input]
+~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Step between slices to include in the montage. Specify zero to set the step to a value that accommodates approximately all the stack slices in the montage.
+
+border width [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Width of borders between the slices in the montage.
+
+border color [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Color of borders between slices in the montage.
+

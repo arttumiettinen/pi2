@@ -1,0 +1,54 @@
+.. _usage_standalone:
+
+Using pi2 from shell or command line
+====================================
+
+Pi2 can be used as a standalone program from the shell (Linux) or command prompt (Windows).
+There are two ways to achieve this.
+
+With a Pi2 script file
+----------------------
+
+Create a text file that contains Pi2 commands that you want to run, e.g::
+
+	newimage(img, uint8, 100, 100, 100);
+	noise(img, 100, 25);
+	writetif(img, ./noise);
+	
+Save the file and then run::
+
+	./pi2 file_name
+	
+or in Windows::
+
+	pi2 file_name
+	
+where :code:`file_name` is the name of the script file.
+If no file name is given, the program tries to open :file:`pi.txt` or :file:`pi2.txt` in the current directory and use that as an input file.
+
+
+Without intermediate script file
+--------------------------------
+
+The Pi2 commands can be given directly as command-line arguments to the pi2 executable. For example, in Linux::
+
+	./pi2 "newimage(img, uint8, 100, 100, 100); noise(img, 100, 25); writetif(img, ./noise);"
+
+or in Windows::
+
+	pi2 newimage(img, uint8, 100, 100, 100); noise(img, 100, 25); writetif(img, ./noise);
+
+
+Pi2 command syntax
+------------------
+
+The syntax of the Pi2 script files (and command-lines) is pretty simple and forgiving. There are only a few rules:
+
+	* Each command is in the form :code:`name(arg1, arg2, ..., argN)`. There are no, e.g. arithmetic operations or conditional statements. List of allowed commands is found in the :ref:`command_reference` page.
+	* Commands can be separated by :code:`;`-character or newline. Newlines can be in either Linux or Windows format.
+	* Whitespace is not significant. Values do **not** need to be quoted unless they contain significant whitespace or commas, and in that case they may be quoted either with single quotes :code:`'` or double quotes :code:`"`.
+	* Anything after :code:`%`, :code:`#`, or :code:`//` is comment until the next newline.
+	* Vector values can be expressed with :code:`[x, y, z]`, where :code:`x`, :code:`y`, and :code:`z` are the three components of the vector. If only one component :code:`x` is specified, the resulting vector will be :code:`[x, x, x]`.
+	* Image names must be alphanumeric and start with a letter.
+	* Argument that has a default value does not need to be given, unless arguments after that are given.
+

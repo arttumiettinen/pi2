@@ -1,0 +1,85 @@
+.. _frangifilter:
+
+frangifilter
+************
+
+
+**Syntax:** :code:`frangifilter(input image, output image, spatial sigma, output scale, c, gamma, alpha, beta)`
+
+Calculates line-enhancing filter Vo according to Frangi - Multiscale vessel enhancement filtering.
+
+This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+spatial sigma [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Standard deviation of Gaussian kernel, determines scale of structures that are probed.
+
+output scale [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Output values are scaled by this number. Pass in zero to scale output value 1 to maximum of the data type for integer data types and to 1 for floating point data types.
+
+c [input]
+~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.25
+
+Sensitivity of the filter to deviation from background noise. Typical value is quarter of the value of the maximum intensity of the lines.
+
+gamma [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Scale-space scaling exponent. Set to zero to disable scaling.
+
+alpha [input]
+~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.5
+
+Sensitivity of the filter to deviation from plate-like structures.
+
+beta [input]
+~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0.5
+
+Sensitivity of the filter to deviation from blob-like structures.
+
+See also
+--------
+
+:ref:`satofilter`

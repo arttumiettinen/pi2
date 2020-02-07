@@ -3,8 +3,8 @@
 #include <random>
 #include <cmath>
 #include <iomanip>
-#include <atomic>
 
+#include "ompatomic.h"
 #include "io/raw.h"
 #include "pointprocess.h"
 #include "projections.h"
@@ -21,7 +21,7 @@ namespace itl2
 {
 	void initFFTW()
 	{
-		static atomic<bool> isFFTWInit(false);
+		static OmpAtomic<bool> isFFTWInit(false);
 
 		if (!isFFTWInit)
 		{
@@ -255,11 +255,18 @@ namespace itl2
 	{
 		initFFTW();
 
+		if (img.dimensionality() != out.dimensionality() ||
+			out.width() < img.width() ||
+			out.height() < img.height() ||
+			out.depth() < img.depth())
+			throw ITLException("Size and dimensionality of the output image is not set correctly.");
+
 		if (img.dimensionality() == 1)
 		{
-			coord_t w = (img.dimension(0) - 1) * 2;
+			//coord_t w = (img.dimension(0) - 1) * 2;
+			coord_t w = out.dimension(0);
 
-			out.ensureSize(w);
+			//out.ensureSize(w);
 
 			fftwf_plan p;
 			#pragma omp critical
@@ -275,10 +282,12 @@ namespace itl2
 		}
 		else if (img.dimensionality() == 2)
 		{
-			coord_t w = (img.dimension(0) - 1) * 2;
-			coord_t h = img.dimension(1);
+			//coord_t w = (img.dimension(0) - 1) * 2;
+			//coord_t h = img.dimension(1);
+			coord_t w = out.dimension(0);
+			coord_t h = out.dimension(1);
 
-			out.ensureSize(w, h);
+			//out.ensureSize(w, h);
 
 			fftwf_plan p;
 			#pragma omp critical
@@ -294,11 +303,14 @@ namespace itl2
 		}
 		else if (img.dimensionality() == 3)
 		{
-			coord_t w = (img.dimension(0) - 1) * 2;
-			coord_t h = img.dimension(1);
-			coord_t d = img.dimension(2);
+			//coord_t w = (img.dimension(0) - 1) * 2;
+			//coord_t h = img.dimension(1);
+			//coord_t d = img.dimension(2);
+			coord_t w = out.dimension(0);
+			coord_t h = out.dimension(1);
+			coord_t d = out.dimension(2);
 
-			out.ensureSize(w, h, d);
+			//out.ensureSize(w, h, d);
 
 			fftwf_plan p;
 			#pragma omp critical
@@ -329,8 +341,8 @@ namespace itl2
 		double min_sigma = min_size / 2;
 		double max_sigma = max_size / 2;
 
-		min_sigma = math::max(min_sigma, 0.0);
-		max_sigma = math::max(max_sigma, 0.0);
+		min_sigma = std::max(min_sigma, 0.0);
+		max_sigma = std::max(max_sigma, 0.0);
 
 		// See gauss method
 		if (zeroEdges)
@@ -354,16 +366,16 @@ namespace itl2
 				for (coord_t x = 0; x < fw; x++)
 				{
 					double dx = (double)(x - 0);
-					double dy = (double)math::min(y - 0, fh - y);
-					double dz = (double)math::min(z - 0, fd - z);
+					double dy = (double)std::min(y - 0, fh - y);
+					double dz = (double)std::min(z - 0, fd - z);
 
-					double w1x = sqrt(2) * math::PI * max_sigma / size.x;
-					double w1y = sqrt(2) * math::PI * max_sigma / size.y;
-					double w1z = sqrt(2) * math::PI * max_sigma / size.z;
+					double w1x = sqrt(2) * PI * max_sigma / size.x;
+					double w1y = sqrt(2) * PI * max_sigma / size.y;
+					double w1z = sqrt(2) * PI * max_sigma / size.z;
 
-					double w2x = sqrt(2) * math::PI * min_sigma / size.x;
-					double w2y = sqrt(2) * math::PI * min_sigma / size.y;
-					double w2z = sqrt(2) * math::PI * min_sigma / size.z;
+					double w2x = sqrt(2) * PI * min_sigma / size.x;
+					double w2y = sqrt(2) * PI * min_sigma / size.y;
+					double w2z = sqrt(2) * PI * min_sigma / size.z;
 
 					double trans = (1.0 - ::exp(-(w1x * w1x * dx * dx + w1y * w1y * dy * dy + w1z * w1z * dz * dz)))
 										* ::exp(-(w2x * w2x * dx * dx + w2y * w2y * dy * dy + w2z * w2z * dz * dz));
@@ -375,14 +387,14 @@ namespace itl2
 		ifft(ft, img);
 	}
 
-	void gaussFilter(Image<float32_t>& img, Vec3d sigma, bool zeroEdges)
+	void gaussFilterFFT(Image<float32_t>& img, Vec3d sigma, bool zeroEdges)
 	{
-		sigma = componentwiseMax(sigma, Vec3d(0, 0, 0));
+		sigma = max(sigma, Vec3d(0, 0, 0));
 
 		// This zeroing seems to just about enough for many purposes.
 		// Padding would be better but we don't want to start creating new images here.
 		if (zeroEdges)
-			setEdges(img, 0, math::componentwiseCeil(1.5 * sigma));
+			setEdges(img, 0, ceil(1.5 * sigma));
 
 		Image<complex32_t > ft;
 		fft(img, ft);
@@ -402,12 +414,12 @@ namespace itl2
 				for (coord_t x = 0; x < fw; x++)
 				{
 					double dx = (double)(x - 0);
-					double dy = (double)math::min(y - 0, fh - y);
-					double dz = (double)math::min(z - 0, fd - z);
+					double dy = (double)std::min(y - 0, fh - y);
+					double dz = (double)std::min(z - 0, fd - z);
 
-					double wx = sqrt(2) * math::PI * sigma.x / size.x;
-					double wy = sqrt(2) * math::PI * sigma.y / size.y;
-					double wz = sqrt(2) * math::PI * sigma.z / size.z;
+					double wx = sqrt(2) * PI * sigma.x / size.x;
+					double wy = sqrt(2) * PI * sigma.y / size.y;
+					double wz = sqrt(2) * PI * sigma.z / size.z;
 
 					double trans = ::exp( -(wx * wx * dx * dx + wy * wy * dy * dy + wz * wz * dz * dz));
 					ft(x, y, z) *= (float)trans;
@@ -683,12 +695,12 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> tmp;
-			raw::read(tmp, "./t1-head_256x256x129.raw");
+			raw::read(tmp, "./input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> reference;
 			convert(tmp, reference);
 
-			raw::read(tmp, "./t1-head_rot_trans_256x256x129.raw");
+			raw::read(tmp, "./input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed;
 			convert(tmp, deformed);
@@ -707,7 +719,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./t1-head_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -756,16 +768,21 @@ namespace itl2
 		void fourierTransformPair()
 		{
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
 			
-			Image<float32_t> head(head16.dimensions());
-			convert(head16, head);
+			//Image<float32_t> head(head16.dimensions());
+			//convert(head16, head);
+
+			Image<float32_t> head(150, 175, 1);
+			crop(head16, head, Vec3c(0, 0, 0));
+
+			raw::writed(head, "./fourier/fft_input");
 
 
-			Image<complex32_t > ft;
+			Image<complex32_t> ft;
 			fft(head, ft);
 
-			Image<float32_t> comp;
+			Image<float32_t> comp(head.dimensions());
 			ifft(ft, comp);
 
 			raw::writed(comp, "./fourier/ifft");
@@ -778,7 +795,7 @@ namespace itl2
 		void dctPair()
 		{
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -802,7 +819,7 @@ namespace itl2
 			// NOTE: No asserts
 
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -813,7 +830,7 @@ namespace itl2
 
 
 			convert(head16, head);
-			gaussFilter(head, 4);
+			gaussFilterFFT(head, 4);
 			raw::writed(head, "./fourier/gauss");
 		}
 

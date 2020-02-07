@@ -4,8 +4,59 @@
 #include "projections.h"
 #include "pointprocess.h"
 
+#include <set>
+#include <type_traits>
+#include <limits>
+
 namespace itl2
 {
+	/**
+	Finds all unique colors in the given image.
+	*/
+	template<typename pixel_t> std::set<pixel_t> colors(const Image<pixel_t>& img)
+	{
+		std::set<pixel_t> c;
+		for (coord_t i = 0; i < img.pixelCount(); i++)
+		{
+			c.insert(img(i));
+		}
+		return c;
+	}
+
+	/**
+	Finds the highest possible value that is lower than the given value.
+	*/
+	template<typename T, typename std::enable_if_t<std::is_integral_v<T>, int> = 0> T decrement(T value)
+	{
+		return value - 1;
+	}
+
+	/**
+	Finds the highest possible value that is lower than the given value.
+	*/
+	template<typename T, typename std::enable_if_t<std::is_floating_point_v<T>, int> = 0> T decrement(T value)
+	{
+		return nextafter(value, std::numeric_limits<T>::lowest());
+	}
+
+	/**
+	Finds value that is not used by any of the pixels in the given image.
+	*/
+	template<typename pixel_t> pixel_t findUnusedValue(const Image<pixel_t>& image)
+	{
+		std::set<pixel_t> unique = colors(image);
+		pixel_t val = std::numeric_limits<pixel_t>::max();
+		while (unique.find(val) != unique.end())
+		{
+			if (val <= std::numeric_limits<pixel_t>::lowest())
+				throw ITLException("The image does not contain any free color to be used as a temporary color.");
+
+			decrement(val);
+		}
+		return val;
+	}
+
+
 	/**
 	Dual thresholding with tracking.
 	Results in an image where all regions that have value over upperThreshold are white, and additionally
@@ -14,7 +65,7 @@ namespace itl2
 	template<typename pixel_t> void dualThreshold(Image<pixel_t>& img, pixel_t lowerThreshold, pixel_t upperThreshold)
 	{
 		// Multi-threshold to two classes.
-		vector<pixel_t> th = { lowerThreshold, upperThreshold };
+		std::vector<pixel_t> th = { lowerThreshold, upperThreshold };
 		multiThreshold(img, th);
 
 		// Convert all those structures to "sure" that touch a "sure" structure.
@@ -35,7 +86,7 @@ namespace itl2
 	{
 		pixel_t val = pixelRound<pixel_t, value_t>(value);
 		
-		r = componentwiseMax(r, Vec3c(1, 1, 1));
+		r = max(r, Vec3c(1, 1, 1));
 
 		// NOTE: This algorithm sets some pixels multiple times, beware if you use it for something else than setting pixel values!
 		for (size_t skip = 0; skip < img.dimensionality(); skip++)
@@ -52,7 +103,7 @@ namespace itl2
 						Vec3c coords(x, y, z);
 
 						coord_t s = img.dimension(skip) - 1;
-						for (coord_t n = 0; n < math::min(r[skip], s); n++)
+						for (coord_t n = 0; n < std::min(r[skip], s); n++)
 						{
 							coords[skip] = n;
 							img(coords) = val;
@@ -82,12 +133,12 @@ namespace itl2
 	@param img Image to process.
 	@param globalMean The desired mean value. NaN corresponds to the global mean of the image.
 	*/
-	template<typename pixel_t> void normalizeZ(Image<pixel_t>& img, float32_t globalMean = numeric_limits<float32_t>::signaling_NaN())
+	template<typename pixel_t> void normalizeZ(Image<pixel_t>& img, float32_t globalMean = std::numeric_limits<float32_t>::signaling_NaN())
 	{
 		Image<float32_t> tmp, zmean, allmean;
 		mean(img, 0, tmp);
 		mean(tmp, 1, zmean);
-		if(math::isnan(globalMean))
+		if(std::isnan(globalMean))
 			globalMean = (float32_t)mean(zmean);
 
 		#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())

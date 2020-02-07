@@ -1,0 +1,68 @@
+.. _removeedges:
+
+removeedges
+***********
+
+
+**Syntax:** :code:`removeedges(vertices, edges, edge measurements, edge points, flags, disconnect straight-through nodes, remove isolated nodes)`
+
+Prunes the network by removing user-selected edges from it. The edges to be removed are specified in an image, having one pixel for each edge, where non-zero value specifies that the corresponding edge is to be removed.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+vertices [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where vertex coordinates are stored. See :ref:`tracelineskeleton` command.
+
+edges [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint64 image
+
+Image where vertex indices corresponding to each edge are stored. See :ref:`tracelineskeleton` command.
+
+edge measurements [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image where properties of each edge are stored.  ee :ref:`tracelineskeleton` command.
+
+edge points [input & output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** int32 image
+
+Image that stores some points on each edge. See :ref:`tracelineskeleton` command.
+
+flags [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image that has as many pixels as there are edges. Edges corresponding to non-zero pixels are removed.
+
+disconnect straight-through nodes [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+If set to true, all straight-through nodes (nodes with degree = 2) are removed after pruning. This operation might change the network even if no edges are pruned.
+
+remove isolated nodes [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+If set to true, all isolated nodes (nodes with degree = 0) are removed after pruning. This operation might change the network even if no edges are pruned.
+
+See also
+--------
+
+:ref:`cleanskeleton`, :ref:`pruneskeleton`, :ref:`removeedges`, :ref:`fillskeleton`, :ref:`getpointsandlines`

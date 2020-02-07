@@ -1,0 +1,59 @@
+.. _generictransform:
+
+generictransform
+****************
+
+
+**Syntax:** :code:`generictransform(image, transformed image, position, reference points, deformed points, exponent)`
+
+Transforms image based on point-to-point correspondence data. Transformation between the points is interpolated from the point data using inverse distance interpolation.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image that will be transformed.
+
+transformed image [output]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+The result of the transformation is set to this image. Size of this image must be set before calling this command.
+
+position [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+Position of the transformed image in coordinates of the original.
+
+reference points [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Points in the original image as 3xN image where each row contains (x, y, z)-coordinates of a single point, and there are N points in total.
+
+deformed points [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Locations of points in reference points image after the deformation has been applied. Encoded similarly to reference points image.
+
+exponent [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 2.5
+
+Smoothing exponent in the inverse distance interpolation. Smaller values smooth more.
+

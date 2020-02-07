@@ -1,0 +1,26 @@
+.. _print:
+
+print
+*****
+
+
+**Syntax:** :code:`print(string)`
+
+Prints a message to the output. This is mainly used internally in distributed processing.
+
+This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+string [input]
+~~~~~~~~~~~~~~
+
+**Data type:** string
+
+String to print
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`

@@ -1,0 +1,103 @@
+.. _usage_cpp:
+
+Using pi2 from C++ code and other programming languages
+=======================================================
+
+Using full pi2 functionality
+----------------------------
+
+Pi2 functionality including distributed processing can be used from C, C++, and many other programming languages by using the pilib shared library/dynamic library.
+Examples of the process can be found in:
+
+	* C and C++: https://github.com/arttumiettinen/pi2/blob/master/pi2/pi2.cpp and https://github.com/arttumiettinen/pi2/blob/master/pilib/pilib.h
+	* C#: https://github.com/arttumiettinen/pi2/blob/master/pi2cs/Pi2.cs and https://github.com/arttumiettinen/pi2/blob/master/pi2cs/PiLib.cs
+	* Python: https://github.com/arttumiettinen/pi2/blob/master/python_scripts/generic/pi2py2.py
+	
+Basically, the shared library contains a few functions that you use to interact with the pi2 system.
+
+First, you will need to initialize pi2 by calling
+
+.. code-block:: c
+
+	void* createPI();
+	
+that returns a handle that must be passed to all other function calls.
+
+Pi2 commands can be run using
+
+.. code-block:: c
+
+	uint8_t run(void* pi, const char* commands);
+	
+The arguments are the handle returned by :code:`createPI()` and
+arbitrary pi2 command string in the same format that is used in the :ref:`stand-alone mode <usage_standalone>`.
+
+If the return value of :code:`run` is zero, the execution of the commands failed.
+In this case the error message can be accessed using functions:
+
+.. code-block:: c
+
+	const char* lastErrorMessage(void* pi);
+	int32_t lastErrorLine(void* pi);
+	
+These return pointer to error message and line number causing the error, respectively.
+The error can be cleared with
+
+.. code-block:: c
+
+	void clearLastError(void* pi);
+	
+but it is not strictly necessary as new errors will overwrite old ones anyway.
+
+Image data stored in the pi2 system can be accessed with
+
+.. code-block:: c
+
+	void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, int64_t* depth, int32_t* dataType);
+
+that returns a pointer to image data, given handle returned by :code:`createPI` and the name of the image.
+The width, height, depth, and dataType parameters are filled by the function to image dimensions and data type.
+
+After you are done, the pi2 system should be torn down by passing the handle to
+
+.. code-block:: c
+
+	void destroyPI(void* pi).
+
+More information and API documentation can be found in source files
+
+	* C/C++ https://github.com/arttumiettinen/pi2/blob/master/pilib/pilib.h.
+	* C#: https://github.com/arttumiettinen/pi2/blob/master/pi2cs/PiLib.cs
+	
+
+Using non-distributed functionality only as a C++ template library
+------------------------------------------------------------------
+
+For C++ developers pi2 offers also a (perhaps) simpler way to access the non-distributed processing functionality.
+The image processing algorithms are available as a mostly template-based C++ library in the itl2 folder of the source code.
+The library works in pretty simple imperative mindset:
+
+.. code-block:: c
+
+	#include "image.h"
+	#include "noise.h"
+	#include "io/itltiff.h"
+
+	using namespace itl2;
+
+	void main()
+	{
+		// Create image whose pixel data type is 8-bit unsigned integer and dimensions are 100 x 100 x 100.
+		Image<uint8_t> image(100, 100, 100);
+
+		// Add noise to the image
+		noise(image, 100, 25);
+
+		// Write to .tiff file. The writed function adds .tif in the end of file name if the suffix is not there.
+		itl2::tiff::writed(image, "./noise");
+	}
+
+In some cases you need to link with libitl2/itl2.lib.
+Please see header files in `itl2 <https://github.com/arttumiettinen/pi2/tree/master/itl2>`_ folder and subfolders for API documentation.
+
+Note: Using the library this way has not been thoroughly tested so you might encounter some problems!

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <vector>
-#include <atomic>
+//#include <atomic>
+
+#include "ompatomic.h"
 
 namespace itl2
 {
@@ -13,7 +15,8 @@ namespace itl2
 	private:
 		struct Element
 		{
-			std::atomic<size_t> parent;
+			//std::atomic<size_t> parent;
+			OmpAtomic<size_t> parent;
 			size_t rank;
 
 			Element(size_t parent) :
@@ -24,7 +27,8 @@ namespace itl2
 
 			Element(const Element& other)
 			{
-				parent.store(other.parent);
+				//parent.store(other.parent);
+				parent.set(other.parent.get());
 				rank = other.rank;
 			}
 		};
@@ -70,7 +74,8 @@ namespace itl2
 		size_t find_set(size_t x)
 		{
 			Element& element = items[x];
-			std::atomic<size_t>& parent = element.parent;
+			//std::atomic<size_t>& parent = element.parent;
+			OmpAtomic<size_t>& parent = element.parent;
 			if (parent != x)
 			{
 				parent = find_set(parent);

@@ -1,0 +1,51 @@
+Line-enhancing filtering
+========================
+
+This example demonstrates line-enhancing filtering according to :ref:`Frangi <frangifilter>`.
+
+When using the :ref:`frangifilter <frangifilter>` command, the scaling of the output values
+depends on the pixel data type of the input image.
+The results of the Frangi filtering are always in the range :math:`[0, 1]`.
+In order to be able to express the results in an image of integer pixel data type,
+the Frangi filter values are scaled to range :math:`[0, M]`, where :math:`M` is the maximum value
+that can be expressed with the pixel data type.
+
+If the image is of floating point pixel data type, the values are not scaled.
+
+
+::
+
+	def linefilters():
+		"""
+		Calculates Frangi line-enhancing filter.
+		"""
+
+		# Read image
+		img = pi.read(input_file())
+
+		# Frangi filter, 16-bit result
+		frangi_16bit = pi.newlike(img, ImageDataType.UINT16)
+		pi.frangifilter(img, frangi_16bit, 3.0)
+		pi.writeraw(frangi_16bit, output_file('frangi_16bit'))
+
+
+		# Frangi filter, 32-bit result. Notice different scaling in the output, compared to the 16-bit version.
+		frangi_32bit = pi.newlike(img, ImageDataType.FLOAT32)
+		pi.convert(img, ImageDataType.FLOAT32)
+		pi.frangifilter(img, frangi_32bit, 3.0)
+		pi.writeraw(frangi_32bit, output_file('frangi_32bit'))
+		
+		
+		
+.. figure:: figures/t1-head_slice.png
+   :scale: 100 %
+   :alt: Input image
+
+   One slice of the input image.
+
+
+.. figure:: figures/frangi.png
+   :scale: 100 %
+   :alt: Result of Frangi filtering.
+
+   Result of line-enhancing Frangi filter.

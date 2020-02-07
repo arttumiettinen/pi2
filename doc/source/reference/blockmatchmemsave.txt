@@ -1,0 +1,151 @@
+.. _blockmatchmemsave:
+
+blockmatchmemsave
+*****************
+
+
+**Syntax:** :code:`blockmatchmemsave(reference image file, deformed image file, xmin, xmax, xstep, ymin, ymax, ystep, zmin, zmax, zstep, initial shift, file name prefix, coarse comparison radius, coarse binning, fine comparison radius, fine binning, normalize)`
+
+Calculates displacement between two images, loads only overlapping region from disk. NOTE: This command is currently implemented in very old format, and thus it forcibly saves the results to a file.
+
+This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+reference image file [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of reference image file (non-moving image).
+
+deformed image file [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of deformed image file (image to register to non-moving image).
+
+xmin [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+X-coordinate of the first calculation point in the reference image.
+
+xmax [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+X-coordinate of the last calculation point in the reference image.
+
+xstep [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+Step between calculation points in x-direction.
+
+ymin [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+Y-coordinate of the first calculation point in the reference image.
+
+ymax [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+Y-coordinate of the last calculation point in the reference image.
+
+ystep [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+Step between calculation points in y-direction.
+
+zmin [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+Z-coordinate of the first calculation point in the reference image.
+
+zmax [input]
+~~~~~~~~~~~~
+
+**Data type:** integer
+
+Z-coordinate of the last calculation point in the reference image.
+
+zstep [input]
+~~~~~~~~~~~~~
+
+**Data type:** integer
+
+Step between calculation points in z-direction.
+
+initial shift [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+Initial shift between the images.
+
+file name prefix [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased.
+
+coarse comparison radius [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[25, 25, 25]"
+
+Radius of comparison region for coarse matching.
+
+coarse binning [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 2
+
+Amount of resolution reduction in coarse matching phase.
+
+fine comparison radius [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[10, 10, 10]"
+
+Radius of comparison region for fine (full-resolution) matching.
+
+fine binning [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 2
+
+Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.
+
+normalize [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.
+
