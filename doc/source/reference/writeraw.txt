@@ -10,7 +10,7 @@ There are 2 forms of this command.
 
 Write an image to .raw file. The dimensions of the image are automatically appended to the file name. If distributed processing is enabled, uses optimized implementation that does not need to copy or write any image data if the image is saved to a temporary image storage location and that location is on the same partition than the file being written.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------
@@ -44,7 +44,7 @@ Set to true to append to existing .raw file. This parameter must be set to false
 
 Writes an RGB image to a .raw file. The dimensions of the image are automatically appended to the file name.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

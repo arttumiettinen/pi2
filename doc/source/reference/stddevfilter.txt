@@ -8,7 +8,7 @@ stddevfilter
 
 Standard deviation filter. Replaces pixel by standard deviation of pixels in its neighbourhood. For accurate results, use on images with floating point data type. Has optimized implementation for rectangular neighbourhoods.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

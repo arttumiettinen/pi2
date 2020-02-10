@@ -8,7 +8,7 @@ removeedges
 
 Prunes the network by removing user-selected edges from it. The edges to be removed are specified in an image, having one pixel for each edge, where non-zero value specifies that the corresponding edge is to be removed.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

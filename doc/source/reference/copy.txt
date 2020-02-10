@@ -10,7 +10,7 @@ There are 2 forms of this command.
 
 Copies input image to output image. If pixel data types are not the same, performs conversion.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------
@@ -35,7 +35,7 @@ Output image.
 
 Copies pixel values from source image to target image to specified location. The size of the target image is not changed and out-of-bounds pixels are not copied. See also :ref:`set` command.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

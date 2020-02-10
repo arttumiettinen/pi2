@@ -241,7 +241,7 @@ The original code is written by Gabriel Landini, and it has been ported to pi2.
 
 
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

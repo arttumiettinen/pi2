@@ -8,7 +8,7 @@ axelssoncolor
 
 Color coding of orientation data used in Axelsson - Estimating 3D fibre orientation in volume images. This color coding is most suited to materials where most orientations are in the :math:`xy`-plane, e.g. paper or cardboard. In the output, hue describes angle between the positive :math:`x`-axis and the projection of the orientation vector to the :math:`xy`-plane, i.e. the azimuthal component of the orientation direction. Absolute value of the :math:`z`-coordinate of the orientation direction is mapped to saturation, maximum being at the :math:`xy`-plane. Value is mapped to the pixel value in the geometry image normalized such that the maximum value of the geometry image is mapped to 1, and zero to 0.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

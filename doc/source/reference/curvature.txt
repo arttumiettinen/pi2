@@ -8,7 +8,7 @@ curvature
 
 Calculates curvature of surfaces in the image. Uses quadratic surface fitting algorithms in Petitjean - A Survey of Methods for Recovering Quadrics in Triangle Meshes. Pointwise surface normal is determined using principal component analysis of the covariance matrix of surface points near the center point. The surface normal orientation is chosen so that it points toward background voxels. Curvature is determined by transforming surface points near center point to a coordinate system where the :math:`z`-direction is parallel to the surface normal, and then fitting a surface :math:`f(x, y) = a x^2 + b x y + c y^2 + d` to the tranformed points. The curvature values and directions are calculated from the coefficients :math:`a`, :math:`b` and :math:`c`. Finally, directions are then transformed back to the original coordinates. 
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

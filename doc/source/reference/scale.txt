@@ -8,7 +8,7 @@ scale
 
 Scales input image and places the result into the output image. Set size of output image before calling this command or specify scaling factor as an argument. Does not suppress aliasing artifacts when downscaling unless average when downsizing-parameter is set to true.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

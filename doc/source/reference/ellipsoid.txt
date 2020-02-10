@@ -8,7 +8,7 @@ ellipsoid
 
 Draws a filled ellipsoid into the image, given position, semi-axis lengths and the directions of the first two semi-axes. The direction of the third semi-axis is the cross-product of the first two semi-axis direction vectors. The command ensures that the direction of the second semi-axis is perpendicular to the first and to the third one.The lengths of the direction vectors can be anything. The filling is performed such that pixels on the surface of the ellipsoid are not filled.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ greedycoloring
 
 Perform greedy coloring of regions. Colors each region in image such that its neighbours are colored with different colors, and uses as little colors as possible. Uses greedy algorithm so the count of colors used might not be minimal. Assumes background to have value 0 and colors all non-zero regions.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ flip
 
 Flips image in the given dimension, e.g. if dimension is zero, the left edge of the image becomes the right edge and vice versa.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

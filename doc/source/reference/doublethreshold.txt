@@ -8,7 +8,7 @@ doublethreshold
 
 Sets pixel to 0 if its value is less than the first threshold. Sets pixel to 1 if pixel its is larger than or equal to the first threshold and less than the second threshold (if any). Sets pixel to 2 if pixel its is larger than or equal to the second threshold.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

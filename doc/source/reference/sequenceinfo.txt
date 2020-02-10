@@ -8,7 +8,7 @@ sequenceinfo
 
 Displays metadata of image sequence.
 
-This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+This command can be used in the distributed processing mode, but it does not participate in distributed processing.
 
 Arguments
 ---------

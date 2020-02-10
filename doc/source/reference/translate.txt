@@ -8,7 +8,7 @@ translate
 
 Translates input image by specified amount.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

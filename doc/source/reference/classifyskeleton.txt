@@ -8,7 +8,7 @@ classifyskeleton
 
 Classifies line skeleton to end points, curve points, branch points, junction points, internal points, and edge points according to Arcelli, From 3D Discrete Surface Skeletons to Curve Skeletons.End points are given value 2, curve points value 3, branch points value 4, junction points value 5, internal points value 6, and edge points value 7.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

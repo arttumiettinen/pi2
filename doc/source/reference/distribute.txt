@@ -8,7 +8,7 @@ distribute
 
 Enables or disables distributed processing of commands. Run this command before commands that you would like to run using distributed processing. Images used during distributed processing are not available for local processing and vice versa, unless they are loaded again from disk. All commands do not support distributed processing.
 
-This command can be used in a distributed processing mode, but it does not participate in distributed processing.
+This command can be used in the distributed processing mode, but it does not participate in distributed processing.
 
 Arguments
 ---------

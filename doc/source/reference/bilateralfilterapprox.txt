@@ -8,7 +8,7 @@ bilateralfilterapprox
 
 Approximate bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel. The difference to exact bilateral filter is that the approximate version does not process all pixels in a neighbourhood but only a random subset of them. As a result, the filtering operation is much faster but the output may contain some random noise.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ reslice
 
 Rotates the input image like a 3D cube such that the face of the cube defined by 'direction' argument will be the first slice in the output image.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

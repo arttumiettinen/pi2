@@ -8,7 +8,7 @@ generictransform
 
 Transforms image based on point-to-point correspondence data. Transformation between the points is interpolated from the point data using inverse distance interpolation.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

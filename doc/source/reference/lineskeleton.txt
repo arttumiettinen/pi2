@@ -8,7 +8,7 @@ lineskeleton
 
 Calculates skeleton of the foreground of the given image. Positive pixels are assumed to belong to the foreground. The skeleton contains only lines (no plates). This command is not guaranteed to give the same result in both normal and distributed processing mode. Despite that, both modes should give a valid result.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ morphorec
 
 Morphological reconstruction. Dilates input image (seed image) and after each dilation constraints changes to nonzero pixels of parameter image (mask image). Continues until the image does not change anymore.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

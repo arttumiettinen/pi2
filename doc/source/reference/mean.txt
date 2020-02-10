@@ -8,7 +8,7 @@ mean
 
 Calculates mean of all pixels in the input image. The output is a 1x1x1 image.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

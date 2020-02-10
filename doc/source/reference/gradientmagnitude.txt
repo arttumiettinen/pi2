@@ -8,7 +8,7 @@ gradientmagnitude
 
 Calculates norm of Gaussian gradient of image. The output image can be the same than the input image.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

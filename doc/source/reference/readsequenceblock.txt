@@ -10,7 +10,7 @@ There are 2 forms of this command.
 
 Reads a block of an image sequence from a file.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------
@@ -77,7 +77,7 @@ Depth of block to read.
 
 Reads a block of an image sequence from a file.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ hist2
 
 Calculate bivariate histogram of two images. In the bivariate histogram position (i, j) counts number of locations where the value of the first input image is i and the value of the second input image is j (assuming minimum = 0, maximum = data type max, and bin size = 1). If image sizes are different, only the region available in both images is included in the histogram. In this case, a warning message is shown.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

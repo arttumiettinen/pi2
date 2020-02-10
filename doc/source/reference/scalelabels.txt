@@ -8,7 +8,7 @@ scalelabels
 
 Scales input image and places the result into the output image. Assumes that input image is a binary image or contains label values, and performs scaling such that edges of regions do not become jagged. Supports only upscaling by integer scaling factor. Set size of output image before calling this command or specify scaling factor as an argument.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

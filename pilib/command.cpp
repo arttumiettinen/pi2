@@ -127,15 +127,15 @@ namespace pilib
 		// Distribution text
 		if (dynamic_cast<const TrivialDistributable*>(this))
 		{
-			msg << endl << "This command can be used in a distributed processing mode, but it does not participate in distributed processing." << endl;
+			msg << endl << "This command can be used in the distributed processing mode, but it does not participate in distributed processing." << endl;
 		}
 		else if (dynamic_cast<const Distributable*>(this))
 		{
-			msg << endl << processTags("This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.", format) << endl;
+			msg << endl << processTags("This command can be used in the distributed processing mode. Use `distribute` command to change processing mode from local to distributed.", format) << endl;
 		}
 		else
 		{
-			msg << endl << "This command cannot be used in a distributed processing mode. If you need it, please contact the authors." << endl;
+			msg << endl << "This command cannot be used in the distributed processing mode. If you need it, please contact the authors." << endl;
 		}
 
 		msg << endl;

@@ -249,7 +249,7 @@ namespace itl2
 					// Get shifted values into a buffer
 					for (coord_t z = 0; z < img.depth(); z++)
 					{
-						buffer(z) = interpolate(img, x, y, z - shift);
+						buffer(z) = interpolate(img, (float32_t)x, (float32_t)y, (float32_t)z - shift);
 					}
 
 					// Write back to image

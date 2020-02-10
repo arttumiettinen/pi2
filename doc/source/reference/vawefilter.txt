@@ -8,7 +8,7 @@ vawefilter
 
 Variance Weighted mean filtering. Removes noise from the image while trying to preserve edges. Edge preservation is achieved by filtering less aggressively in regions where local variance of pixel values is high. The filter thus assumes that high local variance corresponds to details of interest, and low local variance corresponds to regions containing solely noise.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ analyzeparticles
 
 Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command :ref:`headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see :ref:`analyzelabels`.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ openingfilter
 
 Opening filter. Widens gaps in bright objects and removes objects smaller than neighbourhood size. Has optimized implementation for rectangular neighbourhoods. Creates one temporary image of same size than input.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

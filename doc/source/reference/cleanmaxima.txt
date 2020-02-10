@@ -8,7 +8,7 @@ cleanmaxima
 
 Removes all maxima that are smaller in radius than neighbouring maximum. Maximum is neighbour to another maximum if distance between them is less than radius of the larger maximum multiplied by radiusMultiplier. Removes all maxima :math:`m` that satisfy :math:`distance(m, n) < radiusMultiplier * radius(n)` and :math:`radius(n) > radius(m)` for some :math:`n`. The distance is measured between centroids of the maxima. The maxima are removed by combining them to the larger maxima.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

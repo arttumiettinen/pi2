@@ -8,7 +8,7 @@ localmaxima
 
 Finds local maxima in the input image. Maxima migh be individual pixels or larger regions that have the same value and that are bordered by pixels of smaller value. The output image will be in format [count of regions][count of pixels in region 1][x1][y1][z1][zx2][y2][z2]...[count of items in region 2][x1][y1][z1][zx2][y2][z2]...
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

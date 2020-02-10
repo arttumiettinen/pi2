@@ -8,7 +8,7 @@ rot90cw
 
 Rotates input image clockwise 90 degrees around the :math:`z`-axis.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

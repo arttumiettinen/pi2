@@ -10,7 +10,7 @@ Calculates local thickness map (i.e. opening transform) of a binary image. Input
 
 The algorithm selection depends on the value of the 'save memory' argument. If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model - Independent Assessment of Thickness in Three-Dimensional Images is used. If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte - scale volume images is applied. The separable algorithm is usually much faster than the Hildebrand algorithm, but requires much more RAM (normal mode) or temporary disk space (distributed mode). 
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

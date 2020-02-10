@@ -8,7 +8,7 @@ dmap2
 
 Calculates squared distance map or squared distance transform of a binary image. In order to calculate (non-squared) distance map, use the :ref:`dmap` command or take a square root of the result using the :ref:`squareroot` command.  Uses algorithm from Maurer - A Linear Time Algorithm for Computing Exact Euclidean Distance Transforms of Binary Images in Arbitrary Dimensions.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

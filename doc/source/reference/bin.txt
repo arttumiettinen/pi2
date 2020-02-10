@@ -8,7 +8,7 @@ bin
 
 Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

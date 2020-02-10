@@ -12,7 +12,7 @@ This growing method is suited only for situations where separate parts of the or
 
 An alternative to this command is :ref:`morphorec`. It works such that each pixel will get the label of the nearest labeled pixel.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

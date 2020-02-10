@@ -8,7 +8,7 @@ cleanskeleton
 
 Removes straight-through and isolated nodes from a network traced from a skeleton (i.e. all nodes that have either 0 or 2 neighbours, i.e. all nodes whose degree is 0 or 2).
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

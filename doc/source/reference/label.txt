@@ -8,7 +8,7 @@ label
 
 Labels distinct regions in the image with individual colors. The regions do not need to be separated by background. Execution is terminated in an error if the pixel data type does not support large enough values to label all the particles.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

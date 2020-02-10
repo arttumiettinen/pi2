@@ -12,7 +12,7 @@ Pi2 is not intended to be a replacement for huge libraries like ITK and VTK. Ins
 
 ## Help
 
-The user-oriented help of pi2 can be read at LINK-MISSING.
+The user-oriented help of pi2 can be read at [ReadTheDocs](https://pi2-docs.readthedocs.io/en/latest/).
 
 
 ## Binaries

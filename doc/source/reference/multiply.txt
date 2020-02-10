@@ -10,7 +10,7 @@ There are 2 forms of this command.
 
 Multiplies two images. Output is placed to the first image. The operation is performed using saturation arithmetic.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------
@@ -44,7 +44,7 @@ Set to true to allow size of parameter image differ from size of input image. If
 
 Multiplies an image by a constant. The operation is performed using saturation arithmetic.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

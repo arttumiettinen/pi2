@@ -366,7 +366,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		WeightedHistogram2Command() : Command("whist2", "Calculate weighted bivariate histogram of two images. In the bivariate histogram position (i, j) counts total weight of locations where the value of the first input image is i and the value of the second input image is j (assuming minimum = 0, maximum = data type max, and bin size = 1). If image sizes are different, only the region available in both images is included in the histogram. In this case, a warning message is shown.",
+		WeightedHistogram2Command() : Command("whist2", "Calculate weighted bivariate histogram of two images. In the bivariate histogram position $(i, j)$ counts total weight of locations where the value of the first input image is $i$ and the value of the second input image is $j$ (assuming minimum = 0, maximum = data type max, and bin size = 1). If image sizes are different, only the region available in both images is included in the histogram. In this case, a warning message is shown.",
 			{
 				CommandArgument<Image<pixel1_t> >(ParameterDirection::In, "first input image", "First image whose histogram will be calculated."),
 				CommandArgument<double>(ParameterDirection::In, "min 1", "Minimum value of first image to be included in the histogram.", 0),

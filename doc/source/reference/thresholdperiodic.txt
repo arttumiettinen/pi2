@@ -8,7 +8,7 @@ thresholdperiodic
 
 Threshols a range from the image where pixel values are from periodic range (e.g. angle). Sets to one all pixels whose value is in ]min, max] mod period. If threshold range is larger than period, sets all pixels to 1. If threshold range start is larger than or equal to threshold range end, sets all pixels to 0.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

@@ -8,7 +8,7 @@ gradient
 
 Calculates Gaussian gradient :math:`(\partial f / \partial x, \partial f / \partial y, \partial f / \partial z)` of an image :math:`f`. Each of the derivatives is calculated by convolving the image with the corresponding derivative of the Gaussian function.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

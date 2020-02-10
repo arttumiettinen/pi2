@@ -8,7 +8,7 @@ analyzelabels
 
 Analyzes labeled regions of the input image. The regions do not need to be connected. Region having value zero is skipped.
 
-This command cannot be used in a distributed processing mode. If you need it, please contact the authors.
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------

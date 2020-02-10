@@ -8,7 +8,7 @@ gaussfilter
 
 Gaussian blurring. Removes imaging noise but makes images look unsharp. If optimization flag is set to true, processes integer images with more than 8 bits of resolution with separable convolution and floating point images with FFT filtering. If optimization flag is set to false, processes all integer images with normal convolution and floating point images with separable convolution.
 
-This command can be used in a distributed processing mode. Use 'distribute' command to change processing mode from local to distributed.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

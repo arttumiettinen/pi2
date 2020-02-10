@@ -127,6 +127,12 @@ namespace pilib
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
 	};
 
+
+	inline std::string sequenceDefinitionHelp()
+	{
+		return "If a directory name is given, all files in the directory will be read. If the a file name is given, it can contain wildcards $*$, $?$ and $@$. Wildcard $*$ corresponds to any sequence of characters, wildcard $?$ corresponds to any character, and wildcard $@$ corresponds to sequence of numerical digits. For example, sequence containing files xyz_000.png, xyz_001.png, xyz_002.png, etc. could be read with template xyz_@.png.";
+	}
+
 	class ReadCommand : virtual public Command, public Distributable
 	{
 	protected:
@@ -135,7 +141,7 @@ namespace pilib
 		ReadCommand() : Command("read", "Reads an image or image sequence from disk. Determines type of file automatically.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
-				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read or a sequence definition. If a directory name is given, all files in the directory will be read. If the a file name is given, it can contain wildcards *, ? and @. Wildcard * corresponds to any sequence of characters, wildcard ? corresponds to any character, and wildcard @ corresponds to sequence of numerical digits. For example, sequence containing files xyz_000.png, xyz_001.png, xyz_002.png, etc. could be read with template 'xyz_@.png'."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read or a sequence definition. " + sequenceDefinitionHelp()),
 				CommandArgument<string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + ". Specify empty value to infer data type from file content.", "")
 			})
 		{
@@ -216,7 +222,6 @@ namespace pilib
 	};
 
 
-
 	class ReadSequenceCommand : public Command, public Distributable
 	{
 	protected:
@@ -225,7 +230,7 @@ namespace pilib
 		ReadSequenceCommand() : Command("readsequence", "Reads an image sequence from disk. Supports any image formats supported by the back end (at least .png).",
 			{
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
-				CommandArgument<string>(ParameterDirection::In, "filename template", "Name (and path) template of the sequence to be read. If template is directory name, all files in the directory will be read. If the template is file name, it can contain wildcards *, ? and @. Wildcard * corresponds to any sequence of characters, wildcard ? corresponds to any character, and wildcard @ corresponds to sequence of numerical digits. For example, sequence containing files xyz_000.png, xyz_001.png, xyz_002.png, etc. could be read with template 'xyz_@.png'."),
+				CommandArgument<string>(ParameterDirection::In, "filename template", "Name (and path) template of the sequence to be read. " + sequenceDefinitionHelp()),
 			})
 		{
 		}
