@@ -4,12 +4,48 @@
 
 namespace pilib
 {
+/*
+This macro adds commands CMD<src_type, target_type> such that target_type is equal to or wider than source type.
+*/
+#define ADD_REAL2_WIDER_TYPE(cmd) \
+	CommandList::add<cmd<uint8_t, uint8_t> >(); \
+	CommandList::add<cmd<uint8_t, uint16_t> >(); \
+	CommandList::add<cmd<uint8_t, uint32_t> >(); \
+	CommandList::add<cmd<uint8_t, uint64_t> >(); \
+	CommandList::add<cmd<uint8_t, float32_t> >(); \
+	CommandList::add<cmd<uint16_t, uint16_t> >(); \
+	CommandList::add<cmd<uint16_t, uint32_t> >(); \
+	CommandList::add<cmd<uint16_t, uint64_t> >(); \
+	CommandList::add<cmd<uint16_t, float32_t> >(); \
+	CommandList::add<cmd<uint32_t, uint32_t> >(); \
+	CommandList::add<cmd<uint32_t, uint64_t> >(); \
+	CommandList::add<cmd<uint32_t, float32_t> >(); \
+	CommandList::add<cmd<uint64_t, uint64_t> >(); \
+	CommandList::add<cmd<uint64_t, float32_t> >(); \
+	CommandList::add<cmd<float32_t, float32_t> >(); \
+	\
+	CommandList::add<cmd<int8_t, int8_t> >(); \
+	CommandList::add<cmd<int8_t, int16_t> >(); \
+	CommandList::add<cmd<int8_t, int32_t> >(); \
+	CommandList::add<cmd<int8_t, int64_t> >(); \
+	CommandList::add<cmd<int8_t, float32_t> >(); \
+	CommandList::add<cmd<int16_t, int16_t> >(); \
+	CommandList::add<cmd<int16_t, int32_t> >(); \
+	CommandList::add<cmd<int16_t, int64_t> >(); \
+	CommandList::add<cmd<int16_t, float32_t> >(); \
+	CommandList::add<cmd<int32_t, int32_t> >(); \
+	CommandList::add<cmd<int32_t, int64_t> >(); \
+	CommandList::add<cmd<int32_t, float32_t> >(); \
+	CommandList::add<cmd<int64_t, int64_t> >(); \
+	CommandList::add<cmd<int64_t, float32_t> >();
+
+
 	void addProjectionCommands()
 	{
 		ADD_REAL(MinAllPixelsCommand);
 		ADD_REAL(MaxAllPixelsCommand);
-		ADD_REAL(SumAllPixelsCommand);
-		ADD_REAL(SquareSumAllPixelsCommand);
+		ADD_REAL2_WIDER_TYPE(SumAllPixelsCommand);
+		ADD_REAL2_WIDER_TYPE(SquareSumAllPixelsCommand);
 		ADD_REAL(MeanAllPixelsCommand);
 		ADD_REAL(MaskedMeanAllPixelsCommand);
 		//ADD_REAL(VarianceAllPixelsCommand);

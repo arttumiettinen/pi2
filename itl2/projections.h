@@ -540,7 +540,7 @@ namespace itl2
 	@param img Image to process.
 	@return Minimum of all pixels.
 	*/
-	template<typename pixel_t> pixel_t min(const Image<pixel_t>& img)
+	template<typename pixel_t, typename result_t = pixel_t> pixel_t min(const Image<pixel_t>& img)
 	{
 		pixel_t res = std::numeric_limits<pixel_t>::max();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
@@ -562,7 +562,7 @@ namespace itl2
 			}
 		}
 
-		return res;
+		return pixelRound<result_t>(res);
 
 		// MSVC does not support min reduction
 		//double res;
@@ -582,7 +582,7 @@ namespace itl2
 	@param img Image to process.
 	@return Maximum of all pixels.
 	*/
-	template<typename pixel_t> pixel_t max(const Image<pixel_t>& img)
+	template<typename pixel_t, typename result_t = pixel_t> pixel_t max(const Image<pixel_t>& img)
 	{
 		pixel_t res = std::numeric_limits<pixel_t>::lowest();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
@@ -604,7 +604,7 @@ namespace itl2
 			}
 		}
 
-		return res;
+		return pixelRound<result_t>(res);
 
 		// MSVC Does not support max reduction
 		//double res;

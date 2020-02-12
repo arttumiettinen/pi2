@@ -801,7 +801,7 @@ pi2.echo(True, False)
 #test_difference_normal_distributed('sumproject', ['img', 'result', 2])
 #test_difference_normal_distributed('meanproject', ['img', 'result', 1])
 #test_difference_normal_distributed('maxproject', ['img', 'result', 0])
-#test_difference_normal_distributed('sum', ['img', 'result'], tolerance=100) # Large tolerance as the value of the sum is approx. 3.5e8
+test_difference_normal_distributed('sum', ['img', 'result'], tolerance=100) # Large tolerance as the value of the sum is approx. 3.5e8
 #test_difference_normal_distributed('mean', ['img', 'result'], tolerance=0.001)
 #test_difference_normal_distributed('maxval', ['img', 'result', True])
 

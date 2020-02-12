@@ -68,8 +68,8 @@ namespace pilib
 	}
 
 #define CONCAT(str1, str2) #str1 #str2
-#define DEF_PROJECT(classname, funcname, cmdname, result_t) \
-	template<typename in_t> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
+#define DEF_PROJECT(classname, funcname, cmdname, result_type) \
+	template<typename in_t, typename result_t = result_type> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
 	{																										\
 	protected:																								\
 		friend class CommandList;																			\
@@ -84,7 +84,7 @@ namespace pilib
 		virtual void run(Image<in_t>& in, Image<result_t>& out, vector<ParamVariant>& args) const override	\
 		{																									\
 			bool print = pop<bool>(args);																	\
-			result_t res = (result_t)itl2:: funcname (in);													\
+			result_t res = itl2:: funcname <in_t, result_t>(in);											\
 			out.ensureSize(1, 1, 1);																		\
 			out(0) = res;																					\
 			if(print)																						\
@@ -148,17 +148,17 @@ namespace pilib
 		}																									\
 	};																										\
 																											\
-	template<typename in_t> class classname##ProjectCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
+	template<typename in_t> class classname##ProjectCommand : public TwoImageInputOutputCommand<in_t, result_type>, public Distributable	\
 	{																										\
 	protected:																								\
 		friend class CommandList;																			\
 																											\
-		classname##ProjectCommand() : TwoImageInputOutputCommand<in_t, result_t>(CONCAT(funcname, project), "Calculates projection of the input image. The dimensionality of the output image is the dimensionality of the input image subtracted by one.",	\
+		classname##ProjectCommand() : TwoImageInputOutputCommand<in_t, result_type>(CONCAT(funcname, project), "Calculates projection of the input image. The dimensionality of the output image is the dimensionality of the input image subtracted by one.",	\
 		{ CommandArgument<size_t>(ParameterDirection::In, "dimension", "Dimension to project over, zero corresponding to $x$, one corresponding to $y$, and 2 corresponding to $z$.", 2) }) {}	\
 	public:																									\
 		using Distributable::runDistributed;																\
 																											\
-		virtual void run(Image<in_t>& in, Image<result_t>& out, vector<ParamVariant>& args) const override	\
+		virtual void run(Image<in_t>& in, Image<result_type>& out, vector<ParamVariant>& args) const override	\
 		{																									\
 			size_t dim = pop<size_t>(args);																    \
 			if(dim > 2)																			            \
@@ -170,7 +170,7 @@ namespace pilib
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override	\
 		{																									\
 			DistributedImage<in_t>& in = *std::get<DistributedImage<in_t>* >(args[0]);						\
-			DistributedImage<result_t>& out = *std::get<DistributedImage<result_t>* >(args[1]);				\
+			DistributedImage<result_type>& out = *std::get<DistributedImage<result_type>* >(args[1]);				\
 			size_t dim = std::get<size_t>(args[2]);															\
 																											\
 			if (dim == 2)																					\
@@ -324,10 +324,11 @@ namespace pilib
 #undef min
 #undef max
 	DEF_PROJECT(Sum, sum, sum, float32_t)
+	DEF_PROJECT(SquareSum, squareSum, squaresum, float32_t)
+
 	DEF_PROJECT(Min, min, minval, in_t)
 	DEF_PROJECT(Max, max, maxval, in_t)
 	DEF_PROJECT(Mean, mean, mean, float32_t)
-	DEF_PROJECT(SquareSum, squareSum, squaresum, float32_t)
 
 	DEF_PROJECT_2IMAGE(Min, min, minval, in_t)
 	DEF_PROJECT_2IMAGE(Max, max, maxval, in_t)
