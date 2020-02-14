@@ -13,8 +13,7 @@ $(TOPTARGETS): $(SUBDIRS)
 	mkdir -p bin-linux64/release
 	cp ./pilib/bin/libpilib.so ./bin-linux64/release/
 	cp ./pi2/bin/pi2 ./bin-linux64/release/
-	cp ./python_scripts/generic/*.py ./bin-linux64/release/
-	cp ./python_scripts/tomcat/*.py ./bin-linux64/release/
+	cp ./python_scripts/*/*.py ./bin-linux64/release/
 	chmod +x ./bin-linux64/release/*.py
 	cp ./example_config/*.txt ./bin-linux64/release/
 	cp ./example_config/*.sh ./bin-linux64/release/
