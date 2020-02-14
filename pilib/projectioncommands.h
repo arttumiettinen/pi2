@@ -38,7 +38,10 @@ namespace pilib
 
 		template<typename result_t> result_t sumReducer(const vector<result_t>& vals, const vector<size_t>& counts)
 		{
-			return sum<result_t, result_t>(vals);
+			//return sum<result_t, result_t>(vals);
+			result_t res = 0;
+			for (result_t val : vals)
+				res = NumberUtils<result_t>::saturatingAdd(res, val);
 		}
 
 		template<typename result_t> result_t squareSumReducer(const vector<result_t>& vals, const vector<size_t>& counts)

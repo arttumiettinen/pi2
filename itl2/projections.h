@@ -393,14 +393,16 @@ namespace itl2
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
-				res_private += img(n);
+				//res_private += (out_t)img(n);
+				res_private = NumberUtils<out_t>::saturatingAdd(res_private, (out_t)img(n));
 
 				// Showing progress info here would induce more processing than is done in the whole loop.
 			}
 
 			#pragma omp critical(sum_reduction)
 			{
-				res += res_private;
+				//res += res_private;
+				res = NumberUtils<out_t>::saturatingAdd(res, res_private);
 			}
 		}
 
@@ -435,14 +437,16 @@ namespace itl2
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
-				res_private += img(n) * img(n);
+				//res_private += (out_t)img(n) * (out_t)img(n);
+				res_private = NumberUtils<out_t>::saturatingAdd(res_private, NumberUtils<out_t>::saturatingMultiply((out_t)img(n), (out_t)img(n)));
 
 				// Showing progress info here would induce more processing than is done in the whole loop.
 			}
 
 			#pragma omp critical(sum2_reduction)
 			{
-				res += res_private;
+				//res += res_private;
+				res = NumberUtils<out_t>::saturatingAdd(res, res_private);
 			}
 		}
 
@@ -474,8 +478,10 @@ namespace itl2
 					pixel_t p = img(n);
 					if (p != ignoreValue)
 					{
-						res_private += p;
-						count_private++;
+						//res_private += (out_t)p;
+						//count_private++;
+						res_private = NumberUtils<out_t>::saturatingAdd(res_private, (out_t)p);
+						count_private = NumberUtils<out_t>::saturatingAdd(count_private, (out_t)1);
 					}
 
 					// Showing progress info here would induce more processing than is done in the whole loop.
@@ -483,8 +489,10 @@ namespace itl2
 
 #pragma omp critical(maskedsum_reduction)
 				{
-					res += res_private;
-					count += count_private;
+					//res += res_private;
+					//count += count_private;
+					res = NumberUtils<out_t>::saturatingAdd(res, res_private);
+					count = NumberUtils<out_t>::saturatingAdd(count, count_private);
 				}
 			}
 
@@ -505,8 +513,10 @@ namespace itl2
 					pixel_t p = img(n);
 					if (!NumberUtils<pixel_t>::isnan(p))
 					{
-						res_private += p;
-						count_private++;
+						//res_private += (out_t)p;
+						//count_private++;
+						res_private = NumberUtils<out_t>::saturatingAdd(res_private, (out_t)p);
+						count_private = NumberUtils<out_t>::saturatingAdd(count_private, (out_t)1);
 					}
 
 					// Showing progress info here would induce more processing than is done in the whole loop.
@@ -514,8 +524,10 @@ namespace itl2
 
 #pragma omp critical(maskedsum_reduction)
 				{
-					res += res_private;
-					count += count_private;
+					//res += res_private;
+					//count += count_private;
+					res = NumberUtils<out_t>::saturatingAdd(res, res_private);
+					count = NumberUtils<out_t>::saturatingAdd(count, count_private);
 				}
 			}
 
