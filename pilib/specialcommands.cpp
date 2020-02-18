@@ -87,6 +87,11 @@ namespace pilib
 
 		cout << "Number of threads: " << omp_get_max_threads() << endl;
 		cout << "Available RAM: " << bytesToString((double)memorySize()) << endl;
+
+		// This defines VERSION variable
+		#include "commit_info.txt"
+
+		cout << "Version: " << VERSION << endl;
 	}
 
 	void LicenseCommand::run(vector<ParamVariant>& args) const

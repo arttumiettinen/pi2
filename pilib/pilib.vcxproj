@@ -66,6 +66,7 @@
     <TargetName>pi</TargetName>
     <PostBuildEventUseInBuild>
     </PostBuildEventUseInBuild>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -118,6 +119,12 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       <Outputs>non-existent-file</Outputs>
       <Message>Copy Python and config files to bin directory.</Message>
     </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>$(ProjectDir)create_commit_info.cmd</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create version file from GIT</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
