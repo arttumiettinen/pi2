@@ -399,7 +399,7 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t sum(const Image<pixel_t>& img)
 	{
-		using temp_t = sum_intermediate_type<pixel_t>::type;
+		using temp_t = typename sum_intermediate_type<pixel_t>::type;
 		temp_t res = temp_t();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
@@ -444,7 +444,7 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t squareSum(const Image<pixel_t>& img)
 	{
-		using temp_t = sum_intermediate_type<pixel_t>::type;
+		using temp_t = typename sum_intermediate_type<pixel_t>::type;
 		temp_t res = temp_t();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
@@ -479,7 +479,7 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t maskedsum(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
 	{
-		using temp_t = sum_intermediate_type<pixel_t>::type;
+		using temp_t = typename sum_intermediate_type<pixel_t>::type;
 
 		if (!NumberUtils<pixel_t>::isnan(ignoreValue))
 		{
