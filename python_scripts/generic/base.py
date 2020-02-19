@@ -239,7 +239,7 @@ class Scan:
         Tests if reconstructed image file exists.
         """
         
-        pi_script = f"showfileinfo({self.rec_file});"
+        pi_script = f"fileinfo({self.rec_file});"
         s = run_pi2_locally(pi_script)
         s = s.decode('ASCII')
         lines = s.splitlines()
@@ -256,7 +256,7 @@ def get_image_size(filename):
     Finds out size of given image and returns it as numpy array.
     """
 
-    pi_script = f"showfileinfo({filename});"
+    pi_script = f"fileinfo({filename});"
     s = run_pi2_locally(pi_script)
     s = s.decode('ASCII')
     lines = s.splitlines()
