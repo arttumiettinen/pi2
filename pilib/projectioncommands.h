@@ -7,6 +7,7 @@
 #include "commandsbase.h"
 #include "overlapdistributable.h"
 #include "commandlist.h"
+#include "distributedtempimage.h"
 
 #include <string>
 
@@ -73,7 +74,7 @@ namespace pilib
 
 #define CONCAT(str1, str2) #str1 #str2
 #define DEF_PROJECT(classname, funcname, cmdname, result_type) \
-	template<typename in_t, typename result_t = result_type> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
+	template<typename in_t, typename result_t = result_type, typename temp_t = result_type> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
 	{																										\
 	protected:																								\
 		friend class CommandList;																			\
@@ -104,25 +105,27 @@ namespace pilib
 			bool print = std::get<bool>(args[2]);															\
 			out.ensureSize(1, 1, 1);																		\
 																											\
+			DistributedTempImage<temp_t> dummy(distributor, "project_all_pixels_dummy", Vec3c(1, 1, 1));	\
+																											\
 			vector<ParamVariant> args2;																		\
 			args2.push_back(args[0]);																		\
-			args2.push_back(args[1]);																		\
+			args2.push_back(&dummy.get());																	\
 			ParamVariant p;																					\
 			p = true;																						\
 			args2.push_back(p);																				\
 																											\
-			vector<string> results = distributor.distribute(this, args2);									\
-			vector<result_t> vals;																			\
+			auto& cmd = CommandList::get<classname##AllPixelsCommand<in_t, temp_t, temp_t> >();				\
+			vector<string> results = distributor.distribute(&cmd, args2);									\
+			vector<temp_t> vals;																			\
 			vector<size_t> counts;																			\
 			for (const string& s : results)																	\
 			{																								\
-				vals.push_back(internals::getValue<result_t>(s, #funcname " = "));							\
+				vals.push_back(internals::getValue<temp_t>(s, #funcname " = "));							\
 				counts.push_back(internals::getValue<size_t>(s, "count = "));								\
 			}																								\
 																											\
 			Image<result_t> tmp;																			\
-			out.readTo(tmp);																				\
-			tmp(0) = internals::funcname##Reducer<result_t>(vals, counts);									\
+			tmp(0) = pixelRound<result_t>(internals::funcname##Reducer<temp_t>(vals, counts));				\
 			out.setData(tmp);																				\
 																											\
 			if (print)																						\

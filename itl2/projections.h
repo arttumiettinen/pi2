@@ -378,6 +378,19 @@ namespace itl2
 		}
 	}
 
+	/**
+	This is used to select suitable accumulator type for sum projections.
+	*/
+	template<class pixel_t> struct sum_intermediate_type {
+		using type = typename std::conditional <
+			std::is_floating_point_v<pixel_t>,
+			double,			// floating point pixels -> double accumulator
+			typename std::conditional<std::is_signed_v<pixel_t>,
+				int64_t,	// signed integer pixels -> int64 accumulator
+				uint64_t	// unsigned integer pixels -> uint64 accumulator
+			>::type
+		>::type;
+	};
 
 	/**
 	Calculates sum of all pixels in the image.
@@ -386,15 +399,16 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t sum(const Image<pixel_t>& img)
 	{
-		out_t res = out_t();
+		using temp_t = sum_intermediate_type<pixel_t>::type;
+		temp_t res = temp_t();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
-			out_t res_private = out_t();
+			temp_t res_private = temp_t();
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
 				//res_private += (out_t)img(n);
-				res_private = NumberUtils<out_t>::saturatingAdd(res_private, (out_t)img(n));
+				res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)img(n));
 
 				// Showing progress info here would induce more processing than is done in the whole loop.
 			}
@@ -402,11 +416,11 @@ namespace itl2
 			#pragma omp critical(sum_reduction)
 			{
 				//res += res_private;
-				res = NumberUtils<out_t>::saturatingAdd(res, res_private);
+				res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
 			}
 		}
 
-		return res;
+		return pixelRound<out_t>(res);
 
 		// OpenMP reduction does not support non-scalar data types
 		//out_t res = 0;
@@ -430,15 +444,16 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t squareSum(const Image<pixel_t>& img)
 	{
-		out_t res = out_t();
+		using temp_t = sum_intermediate_type<pixel_t>::type;
+		temp_t res = temp_t();
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
-			out_t res_private = out_t();
+			temp_t res_private = temp_t();
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
 				//res_private += (out_t)img(n) * (out_t)img(n);
-				res_private = NumberUtils<out_t>::saturatingAdd(res_private, NumberUtils<out_t>::saturatingMultiply((out_t)img(n), (out_t)img(n)));
+				res_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)img(n), (temp_t)img(n)));
 
 				// Showing progress info here would induce more processing than is done in the whole loop.
 			}
@@ -446,11 +461,11 @@ namespace itl2
 			#pragma omp critical(sum2_reduction)
 			{
 				//res += res_private;
-				res = NumberUtils<out_t>::saturatingAdd(res, res_private);
+				res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
 			}
 		}
 
-		return res;
+		return pixelRound<out_t>(res);
 	}
 
 
@@ -464,14 +479,16 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t maskedsum(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
 	{
+		using temp_t = sum_intermediate_type<pixel_t>::type;
+
 		if (!NumberUtils<pixel_t>::isnan(ignoreValue))
 		{
-			out_t res = out_t();
-			count = 0;
+			temp_t res = temp_t();
+			temp_t tempCount = temp_t();
 #pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
-				out_t res_private = out_t();
-				out_t count_private = out_t();
+				temp_t res_private = temp_t();
+				temp_t count_private = temp_t();
 #pragma omp for nowait
 				for (coord_t n = 0; n < img.pixelCount(); n++)
 				{
@@ -480,8 +497,8 @@ namespace itl2
 					{
 						//res_private += (out_t)p;
 						//count_private++;
-						res_private = NumberUtils<out_t>::saturatingAdd(res_private, (out_t)p);
-						count_private = NumberUtils<out_t>::saturatingAdd(count_private, (out_t)1);
+						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
+						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
 					}
 
 					// Showing progress info here would induce more processing than is done in the whole loop.
@@ -491,22 +508,23 @@ namespace itl2
 				{
 					//res += res_private;
 					//count += count_private;
-					res = NumberUtils<out_t>::saturatingAdd(res, res_private);
-					count = NumberUtils<out_t>::saturatingAdd(count, count_private);
+					res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
+					tempCount = NumberUtils<temp_t>::saturatingAdd(tempCount, count_private);
 				}
 			}
 
-			return res;
+			count = pixelRound<out_t>(tempCount);
+			return pixelRound<out_t>(res);
 		}
 		else
 		{
 			// ignoreValue is NaN, comparison logic must be different
-			out_t res = out_t();
-			count = 0;
+			temp_t res = temp_t();
+			temp_t tempCount = temp_t();
 #pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
-				out_t res_private = out_t();
-				out_t count_private = out_t();
+				temp_t res_private = temp_t();
+				temp_t count_private = temp_t();
 #pragma omp for nowait
 				for (coord_t n = 0; n < img.pixelCount(); n++)
 				{
@@ -515,8 +533,8 @@ namespace itl2
 					{
 						//res_private += (out_t)p;
 						//count_private++;
-						res_private = NumberUtils<out_t>::saturatingAdd(res_private, (out_t)p);
-						count_private = NumberUtils<out_t>::saturatingAdd(count_private, (out_t)1);
+						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
+						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
 					}
 
 					// Showing progress info here would induce more processing than is done in the whole loop.
@@ -526,25 +544,14 @@ namespace itl2
 				{
 					//res += res_private;
 					//count += count_private;
-					res = NumberUtils<out_t>::saturatingAdd(res, res_private);
-					count = NumberUtils<out_t>::saturatingAdd(count, count_private);
+					res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
+					tempCount = NumberUtils<temp_t>::saturatingAdd(tempCount, count_private);
 				}
 			}
 
-			return res;
+			count = pixelRound<out_t>(tempCount);
+			return pixelRound<out_t>(res);
 		}
-
-		// OpenMP reduction does not support non-scalar data types
-		//out_t res = 0;
-		//#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD) reduction(+:res)
-		//for (coord_t n = 0; n < img.pixelCount(); n++)
-		//{
-		//	res += img(n);
-
-		//	// Showing progress info here would induce more processing than is done in the whole loop.
-		//}
-		//return res;
-
 	}
 
 	/**
