@@ -33,6 +33,7 @@ namespace pilib
 	void addCarpetCommands();
 	void addStructureCommands();
 	void addAutoThresholdCommands();
+	void addInfoCommands();
 
 
 	vector<unique_ptr<Command> > CommandList::commands;
@@ -61,6 +62,7 @@ namespace pilib
 		addCarpetCommands();
 		addStructureCommands();
 		addAutoThresholdCommands();
+		addInfoCommands();
 	}
 
 

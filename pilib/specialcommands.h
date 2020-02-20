@@ -76,21 +76,6 @@ namespace pilib
 		}
 	};
 
-	class InfoCommand : virtual public Command, public TrivialDistributable
-	{
-	protected:
-		friend class CommandList;
-
-		InfoCommand() : Command("info", "Displays information about the computer and the PI system.",
-			{},
-			helpSeeAlso())
-		{
-		}
-
-	public:
-		virtual void run(vector<ParamVariant>& args) const override;
-	};
-
 	class LicenseCommand : virtual public Command, public TrivialDistributable
 	{
 	protected:

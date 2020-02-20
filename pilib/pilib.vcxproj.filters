@@ -159,6 +159,9 @@
     <ClInclude Include="autothresholdcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="infocommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">
@@ -270,6 +273,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="autothresholdcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="infocommand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

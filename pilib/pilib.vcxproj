@@ -229,6 +229,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="generationcommands.h" />
     <ClInclude Include="helpformat.h" />
     <ClInclude Include="histogramcommands.h" />
+    <ClInclude Include="infocommand.h" />
     <ClInclude Include="ini.h" />
     <ClInclude Include="inireader.h" />
     <ClInclude Include="iocommands.h" />
@@ -276,6 +277,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClCompile Include="filtercommands.cpp" />
     <ClCompile Include="generationcommands.cpp" />
     <ClCompile Include="histogramcommands.cpp" />
+    <ClCompile Include="infocommand.cpp" />
     <ClCompile Include="ini.cpp" />
     <ClCompile Include="inireader.cpp" />
     <ClCompile Include="iocommands.cpp" />
