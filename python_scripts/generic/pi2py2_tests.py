@@ -801,7 +801,7 @@ pi2.echo(True, False)
 #test_difference_normal_distributed('sumproject', ['img', 'result', 2])
 #test_difference_normal_distributed('meanproject', ['img', 'result', 1])
 #test_difference_normal_distributed('maxproject', ['img', 'result', 0])
-test_difference_normal_distributed('sum', ['img', 'result'], tolerance=1)
+#test_difference_normal_distributed('sum', ['img', 'result'], tolerance=1)
 #test_difference_normal_distributed('mean', ['img', 'result'], tolerance=0.001)
 #test_difference_normal_distributed('maxval', ['img', 'result', True])
 
@@ -941,11 +941,18 @@ print(f"{failed_tests} checks failed.")
 
 
 
-#img = pi2.read(input_file())
-#pi2.convert(img, ImageDataType.FLOAT32)
-#result = pi2.newimage(ImageDataType.UINT64)
-#print(result)
-#pi2.sum(img, result)
-#print(result)
+import time
 
+pi2.echo(False, False)
+img1 = pi2.newimage(ImageDataType.UINT16, 2560, 2048)
+img2 = pi2.newimage(ImageDataType.UINT16, 2560, 2048)
+for i in range(0, 10):
+    time_start = time.time()
+
+    pi2.copy(img1, img2, [0, 0, 0])
+    #pi2.rot90cw(img1, img2)
+
+    time_end = time.time()
+
+    print(f"Elapsed time: {1000*(time_end-time_start)} ms")
 

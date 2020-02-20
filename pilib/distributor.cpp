@@ -6,6 +6,7 @@
 #include "pisystem.h"
 #include "exeutils.h"
 #include "math/vectoroperations.h"
+#include "whereamicpp.h"
 
 #include <tuple>
 #include <experimental/filesystem>
@@ -27,7 +28,8 @@ namespace pilib
 #endif
 
 		fs::path p1 = fs::current_path() / piName;
-		fs::path p2 = fs::path(getExecutablePath());
+		fs::path p2 = getModulePath();
+		fs::path p3 = fs::path(getExecutablePath());
 		if(p2.has_filename())
 			p2 = p2.replace_filename(piName);
 
@@ -35,8 +37,17 @@ namespace pilib
 			return p1;
 		if (fs::exists(p2))
 			return p2;
+		if (fs::exists(p3))
+			return p3;
 
-		throw ITLException("Unable to find " + piName + " program. It was searched from " + p1.string() + " and " + p2.string());
+		string message = "Unable to find " + piName + " program. It was searched from " + p1.string();
+		if (p2 != p1)
+			message += " and " + p2.string();
+		if(p3 != p2 && p3 != p1)
+			message += " and " + p3.string();
+		message += ".";
+
+		throw ITLException(message);
 	}
 
 	Distributor::Distributor(PISystem* piSystem) : piSystem(piSystem)
