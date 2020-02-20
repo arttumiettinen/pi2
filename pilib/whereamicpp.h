@@ -11,7 +11,7 @@ namespace pilib
 	/**
 	Returns the path to the current module.
 	*/
-	fs::path getModulePath()
+	inline fs::path getModulePath()
 	{
 		int length = wai_getModulePath(NULL, 0, NULL);
 
