@@ -80,18 +80,6 @@ namespace itl2
 			{
 				out(x, in.depth() - 1 - z, y) = pixelRound<out_t>(in(x, y, z));
 			});
-
-			//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < in.depth(); z++)
-			//{
-			//	for (coord_t y = 0; y < in.height(); y++)
-			//	{
-			//		for (coord_t x = 0; x < in.width(); x++)
-			//		{
-			//			out(x, in.depth() - 1 - z, y) = pixelRound<out_t>(in(x, y, z));
-			//		}
-			//	}
-			//}
 		}
 		else if (dir == ResliceDirection::Bottom)
 		{
@@ -106,18 +94,6 @@ namespace itl2
 			{
 				out(x, z, in.height() - 1 - y) = pixelRound<out_t>(in(x, y, z));
 			});
-
-			//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < in.depth(); z++)
-			//{
-			//	for (coord_t y = 0; y < in.height(); y++)
-			//	{
-			//		for (coord_t x = 0; x < in.width(); x++)
-			//		{
-			//			out(x, z, in.height() - 1 - y) = pixelRound<out_t>(in(x, y, z));
-			//		}
-			//	}
-			//}
 		}
 		else if (dir == ResliceDirection::Left)
 		{
@@ -132,18 +108,6 @@ namespace itl2
 			{
 				out(in.depth() - 1 - z, y, x) = pixelRound<out_t>(in(x, y, z));
 			});
-
-			//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < in.depth(); z++)
-			//{
-			//	for (coord_t y = 0; y < in.height(); y++)
-			//	{
-			//		for (coord_t x = 0; x < in.width(); x++)
-			//		{
-			//			out(in.depth() - 1 - z, y, x) = pixelRound<out_t>(in(x, y, z));
-			//		}
-			//	}
-			//}
 		}
 		else if (dir == ResliceDirection::Right)
 		{
@@ -158,18 +122,6 @@ namespace itl2
 			{
 				out(z, y, in.width() - 1 - x) = pixelRound<out_t>(in(x, y, z));
 			});
-
-			//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < in.depth(); z++)
-			//{
-			//	for (coord_t y = 0; y < in.height(); y++)
-			//	{
-			//		for (coord_t x = 0; x < in.width(); x++)
-			//		{
-			//			out(z, y, in.width() - 1 - x) = pixelRound<out_t>(in(x, y, z));
-			//		}
-			//	}
-			//}
 		}
 		else
 		{
@@ -223,18 +175,6 @@ namespace itl2
 			{
 				std::swap(img(x, y, z), img(img.width() - 1 - x, y, z));
 			});
-
-			//#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < img.depth(); z++)
-			//{
-			//	for (coord_t y = 0; y < img.height(); y++)
-			//	{
-			//		for (coord_t x = 0; x < img.width() / 2; x++)
-			//		{
-			//			std::swap(img(x, y, z), img(img.width() - 1 - x, y, z));
-			//		}
-			//	}
-			//}
 		}
 		else if (dimension == 1)
 		{
@@ -242,18 +182,6 @@ namespace itl2
 			{
 				std::swap(img(x, y, z), img(x, img.height() - 1 - y, z));
 			});
-
-			//#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < img.depth(); z++)
-			//{
-			//	for (coord_t y = 0; y < img.height() / 2; y++)
-			//	{
-			//		for (coord_t x = 0; x < img.width(); x++)
-			//		{
-			//			std::swap(img(x, y, z), img(x, img.height() - 1 - y, z));
-			//		}
-			//	}
-			//}
 		}
 		else if (dimension == 2)
 		{
@@ -261,18 +189,6 @@ namespace itl2
 			{
 				std::swap(img(x, y, z), img(x, y, img.depth() - 1 - z));
 			});
-
-			//#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-			//for (coord_t z = 0; z < img.depth() / 2; z++)
-			//{
-			//	for (coord_t y = 0; y < img.height(); y++)
-			//	{
-			//		for (coord_t x = 0; x < img.width(); x++)
-			//		{
-			//			std::swap(img(x, y, z), img(x, y, img.depth() - 1 - z));
-			//		}
-			//	}
-			//}
 		}
 		else
 		{
@@ -293,18 +209,6 @@ namespace itl2
 		{
 			out(out.width() - 1 - y, x, z) = pixelRound<out_t>(in(x, y, z));
 		});
-
-		//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-		//for (coord_t z = 0; z < in.depth(); z++)
-		//{
-		//	for (coord_t y = 0; y < in.height(); y++)
-		//	{
-		//		for (coord_t x = 0; x < in.width(); x++)
-		//		{
-		//			out(out.width() - 1 - y, x, z) = pixelRound<out_t>(in(x, y, z));
-		//		}
-		//	}
-		//}
 	}
 
 	/**
@@ -320,18 +224,6 @@ namespace itl2
 		{
 			out(y, out.height() - 1 - x, z) = pixelRound<out_t>(in(x, y, z));
 		});
-
-		//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-		//for (coord_t z = 0; z < in.depth(); z++)
-		//{
-		//	for (coord_t y = 0; y < in.height(); y++)
-		//	{
-		//		for (coord_t x = 0; x < in.width(); x++)
-		//		{
-		//			out(y, out.height() - 1 - x, z) = pixelRound<out_t>(in(x, y, z));
-		//		}
-		//	}
-		//}
 	}
 
 	/**
@@ -358,20 +250,6 @@ namespace itl2
 			Vec3d inPos = R * (outPos - outCenter) + inCenter;
 			out(x, y, z) = interpolate(in, Vec3<typename NumberUtils<out_t>::RealFloatType>(inPos));
 		});
-
-		//#pragma omp parallel for if(in.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-		//for (coord_t z = 0; z < out.depth(); z++)
-		//{
-		//	for (coord_t y = 0; y < out.height(); y++)
-		//	{
-		//		for (coord_t x = 0; x < out.width(); x++)
-		//		{
-		//			Vec3d outPos((real_t)x, (real_t)y, (real_t)z);
-		//			Vec3d inPos = R * (outPos - outCenter) + inCenter;
-		//			out(x, y, z) = interpolate(in, Vec3<typename NumberUtils<out_t>::RealFloatType>(inPos));
-		//		}
-		//	}
-		//}
 	}
 
 	/**
@@ -410,22 +288,6 @@ namespace itl2
 			real_t zs = (real_t)(z - shift.z);
 			out(x, y, z) = interpolate(in, xs, ys, zs);
 		});
-
-		//#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-		//for (coord_t z = 0; z < out.depth(); z++)
-		//{
-		//	for (coord_t y = 0; y < out.height(); y++)
-		//	{
-		//		for (coord_t x = 0; x < out.width(); x++)
-		//		{
-		//			real_t xs = (real_t)(x - shift.x);
-		//			real_t ys = (real_t)(y - shift.y);
-		//			real_t zs = (real_t)(z - shift.z);
-		//			out(x, y, z) = interpolate(in, xs, ys, zs);
-		//		}
-		//	}
-		//}
-
 	}
 
 	/**
@@ -447,20 +309,6 @@ namespace itl2
 			Vec3c xi = Vec3c(x, y, z) + outPos;
 			out(x, y, z) = pixelRound<out_t>(in(xi));
 		});
-
-		//#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-		//for (coord_t z = 0; z < out.depth(); z++)
-		//{
-		//	for (coord_t y = 0; y < out.height(); y++)
-		//	{
-		//		for (coord_t x = 0; x < out.width(); x++)
-		//		{
-		//			Vec3c xi = Vec3c(x, y, z) + outPos;
-		//			if(in.isInImage(xi))
-		//				out(x, y, z) = pixelRound<out_t>(in(xi));
-		//		}
-		//	}
-		//}
 	}
 
 	/**
@@ -501,28 +349,6 @@ namespace itl2
 				target(xi) = pixelRound<pixel_t>(block(x, y, z));
 			});
 		}
-
-
-		//forAllPixels(block, [&](coord_t x, coord_t y, coord_t z)
-		//{
-		//	Vec3c xi = Vec3c(x, y, z) + pos;
-		//	if (target.isInImage(xi))
-		//		target(xi) = pixelRound<pixel_t>(block(x, y, z));
-		//});
-
-		//#pragma omp parallel for if(block.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
-		//for (coord_t z = 0; z < block.depth(); z++)
-		//{
-		//	for (coord_t y = 0; y < block.height(); y++)
-		//	{
-		//		for (coord_t x = 0; x < block.width(); x++)
-		//		{
-		//			Vec3c xi = Vec3c(x, y, z) + pos;
-		//			if (target.isInImage(xi))
-		//				target(xi) = pixelRound<pixel_t>(block(x, y, z));
-		//		}
-		//	}
-		//}
 	}
 
 	namespace internals
