@@ -946,13 +946,21 @@ import time
 pi2.echo(False, False)
 img1 = pi2.newimage(ImageDataType.UINT16, 2560, 2048)
 img2 = pi2.newimage(ImageDataType.UINT16, 2560, 2048)
-for i in range(0, 10):
+total = 0
+count = 0
+for i in range(0, 100):
     time_start = time.time()
 
-    pi2.copy(img1, img2, [0, 0, 0])
+    #pi2.set(img1, img2)
+    #pi2.copy(img1, img2, [0, 0, 0])
     pi2.rot90cw(img1, img2)
 
     time_end = time.time()
 
-    print(f"Elapsed time: {1000*(time_end-time_start)} ms")
+    delta = 1000*(time_end-time_start)
+    total += delta
+    count += 1
 
+    print(f"Elapsed time: {delta} ms")
+
+print(f"Average elapsed time: {total/count} ms")

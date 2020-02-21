@@ -101,11 +101,11 @@ int main()
 	//test(itl2::tests::bilateral, "bilateral filter");
 
 	//test(itl2::tests::scale, "scaling");
-	test(itl2::tests::translate, "translation");
-	test(itl2::tests::rot90, "90 deg rotations");
-	test(itl2::tests::rotate, "rotations around general axes");
-	test(itl2::tests::reslice, "reslice");
-	test(itl2::tests::crop, "crop and reverse crop");
+	//test(itl2::tests::translate, "translation");
+	//test(itl2::tests::rot90, "90 deg rotations");
+	//test(itl2::tests::rotate, "rotations around general axes");
+	//test(itl2::tests::reslice, "reslice");
+	//test(itl2::tests::crop, "crop and reverse crop");
 
 	//test(itl2::tests::pointProcess, "point processes");
 	//test(itl2::tests::pointProcessComplex, "point processes on complex numbers");
