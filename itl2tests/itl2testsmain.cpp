@@ -42,6 +42,7 @@
 #include "montage.h"
 #include "math/conjugategradient.h"
 #include "tomo/siddonprojections.h"
+#include "iteration.h"
 
 
 using namespace itl2;
@@ -49,11 +50,9 @@ using namespace std;
 
 
 
-int main()
-{
-	
 
-	
+int main()
+{	
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
 	//test(itl2::tests::saturatingArithmetic, "saturating arithmetic");
@@ -102,7 +101,11 @@ int main()
 	//test(itl2::tests::bilateral, "bilateral filter");
 
 	//test(itl2::tests::scale, "scaling");
-	//test(itl2::tests::translate, "translation");
+	test(itl2::tests::translate, "translation");
+	test(itl2::tests::rot90, "90 deg rotations");
+	test(itl2::tests::rotate, "rotations around general axes");
+	test(itl2::tests::reslice, "reslice");
+	test(itl2::tests::crop, "crop and reverse crop");
 
 	//test(itl2::tests::pointProcess, "point processes");
 	//test(itl2::tests::pointProcessComplex, "point processes on complex numbers");
@@ -212,9 +215,6 @@ int main()
 	//test(itl2::tests::autothreshold, "automatic thresholding");
 	//test(itl2::tests::localThreshold, "local thresholding");
 	//test(itl2::tests::localMaxima, "local maxima search");
-	//test(itl2::tests::rot90, "90 deg rotations");
-	//test(itl2::tests::rotate, "rotations around general axes");
-	//test(itl2::tests::reslice, "reslice");
 
 	//test(itl2::tests::carpet, "surface finding");
 	//test(itl2::tests::ellipsoid, "drawing ellipsoids");

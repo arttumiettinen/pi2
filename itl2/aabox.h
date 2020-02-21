@@ -211,6 +211,14 @@ namespace itl2
 			return minc;
 		}
         
+		/**
+		Translates this box by given amount.
+		*/
+		AABox<T> translate(const Vec3<T>& amount) const
+		{
+			return AABox<T>(minc + amount, maxc + amount);
+		}
+
         /**
         Calculates bounding box of points in the given list.
         */

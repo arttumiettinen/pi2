@@ -226,5 +226,36 @@ namespace itl2
 			reslice(test1, test2, ResliceDirection::Right);
 			checkDifference(orig, test2, "2x resliced is not original (left-right).");
 		}
+
+		void singleCropTest(const Vec3c& pos)
+		{
+			Image<uint8_t> orig(100, 100);
+			ramp(orig, 0);
+			tiff::writed(orig, "./crop/orig");
+
+			Image<uint8_t> img;
+			setValue(img, orig);
+
+			Image<uint8_t> part(20, 30);
+			itl2::crop(img, part, pos);
+			tiff::writed(part, "./crop/part");
+
+			draw(img, AABox(pos, pos + part.dimensions()), (uint8_t)0);
+			tiff::writed(img, "./crop/orig_part_removed");
+
+			itl2::copyValues(img, part, pos);
+			tiff::writed(img, "./crop/orig_part_is_back");
+
+			checkDifference(orig, img, string("cropped and back-copied are different, pos = ") + toString(pos));
+		}
+
+		void crop()
+		{
+			singleCropTest(Vec3c(50, 40, 0));
+			singleCropTest(Vec3c(90, 75, 0));
+			singleCropTest(Vec3c(-10, -5, 0));
+			singleCropTest(Vec3c(110, 90, 0));
+			singleCropTest(Vec3c(-50, 90, 0));
+		}
 	}
 }

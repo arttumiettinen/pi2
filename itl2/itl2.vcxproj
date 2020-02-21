@@ -40,6 +40,7 @@
     <ClInclude Include="generation.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="io\nrrd.h" />
+    <ClInclude Include="iteration.h" />
     <ClInclude Include="marchingcubes.h" />
     <ClInclude Include="math\ludecomposition.h" />
     <ClInclude Include="math\qrdecomposition.h" />

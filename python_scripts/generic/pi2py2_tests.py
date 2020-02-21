@@ -950,7 +950,7 @@ for i in range(0, 10):
     time_start = time.time()
 
     pi2.copy(img1, img2, [0, 0, 0])
-    #pi2.rot90cw(img1, img2)
+    pi2.rot90cw(img1, img2)
 
     time_end = time.time()
 
