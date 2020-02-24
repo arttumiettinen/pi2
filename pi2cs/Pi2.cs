@@ -309,7 +309,7 @@ namespace pi2cs
 
         #region Utilities
 
-        Random random = new Random();
+        private Random random = new Random();
 
         /// <summary>
         /// Generates random string.
