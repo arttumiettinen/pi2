@@ -69,9 +69,9 @@ namespace itl2
 			{
 				// TODO: Add other formats here.
 
-				if (endsWith(filename, ".png"))
+				if (endsWithIgnoreCase(filename, ".png"))
 					png::write(image, filename, z);
-				else if (endsWith(filename, ".tif"))
+				else if (endsWithIgnoreCase(filename, ".tif") || endsWithIgnoreCase(filename, ".tiff"))
 					tiff::write2D(image, filename, z);
 				else
 					throw ITLException(std::string("Unsupported sequence output file format (") + filename + ").");
@@ -316,7 +316,7 @@ namespace itl2
 				}
 
 				// No extension given => select .png
-				if (!endsWith(fileTempl, ".tif") && !endsWith(fileTempl, ".png"))
+				if (!endsWithIgnoreCase(fileTempl, ".tif") && !endsWithIgnoreCase(fileTempl, ".tiff") && !endsWithIgnoreCase(fileTempl, ".png"))
 					fileTempl += ".png";
 			}
 
