@@ -24,13 +24,13 @@ namespace pilib
 		cout << "This is free software, and you are welcome to redistribute it" << endl;
 		cout << "under certain conditions; run `license()' command for more details." << endl;
 		cout << endl;
-		cout << "Contact: arttu.miettinen@psi.ch" << endl;
+		cout << "Contact: arttu.i.miettinen@jyu.fi" << endl;
 		cout << endl;
 		cout << "Based on work done at" << endl;
+		cout << "Complex materials research group, Department of Physics, University of Jyvaskyla, Finland" << endl;
 		cout << "X-ray tomography research group, TOMCAT beamline, Swiss Light Source (SLS), Paul Scherrer Institute (PSI), Switzerland" << endl;
 		cout << "Institute for Biomedical Engineering, Swiss Federal Institute of Technology Zurich (ETH Zurich), Switzerland" << endl;
 		cout << "Centre d'Imagerie BioMedicale (CIBM), Ecole Polytechnique Federale de Lausanne (EPFL), Switzerland" << endl;
-		cout << "Complex materials research group, Department of Physics, University of Jyvaskyla, Finland" << endl;
 		cout << endl;
 
 		if (sizeof(void*) == 4)
