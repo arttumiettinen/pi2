@@ -102,3 +102,20 @@ Known problems
 	Check Slurm output files :code:`*-out.txt` and :code:`*-err.txt` for more information.
 	Sometimes simply re-running the nr_stitcher_nongrid.py fixes the problem.
 	
+* Large blocks of output image are black.
+	If using a cluster, this problem is usually caused by failed SLURM jobs in the finalization phase.
+	Each black block corresponds to one failed job.
+	The most probable causes for this problem are out of memory error
+	caused by too large :code:`max_block_size` parameter in the stitch settings file, or jobs running
+	too long and being killed by SLURM.
+	
+	In order to find out the reason for the error, please check the
+	SLURM output files :code:`*-out.txt` and :code:`*-err.txt`.
+	They will contain an indication of the reason why jobs failed if they failed.
+	
+	In any case, you might want to try again with smaller :code:`max_block_size` parameter and larger
+	job run time (using e.g. :code:`cluster_extra_params = --time=48:00:00` in the stitch settings file)
+	
+	
+	
+	
