@@ -7,7 +7,7 @@
     </ProjectHome>
     <StartupFile>generic\pi2py2_tests.py</StartupFile>
     <SearchPath>generic;..\x64\Debug</SearchPath>
-    <WorkingDirectory>..\x64\Release</WorkingDirectory>
+    <WorkingDirectory>..\x64\Release no OpenCL</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
     <RootNamespace>elastic_stitcher</RootNamespace>

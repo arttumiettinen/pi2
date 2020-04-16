@@ -10,7 +10,7 @@ namespace itl2
 	Call lambda(x, y, z) for all (x, y, z) in range [block.minc, block.maxc[.
 	*/
 	template<typename F>
-	void forAllInBox(AABox<coord_t>& block, F&& lambda)
+	void forAllInBox(const AABox<coord_t>& block, F&& lambda)
 	{
 		//#pragma omp parallel for if(block.volume() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		//for (coord_t z = block.minc.z; z < block.maxc.z; z++)

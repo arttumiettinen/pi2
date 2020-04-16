@@ -741,6 +741,24 @@ def autothreshold():
 
 
 
+def tif_and_tiff():
+
+    img = pi2.read(input_file())
+
+    pi2.writesequence(img, output_file("./sequence_tif/img_@.tif"))
+    pi2.writesequence(img, output_file("./sequence_tiff/img_@.tiff"))
+
+    img2 = pi2.read(output_file("./sequence_tif/img_@.tif"))
+    img3 = pi2.read(output_file("./sequence_tiff/img_@.tiff"))
+
+    M1 = calc_difference(img, img2)
+    M2 = calc_difference(img, img3)
+
+    # Check that the difference is zero
+    check_result(M1 <= 0, f"ERROR: Difference in tif and tiff sequence reading.")
+    check_result(M2 <= 0, f"ERROR: Difference in tif and tiff sequence reading.")
+    
+
 
 
 
@@ -936,31 +954,7 @@ pi2.echo(True, False)
 #test_difference_delaying('delaying_3', f"read(img, {infile}); convert(img, img32, float32); clear(img); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl');
 #test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
 
+tif_and_tiff()
+
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")
-
-
-
-import time
-
-pi2.echo(False, False)
-img1 = pi2.newimage(ImageDataType.UINT16, 2560, 2048)
-img2 = pi2.newimage(ImageDataType.UINT16, 2560, 2048)
-total = 0
-count = 0
-for i in range(0, 100):
-    time_start = time.time()
-
-    #pi2.set(img1, img2)
-    #pi2.copy(img1, img2, [0, 0, 0])
-    pi2.rot90cw(img1, img2)
-
-    time_end = time.time()
-
-    delta = 1000*(time_end-time_start)
-    total += delta
-    count += 1
-
-    print(f"Elapsed time: {delta} ms")
-
-print(f"Average elapsed time: {total/count} ms")

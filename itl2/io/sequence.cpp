@@ -155,7 +155,9 @@ namespace itl2
 					//if (!getInfo2D(result[n], w, h, dt))
 					fs::path p(results[n]);
 					fs::path ext = p.extension();
-					if(ext != ".tif" && ext != ".png")
+					string exts = ext.string();
+					toLower(exts);
+					if(ext != ".tif" && ext != ".tiff" && ext != ".png")
 					{
 						results.erase(results.begin() + n);
 						n--;
