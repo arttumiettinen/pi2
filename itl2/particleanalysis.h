@@ -1294,9 +1294,9 @@ namespace itl2
 				}
 
 				// Only draw if the ellipsoid is sane!
-				if (!isinf(l1) && !isnan(l1) && l1 != 0 &&
-					!isinf(l2) && !isnan(l2) && l2 != 0 &&
-					!isinf(l3) && !isnan(l3) && l3 != 0)
+				if (!std::isinf(l1) && !std::isnan(l1) && l1 != 0 &&
+					!std::isinf(l2) && !std::isnan(l2) && l2 != 0 &&
+					!std::isinf(l3) && !std::isnan(l3) && l3 != 0)
 					draw(image, Ellipsoid(pos, Vec3d(l1, l2, l3), phi1, theta1, phi2, theta2), color);
 			}
 			else
