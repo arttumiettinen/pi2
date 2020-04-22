@@ -652,7 +652,7 @@ namespace itl2
 								phi2, theta2,
 								phi3, theta3);
 					double scale = sqrt(f);
-					if(!isnan(scale) && !isinf(scale))
+					if(!std::isnan(scale) && !std::isinf(scale))
 						boundingScale = std::max(boundingScale, scale);
 				}
 				results.push_back(maxr);

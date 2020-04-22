@@ -155,7 +155,7 @@ namespace itl2
 		
 		static inline bool isnan(const double a)
 		{
-			return ::isnan(a);
+			return std::isnan(a);
 		}
 
 		static inline bool equals(const double a, const double b, const double tol = tolerance())
@@ -204,7 +204,7 @@ namespace itl2
 
 		static inline bool isnan(const float32_t a)
 		{
-			return ::isnan(a);
+			return std::isnan(a);
 		}
 
 		static inline float32_t saturatingAdd(const float32_t a, const float32_t b)
