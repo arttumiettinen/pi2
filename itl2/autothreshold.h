@@ -417,7 +417,7 @@ namespace itl2
 			*/
 			inline void setDefault(double& val, double def)
 			{
-				if (isnan(val))
+				if (std::isnan(val))
 					val = def;
 			}
 

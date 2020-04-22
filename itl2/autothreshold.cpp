@@ -611,7 +611,7 @@ namespace itl2
 					Tprev = threshold;
 					double temp = (w1 + sqrt(sqterm)) / w0;
 
-					if (isnan(temp))
+					if (std::isnan(temp))
 						threshold = Tprev;
 					else
 						threshold = (int)floor(temp);
