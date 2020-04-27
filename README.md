@@ -36,8 +36,8 @@ Pre-built binaries for Windows and CentOS Linux can be downloaded from the [rele
 
 ### Linux
 
-* Make sure that gcc 7.3 or newer is installed. Often you also need to install build-essential or corresponding package.
-* Make sure that FFTW 3 library and its development packages are installed (or place its source to fftw-3.3.7-src folder, modify paths in build_again.sh to point to correct folders and run it).
+* Make sure that gcc 7.5 or newer is installed. Often you also need to install build-essential or corresponding package.
+* Make sure that FFTW 3 library and its development packages are installed, or place its source to fftw-3.3.7-src folder and run build_again.sh.
 * Make sure that libpng and libtiff libraries and their development packages are installed.
 * For Python support make sure that Python 3 is installed.
 * Run make. The output is placed in folder bin-linux64.
