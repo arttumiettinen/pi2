@@ -117,6 +117,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ShapeAnnotations.cs" />
     <Compile Include="Vec2.cs" />
     <Compile Include="Vec3.cs" />
   </ItemGroup>
@@ -185,6 +186,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="zoom-100.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="rectangle.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
