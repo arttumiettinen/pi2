@@ -56,10 +56,10 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug no OpenCL|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug no OpenCL\</OutputPath>
+    <OutputPath>..\x64\Debug no OpenCL\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>..\x64\Debug\pi2cs.xml</DocumentationFile>
+    <DocumentationFile>..\x64\Debug no OpenCL\pi2cs.xml</DocumentationFile>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
