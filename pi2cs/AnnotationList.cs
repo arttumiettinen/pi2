@@ -54,6 +54,7 @@ namespace pi2cs
             annotationTypes.Add("Vertical line", new AnnotationDefinition<VLineAnnotation>(vline));
             annotationTypes.Add("Line segment", new AnnotationDefinition<LineSegmentAnnotation>(Resources.line_2_multi_size.ToBitmap()));
             annotationTypes.Add("Center cross", new AnnotationDefinition<CenterCrossAnnotation>(Resources.cross.ToBitmap()));
+            annotationTypes.Add("Rectangle", new AnnotationDefinition<RectangleAnnotation>(Resources.rectangle.ToBitmap()));
         }
 
         /// <summary>

@@ -956,6 +956,11 @@ namespace pilib
 
 			return 0.0;
 		}
+
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
+		{
+			return JobType::Fast;
+		}
 	};
 
 

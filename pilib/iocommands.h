@@ -210,6 +210,10 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
+		{
+			return JobType::Fast;
+		}
 	};
 
 	template<typename pixel_t> class WriteTiffCommand : public Command

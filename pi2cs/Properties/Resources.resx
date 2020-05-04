@@ -142,6 +142,9 @@
   <data name="magnet_multi_size" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\magnet-multi-size.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="rectangle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\rectangle.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="scatter_plot_multi_size" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\scatter-plot-multi-size.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
