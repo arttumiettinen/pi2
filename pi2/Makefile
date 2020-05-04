@@ -1,8 +1,8 @@
 
 CXXFLAGS+=-I../pilib -I../itl2
-LDFLAGS+=-L./../pilib/bin -Wl,-rpath=\$$$${ORIGIN}
-LDLIBS=-lpilib
+LDFLAGS+=-L$(BUILD_ROOT)/../pilib -Wl,-rpath=\$$$${ORIGIN}
+LDLIBS+=-lpilib $(OPENCL_LIB)
 
-bin/pi2: ./../itl2/bin/libitl2.a 
+$(BUILD_ROOT)/pi2: $(BUILD_ROOT)/../itl2/libitl2.a $(BUILD_ROOT)/../pilib/libpilib.so
 
 include ../easymake.mk

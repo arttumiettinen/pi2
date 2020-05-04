@@ -960,10 +960,10 @@ namespace itl2
 			env.output = cl::Image3D(env.context, CL_MEM_READ_WRITE, format, output.width(), output.height(), output.depth());
 			
 			cl_uint4 zero;
-			zero.x = 0;
-			zero.y = 0;
-			zero.z = 0;
-			zero.w = 0;
+			zero.s[0] = 0;
+			zero.s[1] = 0;
+			zero.s[2] = 0;
+			zero.s[3] = 0;
 
 			cl::size_t<3> outputSize;
 			outputSize[0] = output.width();

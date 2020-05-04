@@ -1,11 +1,11 @@
 
 CXXFLAGS+=-fPIC -I. -I../itl2 -I../fftw-3.3.7-linux64/include
 CFLAGS+=-fPIC -I.
-LDFLAGS+=-shared -L./../itl2/bin -L./../fftw-3.3.7-linux64/lib
-LDLIBS=-lfftw3f -litl2 -lstdc++fs -lpng -ltiff
+LDFLAGS+=-shared -L$(BUILD_ROOT)/../itl2 -L./../fftw-3.3.7-linux64/lib
+LDLIBS+=-litl2 -lfftw3f -lstdc++fs -lpng -ltiff $(OPENCL_LIB)
 
-all: bin/libpilib.so
+all: $(BUILD_ROOT)/libpilib.so
 
-bin/libpilib.so: ./../itl2/bin/libitl2.a
+$(BUILD_ROOT)/libpilib.so: $(BUILD_ROOT)/../itl2/libitl2.a
 
 include ../easymake.mk
