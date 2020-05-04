@@ -102,7 +102,7 @@ namespace pi2cs
         public IntPtr GetData(out Int64 width, out Int64 height, out Int64 depth, out ImageDataType dataType)
         {
             IntPtr data = PiLib.GetImage(Pi.Handle, ImageName, out width, out height, out depth, out dataType);
-            if (data == null || dataType == ImageDataType.Unknown)
+            if (data == IntPtr.Zero || dataType == ImageDataType.Unknown)
                 throw new InvalidOperationException("Image " + ImageName + " is inaccessible because it has been deleted from the Pi system.");
             return data;
         }

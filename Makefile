@@ -26,12 +26,16 @@ export TEMP_DIR
 export BUILD_ROOT
 
 
-.PHONY: all clean itl2 pilib pi2 itl2tests
+.PHONY: all clean itl2 pilib pi2 itl2tests pi2cs pi2csWinFormsTest
 
-all: itl2tests itl2 pilib pi2
+all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 	mkdir -p bin-linux64/$(CONFIG)
 	cp ./intermediate/$(CONFIG)/pilib/libpilib.so ./bin-linux64/$(CONFIG)/
 	cp ./intermediate/$(CONFIG)/pi2/pi2 ./bin-linux64/$(CONFIG)/
+	cp ./x64/$(CONFIG)/*.exe ./bin-linux64/$(CONFIG)/
+	cp ./x64/$(CONFIG)/*.dll ./bin-linux64/$(CONFIG)/
+	cp ./x64/$(CONFIG)/*.exe.config ./bin-linux64/$(CONFIG)/
+	cp ./x64/$(CONFIG)/*.xml ./bin-linux64/$(CONFIG)/
 	cp ./python_scripts/*/*.py ./bin-linux64/$(CONFIG)/
 	chmod +x ./bin-linux64/$(CONFIG)/*.py
 	cp ./example_config/*.txt ./bin-linux64/$(CONFIG)/
@@ -40,7 +44,7 @@ all: itl2tests itl2 pilib pi2
 	cp ./example_config/*.cmd ./bin-linux64/$(CONFIG)/
 	cp ./LICENSE.txt ./bin-linux64/$(CONFIG)/
 
-clean: itl2tests itl2 pilib pi2
+clean: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 
 itl2:
 	$(MAKE) -C $@ $(MAKECMDGOALS)
@@ -53,5 +57,11 @@ pi2: pilib
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 itl2tests: itl2
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+
+pi2cs: pilib
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+
+pi2csWinFormsTest: pi2cs
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
