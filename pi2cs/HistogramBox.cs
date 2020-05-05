@@ -238,6 +238,7 @@ namespace pi2cs
                 chartHist.DataSeries[1].Points[0] = new Vec2(PictureBox.Min, chartHist.YAxis.Bounds.X);
                 chartHist.DataSeries[1].Points[1] = new Vec2(PictureBox.Min, chartHist.YAxis.Bounds.Y);
                 chartHist.Draw();
+                chartHist.Refresh();
             }
         }
 
@@ -256,6 +257,7 @@ namespace pi2cs
                 chartHist.DataSeries[2].Points[0] = new Vec2(PictureBox.Max, chartHist.YAxis.Bounds.X);
                 chartHist.DataSeries[2].Points[1] = new Vec2(PictureBox.Max, chartHist.YAxis.Bounds.Y);
                 chartHist.Draw();
+                chartHist.Refresh();
             }
         }
     }
