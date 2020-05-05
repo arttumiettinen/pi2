@@ -121,7 +121,7 @@ namespace pi2cs
             DoubleBuffered = true;
 
             BackColor = Color.White;
-            ColorOrder = new List<Color>{ Color.Black, Color.Red, Color.Blue, Color.Brown, Color.Gray };
+            ColorOrder = new List<Color>{ Color.Black, Color.DarkRed, Color.DarkBlue, Color.DarkOrange, Color.DarkViolet, Color.Gray, Color.DarkGreen, Color.DarkCyan };
             DataSeries = new List<DataSeries>();
             XAxis = new Axis(0, 1, "X [arb.]");
             YAxis = new Axis(0, 1, "Y [arb.]");
@@ -168,7 +168,7 @@ namespace pi2cs
             if (ColorOrder == null || ColorOrder.Count <= 0)
                 throw new InvalidOperationException("No colors in ColorOrder.");
 
-            if (nextColor <= ColorOrder.Count - 1)
+            if (nextColor < ColorOrder.Count - 1)
                 return ColorOrder[nextColor++];
 
             nextColor = 0;
@@ -481,7 +481,7 @@ namespace pi2cs
 
                             // Glyph
                             double glyphX = legendRect.Left + LegendMargin;
-                            Rectangle glyphRect = new Rectangle((int)Math.Round(glyphX), (int)Math.Round(lineY - 0.5 * glyphHeight), (int)Math.Round(glyphWidth), (int)Math.Round(glyphHeight));
+                            //Rectangle glyphRect = new Rectangle((int)Math.Round(glyphX), (int)Math.Round(lineY - 0.5 * glyphHeight), (int)Math.Round(glyphWidth), (int)Math.Round(glyphHeight));
                             //g.DrawRectangle(Pens.Red, glyphRect);
                             g.DrawLine(series.LinePen, (int)Math.Round(glyphX), (int)Math.Round(lineY), (int)Math.Round(glyphX + glyphWidth), (int)Math.Round(lineY));
 
