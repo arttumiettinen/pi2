@@ -15,6 +15,8 @@ namespace pi2cs
     /// </summary>
     public partial class ProfileDialog : Form
     {
+        private Chart chart;
+
         /// <summary>
         /// Gets radius of the profile.
         /// </summary>
@@ -36,9 +38,7 @@ namespace pi2cs
         /// </summary>
         public void Clear()
         {
-            chart.Series[0].Points.Clear();
-            chart.ChartAreas[0].AxisX.Minimum = 0;
-            chart.ChartAreas[0].AxisX.Maximum = 1;
+            chart.DataSeries[0].Points.Clear();
         }
 
         /// <summary>
@@ -48,8 +48,16 @@ namespace pi2cs
         /// <param name="y"></param>
         public void AddPoint(double x, double y)
         {
-            chart.Series[0].Points.AddXY(x, y);
-            chart.ChartAreas[0].AxisX.Maximum = Math.Max(chart.ChartAreas[0].AxisX.Maximum, x);
+            chart.DataSeries[0].Points.Add(new Vec2(x, y));
+        }
+
+        /// <summary>
+        /// Finishes update of the chart and draws it.
+        /// </summary>
+        public void Draw()
+        {
+            chart.Draw();
+            chart.Refresh();
         }
 
         /// <summary>
@@ -58,6 +66,16 @@ namespace pi2cs
         /// <param name="viewer"></param>
         public ProfileDialog(Pi2PictureViewer viewer)
         {
+            chart = new Chart();
+            chart.Dock = DockStyle.Fill;
+            chart.XAxis.Label = "Position [pix]";
+            chart.XAxis.AutoScale = true;
+            chart.YAxis.Label = "Gray value";
+            chart.YAxis.AutoScale = true;
+            chart.NewSeries();
+            chart.LegendLocation = LegendLocation.None;
+            Controls.Add(chart);
+
             Viewer = viewer;
             InitializeComponent();
         }

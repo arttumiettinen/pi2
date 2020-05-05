@@ -1,13 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
 using System.Globalization;
 
 namespace pi2cs
@@ -18,6 +12,8 @@ namespace pi2cs
     public partial class HistogramBox : UserControl
     {
         private Pi2PictureBox pb;
+
+        private Chart chartHist;
 
         /// <summary>
         /// Gets and sets the box whose histogram is shown.
@@ -49,11 +45,21 @@ namespace pi2cs
         public HistogramBox(Pi2PictureBox pictureBox)
         {
             InitializeComponent();
-            this.PictureBox = pictureBox;
+            chartHist = new Chart();
+            chartHist.NewSeries();
+            chartHist.NewSeries();
+            chartHist.NewSeries();
+            chartHist.XAxis.Label = "Gray value";
+            chartHist.YAxis.Label = "Count";
+            chartHist.Dock = DockStyle.Fill;
+            Controls.Add(chartHist);
+            chartHist.BringToFront();
+            
+            PictureBox = pictureBox;
         }
 
         /// <summary>
-        /// This is from StackOverflow,
+        /// This is from StackOverflow, see
         /// https://stackoverflow.com/questions/8137391/percentile-calculation
         /// </summary>
         /// <param name="sequence"></param>
@@ -99,26 +105,29 @@ namespace pi2cs
                 updating = true;
                 try
                 {
-
                     IReadOnlyList<PointF> histogram = PictureBox.Histogram;
 
-                    DataPointCollection points = chartHist.Series[0].Points;
+                    while (chartHist.DataSeries[1].Points.Count < 2)
+                        chartHist.DataSeries[1].Points.Add(new Vec2());
+                    while (chartHist.DataSeries[2].Points.Count < 2)
+                        chartHist.DataSeries[2].Points.Add(new Vec2());
+
+                    var points = chartHist.DataSeries[0].Points;
                     while (points.Count < histogram.Count)
-                        points.Add(0);
+                        points.Add(new Vec2(0, 0));
 
                     List<double> counts = new List<double>();
 
                     double max = 0;
                     for (int n = 0; n < histogram.Count; n++)
                     {
-                        points[n].XValue = histogram[n].X;
-                        points[n].YValues[0] = histogram[n].Y;
+                        points[n] = new Vec2(histogram[n]);
                         counts.Add(histogram[n].Y);
                         if (histogram[n].Y > max)
                             max = histogram[n].Y;
                     }
-
-                    chartHist.ChartAreas[0].AxisY.Maximum = Percentile(counts.ToArray(), 0.995);
+                    
+                    chartHist.YAxis.Bounds = new Vec2(0, Percentile(counts.ToArray(), 0.995));
 
                     if (checkFullRange.Checked)
                     {
@@ -141,16 +150,23 @@ namespace pi2cs
 
                     if (rangeMin >= rangeMax)
                         rangeMax = rangeMin + 1;
+                    
+                    chartHist.XAxis.Bounds = new Vec2(rangeMin, rangeMax);
 
-                    chartHist.ChartAreas[0].AxisX.Minimum = rangeMin;
-                    chartHist.ChartAreas[0].AxisX.Maximum = rangeMax;
+                    chartHist.DataSeries[1].Points[0] = new Vec2(PictureBox.Min, chartHist.YAxis.Bounds.X);
+                    chartHist.DataSeries[1].Points[1] = new Vec2(PictureBox.Min, chartHist.YAxis.Bounds.Y);
+
+                    chartHist.DataSeries[2].Points[0] = new Vec2(PictureBox.Max, chartHist.YAxis.Bounds.X);
+                    chartHist.DataSeries[2].Points[1] = new Vec2(PictureBox.Max, chartHist.YAxis.Bounds.Y);
 
                     scrollMinimum.Maximum = Math.Max(256, (int)(rangeMax - rangeMin)) + scrollMinimum.LargeChange;
                     scrollMaximum.Maximum = scrollMinimum.Maximum;
-
+                    
                     SetScrollBarValue(scrollMinimum, PictureBox.Min);
                     SetScrollBarValue(scrollMaximum, PictureBox.Max);
                     UpdateLabels();
+                    chartHist.Draw();
+                    chartHist.Invalidate();
                 }
                 finally
                 {
@@ -218,6 +234,10 @@ namespace pi2cs
                 PictureBox.UpdateScreen();
 
                 UpdateLabels();
+
+                chartHist.DataSeries[1].Points[0] = new Vec2(PictureBox.Min, chartHist.YAxis.Bounds.X);
+                chartHist.DataSeries[1].Points[1] = new Vec2(PictureBox.Min, chartHist.YAxis.Bounds.Y);
+                chartHist.Draw();
             }
         }
 
@@ -232,6 +252,10 @@ namespace pi2cs
                 PictureBox.UpdateScreen();
 
                 UpdateLabels();
+
+                chartHist.DataSeries[2].Points[0] = new Vec2(PictureBox.Max, chartHist.YAxis.Bounds.X);
+                chartHist.DataSeries[2].Points[1] = new Vec2(PictureBox.Max, chartHist.YAxis.Bounds.Y);
+                chartHist.Draw();
             }
         }
     }

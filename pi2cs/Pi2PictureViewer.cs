@@ -267,9 +267,11 @@ namespace pi2cs
 
                     Profile.AddPoint(r, sum / count);
                 }
-
+                
                 Profile.Location = PointToScreen(Point.Round(PictureBox.PictureToScreen(profileEnd).ToPointF()));
-                Profile.Show();
+                Profile.Draw();
+                if (!Profile.Visible)
+                    Profile.Show();
             }
         }
         

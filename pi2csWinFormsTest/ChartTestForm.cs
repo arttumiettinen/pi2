@@ -31,11 +31,15 @@ namespace pi2csWinFormsTest
             for (double x = -10; x <= 10; x += 0.5)
                 series.Points.Add(new Vec2(x, x * x * x));
 
-            chart.XAxis.Bounds = new Vec2(-11.3423, 13.212);
+            //chart.XAxis.Bounds = new Vec2(-11.3423, 13.212);
             //chart.XAxis.Bounds = new Vec2(-0.0001, -0.00005);
             //chart.XAxis.Bounds = new Vec2(-10000, 5);
-            chart.YAxis.Bounds = new Vec2(-130, 130);
+            chart.XAxis.Bounds = new Vec2(-8, 8);
+            //chart.XAxis.AutoScale = true;
+
+            //chart.YAxis.Bounds = new Vec2(-130, 130);
             //chart.YAxis.Bounds = new Vec2(-1300, -1000);
+            chart.YAxis.AutoScale = true;
 
             chart.LegendLocation = LegendLocation.BottomLeft;
 

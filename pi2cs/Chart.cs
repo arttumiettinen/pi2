@@ -121,6 +121,8 @@ namespace pi2cs
         /// </summary>
         public Chart()
         {
+            DoubleBuffered = true;
+
             BackColor = Color.White;
             ColorOrder = new List<Color>{ Color.Black, Color.Red, Color.Blue, Color.Brown, Color.Gray };
             DataSeries = new List<DataSeries>();
@@ -180,7 +182,7 @@ namespace pi2cs
         /// Create a new data series
         /// </summary>
         /// <returns></returns>
-        public DataSeries NewSeries(string title = "")
+        public DataSeries NewSeries(string title = null)
         {
             DataSeries.Add(new DataSeries(NextColor(), title));
             return DataSeries.Last();
@@ -503,6 +505,33 @@ namespace pi2cs
         /// </summary>
         public void Draw()
         {
+            if(XAxis.AutoScale)
+            {
+                double? xmin = DataSeries.Min(series => series.Points.Where(p => !p.IsNan()).Min(v => (double?)v.X));
+                double? xmax = DataSeries.Max(series => series.Points.Where(p => !p.IsNan()).Max(v => (double?)v.X));
+                if (xmin == null || xmax == null || xmax.Value <= xmin.Value)
+                {
+                    xmin = 0;
+                    xmax = 1;
+                }
+
+                XAxis.Bounds = new Vec2(xmin.Value, xmax.Value);
+            }
+
+            if(YAxis.AutoScale)
+            {
+                double? ymin = DataSeries.Min(series => series.Points.Where(p => !p.IsNan()).Where(p => p.X >= XAxis.Bounds.X && p.X <= XAxis.Bounds.Y).Min(v => (double?)v.Y));
+                double? ymax = DataSeries.Max(series => series.Points.Where(p => !p.IsNan()).Where(p => p.X >= XAxis.Bounds.X && p.X <= XAxis.Bounds.Y).Max(v => (double?)v.Y));
+
+                if (ymin == null || ymax == null || ymax.Value <= ymin.Value)
+                {
+                    ymin = 0;
+                    ymax = 1;
+                }
+
+                YAxis.Bounds = new Vec2(ymin.Value, ymax.Value);
+            }
+
             // Create a back-buffer
             Image img = BackgroundImage;
             if(img == null || img.Size != ClientSize)
@@ -547,6 +576,8 @@ namespace pi2cs
 
                 DrawLegend(g, dataRect);
             }
+
+            Invalidate();
         }
 
         /// <summary>
@@ -625,6 +656,15 @@ namespace pi2cs
         /// Gets and sets a value indicating whether the axis direction should be flipped.
         /// </summary>
         public bool Flipped
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets and sets a value whether Bounds should be set automatically.
+        /// </summary>
+        public bool AutoScale
         {
             get;
             set;
@@ -725,7 +765,8 @@ namespace pi2cs
             {
                 Vec2 p0 = DataToImage(Points[n], imageBounds, xAxis, yAxis);
                 Vec2 p1 = DataToImage(Points[n + 1], imageBounds, xAxis, yAxis);
-                g.DrawLine(LinePen, p0.ToPointF(), p1.ToPointF());
+                if(!p0.IsNan() && !p1.IsNan())
+                    g.DrawLine(LinePen, p0.ToPointF(), p1.ToPointF());
             }
             g.ResetClip();
         }
