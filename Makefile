@@ -26,9 +26,18 @@ export TEMP_DIR
 export BUILD_ROOT
 
 
+ifeq ($(CONFIG), release)
+   	CS_CONFIG = Release
+else ifeq ($(CONFIG), release-nocl)
+   	CS_CONFIG = Release no OpenCL
+endif
+
+
 .PHONY: all clean itl2 pilib pi2 itl2tests pi2cs pi2csWinFormsTest
 
 all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
+	
+	# Construct full distribution to bin-linux64/$(CONFIG) folder
 	mkdir -p bin-linux64/$(CONFIG)
 	cp ./intermediate/$(CONFIG)/pilib/libpi.so ./bin-linux64/$(CONFIG)/
 	cp ./intermediate/$(CONFIG)/pi2/pi2 ./bin-linux64/$(CONFIG)/
@@ -43,6 +52,13 @@ all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 	chmod +x ./bin-linux64/$(CONFIG)/*.sh
 	cp ./example_config/*.cmd ./bin-linux64/$(CONFIG)/
 	cp ./LICENSE.txt ./bin-linux64/$(CONFIG)/
+
+	# For ease of use of .NET builds using pi2, construct full distribution also to
+	# "x64/$(CS_CONFIG)" folder. That way the .NET builds can be done with msbuild as usual,
+	# without worrying about final platform-specific output folder name.
+	cp ./bin-linux64/$(CONFIG)/*.so "./x64/$(CS_CONFIG)/"
+	cp ./bin-linux64/$(CONFIG)/pi2 "./x64/$(CS_CONFIG)/"
+	cp ./example_config/*.txt "./x64/$(CS_CONFIG)/"
 
 clean: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 
