@@ -82,6 +82,9 @@
     <Compile Include="Annotation.cs" />
     <Compile Include="AnnotationList.cs" />
     <Compile Include="BiDictionary.cs" />
+    <Compile Include="Chart.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="HistogramBox.cs">
       <SubType>UserControl</SubType>

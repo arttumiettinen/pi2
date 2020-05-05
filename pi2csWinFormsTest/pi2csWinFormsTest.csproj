@@ -68,6 +68,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChartTestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChartTestForm.Designer.cs">
+      <DependentUpon>ChartTestForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="PictureBoxTestForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -82,6 +88,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="ChartTestForm.resx">
+      <DependentUpon>ChartTestForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="PictureBoxTestForm.resx">
       <DependentUpon>PictureBoxTestForm.cs</DependentUpon>
     </EmbeddedResource>
