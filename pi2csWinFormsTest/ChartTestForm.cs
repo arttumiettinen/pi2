@@ -23,11 +23,11 @@ namespace pi2csWinFormsTest
             chart.Dock = DockStyle.Fill;
             Controls.Add(chart);
 
-            DataSeries series = chart.NewSeries();
+            DataSeries series = chart.NewSeries("Parabola");
             for (double x = -10; x <= 10; x += 0.5)
                 series.Points.Add(new Vec2(x, x * x));
 
-            series = chart.NewSeries();
+            series = chart.NewSeries("Hyperbola");
             for (double x = -10; x <= 10; x += 0.5)
                 series.Points.Add(new Vec2(x, x * x * x));
 
@@ -36,6 +36,8 @@ namespace pi2csWinFormsTest
             //chart.XAxis.Bounds = new Vec2(-10000, 5);
             chart.YAxis.Bounds = new Vec2(-130, 130);
             //chart.YAxis.Bounds = new Vec2(-1300, -1000);
+
+            chart.LegendLocation = LegendLocation.BottomLeft;
 
             chart.Draw();
         }

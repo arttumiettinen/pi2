@@ -45,6 +45,15 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Gets and sets the location and visibility of the legend box.
+        /// </summary>
+        public LegendLocation LegendLocation
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Margin between axis labels and other elements
         /// </summary>
         public double AxisMargin
@@ -54,7 +63,17 @@ namespace pi2cs
         } = 10;
 
         /// <summary>
+        /// Margin between items in the legend box.
+        /// </summary>
+        public double LegendMargin
+        {
+            get;
+            set;
+        } = 5;
+
+        /// <summary>
         /// Font used when drawing axis labels.
+        /// The control assumes ownership of the assigned object and will dispose it when the control is disposed.
         /// </summary>
         public Font AxisLabelFont
         {
@@ -64,6 +83,7 @@ namespace pi2cs
 
         /// <summary>
         /// Font used to draw axis tick labels.
+        /// The control assumes ownership of the assigned object and will dispose it when the control is disposed.
         /// </summary>
         public Font TickLabelFont
         {
@@ -90,11 +110,11 @@ namespace pi2cs
         }
 
         /// <summary>
-        /// Format to be used when drawing axis labels.
+        /// Formats to be used when drawing labels etc.
         /// </summary>
         private StringFormat AxisLabelFormat;
-
         private StringFormat YTickFormat;
+        private StringFormat LegendFormat;
 
         /// <summary>
         /// Constructor
@@ -120,6 +140,12 @@ namespace pi2cs
             YTickFormat = new StringFormat();
             YTickFormat.Alignment = StringAlignment.Far;
             YTickFormat.LineAlignment = StringAlignment.Center;
+
+            LegendFormat = new StringFormat();
+            LegendFormat.Alignment = StringAlignment.Near;
+            LegendFormat.LineAlignment = StringAlignment.Center;
+
+            LegendLocation = LegendLocation.TopRight;
         }
 
 
@@ -396,6 +422,83 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Draws legend box.
+        /// </summary>
+        /// <param name="g"></param>
+        /// <param name="dataBounds"></param>
+        private void DrawLegend(Graphics g, Rectangle dataBounds)
+        {
+            if (LegendLocation == LegendLocation.None)
+                return;
+
+            // Measure legend size
+            double glyphWidth = 25;
+            double glyphHeight = 15;
+            double w = 0;
+            double maxTextHeight = 0;
+            double lineCount = 0;
+            foreach(DataSeries series in DataSeries)
+            {
+                if(series.Title != null)
+                {
+                    SizeF size = g.MeasureString(series.Title, AxisLabelFont);
+                    w = Math.Max(w, size.Width + 3 * LegendMargin + glyphWidth);
+                    maxTextHeight = Math.Max(maxTextHeight, size.Height);
+                    lineCount++;
+                }
+            }
+            double lineHeight = Math.Max(glyphHeight, maxTextHeight);
+            double h = LegendMargin + (lineHeight + LegendMargin) * lineCount;
+
+            if (w > 0)
+            {
+                // Calculate legend box location
+                double x = 0, y = 0;
+                switch(LegendLocation)
+                {
+                    case LegendLocation.TopLeft: x = dataBounds.Left + AxisMargin; y = dataBounds.Top + AxisMargin; break;
+                    case LegendLocation.TopRight: x = dataBounds.Right - AxisMargin - w; y = dataBounds.Top + AxisMargin; break;
+                    case LegendLocation.BottomLeft: x = dataBounds.Left + AxisMargin; y = dataBounds.Bottom - AxisMargin - h; break;
+                    case LegendLocation.BottomRight: x = dataBounds.Right - AxisMargin - w; y = dataBounds.Bottom - AxisMargin - h; break;
+                }
+                Rectangle legendRect = new Rectangle((int)Math.Round(x), (int)Math.Round(y), (int)Math.Round(w), (int)Math.Round(h));
+
+                // Draw box
+                using (Brush brush = new SolidBrush(BackColor))
+                {
+                    g.FillRectangle(brush, legendRect);
+                    g.DrawRectangle(AxisPen, legendRect);
+                }
+
+                // Draw items
+                using (Brush brush = new SolidBrush(AxisPen.Color))
+                {
+                    int n = 0;
+                    foreach (DataSeries series in DataSeries)
+                    {
+                        if (series.Title != null)
+                        {
+                            double lineY = legendRect.Top + LegendMargin + n * (lineHeight + LegendMargin) + 0.5 * lineHeight;
+
+                            // Glyph
+                            double glyphX = legendRect.Left + LegendMargin;
+                            Rectangle glyphRect = new Rectangle((int)Math.Round(glyphX), (int)Math.Round(lineY - 0.5 * glyphHeight), (int)Math.Round(glyphWidth), (int)Math.Round(glyphHeight));
+                            //g.DrawRectangle(Pens.Red, glyphRect);
+                            g.DrawLine(series.LinePen, (int)Math.Round(glyphX), (int)Math.Round(lineY), (int)Math.Round(glyphX + glyphWidth), (int)Math.Round(lineY));
+
+                            // Text
+                            double textX = legendRect.Left + 2 * LegendMargin + glyphWidth;
+                            g.DrawString(series.Title, AxisLabelFont, brush, (int)Math.Round(textX), (int)Math.Round(lineY), LegendFormat);
+                            n++;
+                        }
+                    }
+                }
+
+                
+            }
+        }
+
+        /// <summary>
         /// Re-draws the chart after updates to data.
         /// </summary>
         public void Draw()
@@ -441,6 +544,8 @@ namespace pi2cs
                 DrawAxes(g, dataRect, xTicks, yTicks);
 
                 g.DrawRectangle(AxisPen, dataRect);
+
+                DrawLegend(g, dataRect);
             }
         }
 
@@ -462,9 +567,15 @@ namespace pi2cs
         {
             if (disposing)
             {
+                AxisLabelFont.Dispose();
+                AxisLabelFont = null;
+
+                TickLabelFont.Dispose();
+                TickLabelFont = null;
+
                 AxisLabelFormat.Dispose();
                 AxisLabelFormat = null;
-
+                
                 YTickFormat.Dispose();
                 YTickFormat = null;
 
@@ -473,6 +584,18 @@ namespace pi2cs
             }
             base.Dispose(disposing);
         }
+    }
+
+    /// <summary>
+    /// Enumerates possible locations for, e.g. legend box.
+    /// </summary>
+    public enum LegendLocation
+    {
+        None,
+        TopRight,
+        BottomRight,
+        TopLeft,
+        BottomLeft
     }
 
     /// <summary>
@@ -570,6 +693,7 @@ namespace pi2cs
 
         /// <summary>
         /// Title of the series shown in legend.
+        /// Set to null to not show this plot in the legend.
         /// </summary>
         public string Title
         {
@@ -580,7 +704,7 @@ namespace pi2cs
         /// <summary>
         /// Constructor
         /// </summary>
-        public DataSeries(Color color, string title = "")
+        public DataSeries(Color color, string title = null)
         {
             LinePen = new Pen(color);
             Points = null;
