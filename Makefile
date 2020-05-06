@@ -41,10 +41,10 @@ all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 	mkdir -p bin-linux64/$(CONFIG)
 	cp ./intermediate/$(CONFIG)/pilib/libpi.so ./bin-linux64/$(CONFIG)/
 	cp ./intermediate/$(CONFIG)/pi2/pi2 ./bin-linux64/$(CONFIG)/
-	cp ./x64/$(CONFIG)/*.exe ./bin-linux64/$(CONFIG)/
-	cp ./x64/$(CONFIG)/*.dll ./bin-linux64/$(CONFIG)/
-	cp ./x64/$(CONFIG)/*.exe.config ./bin-linux64/$(CONFIG)/
-	cp ./x64/$(CONFIG)/*.xml ./bin-linux64/$(CONFIG)/
+	cp ./x64/$(CONFIG)/*.exe ./bin-linux64/$(CONFIG)/ | true
+	cp ./x64/$(CONFIG)/*.dll ./bin-linux64/$(CONFIG)/ | true
+	cp ./x64/$(CONFIG)/*.exe.config ./bin-linux64/$(CONFIG)/ | true
+	cp ./x64/$(CONFIG)/*.xml ./bin-linux64/$(CONFIG)/ | true
 	cp ./python_scripts/*/*.py ./bin-linux64/$(CONFIG)/
 	chmod +x ./bin-linux64/$(CONFIG)/*.py
 	cp ./example_config/*.txt ./bin-linux64/$(CONFIG)/
@@ -56,6 +56,7 @@ all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 	# For ease of use of .NET builds using pi2, construct full distribution also to
 	# "x64/$(CS_CONFIG)" folder. That way the .NET builds can be done with msbuild as usual,
 	# without worrying about final platform-specific output folder name.
+	mkdir -p "./x64/$(CS_CONFIG)/"
 	cp ./bin-linux64/$(CONFIG)/*.so "./x64/$(CS_CONFIG)/"
 	cp ./bin-linux64/$(CONFIG)/pi2 "./x64/$(CS_CONFIG)/"
 	cp ./example_config/*.txt "./x64/$(CS_CONFIG)/"

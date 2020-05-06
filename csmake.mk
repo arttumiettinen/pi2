@@ -31,9 +31,14 @@ OUTFILE:=$(subst $(space),$(slashspace),$(OUTFILE))
 all: $(OUTFILE)
 
 $(OUTFILE): $(CSHARP_SOURCE_FILES)
+ifneq ($(shell which xbuild), )
 	xbuild /p:Configuration="$(CS_CONFIG)" $(PROJECT_FILE)
 	mkdir -p ../x64/$(CONFIG)
 	cp $(OUTDIR)/* ../x64/$(CONFIG)
+endif
 
 clean:
+ifneq ($(shell which xbuild), )
 	xbuild /target:clean $(PROJECT_FILE)
+endif
+
