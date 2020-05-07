@@ -40,6 +40,12 @@ namespace pilib
 		else
 			cout << "Warning: Using neither 32-bit nor 64-bit version." << endl;
 
+#if defined(NO_OPENCL)
+		cout << "OpenCL support is disabled." << endl;
+#else
+		cout << "OpenCL support is enabled." << endl;
+#endif
+
 		cout << "Number of threads: " << omp_get_max_threads() << endl;
 		cout << "Available RAM: " << bytesToString((double)memorySize()) << endl;
 
