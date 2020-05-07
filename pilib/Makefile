@@ -6,6 +6,4 @@ LDLIBS+=-litl2 -lfftw3f -lstdc++fs -lpng -ltiff $(OPENCL_LIB)
 
 all: $(BUILD_ROOT)/libpi.so
 
-$(BUILD_ROOT)/libpi.so: $(BUILD_ROOT)/../itl2/libitl2.a
-
 include ../easymake.mk
