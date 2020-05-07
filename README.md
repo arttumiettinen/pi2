@@ -36,11 +36,21 @@ Pre-built binaries for Windows and CentOS Linux can be downloaded from the [rele
 
 ### Linux
 
-* Make sure that gcc 7.5 or newer is installed. Often you also need to install build-essential or corresponding package.
+The overall build process is as follows:
+* Make sure that gcc 7.3 or newer is installed. Often you also need to install build-essential or corresponding package.
 * Make sure that FFTW 3 library and its development packages are installed, or place its source to fftw-3.3.7-src folder and run build_again.sh.
 * Make sure that libpng and libtiff libraries and their development packages are installed.
 * For Python support make sure that Python 3 is installed.
-* Run make. The output is placed in folder bin-linux64.
+* For OpenCL support make sure that you have suitable OpenCL development files installed.
+* Run "make" to generate OpenCL-enabled build or "make NO_OPENCL=1" if no OpenCL should be used. The output is placed in folder bin-linux64.
+
+Typically in an Ubuntu-like system you would run something like this:
+```
+sudo apt install build-essential libfftw3-dev libpng-dev libtiff-dev libjpeg-dev 
+git clone https://github.com/arttumiettinen/pi2.git
+cd pi2
+make NO_OPENCL=1
+```
 
 You can install the executable and libraries to any standard location, but often it is better to just copy the files along with your project. This guarantees that you know which version of the program you used to generate the results.
 
@@ -52,7 +62,7 @@ You can install the executable and libraries to any standard location, but often
 [path-to-base-folder]\tiff-4.0.5> nmake /f makefile.vc
 ```
 Before building edit nmake.opt file and change OPTFLAGS value /MD and /MDd to /MT and /MTd, for debug and release builds, respectively.
-* Build everything in itl2.sln solution file. The output is placed to x64 folder.
+* Build everything in itl2.sln solution file, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available. The output is placed to x64 folder.
 
 
 ## License
