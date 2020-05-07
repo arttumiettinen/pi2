@@ -498,7 +498,7 @@ class Pi2:
         else:
             # Linux
             #os.environ['PATH'] = os.path.dirname(__file__) + ':' + os.environ['PATH']
-            self.pilib = CDLL(f"{os.path.dirname(__file__)}/libpilib.so")
+            self.pilib = CDLL(f"{os.path.dirname(__file__)}/libpi.so")
 
         self.pilib.createPI.restype = c_void_p
 

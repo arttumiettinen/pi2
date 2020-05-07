@@ -54,7 +54,7 @@ at the same time (but of course not to the same locations).
 
 .. _memory_mapping:
 
-Memory mapped .raw files
+Memory-mapped .raw files
 ------------------------
 
 An advantage of .raw files is that they can be easily memory-mapped.
@@ -62,11 +62,14 @@ Memory-mapping means that the file on hard disk is correlated one-to-one to RAM 
 If the file is larger than available RAM, the operating system manages reading and writing relevant
 portions of the file to and from RAM.
 
-Memory mapping enables relatively efficient processing of files larger than RAM, but it should not be
+Memory-mapping enables relatively efficient processing of files larger than RAM, but it should not be
 confused with :ref:`distributed computing possibilities <cluster_config>` offered by pi2.
 
 Raw files can be memory-mapped with command :ref:`mapraw` that is a (almost) drop-in replacement for the :ref:`readraw` command.
 That is, after you :ref:`mapraw` an image, it can be used just like any other image but any changes made to it are immediately
 reflected to disk.
 Memory-mapped images do not have to be saved using the :ref:`writeraw` command.
+Any changes are automatically written to the file.
+
+Note that memory-mapping files stored on network shares does not usually work as expected!
 
