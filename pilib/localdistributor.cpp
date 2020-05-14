@@ -5,8 +5,8 @@
 #include "exeutils.h"
 
 #include <algorithm>
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 
 using namespace itl2;
 using namespace std;

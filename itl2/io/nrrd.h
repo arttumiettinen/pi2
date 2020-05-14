@@ -2,7 +2,7 @@
 
 #include <string>
 #include <iostream>
-#include <experimental/filesystem>
+#include <filesystem>
 
 #include "math/vec3.h"
 #include "io/imagedatatype.h"
@@ -10,7 +10,7 @@
 #include "io/raw.h"
 #include "pointprocess.h"
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 namespace itl2
 {

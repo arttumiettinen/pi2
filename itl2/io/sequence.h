@@ -8,9 +8,9 @@
 #include "ompatomic.h"
 
 #include <cmath>
-#include <experimental/filesystem>
+#include <filesystem>
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 namespace itl2
 {
