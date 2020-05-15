@@ -3,8 +3,7 @@
 #include "whereami.h"
 
 #include <vector>
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "filesystem.h"
 
 namespace pilib
 {

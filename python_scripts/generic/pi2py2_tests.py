@@ -757,8 +757,57 @@ def tif_and_tiff():
     # Check that the difference is zero
     check_result(M1 <= 0, f"ERROR: Difference in tif and tiff sequence reading.")
     check_result(M2 <= 0, f"ERROR: Difference in tif and tiff sequence reading.")
-    
 
+
+def get_pixels():
+
+    pi2.distribute(Distributor.NONE)
+    # Generate image
+    w = 100;
+    h = 80;
+    d = 120;
+    img = pi2.newimage(ImageDataType.UINT16, w, h, d)
+    pi2.ramp(img, 0)
+    pi2.writeraw(img, output_file("ramp"))
+
+    # Generate some positions
+    N = 30
+    positions = pi2.newimage(ImageDataType.FLOAT32, 3, N)
+    pos = positions.get_data()
+
+    for i in range(0, N):
+        pos[i, 0] = random.randint(0, h-1)
+        pos[i, 1] = random.randint(0, w-1)
+        pos[i, 2] = random.randint(0, d-1)
+
+    # Get pixels at positions (non-distributed)
+    #img = pi2.read(output_file("ramp"))
+    #out = pi2.newimage(img.get_data_type())
+    #pi2.get(img, out, pos)
+    #data_normal = out.get_data();
+
+
+    # Get pixels at positions (distributed)
+    pi2.distribute(Distributor.LOCAL)
+    pi2.maxmemory(1)
+
+    img = pi2.read(output_file("ramp"))
+    out = pi2.newimage(img.get_data_type())
+    pi2.get(img, out, pos)
+    data_distributed = out.get_data();
+
+    pi2.distribute(Distributor.NONE)
+
+    # Get pixels at positions (through NumPy)
+    img = pi2.read(output_file("ramp"))
+    pyimg = img.get_data()
+
+    data_numpy = np.zeroes(N)
+    for i in range(0, N):
+        data_numpy[i] = pyimg[pos[i, 0], pos[i, 1], pos[i, 2]]
+
+    for i in range(0, N):
+        print(f"{data_normal[i]} = {data_numpy[i]} = {data_distributed[i]}")
 
 
 
@@ -954,7 +1003,9 @@ pi2.echo(True, False)
 #test_difference_delaying('delaying_3', f"read(img, {infile}); convert(img, img32, float32); clear(img); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl');
 #test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
 
-tif_and_tiff()
+#tif_and_tiff()
+
+get_pixels()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

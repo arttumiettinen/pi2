@@ -419,6 +419,20 @@ namespace pilib
 		}
 
 		/**
+		Reads the data of this distributed image to the given normal image, but does not trigger execution of pending commands.
+		This method can be used internally when distributed commands are being processed, e.g. in GetCorrespondingBlock method.
+		*/
+		void readToNoFlush(itl2::Image<pixel_t>& img) const
+		{
+			img.ensureSize(dimensions());
+
+			if (isSavedToDisk())
+			{
+				itl2::io::read(img, currentReadSource());
+			}
+		}
+
+		/**
 		Reads the data of this distributed image to the given normal image.
 		*/
 		void readTo(itl2::Image<pixel_t>& img) const
@@ -426,12 +440,7 @@ namespace pilib
 			// Flush so that there are no pending writes to this image.
 			DistributedImageBase::flush();
 
-			img.ensureSize(dimensions());
-
-			if (isSavedToDisk())
-			{
-				itl2::io::read(img, currentReadSource());
-			}
+			readToNoFlush(img);
 		}
 
 		/**

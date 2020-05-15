@@ -5,8 +5,7 @@
 #include "exeutils.h"
 
 #include <algorithm>
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "filesystem.h"
 
 using namespace itl2;
 using namespace std;

@@ -6,8 +6,8 @@
     <ProjectHome>
     </ProjectHome>
     <StartupFile>generic\pi2py2_tests.py</StartupFile>
-    <SearchPath>generic;..\x64\Debug</SearchPath>
-    <WorkingDirectory>..\x64\Release no OpenCL</WorkingDirectory>
+    <SearchPath>generic</SearchPath>
+    <WorkingDirectory>..\x64\Debug no OpenCL</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
     <RootNamespace>elastic_stitcher</RootNamespace>
@@ -15,7 +15,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <CommandLineArguments>
     </CommandLineArguments>
-    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
     <PublishUrl>
     </PublishUrl>
     <Environment>

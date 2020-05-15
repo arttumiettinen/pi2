@@ -89,8 +89,9 @@ namespace pilib
 		}
 
 		/**
-		Gets amount of overlap required between blocks processed at different nodes.
-		Default value is zero.
+		Gets amount of overlap required between blocks processed at different nodes,
+		AND ensure that possible output images and input images have correct size.
+		Default return value is zero, i.e. no overlap.
 		The value must be given in reference image coordinates (relevant if the command changes image size).
 		*/
 		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const

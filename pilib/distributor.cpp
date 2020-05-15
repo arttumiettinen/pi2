@@ -9,8 +9,7 @@
 #include "whereamicpp.h"
 
 #include <tuple>
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "filesystem.h"
 
 using namespace std;
 

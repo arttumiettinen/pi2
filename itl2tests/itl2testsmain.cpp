@@ -49,10 +49,120 @@ using namespace itl2;
 using namespace std;
 
 
+/**
+Undoes what order function did to values array.
+Orders elements such that
+unordered[index[i]] = values[i]
+Replaces values array by unordered array.
+The index array will become sorted in ascending order.
+*/
+static void unorder(vector<double>& values, vector<coord_t>& index)
+{
+	for (size_t i = 0; i < index.size(); i++)
+	{
+		while (index[i] != i)
+		{
+			swap(values[i], values[index[i]]);
+			swap(index[i], index[index[i]]);
+		}
+	}
+}
+
+/**
+Order elements of values according to index such that
+ordered[i] = values[index[i]]
+Replaces values array by ordered array.
+The index array will become sorted in ascending order.
+This is from StackOverflow: https://stackoverflow.com/questions/46775994/reorder-array-according-to-given-index
+*/
+static void order(vector<double>& values, vector<coord_t>& index)
+{
+	for (size_t i = 0; i < index.size(); i++)
+	{
+		if (i != index[i])
+		{
+			size_t j = i;
+			size_t k;
+			while (i != (k = index[j]))
+			{
+				swap(values[j], values[k]);
+				index[j] = j;
+				j = k;
+			}
+			index[j] = j;
+		}
+	}
+}
 
 
 int main()
 {	
+
+	vector<double> values = {4, 6, 1, 1, 7, 2, 5, 6};
+	vector<coord_t> idx(values.size());
+	iota(idx.begin(), idx.end(), 0);
+
+	cout << "Before sorting, values[i] = ";
+	for (auto n = 0; n < values.size(); n++)
+	{
+		cout << values[n] << " ";
+	}
+	cout << endl;
+
+	std::sort(idx.begin(), idx.end(),
+		[&values](size_t i1, size_t i2)
+		{
+			return values[i1] < values[i2];
+		});
+	vector<coord_t> idx2(idx);
+
+	cout << "After sorting, idx = ";
+	for (auto n = 0; n < idx.size(); n++)
+	{
+		cout << idx[n] << " ";
+	}
+	cout << endl;
+
+	cout << "After sorting, values[idx[i]] = ";
+	for (auto n = 0; n < idx.size(); n++)
+	{
+		cout << values[idx[n]] << " ";
+	}
+	cout << endl;
+
+	order(values, idx);
+
+	cout << "After reordering, idx = ";
+	for (auto n = 0; n < idx.size(); n++)
+	{
+		cout << idx[n] << " ";
+	}
+	cout << endl;
+
+	cout << "After reordering, values[i] = ";
+	for (auto n = 0; n < values.size(); n++)
+	{
+		cout << values[n] << " ";
+	}
+	cout << endl;
+	
+
+	unorder(values, idx2);
+	
+	cout << "After unordering, idx2 = ";
+	for (auto n = 0; n < idx2.size(); n++)
+	{
+		cout << idx2[n] << " ";
+	}
+	cout << endl;
+
+	cout << "After unordering, values[i] = ";
+	for (auto n = 0; n < values.size(); n++)
+	{
+		cout << values[n] << " ";
+	}
+	cout << endl;
+
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
 	//test(itl2::tests::saturatingArithmetic, "saturating arithmetic");

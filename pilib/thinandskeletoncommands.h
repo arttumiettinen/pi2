@@ -648,7 +648,7 @@ namespace pilib
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "edge measurements", "Image where properties of each edge are stored. See `tracelineskeleton` command."),
 				CommandArgument<Image<int32_t> >(ParameterDirection::In, "edge points", "Image that stores some points on each edge. See `tracelineskeleton` command."),
 				
-				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "points", "Image that stores coordinates of all points in the network. These include points on edges and centroids of intersection regions. Each row of image stores (x, y, z) of one point."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "points", "Image that stores coordinates of all points in the network. These include points on edges and centroids of intersection regions. Each row of image stores (x, y, z) coordinates of one point."),
 				CommandArgument<Image<uint64_t> >(ParameterDirection::Out, "lines", "Image that stores a list of point indices for each edge. This image is stored in compressed format: [count of edges][count of points in 1st edge][index of point 1][index of point 2]...[count of points in 2nd edge][index of point 1][index of point 2]..."),
 				CommandArgument<double>(ParameterDirection::In, "smoothing sigma", "If smooth lines are requested instead of jagged lines (consisting of pixel locations), specify positive value here. The value is standard deviation of a Gaussian kernel used to smooth the lines in an anchored convolution smoothing. The end points of each line are not changed by smoothing. Values in range [0.5, 1.5] often give suitable amount of smoothing. The smoothing algorithm is described in Suhadolnik - An anchored discrete convolution algorithm for measuring length in digital images.", 0.0),
 				CommandArgument<double>(ParameterDirection::In, "max displacement", "Maximum displacement of points in anchored convolution smoothing of the lines.", 0.5),
@@ -727,7 +727,7 @@ namespace pilib
 			pointsv.reserve(points.height());
 			for (coord_t n = 0; n < points.height(); n++)
 			{
-				Vec3f v(points(0, n), points(01, n), points(2, n));
+				Vec3f v(points(0, n), points(1, n), points(2, n));
 				pointsv.push_back(v);
 			}
 

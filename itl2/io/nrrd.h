@@ -2,15 +2,13 @@
 
 #include <string>
 #include <iostream>
-#include <filesystem>
+#include "filesystem.h"
 
 #include "math/vec3.h"
 #include "io/imagedatatype.h"
 #include "image.h"
 #include "io/raw.h"
 #include "pointprocess.h"
-
-namespace fs = std::filesystem;
 
 namespace itl2
 {

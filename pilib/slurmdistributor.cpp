@@ -12,8 +12,7 @@
 #endif
 
 #include <algorithm>
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "filesystem.h"
 
 #include <random>
 

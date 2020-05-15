@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-#include <filesystem>
+#include "filesystem.h"
 
 #if defined(__linux__)
 
@@ -27,7 +27,6 @@
 
 #endif
 
-namespace fs = std::filesystem;
 using namespace std;
 
 namespace itl2

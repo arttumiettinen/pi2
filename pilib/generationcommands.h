@@ -5,12 +5,13 @@
 #include "distributable.h"
 #include "math/vectoroperations.h"
 #include "commandlist.h"
+#include <numeric>
 
 namespace pilib
 {
 	inline std::string genSeeAlso()
 	{
-		return "line, capsule, sphere, ellipsoid, set, ramp";
+		return "line, capsule, sphere, ellipsoid, set, get, ramp";
 	}
 
 	/**
@@ -59,7 +60,6 @@ namespace pilib
 			{
 				CommandArgument<Vec3c>(ParameterDirection::In, "position", "Position to set."),
 				CommandArgument<double>(ParameterDirection::In, "value", "Value that the pixel at given position should be set to.")
-
 			})
 		{
 		}
@@ -74,6 +74,222 @@ namespace pilib
 
 			if (in.isInImage(pos))
 				in(pos) = pixelRound<pixel_t>(value);
+		}
+	};
+
+
+	template<typename pixel_t> class GetPixelsCommand : public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		GetPixelsCommand() : Command("get", "Reads multiple pixels from an input image. In distributed operating mode, the output and positions images must fit into the RAM.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image where the pixels are read from."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "output", "Values of the pixels read from the input image are stored in this image. The size of the image will be set to the number of pixels read."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "positions", "Positions of pixels to read. Each row of this image contains (x, y, z) coordinates of a pixel to read from the input image. The size of the image must be 3xN where N is the count of pixels to read."),
+				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.", Distributor::BLOCK_ORIGIN_ARG_TYPE(0, 0, 0))
+			},
+			"set, getpointsandlines")
+		{
+		}
+
+		/**
+		Undoes what order function did to values array.
+		Orders elements such that
+		unordered[index[i]] = values[i]
+		Replaces values array by unordered array.
+		The index array will become sorted in ascending order.
+		*/
+		static void unorder(Image<pixel_t>& values, vector<coord_t>& index)
+		{
+			for (size_t i = 0; i < index.size(); i++)
+			{
+				while (index[i] != i)
+				{
+					coord_t index_i = index[i];
+					std::swap(values(0, i), values(0, index_i));
+					std::swap(values(1, i), values(1, index_i));
+					std::swap(values(2, i), values(2, index_i));
+					std::swap(index[i], index[index_i]);
+				}
+			}
+		}
+
+		/**
+		Order elements of values according to index such that
+		ordered[i] = values[index[i]]
+		Replaces values array by ordered array.
+		The index array will become sorted in ascending order.
+		This is from StackOverflow: https://stackoverflow.com/questions/46775994/reorder-array-according-to-given-index
+		*/
+		static void order(Image<float32_t>& values, vector<coord_t>& index)
+		{
+			for (size_t i = 0; i < index.size(); i++)
+			{
+				if (i != index[i])
+				{
+					size_t j = i;
+					size_t k;
+					while (i != (k = index[j]))
+					{
+						std::swap(values(0, j), values(0, k));
+						std::swap(values(1, j), values(1, k));
+						std::swap(values(2, j), values(2, k));
+						index[j] = j;
+						j = k;
+					}
+					index[j] = j;
+				}
+			}
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			Image<pixel_t>& out = *pop<Image<pixel_t>* >(args);
+			Image<float32_t>& positions = *pop<Image<float32_t>* >(args);
+			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
+			
+			out.ensureSize(positions.height());
+
+			for (coord_t n = 0; n < positions.height(); n++)
+			{
+				Vec3d dpos(positions(0, n), positions(1, n), positions(2, n));
+				Vec3c pos = round(dpos);
+				pos -= origin;
+				if (in.isInImage(pos))
+					out(n) = in(pos);
+			}
+		}
+
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		{
+			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
+			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
+			DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+
+			// Simple algorithm:
+			// Divide in to blocks
+			// Read whole positions
+			// Fill only those positions that could be read from in
+			// -> out will be sparse, how to write that to disk transparently?
+			// -> Does not work
+			// --> hence we use the following process:
+			// Sort positions according to z (, y, x), keep track of original indices
+			// Divide image in to blocks
+			// Corresponding out block and positions block = determined by bounds of in block
+			//		The positions blocks are always continuous
+			// Get pixels in each block and save as usually
+			// Restore order of out such that it becomes the same than order of positions before sorting.
+
+			// Create an array of indices
+			vector<coord_t> idx(positions.height());
+			std::iota(idx.begin(), idx.end(), 0);
+
+			Image<float32_t> pos;
+			positions.readTo(pos);
+
+			// Sort the indices
+			std::sort(idx.begin(), idx.end(),
+				[&pos](size_t i1, size_t i2)
+				{
+					return itl2::vecComparer(Vec3f(pos(0, i1), pos(1, i1), pos(2, i1)), Vec3f(pos(0, i2), pos(1, i2), pos(2, i2)));
+				});
+
+
+			// Sort pos according to indices
+			// TODO: This permutation operation and extra copy of idx array could be avoided by using a custom
+			// sort or something like this: https://web.archive.org/web/20120422174751/http://www.stanford.edu/~dgleich/notebook/2006/03/sorting_two_arrays_simultaneou.html
+			vector<coord_t> idx2(idx);
+			order(pos, idx);
+			idx.clear();
+			idx.shrink_to_fit();
+			positions.setData(pos);
+
+			// Distribute. Flush before distributing so that readTo commands are ok in getCorrespondingBlock.
+			distributor.flush();
+			distributor.distribute(this, args);
+
+			// Undo sorting so that the out array is in the correct order
+			Image<pixel_t> outLocal;
+			out.readTo(outLocal);
+			unorder(outLocal, idx2);
+			out.setData(outLocal);
+
+			return vector<string>();
+		}
+
+		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
+		{
+			// We have to use the input image as reference.
+			return 0;
+		}
+
+		/**
+		This function is given coordinates of a block in reference image (first output image in argument list or first input if there are no outputs)
+		and it determines the corresponding block in another argument image.
+		If this method does nothing, it is assumed that the argument image can be divided similarly than the reference image.
+		@param argIndex Index of argument image.
+		@param readStart, readSize File position and size of data that is loaded from disk for the reference output. Relevant only for Input and InOut images.
+		@param writeFilePos, writeImPos, writeSize File position, image position and size of valid data generated by the command for the given block. Relevant only for Output and InOut images. Set writeSize to all zeroes to disable writing of output file.
+		*/
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		{
+			if (argIndex == 1 || argIndex == 2)
+			{
+				DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
+				DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
+				DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+
+				// Relevant block of out & positions depends on the z-range of the block.
+				
+				coord_t zStart = readStart.z;
+				coord_t zEnd = zStart + readSize.z;
+
+				// TODO: This reading will be slow as this method will be called multiple times.
+				Image<float32_t> pos;
+				positions.readToNoFlush(pos);
+
+				coord_t firstRow;
+				for (firstRow = 0; firstRow < pos.height(); firstRow++)
+				{
+					coord_t z = itl2::round(pos(2, firstRow));
+					if (z >= zStart)
+						break;
+				}
+
+				coord_t lastRow;
+				for (lastRow = firstRow + 1; lastRow < pos.height(); lastRow++)
+				{
+					coord_t z = itl2::round(pos(2, lastRow));
+					if (z >= lastRow)
+						break;
+				}
+
+				readStart.z = firstRow;
+				readSize.z = lastRow - firstRow;
+				writeFilePos.z = readStart.z;
+				writeSize.z = readSize.z;
+				writeImPos.z = 0;
+			}
+		}
+
+		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const
+		{
+			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
+			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
+			DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+
+			out.ensureSize(positions.height());
+
+			return Vec3c(0, 0, 0);
+		}
+
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+		{
+			return JobType::Fast;
 		}
 	};
 
@@ -403,7 +619,7 @@ namespace pilib
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "vertices", "Image where vertex coordinates are stored. The size of the image must be 3xN, where N is the number of vertices in the graph."),
 				CommandArgument<Image<uint64_t> >(ParameterDirection::In, "edges", "Image where vertex indices corresponding to each edge will be set. The size of the image must be 2xM where M is the number of edges. Each row of the image consists of a pair of indices to the vertex array."),
 				//CommandArgument<Image<float32_t> >(ParameterDirection::In, "measurements", "Image that stores properties of each edge as output from traceskeleton command."),
-				// points...
+				// positions...
 				CommandArgument<double>(ParameterDirection::In, "vertex radius", "Radius of the spheres corresponding to the vertices.", 2),
 				CommandArgument<double>(ParameterDirection::In, "vertex color", "Value that is used to fill spheres corresponding to vertices.", (double)std::numeric_limits<pixel_t>::max()),
 				CommandArgument<double>(ParameterDirection::In, "edge color", "Value that is used to draw lines corresponding to edges.", (double)std::numeric_limits<pixel_t>::max()),
@@ -419,7 +635,7 @@ namespace pilib
 			Image<float32_t>& vertices = *pop<Image<float32_t>*>(args);
 			Image<uint64_t>& edges = *pop<Image<uint64_t>*>(args);
 			//Image<float32_t>* meas = pop<Image<float32_t>*>(args);
-			//Image<int32_t>* points = pop<Image<int32_t>*>(args);
+			//Image<int32_t>* positions = pop<Image<int32_t>*>(args);
 			double vertexRadius = pop<double>(args);
 			double vertexColor = pop<double>(args);
 			double edgeColor = pop<double>(args);

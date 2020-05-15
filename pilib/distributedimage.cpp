@@ -7,9 +7,7 @@
 #include "distributor.h"
 #include "utilities.h"
 
-#include <filesystem>
-
-namespace fs = std::filesystem;
+#include "filesystem.h"
 
 using namespace itl2;
 using namespace std;

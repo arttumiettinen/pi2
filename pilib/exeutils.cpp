@@ -1,8 +1,7 @@
 
 #include "exeutils.h"
 
-#include <filesystem>
-namespace fs = std::filesystem;
+#include "filesystem.h"
 
 #include <iostream>
 
