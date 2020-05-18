@@ -4,6 +4,7 @@
 #include "generation.h"
 #include "distributable.h"
 #include "math/vectoroperations.h"
+#include "pilibutilities.h"
 #include "commandlist.h"
 #include <numeric>
 
@@ -78,6 +79,97 @@ namespace pilib
 	};
 
 
+
+	template<typename pixel_t> class GetPixelsToTempFileCommand : public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		GetPixelsToTempFileCommand() : Command("getpixelstotempfile", "Reads multiple pixels from an input image and saves the results to temporary file. This command is used internally in distributed processing of get command.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image where the pixels are read from."),
+				CommandArgument<string>(ParameterDirection::In, "temporary file name prefix", "Prefix for output file name. Output file name will be prefix + '_' + block index + '.dat'."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "positions", "Positions of pixels to read. Each row of this image contains (x, y, z) coordinates of a pixel to read from the input image. The size of the image must be 3xN where N is the count of pixels to read."),
+				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.", Distributor::BLOCK_ORIGIN_ARG_TYPE(0, 0, 0)),
+				CommandArgument<Distributor::BLOCK_INDEX_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_INDEX_ARG_NAME, "Index of image block that we are currently processing. This argument is used internally in distributed processing and should normally be set to negative value.", -1)
+
+			})
+		{
+		}
+
+	public:
+
+		/**
+		Returns name of temporary file that will be saved by this command when called with given arguments.
+		*/
+		static string getTempName(const string& prefix, coord_t blockIndex)
+		{
+			return prefix + string("_") + itl2::toString(blockIndex) + string(".dat");
+		}
+
+		bool isInternal() const override
+		{
+			return true;
+		}
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			string out = pop<string>(args);
+			Image<float32_t>& positions = *pop<Image<float32_t>* >(args);
+			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
+			Distributor::BLOCK_INDEX_ARG_TYPE blockIndex = pop<Distributor::BLOCK_INDEX_ARG_TYPE>(args);
+
+			string filename = getTempName(out, blockIndex);
+
+			std::ofstream outs(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+
+			for (coord_t n = 0; n < positions.height(); n++)
+			{
+				Vec3d dpos(positions(0, n), positions(1, n), positions(2, n));
+				Vec3c pos = round(dpos);
+				pos -= origin;
+				if (in.isInImage(pos))
+				{
+					pixel_t value = in(pos);
+					outs.write((char*)&n, sizeof(coord_t));
+					outs.write((char*)&value, sizeof(pixel_t));
+				}
+			}
+		}
+
+		using Distributable::runDistributed;
+
+		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		{
+			return distributor.distribute(this, args);
+		}
+
+		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
+		{
+			// We have to use the input image as a reference.
+			return 0;
+		}
+
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		{
+			if (argIndex == 2)
+			{
+				// Read whole positions image
+				DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+
+				readStart = Vec3c();
+				readSize = positions.dimensions();
+			}
+		}
+
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+		{
+			return JobType::Fast;
+		}
+	};
+
+
 	template<typename pixel_t> class GetPixelsCommand : public Command, public Distributable
 	{
 	protected:
@@ -94,56 +186,6 @@ namespace pilib
 		{
 		}
 
-		/**
-		Undoes what order function did to values array.
-		Orders elements such that
-		unordered[index[i]] = values[i]
-		Replaces values array by unordered array.
-		The index array will become sorted in ascending order.
-		NOTE: Works for Nx1x1 image only!
-		*/
-		static void unorder(Image<pixel_t>& values, vector<coord_t>& index)
-		{
-			for (size_t i = 0; i < index.size(); i++)
-			{
-				while (index[i] != i)
-				{
-					coord_t index_i = index[i];
-					std::swap(values(i), values(index_i));
-					std::swap(index[i], index[index_i]);
-				}
-			}
-		}
-
-		/**
-		Order elements of values according to index such that
-		ordered[i] = values[index[i]]
-		Replaces values array by ordered array.
-		The index array will become sorted in ascending order.
-		This is from StackOverflow: https://stackoverflow.com/questions/46775994/reorder-array-according-to-given-index
-		NOTE: Works for 3xNx1 image only!
-		*/
-		static void order(Image<float32_t>& values, vector<coord_t>& index)
-		{
-			for (size_t i = 0; i < index.size(); i++)
-			{
-				if (i != index[i])
-				{
-					size_t j = i;
-					size_t k;
-					while (i != (k = index[j]))
-					{
-						std::swap(values(0, j), values(0, k));
-						std::swap(values(1, j), values(1, k));
-						std::swap(values(2, j), values(2, k));
-						index[j] = j;
-						j = k;
-					}
-					index[j] = j;
-				}
-			}
-		}
-
 	public:
 		virtual void run(vector<ParamVariant>& args) const override
 		{
@@ -151,7 +193,7 @@ namespace pilib
 			Image<pixel_t>& out = *pop<Image<pixel_t>* >(args);
 			Image<float32_t>& positions = *pop<Image<float32_t>* >(args);
 			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
-			
+
 			out.ensureSize(positions.height());
 
 			for (coord_t n = 0; n < positions.height(); n++)
@@ -175,142 +217,285 @@ namespace pilib
 			// Read whole positions
 			// Fill only those positions that could be read from in
 			// -> out will be sparse, how to write that to disk transparently?
-			// -> Does not work
-			// --> hence we use the following process:
-			// Sort positions according to z (, y, x), keep track of original indices
-			// Divide image in to blocks
-			// Corresponding out block and positions block = determined by bounds of in block
-			//		The positions blocks are always continuous
-			// Get pixels in each block and save as usually
-			// Restore order of out such that it becomes the same than order of positions before sorting.
-
-			// Create an array of indices
-			std::cout << "iota" << std::endl;
-			vector<coord_t> idx(positions.height());
-			std::iota(idx.begin(), idx.end(), 0);
-
-			std::cout << "read" << std::endl;
-			Image<float32_t> pos;
-			positions.readTo(pos);
-
-			// Sort the indices
-			std::cout << "sort" << std::endl;
-			std::sort(idx.begin(), idx.end(),
-				[&pos](size_t i1, size_t i2)
-				{
-					return itl2::vecComparer(Vec3f(pos(0, i1), pos(1, i1), pos(2, i1)), Vec3f(pos(0, i2), pos(1, i2), pos(2, i2)));
-				});
-
-
-			// Sort pos according to indices
-			// TODO: This permutation operation and extra copy of idx array could be avoided by using a custom
-			// sort or something like this: https://web.archive.org/web/20120422174751/http://www.stanford.edu/~dgleich/notebook/2006/03/sorting_two_arrays_simultaneou.html
-			std::cout << "order" << std::endl;
-			vector<coord_t> idx2(idx);
-			order(pos, idx);
-			idx.clear();
-			idx.shrink_to_fit();
-			positions.setData(pos);
-
-			// Distribute. Flush before distributing so that readTo commands are ok in getCorrespondingBlock.
-			std::cout << "distribute" << std::endl;
-			distributor.flush();
-			distributor.distribute(this, args);
-
-			// Undo sorting so that the out array is in the correct order
-			Image<pixel_t> outLocal;
-			std::cout << "un-order" << std::endl;
-			out.readTo(outLocal);
-			unorder(outLocal, idx2);
-			out.setData(outLocal);
-
-			std::cout << "done" << std::endl;
-			return vector<string>();
-		}
-
-		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
-		{
-			// We have to use the input image as reference.
-			return 0;
-		}
-
-		/**
-		This function is given coordinates of a block in reference image (first output image in argument list or first input if there are no outputs)
-		and it determines the corresponding block in another argument image.
-		If this method does nothing, it is assumed that the argument image can be divided similarly than the reference image.
-		@param argIndex Index of argument image.
-		@param readStart, readSize File position and size of data that is loaded from disk for the reference output. Relevant only for Input and InOut images.
-		@param writeFilePos, writeImPos, writeSize File position, image position and size of valid data generated by the command for the given block. Relevant only for Output and InOut images. Set writeSize to all zeroes to disable writing of output file.
-		*/
-		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
-		{
-			if (argIndex == 1 || argIndex == 2)
-			{
-				// Relevant block of out & positions depends on the z-range of the reference/input block.
-
-				DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
-				DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
-				DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
-
-				coord_t zStart = readStart.z;
-				coord_t zEnd = zStart + readSize.z;
-
-				// TODO: This reading will be slow as this method will be called multiple times.
-				std::cout << "Read " << bytesToString((double)positions.pixelCount() * positions.pixelSize()) << std::endl;
-				Image<float32_t> pos;
-				positions.readToNoFlush(pos);
-
-				coord_t firstRow;
-				for (firstRow = 0; firstRow < pos.height(); firstRow++)
-				{
-					coord_t z = itl2::round(pos(2, firstRow));
-					if (z >= zStart)
-						break;
-				}
-
-				coord_t lastRow;
-				for (lastRow = firstRow + 1; lastRow < pos.height(); lastRow++)
-				{
-					coord_t z = itl2::round(pos(2, lastRow));
-					if (z >= zEnd)
-						break;
-				}
-
-				if (argIndex == 1)
-				{
-					// Output image dimensions are Nx1x1
-					readStart = Vec3c(firstRow, 0, 0);
-					readSize = Vec3c(lastRow - firstRow, 1, 1);
-				}
-				else
-				{
-					// Positions image dimensions are 3xNx1
-					readStart = Vec3c(0, firstRow, 0);
-					readSize = Vec3c(3, lastRow - firstRow, 1);
-				}
-				
-				writeFilePos = readStart;
-				writeSize = readSize;
-				writeImPos = Vec3c(0, 0, 0);
-			}
-		}
-
-		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const
-		{
-			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
-			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
-			DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+			// Write to temporary file in format (position index, value)
+			// After all jobs are finished, read each temporary file and write to output to the correct position
 
 			out.ensureSize(positions.height());
 
-			return Vec3c(0, 0, 0);
-		}
+			string tempPrefix = createTempFilename("getpixels");
 
-		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
-		{
-			return JobType::Fast;
+			vector<string> output = CommandList::get<GetPixelsToTempFileCommand<pixel_t> >().runDistributed(distributor, {&in, tempPrefix, &positions, Distributor::BLOCK_ORIGIN_ARG_TYPE(), Distributor::BLOCK_INDEX_ARG_TYPE()});
+
+			// Collect results
+			Image<pixel_t> outLocal(out.dimensions());
+
+			for (size_t n = 0; n < output.size(); n++)
+			{
+				std::cout << "Collecting results from job " << n << "..." << std::endl;
+
+				string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
+				std::ifstream ins(filename, std::ios_base::in | std::ios_base::binary);
+
+				while (ins.good())
+				{
+					coord_t pos;
+					ins.read((char*)&pos, sizeof(coord_t));
+					pixel_t value;
+					ins.read((char*)&value, sizeof(pixel_t));
+
+					if(pos >= 0 && pos < outLocal.pixelCount())
+						outLocal(pos) = value;
+				}
+			}
+
+			out.setData(outLocal);
+
+			// Delete temporary files
+			for (size_t n = 0; n < output.size(); n++)
+			{
+				string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
+				deleteFile(filename);
+			}
+
+			return vector<string>();
 		}
 	};
+
+
+//
+//	template<typename pixel_t> class GetPixelsCommand : public Command, public Distributable
+//	{
+//	protected:
+//		friend class CommandList;
+//
+//		GetPixelsCommand() : Command("get", "Reads multiple pixels from an input image. In distributed operating mode, the output and positions images must fit into the RAM.",
+//			{
+//				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image where the pixels are read from."),
+//				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "output", "Values of the pixels read from the input image are stored in this image. The size of the image will be set to the number of pixels read."),
+//				CommandArgument<Image<float32_t> >(ParameterDirection::In, "positions", "Positions of pixels to read. Each row of this image contains (x, y, z) coordinates of a pixel to read from the input image. The size of the image must be 3xN where N is the count of pixels to read."),
+//				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.", Distributor::BLOCK_ORIGIN_ARG_TYPE(0, 0, 0))
+//			},
+//			"set, getpointsandlines")
+//		{
+//		}
+//
+//		/**
+//		Undoes what order function did to values array.
+//		Orders elements such that
+//		unordered[index[i]] = values[i]
+//		Replaces values array by unordered array.
+//		The index array will become sorted in ascending order.
+//		NOTE: Works for Nx1x1 image only!
+//		*/
+//		static void unorder(Image<pixel_t>& values, vector<coord_t>& index)
+//		{
+//			for (size_t i = 0; i < index.size(); i++)
+//			{
+//				while (index[i] != i)
+//				{
+//					coord_t index_i = index[i];
+//					std::swap(values(i), values(index_i));
+//					std::swap(index[i], index[index_i]);
+//				}
+//			}
+//		}
+//
+//		/**
+//		Order elements of values according to index such that
+//		ordered[i] = values[index[i]]
+//		Replaces values array by ordered array.
+//		The index array will become sorted in ascending order.
+//		This is from StackOverflow: https://stackoverflow.com/questions/46775994/reorder-array-according-to-given-index
+//		NOTE: Works for 3xNx1 image only!
+//		*/
+//		static void order(Image<float32_t>& values, vector<coord_t>& index)
+//		{
+//			for (size_t i = 0; i < index.size(); i++)
+//			{
+//				if (i != index[i])
+//				{
+//					size_t j = i;
+//					size_t k;
+//					while (i != (k = index[j]))
+//					{
+//						std::swap(values(0, j), values(0, k));
+//						std::swap(values(1, j), values(1, k));
+//						std::swap(values(2, j), values(2, k));
+//						index[j] = j;
+//						j = k;
+//					}
+//					index[j] = j;
+//				}
+//			}
+//		}
+//
+//	public:
+//		virtual void run(vector<ParamVariant>& args) const override
+//		{
+//			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+//			Image<pixel_t>& out = *pop<Image<pixel_t>* >(args);
+//			Image<float32_t>& positions = *pop<Image<float32_t>* >(args);
+//			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
+//			
+//			out.ensureSize(positions.height());
+//
+//			for (coord_t n = 0; n < positions.height(); n++)
+//			{
+//				Vec3d dpos(positions(0, n), positions(1, n), positions(2, n));
+//				Vec3c pos = round(dpos);
+//				pos -= origin;
+//				if (in.isInImage(pos))
+//					out(n) = in(pos);
+//			}
+//		}
+//
+//		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+//		{
+//			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
+//			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
+//			DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+//
+//			// Simple algorithm:
+//			// Divide in to blocks
+//			// Read whole positions
+//			// Fill only those positions that could be read from in
+//			// -> out will be sparse, how to write that to disk transparently?
+//			// -> Does not work
+//			// --> hence we use the following process:
+//			// Sort positions according to z (, y, x), keep track of original indices
+//			// Divide image in to blocks
+//			// Corresponding out block and positions block = determined by bounds of in block
+//			//		The positions blocks are always continuous
+//			// Get pixels in each block and save as usually
+//			// Restore order of out such that it becomes the same than order of positions before sorting.
+//
+//			// Create an array of indices
+//std::cout << "iota" << std::endl;
+//			vector<coord_t> idx(positions.height());
+//			std::iota(idx.begin(), idx.end(), 0);
+//
+//std::cout << "read" << std::endl;
+//			Image<float32_t> pos;
+//			positions.readTo(pos);
+//
+//			// Sort the indices
+//std::cout << "sort" << std::endl;
+//			std::sort(idx.begin(), idx.end(),
+//				[&pos](size_t i1, size_t i2)
+//				{
+//					return itl2::vecComparer(Vec3f(pos(0, i1), pos(1, i1), pos(2, i1)), Vec3f(pos(0, i2), pos(1, i2), pos(2, i2)));
+//				});
+//
+//
+//			// Sort pos according to indices
+//			// TODO: This permutation operation and extra copy of idx array could be avoided by using a custom
+//			// sort or something like this: https://web.archive.org/web/20120422174751/http://www.stanford.edu/~dgleich/notebook/2006/03/sorting_two_arrays_simultaneou.html
+//std::cout << "order" << std::endl;
+//			vector<coord_t> idx2(idx);
+//			order(pos, idx);
+//			idx.clear();
+//			idx.shrink_to_fit();
+//			positions.setData(pos);
+//
+//			// Distribute. Flush before distributing so that readTo commands are ok in getCorrespondingBlock.
+//std::cout << "distribute" << std::endl;
+//			distributor.flush();
+//			distributor.distribute(this, args);
+//
+//			// Undo sorting so that the out array is in the correct order
+//			Image<pixel_t> outLocal;
+//std::cout << "un-order" << std::endl;
+//			out.readTo(outLocal);
+//			unorder(outLocal, idx2);
+//			out.setData(outLocal);
+//
+//std::cout << "done" << std::endl;
+//			return vector<string>();
+//		}
+//
+//		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
+//		{
+//			// We have to use the input image as reference.
+//			return 0;
+//		}
+//
+//		/**
+//		This function is given coordinates of a block in reference image (first output image in argument list or first input if there are no outputs)
+//		and it determines the corresponding block in another argument image.
+//		If this method does nothing, it is assumed that the argument image can be divided similarly than the reference image.
+//		@param argIndex Index of argument image.
+//		@param readStart, readSize File position and size of data that is loaded from disk for the reference output. Relevant only for Input and InOut images.
+//		@param writeFilePos, writeImPos, writeSize File position, image position and size of valid data generated by the command for the given block. Relevant only for Output and InOut images. Set writeSize to all zeroes to disable writing of output file.
+//		*/
+//		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+//		{
+//			if (argIndex == 1 || argIndex == 2)
+//			{
+//				// Relevant block of out & positions depends on the z-range of the reference/input block.
+//
+//				DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
+//				DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
+//				DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+//
+//				coord_t zStart = readStart.z;
+//				coord_t zEnd = zStart + readSize.z;
+//
+//				// TODO: This reading will be slow as this method will be called multiple times.
+//std::cout << "Read " << bytesToString((double)positions.pixelCount() * positions.pixelSize()) << std::endl;
+//				Image<float32_t> pos;
+//				positions.readToNoFlush(pos);
+//
+//				coord_t firstRow;
+//				for (firstRow = 0; firstRow < pos.height(); firstRow++)
+//				{
+//					coord_t z = itl2::round(pos(2, firstRow));
+//					if (z >= zStart)
+//						break;
+//				}
+//
+//				coord_t lastRow;
+//				for (lastRow = firstRow + 1; lastRow < pos.height(); lastRow++)
+//				{
+//					coord_t z = itl2::round(pos(2, lastRow));
+//					if (z >= zEnd)
+//						break;
+//				}
+//
+//				if (argIndex == 1)
+//				{
+//					// Output image dimensions are Nx1x1
+//					readStart = Vec3c(firstRow, 0, 0);
+//					readSize = Vec3c(lastRow - firstRow, 1, 1);
+//				}
+//				else
+//				{
+//					// Positions image dimensions are 3xNx1
+//					readStart = Vec3c(0, firstRow, 0);
+//					readSize = Vec3c(3, lastRow - firstRow, 1);
+//				}
+//				
+//				writeFilePos = readStart;
+//				writeSize = readSize;
+//				writeImPos = Vec3c(0, 0, 0);
+//			}
+//		}
+//
+//		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const
+//		{
+//			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
+//			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
+//			DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+//
+//			out.ensureSize(positions.height());
+//
+//			return Vec3c(0, 0, 0);
+//		}
+//
+//		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+//		{
+//			return JobType::Fast;
+//		}
+//	};
 
 
 	template<typename pixel_t> class RampCommand : public GenerationDistributable<pixel_t>
