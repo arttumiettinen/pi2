@@ -145,7 +145,8 @@ namespace itl2
 	{
 		fs::path p1(sourceName);
 		fs::path p2(destinationName);
-		if (fs::equivalent(p1, p2))
+		std::error_code code; // This is used to choose the nothrow overload of fs::equivalent
+		if (fs::equivalent(p1, p2, code))
 			return;
 
 		if (fileExists(sourceName))
@@ -195,7 +196,8 @@ namespace itl2
 	{
 		fs::path p1(sourceName);
 		fs::path p2(destinationName);
-		if (fs::equivalent(p1, p2))
+		std::error_code code; // This is used to choose the nothrow overload of fs::equivalent
+		if (fs::equivalent(p1, p2, code))
 			return;
 
 		createFoldersFor(destinationName);

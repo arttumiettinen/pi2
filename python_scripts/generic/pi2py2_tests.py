@@ -816,6 +816,19 @@ def get_pixels():
 
 
 
+
+def distributed_numpy():
+
+
+    pi2.distribute(Distributor.LOCAL)
+
+    nparr = np.zeros([100, 100, 100])
+
+    #pi2.add(nparr, 123)
+
+    pi2.writeraw(nparr, output_file("np_distributed"))
+
+
 # Enable or disable echoing of commands and timing info on screen
 pi2.echo(True, False)
 
@@ -1009,8 +1022,8 @@ pi2.echo(True, False)
 #test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
 
 #tif_and_tiff()
-
-get_pixels()
+#get_pixels()
+distributed_numpy()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

@@ -619,9 +619,6 @@ class Pi2:
         self.run_script(cmd_line)
 
         # Temporary images are automatically cleared when they go out of scope.
-        # Delete temporary images
-        #for img in temp_images:
-        #    self.clear(img)
 
 
 
