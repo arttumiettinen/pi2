@@ -256,6 +256,7 @@ namespace pilib
 				coord_t zEnd = zStart + readSize.z;
 
 				// TODO: This reading will be slow as this method will be called multiple times.
+				std::cout << "Read " << bytesToString((double)positions.pixelCount() * positions.pixelSize()) << std::endl;
 				Image<float32_t> pos;
 				positions.readToNoFlush(pos);
 
