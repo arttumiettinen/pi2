@@ -325,7 +325,7 @@ namespace itl2
 			/*
 			Scaling factor
 			*/
-			real_t a;
+			real_t a = 1;
 
 			/*
 			Translation
@@ -335,7 +335,7 @@ namespace itl2
 			/*
 			Normalization factor for gray values.
 			*/
-			real_t normFactor;
+			real_t normFactor = 1;
 
 			/*
 			World to parent refpoints, world to parent shifts, parent to me refpoints, parent to me shifts.

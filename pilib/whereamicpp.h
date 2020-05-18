@@ -14,7 +14,7 @@ namespace pilib
 	{
 		int length = wai_getModulePath(NULL, 0, NULL);
 
-		std::vector<char> path(length + 1, 0);
+		std::vector<char> path((ptrdiff_t)length + 1, 0);
 
 		wai_getModulePath(&path[0], length, NULL);
 

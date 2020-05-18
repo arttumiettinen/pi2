@@ -65,7 +65,7 @@ namespace itl2
 			//Image<float32_t> g(nd);
 			//Image<float32_t> h(nd);
 
-			int l = -1;
+			coord_t l = -1;
 
 			for (coord_t i = 0; i < nd; i++)
 			{
@@ -101,7 +101,7 @@ namespace itl2
 				return;
 			}
 
-			int ns = l;
+			coord_t ns = l;
 
 			l = 0;
 
@@ -159,7 +159,7 @@ namespace itl2
 			//Image<Vec3c> P(nd);
 			//Image<float32_t> h(nd);
 
-			int l = -1;
+			coord_t l = -1;
 
 			for (coord_t i = 0; i < nd; i++)
 			{
@@ -197,7 +197,7 @@ namespace itl2
 				return;
 			}
 
-			int ns = l;
+			coord_t ns = l;
 
 			l = 0;
 

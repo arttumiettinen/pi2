@@ -649,6 +649,10 @@ namespace pilib
 		}
 		//Command* cmd = get<1>(candidates2[0]);
 
+		// Sanity check
+		if (!cmd)
+			throw logic_error("null command");
+
 		// Add defaults to the parameter array
 		vector<string> realArgs;
 		realArgs.reserve(cmd->args().size());
