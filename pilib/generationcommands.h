@@ -185,13 +185,16 @@ namespace pilib
 			// Restore order of out such that it becomes the same than order of positions before sorting.
 
 			// Create an array of indices
+			std::cout << "iota" << std::endl;
 			vector<coord_t> idx(positions.height());
 			std::iota(idx.begin(), idx.end(), 0);
 
+			std::cout << "read" << std::endl;
 			Image<float32_t> pos;
 			positions.readTo(pos);
 
 			// Sort the indices
+			std::cout << "sort" << std::endl;
 			std::sort(idx.begin(), idx.end(),
 				[&pos](size_t i1, size_t i2)
 				{
@@ -202,6 +205,7 @@ namespace pilib
 			// Sort pos according to indices
 			// TODO: This permutation operation and extra copy of idx array could be avoided by using a custom
 			// sort or something like this: https://web.archive.org/web/20120422174751/http://www.stanford.edu/~dgleich/notebook/2006/03/sorting_two_arrays_simultaneou.html
+			std::cout << "order" << std::endl;
 			vector<coord_t> idx2(idx);
 			order(pos, idx);
 			idx.clear();
@@ -209,15 +213,18 @@ namespace pilib
 			positions.setData(pos);
 
 			// Distribute. Flush before distributing so that readTo commands are ok in getCorrespondingBlock.
+			std::cout << "distribute" << std::endl;
 			distributor.flush();
 			distributor.distribute(this, args);
 
 			// Undo sorting so that the out array is in the correct order
 			Image<pixel_t> outLocal;
+			std::cout << "un-order" << std::endl;
 			out.readTo(outLocal);
 			unorder(outLocal, idx2);
 			out.setData(outLocal);
 
+			std::cout << "done" << std::endl;
 			return vector<string>();
 		}
 
