@@ -248,17 +248,15 @@ namespace pilib
 				}
 			}
 
-std::cout << "Set data of out image" << std::endl;
 			out.setData(outLocal);
 
 			// Delete temporary files
-std::cout << "Delete temp files" << std::endl;
 			for (size_t n = 0; n < output.size(); n++)
 			{
 				string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
 				deleteFile(filename);
 			}
-std::cout << "Done" << std::endl;
+
 			return vector<string>();
 		}
 	};
