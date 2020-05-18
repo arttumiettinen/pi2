@@ -100,6 +100,7 @@ namespace pilib
 		unordered[index[i]] = values[i]
 		Replaces values array by unordered array.
 		The index array will become sorted in ascending order.
+		NOTE: Works for Nx1x1 image only!
 		*/
 		static void unorder(Image<pixel_t>& values, vector<coord_t>& index)
 		{
@@ -108,9 +109,7 @@ namespace pilib
 				while (index[i] != i)
 				{
 					coord_t index_i = index[i];
-					std::swap(values(0, i), values(0, index_i));
-					std::swap(values(1, i), values(1, index_i));
-					std::swap(values(2, i), values(2, index_i));
+					std::swap(values(i), values(index_i));
 					std::swap(index[i], index[index_i]);
 				}
 			}
@@ -122,6 +121,7 @@ namespace pilib
 		Replaces values array by ordered array.
 		The index array will become sorted in ascending order.
 		This is from StackOverflow: https://stackoverflow.com/questions/46775994/reorder-array-according-to-given-index
+		NOTE: Works for 3xNx1 image only!
 		*/
 		static void order(Image<float32_t>& values, vector<coord_t>& index)
 		{
@@ -239,12 +239,12 @@ namespace pilib
 		{
 			if (argIndex == 1 || argIndex == 2)
 			{
+				// Relevant block of out & positions depends on the z-range of the reference/input block.
+
 				DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
 				DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
 				DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
 
-				// Relevant block of out & positions depends on the z-range of the block.
-				
 				coord_t zStart = readStart.z;
 				coord_t zEnd = zStart + readSize.z;
 
@@ -264,15 +264,26 @@ namespace pilib
 				for (lastRow = firstRow + 1; lastRow < pos.height(); lastRow++)
 				{
 					coord_t z = itl2::round(pos(2, lastRow));
-					if (z >= lastRow)
+					if (z >= zEnd)
 						break;
 				}
 
-				readStart.z = firstRow;
-				readSize.z = lastRow - firstRow;
-				writeFilePos.z = readStart.z;
-				writeSize.z = readSize.z;
-				writeImPos.z = 0;
+				if (argIndex == 1)
+				{
+					// Output image dimensions are Nx1x1
+					readStart = Vec3c(firstRow, 0, 0);
+					readSize = Vec3c(lastRow - firstRow, 1, 1);
+				}
+				else
+				{
+					// Positions image dimensions are 3xNx1
+					readStart = Vec3c(0, firstRow, 0);
+					readSize = Vec3c(3, lastRow - firstRow, 1);
+				}
+				
+				writeFilePos = readStart;
+				writeSize = readSize;
+				writeImPos = Vec3c(0, 0, 0);
 			}
 		}
 

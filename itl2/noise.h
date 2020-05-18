@@ -29,14 +29,19 @@ namespace itl2
 	Add Gaussian noise to the image.
 	@param img Image where the noise is added to.
 	@param mean Mean of the normal distribution where noise samples are drawn from.
-	@param stddev Standard deviation of the distribution where the noise samples are drawn.
+	@param stddev Standard deviation of the distribution where the noise samples are drawn. If set to zero, 10 % of typical value range of the pixel data type is used.
 	@param seed Random seed. Set to zero to use time-based seed.
 	*/
-	template<typename pixel_t> void noise(Image<pixel_t>& img, double mean = 0, double stddev = 25, unsigned int seed = 0)
+	template<typename pixel_t> void noise(Image<pixel_t>& img, double mean = 0, double stddev = 0, unsigned int seed = 0)
 	{
 		if (seed == 0)
 		{
 			seed = (unsigned int)std::chrono::system_clock::now().time_since_epoch().count();
+		}
+
+		if (stddev == 0)
+		{
+			stddev = 0.1 * NumberUtils<pixel_t>::scale();
 		}
 
 		std::mt19937 gen(seed);

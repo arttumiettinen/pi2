@@ -768,28 +768,29 @@ def get_pixels():
     d = 120;
     img = pi2.newimage(ImageDataType.UINT16, w, h, d)
     pi2.ramp(img, 0)
+    pi2.noise(img, 0, 25)
     pi2.writeraw(img, output_file("ramp"))
 
     # Generate some positions
-    N = 30
+    N = 3000
     positions = pi2.newimage(ImageDataType.FLOAT32, 3, N)
     pos = positions.get_data()
 
     for i in range(0, N):
-        pos[i, 0] = random.randint(0, h-1)
-        pos[i, 1] = random.randint(0, w-1)
+        pos[i, 0] = random.randint(0, w-1)
+        pos[i, 1] = random.randint(0, h-1)
         pos[i, 2] = random.randint(0, d-1)
 
     # Get pixels at positions (non-distributed)
-    #img = pi2.read(output_file("ramp"))
-    #out = pi2.newimage(img.get_data_type())
-    #pi2.get(img, out, pos)
-    #data_normal = out.get_data();
+    img = pi2.read(output_file("ramp"))
+    out = pi2.newimage(img.get_data_type())
+    pi2.get(img, out, pos)
+    data_normal = out.get_data();
 
 
     # Get pixels at positions (distributed)
     pi2.distribute(Distributor.LOCAL)
-    pi2.maxmemory(1)
+    pi2.maxmemory(0.25)
 
     img = pi2.read(output_file("ramp"))
     out = pi2.newimage(img.get_data_type())
@@ -802,10 +803,14 @@ def get_pixels():
     img = pi2.read(output_file("ramp"))
     pyimg = img.get_data()
 
-    data_numpy = np.zeroes(N)
+    data_numpy = np.zeros(N)
     for i in range(0, N):
-        data_numpy[i] = pyimg[pos[i, 0], pos[i, 1], pos[i, 2]]
+        data_numpy[i] = pyimg[int(pos[i][1]), int(pos[i][0]), int(pos[i][2])]
 
+    check_result(np.isclose(data_normal, data_distributed).all(), "get pixel normal != distributed")
+    check_result(np.isclose(data_normal, data_numpy).all(), "get pixel normal != numpy")
+
+    print("normal = numpy = distributed")
     for i in range(0, N):
         print(f"{data_normal[i]} = {data_numpy[i]} = {data_distributed[i]}")
 
@@ -1009,3 +1014,5 @@ get_pixels()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")
+
+#input("Press Enter to continue...")

@@ -952,10 +952,10 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		NoiseCommand() : OneImageInPlaceCommand<input_t>("noise", "Adds Gaussian noise to the image.",
+		NoiseCommand() : OneImageInPlaceCommand<input_t>("noise", "Adds additive Gaussian noise to the image.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "mean", "Mean value of the noise to add.", 0),
-				CommandArgument<double>(ParameterDirection::In, "standard deviation", "Standard deviation of the noise to add.", 0),
+				CommandArgument<double>(ParameterDirection::In, "standard deviation", "Standard deviation of the noise to add. Specify zero to select standard deviation based on typical maximum value range of the pixel data type.", 0),
 				CommandArgument<coord_t>(ParameterDirection::In, "seed", "Seed value. Set to zero to use time-based seed.", 0)
 			})
 		{
