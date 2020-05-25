@@ -1064,7 +1064,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 	// This is done later as this kernel may be called multiple times with different set of projections if
 	// all the projections do not fit into device memory at once.
-	//sum /= (2.0f * M_PI);
+	//sum *= normFactor;
 	//sum = (sum - dynMin) / (dynMax - dynMin) * scale;
 
 	write_imagef(output, (int4)(pos.x, pos.y, pos.z, 0), sum);
@@ -1277,10 +1277,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			fullSize[2] = output.depth();
 			clEnv.queue.enqueueReadImage(clEnv.output, true, cl::size_t<3>(), fullSize, 0, 0, (void*)output.getData());
 
+			float32_t normFact = normFactor(settings);
+
 			// TODO: This normalization process can be done in OpenCL, but it is also quite fast if done on CPU.
 			#pragma omp parallel for
 			for (coord_t n = 0; n < output.pixelCount(); n++)
-				output(n) = ((output(n) / (2.0f * PIf)) - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<float32_t>::scale();
+				output(n) = ((output(n) * normFact) - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<float32_t>::scale();
 		}
 	}
 

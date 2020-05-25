@@ -19,6 +19,7 @@
 #include "math/vec3.h"
 #include "stringutils.h"
 #include "interpolation.h"
+#include "math/vectoroperations.h"
 
 namespace itl2
 {
@@ -597,6 +598,29 @@ namespace itl2
 	}
 
 	/**
+	Calculates normalization factor for FBP. Output pixel values must be multiplied by the returned value.
+	*/
+	inline float normFactor(const RecSettings& settings)
+	{
+		float32_t normFactor;
+		if (settings.reconstructAs180degScan)
+		{
+			// 180 deg scan, calculate fraction of angles that form the 180 deg rotation.
+			float angleFraction = 180.0f / (itl2::max(settings.angles) - itl2::min(settings.angles));
+			float N = settings.angles.size() * angleFraction;
+			normFactor = 1.0f / (N * PIf);
+		}
+		else
+		{
+			// 360 deg scan
+			float N = (float)settings.angles.size();
+			normFactor = 1.0f / (N * PIf / 2.0f);
+		}
+
+		return normFactor;
+	}
+
+	/**
 	Backprojection step of filtered backprojection algorithm.
 	*/
 	template<typename out_t> void backproject(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
@@ -607,6 +631,9 @@ namespace itl2
 
 		float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
 		float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
+
+		float32_t normFact = normFactor(settings);
+		
 
 
 		// Pre-calculate direction vectors.
@@ -692,7 +719,7 @@ namespace itl2
 						sum += w * interpolator(transmissionProjections, ix, iy, (float32_t)anglei);
 					}
 
-					sum /= (2.0f * PIf);
+					sum *= normFact;
 
 					// Scaling
 					sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
