@@ -608,13 +608,13 @@ namespace itl2
 			// 180 deg scan, calculate fraction of angles that form the 180 deg rotation.
 			float angleFraction = 180.0f / (itl2::max(settings.angles) - itl2::min(settings.angles));
 			float N = settings.angles.size() * angleFraction;
-			normFactor = 1.0f / (N * PIf);
+			normFactor = 1.0f / N * PIf;
 		}
 		else
 		{
 			// 360 deg scan
 			float N = (float)settings.angles.size();
-			normFactor = 1.0f / (N * PIf / 2.0f);
+			normFactor = 1.0f / N * PIf / 2.0f;
 		}
 
 		return normFactor;
