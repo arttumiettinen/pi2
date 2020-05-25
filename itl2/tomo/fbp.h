@@ -559,6 +559,13 @@ namespace itl2
 			}
 		}
 
+		// If there are no shifts supplied, set all shifts to zero.
+		if (s.objectShifts.size() <= 0)
+		{
+			while (s.objectShifts.size() < s.angles.size())
+				s.objectShifts.push_back(Vec2f(0, 0));
+		}
+
 		return s;
 	}
 	

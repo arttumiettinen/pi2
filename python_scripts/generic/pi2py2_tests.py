@@ -742,6 +742,9 @@ def autothreshold():
 
 
 def tif_and_tiff():
+    """
+    Ensures that both .tif and .tiff sequences can be read.
+    """
 
     img = pi2.read(input_file())
 
@@ -760,6 +763,9 @@ def tif_and_tiff():
 
 
 def get_pixels():
+    """
+    Checks that various ways of getting pixels from the (normal and distributed) images give the same result.
+    """
 
     pi2.distribute(Distributor.NONE)
     # Generate image
@@ -772,14 +778,15 @@ def get_pixels():
     pi2.writeraw(img, output_file("ramp"))
 
     # Generate some positions
-    N = 3000
-    positions = pi2.newimage(ImageDataType.FLOAT32, 3, N)
-    pos = positions.get_data()
-
+    N = 300
+    #positions = pi2.newimage(ImageDataType.FLOAT32, 3, N)
+    #pos = positions.get_data()
+    pos = np.zeros([N, 3])
     for i in range(0, N):
-        pos[i, 0] = random.randint(0, w-1)
+        pos[i, 0] = random.randint(0, w-2) + 0.5
         pos[i, 1] = random.randint(0, h-1)
         pos[i, 2] = random.randint(0, d-1)
+    #pos = np.array([[34.5, 42, 13]])
 
     # Get pixels at positions (non-distributed)
     img = pi2.read(output_file("ramp"))
@@ -803,28 +810,29 @@ def get_pixels():
     img = pi2.read(output_file("ramp"))
     pyimg = img.get_data()
 
+    N = pos.shape[0]
     data_numpy = np.zeros(N)
     for i in range(0, N):
-        data_numpy[i] = pyimg[int(pos[i][1]), int(pos[i][0]), int(pos[i][2])]
+        data_numpy[i] = pyimg[int(pos[i][1] + 0.5), int(pos[i][0] + 0.5), int(pos[i][2] + 0.5)]
 
     check_result(np.isclose(data_normal, data_distributed).all(), "get pixel normal != distributed")
     check_result(np.isclose(data_normal, data_numpy).all(), "get pixel normal != numpy")
 
-    print("normal = numpy = distributed")
+    print("point: normal = numpy = distributed")
     for i in range(0, N):
-        print(f"{data_normal[i]} = {data_numpy[i]} = {data_distributed[i]}")
+        print(f"{pos[i]}: {data_normal[i]} = {data_numpy[i]} = {data_distributed[i]}")
 
 
 
 
 def distributed_numpy():
-
+    """
+    Writing numpy arrays to disk caused exception in distributed mode.
+    """
 
     pi2.distribute(Distributor.LOCAL)
 
     nparr = np.zeros([100, 100, 100])
-
-    #pi2.add(nparr, 123)
 
     pi2.writeraw(nparr, output_file("np_distributed"))
 
@@ -1022,8 +1030,8 @@ pi2.echo(True, False)
 #test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
 
 #tif_and_tiff()
-#get_pixels()
-distributed_numpy()
+get_pixels()
+#distributed_numpy()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

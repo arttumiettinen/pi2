@@ -340,7 +340,7 @@ namespace itl2
 			// Remove data outside of 360 deg range
 			if (angleIndex > 0)
 			{
-				if (NumberUtils<float32_t>::greaterThanOrEqual(abs(angles[angleIndex] - angles[0]), 360 - (angles[1] - angles[0])))
+				if (NumberUtils<float32_t>::greaterThan(abs(angles[angleIndex] - angles[0]), 360 - (angles[1] - angles[0]), 0.1f * abs(angles[1] - angles[0])))
 				{
 					cout << "Excess projection removed (index = " << angleIndex << ", angle = " << angles[angleIndex] << " deg)." << endl;
 					proj_weight = 0;
