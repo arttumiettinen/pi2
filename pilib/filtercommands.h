@@ -233,7 +233,11 @@ namespace pilib
 
 		virtual JobType getJobType(const vector<ParamVariant>& args) const override
 		{
-			return JobType::Slow;
+			Vec3c r = std::get<Vec3c>(args[2]);
+			if (r.max() > 10)
+				return JobType::Slow;
+			else
+				return JobType::Normal;
 		}
 	};
 
@@ -269,7 +273,11 @@ namespace pilib
 
 		virtual JobType getJobType(const vector<ParamVariant>& args) const override
 		{
-			return JobType::Slow;
+			Vec3c r = std::get<Vec3c>(args[2]);
+			if (r.max() > 10)
+				return JobType::Slow;
+			else
+				return JobType::Normal;
 		}
 	};
 
@@ -410,7 +418,11 @@ namespace pilib
 
 		virtual JobType getJobType(const vector<ParamVariant>& args) const override
 		{
-			return JobType::Slow;
+			Vec3c r = std::get<Vec3c>(args[2]);
+			if (r.max() > 10)
+				return JobType::Slow;
+			else
+				return JobType::Normal;
 		}
 	};
 
