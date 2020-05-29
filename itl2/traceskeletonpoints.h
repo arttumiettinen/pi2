@@ -23,18 +23,19 @@ namespace itl2
 		/**
 		Writes points and lines data to .vtk file.
 		Does not append extension to file name.
+		@param pPointData, pLineData Array of data vectors to be stored as POINT_DATA and CELL_DATA. Each element in the vectors consists of array name and array elements.
 		*/
 		void write(const std::vector<Vec3f>& points, const std::vector<std::vector<size_t>>& lines, const string& filename,
-			const string& pointDataName = "", const std::vector<float32_t>* pPointData = nullptr,
-			const string& lineDataName = "", const std::vector<float32_t>* pLineData = nullptr);
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pPointData = nullptr,
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pLineData = nullptr);
 
 		/**
 		Writes points and lines data to .vtk file.
 		Appends extension to file name if it does not contain one.
 		*/
 		void writed(const std::vector<Vec3f>& points, const std::vector<std::vector<size_t>>& lines, const string& filename,
-			const string& pointDataName = "", const std::vector<float32_t>* pPointData = nullptr,
-			const string& lineDataName = "", const std::vector<float32_t>* pLineData = nullptr);
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pPointData = nullptr,
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pLineData = nullptr);
 	}
 
 	namespace tests

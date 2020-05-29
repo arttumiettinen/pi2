@@ -328,7 +328,7 @@ namespace itl2
 		AABox targetBox(Vec3c(0, 0, 0), target.dimensions());
 		AABox clippedBox = sourceBox.translate(pos).intersection(targetBox).translate(-pos);
 
-		if (pos.x == 0 && pos.y == 0)
+		if (pos.x == 0 && pos.y == 0 && block.dimensions().x == target.dimensions().x && block.dimensions().y == target.dimensions().y)
 		{
 			// Shift in z only. This can be done very fast as memory copy-style operation.
 

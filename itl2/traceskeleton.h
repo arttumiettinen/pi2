@@ -381,7 +381,7 @@ namespace itl2
 		{
 		public:
 			Vec3sc start;
-			coord_t startVertexIndex;
+			coord_t startVertexIndex = 0;
 		};
 
 		/**
@@ -1053,7 +1053,7 @@ namespace itl2
 				blockCount = omp_get_max_threads();
 
 			// Determine real block count (condsidering block size limitations etc.)
-			for (int idx = 0; idx < blockCount; idx++)
+			for (coord_t idx = 0; idx < blockCount; idx++)
 			{
 				coord_t minZ, maxZ;
 				std::tie(minZ, maxZ) = calcMinMaxZ(blockCount, classified.depth(), idx, allowSmallBlocks);
@@ -1309,7 +1309,7 @@ namespace itl2
 						EdgeMeasurements& m = incompleteEdges[i].properties;
 						if (!std::isnan(m.area)) // area may be nan if the length of the branch is too short for area to be measured.
 						{
-							sum += m.area * m.length;
+							sum += (double)m.area * (double)m.length;
 							w += m.length;
 						}
 					}

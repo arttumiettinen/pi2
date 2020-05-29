@@ -717,7 +717,7 @@ namespace pilib
 
 		using Command::Command;
 
-		void writeVtk(const Image<float32_t>& points, const Image<uint64_t>& lines, const string& filename, const string& pointDataName = "", const Image<float32_t>* pointData = nullptr, const string& lineDataName = "", Image<float32_t>* lineData = nullptr) const
+		void writeVtk(const Image<float32_t>& points, const Image<uint64_t>& lines, const string& filename, const string& pointDataNames = "", const Image<float32_t>* pointData = nullptr, const string& lineDataNames = "", Image<float32_t>* lineData = nullptr) const
 		{
 			if (lines.pixelCount() < 1)
 				throw ITLException("Empty image passed as lines.");
@@ -756,29 +756,69 @@ namespace pilib
 				linesv.push_back(line);
 			}
 
-			vector<float32_t> pointDatav;
-			if (pointDataName != "" && pointData != nullptr)
+			vector<std::tuple<string, vector<float32_t>>> pointDataArrays;
+			if (pointDataNames != "" && pointData != nullptr)
 			{
-				if (pointData->pixelCount() != pointsv.size())
-					throw ITLException("Point data image does not contain one pixel for each point.");
+				vector<string> headers = split(pointDataNames, true, ',', true);
 
-				pointDatav.reserve(points.height());
-				for (coord_t n = 0; n < pointData->pixelCount(); n++)
-					pointDatav.push_back((*pointData)(n));
+				if (headers.size() != pointData->width())
+					throw ITLException("Count of headers does not match column count of point data image.");
+
+				for (size_t n = 0; n < headers.size(); n++)
+				{
+					vector<float32_t> datav;
+					datav.reserve(pointData->height());
+					for (coord_t m = 0; m < pointData->height(); m++)
+						datav.push_back((*pointData)(n, m));
+
+					pointDataArrays.push_back(make_tuple(headers[n], datav));
+				}
 			}
 
-			vector<float32_t> lineDatav;
-			if (lineDataName != "" && lineData != nullptr)
+			vector<std::tuple<string, vector<float32_t>>> lineDataArrays;
+			if (lineDataNames != "" && lineData != nullptr)
 			{
-				if (lineData->pixelCount() != linesv.size())
-					throw ITLException("Line data image does not contain one pixel for each line.");
+				vector<string> headers = split(lineDataNames, true, ',', true);
 
-				lineDatav.reserve(lines.height());
-				for (coord_t n = 0; n < lineData->pixelCount(); n++)
-					lineDatav.push_back((*lineData)(n));
+				if (headers.size() != lineData->width())
+					throw ITLException("Count of headers does not match column count of line data image.");
+
+				for (size_t n = 0; n < headers.size(); n++)
+				{
+					vector<float32_t> datav;
+					datav.reserve(lineData->height());
+					for (coord_t m = 0; m < lineData->height(); m++)
+						datav.push_back((*lineData)(n, m));
+
+					lineDataArrays.push_back(make_tuple(headers[n], datav));
+				}
 			}
 
-			vtk::writed(pointsv, linesv, filename, pointDataName, &pointDatav, lineDataName, &lineDatav);
+			vtk::writed(pointsv, linesv, filename, &pointDataArrays, &lineDataArrays);
+
+			//vector<float32_t> pointDatav;
+			//if (pointDataNames != "" && pointData != nullptr)
+			//{
+			//	if (pointData->pixelCount() != pointsv.size())
+			//		throw ITLException("Point data image does not contain one pixel for each point.");
+
+			//	pointDatav.reserve(points.height());
+			//	for (coord_t n = 0; n < pointData->pixelCount(); n++)
+			//		pointDatav.push_back((*pointData)(n));
+			//}
+
+			//vector<float32_t> lineDatav;
+			//if (lineDataNames != "" && lineData != nullptr)
+			//{
+			//	if (lineData->pixelCount() != linesv.size())
+			//		throw ITLException("Line data image does not contain one pixel for each line.");
+
+			//	lineDatav.reserve(lines.height());
+			//	for (coord_t n = 0; n < lineData->pixelCount(); n++)
+			//		lineDatav.push_back((*lineData)(n));
+			//}
+
+			//vtk::writed(pointsv, linesv, filename, pointDataName, &pointDatav, lineDataName, &lineDatav);
 		}
 	};
 
@@ -792,10 +832,10 @@ namespace pilib
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "points", "Image that stores coordinates of all points in the network. See `getpointsandlines` command."),
 				CommandArgument<Image<uint64_t> >(ParameterDirection::In, "lines", "Image that stores a list of point indices for each edge. See `getpointsandlines` command."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name of file to write. Suffix .vtk will be added to the file name."),
-				CommandArgument<string>(ParameterDirection::In, "point data name", "Name of data field for each point.", ""),
-				CommandArgument<Image<float32_t> >(ParameterDirection::In, "point data", "Image that has one value for each point. The data will be saved in the .vtk file using name given in argument 'point data name'."),
-				CommandArgument<string>(ParameterDirection::In, "line data name", "Name of data field for each line.", ""),
-				CommandArgument<Image<float32_t> >(ParameterDirection::In, "cell data", "Image that has one value for each line. The data will be saved in the .vtk file using name given in argument 'line data name'.")
+				CommandArgument<string>(ParameterDirection::In, "point data name", "Comma-separated list of names of data fields for each point.", ""),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "point data", "Image that has one row for each point. The data in columns will be saved in the .vtk file using names given in argument 'point data name'."),
+				CommandArgument<string>(ParameterDirection::In, "line data name", "Comma-separated list of names of data fields for each line.", ""),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "cell data", "Image that has one row for each line. The data in columns will be saved in the .vtk file using names given in argument 'line data name'.")
 			},
 			"getpointsandlines")
 		{
@@ -815,6 +855,36 @@ namespace pilib
 			Image<float32_t>* lineData = pop<Image<float32_t>*>(args);
 
 			writeVtk(points, lines, filename, pointDataName, pointData, lineDataName, lineData);
+		}
+	};
+
+	class WriteVtk3Command : public WriteVtkCommandBase
+	{
+	protected:
+		friend class CommandList;
+
+		WriteVtk3Command() : WriteVtkCommandBase("writevtk", "Writes network in points-and-lines format to a .vtk file.",
+			{
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "points", "Image that stores coordinates of all points in the network. See `getpointsandlines` command."),
+				CommandArgument<Image<uint64_t> >(ParameterDirection::In, "lines", "Image that stores a list of point indices for each edge. See `getpointsandlines` command."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name of file to write. Suffix .vtk will be added to the file name."),
+				CommandArgument<string>(ParameterDirection::In, "point data name", "Comma-separated list of names of data fields for each point.", ""),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "point data", "Image that has one row for each point. The data in columns will be saved in the .vtk file using names given in argument 'point data name'."),
+			})
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			Image<float32_t>& points = *pop<Image<float32_t>*>(args);
+			Image<uint64_t>& lines = *pop<Image<uint64_t>*>(args);
+			string filename = pop<string>(args);
+
+			string pointDataName = pop<string>(args);
+			Image<float32_t>* pointData = pop<Image<float32_t>*>(args);
+
+			writeVtk(points, lines, filename, pointDataName, pointData);
 		}
 	};
 

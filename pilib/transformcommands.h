@@ -877,7 +877,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		CropCommand() : TwoImageInputOutputCommand<pixel_t>("crop", "Crops the input image. If size parameter is set to zero, crops to current size of the output image.",
+		CropCommand() : TwoImageInputOutputCommand<pixel_t>("crop", "Crops the input image. If the size parameter is set to zero, crops to current size of the output image. NOTE: Input and output images must have the same data type. If not, output image is converted to the correct type.",
 			{
 				CommandArgument<Vec3c>(ParameterDirection::In, "position", "Position in input image where the top-left corner of the cropped image is placed.", Vec3c(0, 0, 0)),
 				CommandArgument<Vec3c>(ParameterDirection::In, "size", "Size of output image. Specify zeroes or nothing to crop to the current size of the output image.", Vec3c(0, 0, 0))

@@ -111,7 +111,40 @@ namespace itl2
 
 	namespace vtk
 	{
-		void write(const std::vector<Vec3f>& points, const std::vector<std::vector<size_t>>& lines, const string& filename, const string& pointDataName, const std::vector<float32_t>* pPointData, const string& lineDataName, const std::vector<float32_t>* pLineData)
+		namespace internals
+		{
+			/**
+			Helper to write
+			FIELD FieldData N
+			[Array name] 1 M
+			[element 1]
+			[element 2]
+			...
+			[element M]
+			[Array name] 1 K
+			[element 1]
+			...
+			*/
+			void writeVtkFields(ofstream& out, const std::vector<std::tuple<std::string, std::vector<float32_t>>>& data)
+			{
+				out << "FIELD FieldData " << data.size() << endl; // TODO: one "out << pointDataName << " 1 " << pPointData->size() << " float" <<endl;" for each array
+				for (size_t n = 0; n < data.size(); n++)
+				{
+					const string& arrayName = get<0>(data[n]);
+					const auto& arr = get<1>(data[n]);
+					out << arrayName << " 1 " << arr.size() << " float" << endl;
+
+					for (size_t n = 0; n < arr.size(); n++)
+					{
+						out << arr[n] << endl;
+					}
+				}
+			}
+		}
+		
+		void write(const std::vector<Vec3f>& points, const std::vector<std::vector<size_t>>& lines, const string& filename,
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pPointData,
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pLineData)
 		{
 			createFoldersFor(filename);
 
@@ -154,37 +187,27 @@ namespace itl2
 				out << "\n";
 			}
 
-			if (pointDataName != "" && pPointData)
+			if (pPointData)
 			{
-				out << "POINT_DATA " << pPointData->size() << endl;
-				out << "FIELD FieldData 1" << endl;
-				out << pointDataName << " 1 " << pPointData->size() << " float" <<endl;
-
-				for (size_t n = 0; n < pPointData->size(); n++)
-				{
-					out << (*pPointData)[n] << endl;
-				}
+				out << "POINT_DATA " << points.size() << endl;
+				internals::writeVtkFields(out, *pPointData);
 			}
 
-			if (lineDataName != "" && pLineData)
+			if (pLineData)
 			{
-				out << "CELL_DATA " << pLineData->size() << endl;
-				out << "FIELD FieldData 1" << endl;
-				out << lineDataName << " 1 " << pLineData->size() << " float" << endl;
-
-				for (size_t n = 0; n < pLineData->size(); n++)
-				{
-					out << (*pLineData)[n] << endl;
-				}
+				out << "CELL_DATA " << lines.size() << endl;
+				internals::writeVtkFields(out, *pLineData);
 			}
 		}
 		
-		void writed(const std::vector<Vec3f>& points, const std::vector<std::vector<size_t>>& lines, const string& filename, const string& pointDataName, const std::vector<float32_t>* pPointData, const string& lineDataName, const std::vector<float32_t>* pLineData)
+		void writed(const std::vector<Vec3f>& points, const std::vector<std::vector<size_t>>& lines, const string& filename,
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pPointData,
+			const std::vector<std::tuple<std::string, std::vector<float32_t>>>* pLineData)
 		{
 			if (endsWithIgnoreCase(filename, ".vtk"))
-				write(points, lines, filename, pointDataName, pPointData, lineDataName, pLineData);
+				write(points, lines, filename, pPointData, pLineData);
 			else
-				write(points, lines, filename + ".vtk", pointDataName, pPointData, lineDataName, pLineData);
+				write(points, lines, filename + ".vtk", pPointData, pLineData);
 		}
 	}
 
@@ -258,6 +281,13 @@ namespace itl2
 				radius.push_back((n + 1) / 10.0f);
 			}
 
+			vector<float32_t> index;
+			index.reserve(points.size());
+			for (size_t n = 0; n < points.size(); n++)
+			{
+				index.push_back((float32_t)n);
+			}
+
 			vector<float32_t> lineRadius;
 			lineRadius.reserve(lines.size());
 			for (size_t n = 0; n < lines.size(); n++)
@@ -265,7 +295,9 @@ namespace itl2
 				lineRadius.push_back((n + 1) / 10.0f);
 			}
 
-			vtk::writed(points, lines, "./skeleton_points_and_lines/point_line_vis", "radius", &radius, "radius", &lineRadius);
+			auto pointDataArrays = vector<tuple<string, vector<float32_t>>>{ make_tuple("radius", radius), make_tuple("index", index) };
+			auto lineDataArrays = vector<tuple<string, vector<float32_t>>>{ make_tuple("radius", lineRadius) };
+			vtk::writed(points, lines, "../testing/skeleton_points_and_lines/point_line_vis", &pointDataArrays, &lineDataArrays);
 		}
 	}
 }

@@ -24,6 +24,7 @@ namespace pilib
 		CommandList::add<GetPointsAndLinesCommand>();
 		CommandList::add<WriteVtkCommand>();
 		CommandList::add<WriteVtk2Command>();
+		CommandList::add<WriteVtk3Command>();
 		ADD_REAL(RemoveEdgesCommand);
 		ADD_REAL(FillSkeletonCommand);
 	}

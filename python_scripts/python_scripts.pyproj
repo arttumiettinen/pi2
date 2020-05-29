@@ -5,7 +5,7 @@
     <ProjectGuid>ba94b144-c555-4822-8258-53a8861b7dc7</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>generic\pi2py2_tests.py</StartupFile>
+    <StartupFile>generic\pi2py2_examples.py</StartupFile>
     <SearchPath>generic</SearchPath>
     <WorkingDirectory>..\x64\Debug no OpenCL</WorkingDirectory>
     <OutputPath>.</OutputPath>

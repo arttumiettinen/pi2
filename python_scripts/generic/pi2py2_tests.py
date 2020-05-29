@@ -1030,7 +1030,7 @@ pi2.echo(True, False)
 #test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
 
 #tif_and_tiff()
-get_pixels()
+#get_pixels()
 #distributed_numpy()
 
 print(f"{total_tests} checks run.")

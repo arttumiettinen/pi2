@@ -736,6 +736,17 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Copies pixels of source image to target image.
+        /// Converts data type if required.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="target"></param>
+        public void Copy(Pi2Image source, Pi2Image target)
+        {
+            PiLib.RunAndCheck(Handle, $"copy({source.ImageName}, {target.ImageName})");
+        }
+
+        /// <summary>
         /// Copies pixels of the source image to the target image to the specified location.
         /// Does not change the size of the target image.
         /// </summary>
@@ -749,6 +760,7 @@ namespace pi2cs
 
         /// <summary>
         /// Crops the image into size of output. Set size of output before calling this command or pass size as an argument.
+        /// NOTE: If the data type of target image is not correct, this function will change it!
         /// </summary>
         /// <param name="input">Input image.</param>
         /// <param name="output">Output image.</param>

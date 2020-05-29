@@ -374,7 +374,16 @@ def skeleton_vtk():
     vtklines = pi.newimage()
     pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
 
-    pi.writevtk(vtkpoints, vtklines, output_file("vtk_test_file"))
+    # Create some additional data for the points
+    N = vtkpoints.get_height()
+    point_data = pi.newimage(ImageDataType.FLOAT32, 2, N)
+    di = point_data.get_data_pointer()    
+    for i in range(0, N):
+        di[i, 0] = i
+        di[i, 1] = N - i
+
+    # Save .vtk file
+    pi.writevtk(vtkpoints, vtklines, output_file("vtk_test_file"), "increasing, decreasing", point_data)
 
 
 
@@ -1235,7 +1244,7 @@ def skeleton_types():
 #filtering()
 #thickmap()
 #watershed()
-#skeleton_vtk()
+skeleton_vtk()
 #big_endian_and_little_endian()
 #greedy_coloring()
 #linefilters()

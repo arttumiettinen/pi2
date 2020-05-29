@@ -286,7 +286,7 @@ namespace pilib
 	};
 
 	/**
-	Functor that casts distributed image to another type and assigns it to ParamVariant.
+	Functor that casts distributed image base to another (derived) type and assigns it to ParamVariant.
 	*/
 	template<typename pixel_t> struct CastDistributedImage
 	{
@@ -433,12 +433,15 @@ namespace pilib
 				// Any image type can be output automatically, but existing images get higher priority
 
 				// Search match from existing images.
+				Vec3c oldSize(1, 1, 1);
 				if (!isDistributed())
 				{
 					auto it = imgs.find(value);
 					if (it != imgs.end())
 					{
 						ImageBase* p = it->second.get();
+						oldSize = p->dimensions();
+
 						if (p->dataType() == idt)
 						{
 							// Match
@@ -454,6 +457,7 @@ namespace pilib
 					if (it != distributedImgs.end())
 					{
 						DistributedImageBase* p = it->second.get();
+						oldSize = p->dimensions();
 
 						if (p->dataType() == idt)
 						{
@@ -472,14 +476,16 @@ namespace pilib
 					if (!isDistributed())
 					{
 						// Create normal image
-						pick<CreateImage>(idt, Vec3c(1, 1, 1), value, this);
+						// Retain size of old image of the same name
+						pick<CreateImage>(idt, oldSize, value, this);
 						ImageBase* p = imgs[value].get();
 						pick<CastImage>(idt, p, result);
 					}
 					else
 					{
 						// Create distributed image
-						pick<CreateEmptyDistributedImage>(idt, value, Vec3c(1, 1, 1), this);
+						// Retain size of old image of the same name
+						pick<CreateEmptyDistributedImage>(idt, value, oldSize, this);
 						DistributedImageBase* p = distributedImgs[value].get();
 						pick<CastDistributedImage>(idt, p, result);
 					}
