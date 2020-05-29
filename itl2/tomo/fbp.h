@@ -627,8 +627,6 @@ namespace itl2
 	{
 		internals::sanityCheck(transmissionProjections, settings);
 
-		internals::applyBinningToParameters(settings);
-
 		float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
 		float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
 

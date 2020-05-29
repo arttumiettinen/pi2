@@ -863,6 +863,8 @@ namespace itl2
 			#pragma omp for
 			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
 			{
+				cout << "Processing slice " << z << endl;
+
 				Image<float32_t> origSlice(transmissionProjections, z, z);
 				Image<float32_t> slice(preprocessedProjections, z, z);
 
@@ -887,7 +889,7 @@ namespace itl2
 					// No binning, no cropping
 					setValue(slice, origSlice);
 				}
-
+				
 				if(settings.removeDeadPixels)
 					deadPixelRemovalSlice(slice, med, tmp);
 
@@ -899,7 +901,7 @@ namespace itl2
 				fbpWeightingSlice(slice, z, settings.reconstructAs180degScan, settings.angles, settings.centerShift, settings.csAngleSlope, settings.sourceToRA, settings.cameraZShift, settings.csZSlope, centralAngle, gammamax0, settings.heuristicSinogramWindowingParameter);
 				
 				filterSlice(slice, filterSettings, settings.padType);
-
+				
 				showThreadProgress(counter, preprocessedProjections.depth());
 			}
 		}
