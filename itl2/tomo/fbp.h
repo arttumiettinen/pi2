@@ -556,7 +556,8 @@ namespace itl2
 			}
 			else
 			{
-				throw ITLException("Invalid string passed to RecSettings parser.");
+				// No exception so that extra settings can be present in the settings file.
+				//throw ITLException("Invalid string passed to RecSettings parser.");
 			}
 		}
 
