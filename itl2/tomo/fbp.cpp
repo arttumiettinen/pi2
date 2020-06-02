@@ -863,7 +863,7 @@ namespace itl2
 			#pragma omp for
 			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
 			{
-				cout << "Processing slice " << z << endl;
+				//cout << "Processing slice " << z << endl;
 
 				Image<float32_t> origSlice(transmissionProjections, z, z);
 				Image<float32_t> slice(preprocessedProjections, z, z);
