@@ -89,7 +89,7 @@ namespace pilib
 				{
 					CommandArgument<Image<float32_t> >(ParameterDirection::Out, "image", "Image where the filter is to be placed."),
 					CommandArgument<size_t>(ParameterDirection::In, "size", "Size of the filter. This corresponds to the padded image size in FBP.", 100),
-					CommandArgument<std::string>(ParameterDirection::In, "filter type", "Type of the filter. Supported values are Ramp1, Ramp2, Shepp-Logan, Cosine, Hamming, and Hann.", "Ramp1"),
+					CommandArgument<std::string>(ParameterDirection::In, "filter type", "Type of the filter. Supported values are Ideal ramp, Ramp, Shepp-Logan, Cosine, Hamming, Hann, Blackman, Parze.", "Ramp"),
 					CommandArgument<double>(ParameterDirection::In, "cut-off", "Filter cut-off frequency, 0 corresponds to DC and 1 corresponds to Nyquist.", 1.0f)
 				}
 			)

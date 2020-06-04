@@ -123,11 +123,11 @@ namespace itl2
 		/**
 		Standard |w| filter.
 		*/
-		Ramp1 = 0,
+		IdealRamp = 0,
 		/**
 		Standard |w| filter adjusted to keep image average as it should be.
 		*/
-		Ramp2,
+		Ramp,
 		/**
 		Shepp-Logan filter.
 		*/
@@ -144,19 +144,28 @@ namespace itl2
 		Hann filter.
 		*/
 		Hann,
-
+		/**
+		Blackman filter.
+		*/
+		Blackman,
+		/**
+		Parzen filter.
+		*/
+		Parzen
 	};
 
 	inline std::ostream& operator<<(std::ostream& stream, const FilterType& x)
 	{
 		switch (x)
 		{
-		case FilterType::Ramp1: stream << "Ramp1"; return stream;
-		case FilterType::Ramp2: stream << "Ramp2"; return stream;
+		case FilterType::IdealRamp: stream << "Ideal ramp"; return stream;
+		case FilterType::Ramp: stream << "Ramp"; return stream;
 		case FilterType::SheppLogan: stream << "Shepp-Logan"; return stream;
 		case FilterType::Cosine: stream << "Cosine"; return stream;
 		case FilterType::Hamming: stream << "Hamming"; return stream;
 		case FilterType::Hann: stream << "Hann"; return stream;
+		case FilterType::Blackman: stream << "Blackman"; return stream;
+		case FilterType::Parzen: stream << "Parzen"; return stream;
 		}
 		throw ITLException("Invalid filter type.");
 	}
@@ -166,10 +175,10 @@ namespace itl2
 	{
 		string str = str0;
 		toLower(str);
-		if (str == "ramp1")
-			return FilterType::Ramp1;
-		if (str == "ramp2")
-			return FilterType::Ramp2;
+		if (str == "ideal ramp")
+			return FilterType::IdealRamp;
+		if (str == "ramp")
+			return FilterType::Ramp;
 		if (str == "shepp-logan")
 			return FilterType::SheppLogan;
 		if (str == "cosine")
@@ -178,6 +187,10 @@ namespace itl2
 			return FilterType::Hamming;
 		if (str == "hann")
 			return FilterType::Hann;
+		if (str == "blackman")
+			return FilterType::Blackman;
+		if (str == "parzen")
+			return FilterType::Parzen;
 
 		throw ITLException("Invalid filter type: " + str0);
 	}
@@ -301,7 +314,7 @@ namespace itl2
 		/**
 		Type of filter to use.
 		*/
-		FilterType filterType = FilterType::Ramp1;
+		FilterType filterType = FilterType::Ramp;
 
 		/**
 		Cut-off frequency, 0 corresponds to DC and 1 to Nyquist.

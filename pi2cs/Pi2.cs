@@ -521,9 +521,9 @@ namespace pi2cs
         /// </summary>
         /// <param name="output">Output image.</param>
         /// <param name="size">Desired size or zero to use size of output image.</param>
-        /// <param name="filterType">Type of filter. Supported values are Ramp1, Ramp2, Shepp-Logan, Cosine, Hamming, and Hann.</param>
+        /// <param name="filterType">Type of filter. Supported values are Ideal ramp1, Ramp, Shepp-Logan, Cosine, Hamming, Hann, Blackman, Parzen.</param>
         /// <param name="cutoff">Filter cutoff frequency.</param>
-        public void CreateFBPFilter(Pi2Image output, int size = 100, string filterType = "Ramp1", float cutoff = 1.0f)
+        public void CreateFBPFilter(Pi2Image output, int size = 100, string filterType = "Ramp", float cutoff = 1.0f)
         {
             PiLib.RunAndCheck(Handle, $"createfbpfilter({output.ImageName}, {size}, {filterType}, {cutoff.ToString(CultureInfo.InvariantCulture)})");
         }

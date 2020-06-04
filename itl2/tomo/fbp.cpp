@@ -444,7 +444,7 @@ namespace itl2
 
 		switch (filterType)
 		{
-			case FilterType::Ramp1:
+			case FilterType::IdealRamp:
 			{
 				// Normal sharp |w| filter
 				// This filter was used in the old versions.
@@ -457,7 +457,7 @@ namespace itl2
 
 				break;
 			}
-			case FilterType::Ramp2:
+			case FilterType::Ramp:
 			{
 				initFFTW();
 				coord_t s = filter.width() - 1;
@@ -498,7 +498,7 @@ namespace itl2
 			}
 			case FilterType::SheppLogan:
 			{
-				createFilter(filter, FilterType::Ramp2, cutoff);
+				createFilter(filter, FilterType::Ramp, cutoff);
 
 				for (coord_t i = 1; i < filter.width(); i++)
 				{
@@ -510,7 +510,7 @@ namespace itl2
 			}
 			case FilterType::Cosine:
 			{
-				createFilter(filter, FilterType::Ramp2, cutoff);
+				createFilter(filter, FilterType::Ramp, cutoff);
 
 				for (coord_t i = 1; i < filter.width(); i++)
 				{
@@ -522,7 +522,7 @@ namespace itl2
 			}
 			case FilterType::Hamming:
 			{
-				createFilter(filter, FilterType::Ramp2, cutoff);
+				createFilter(filter, FilterType::Ramp, cutoff);
 
 				for (coord_t i = 1; i < filter.width(); i++)
 				{
@@ -534,12 +534,44 @@ namespace itl2
 			}
 			case FilterType::Hann:
 			{
-				createFilter(filter, FilterType::Ramp2, cutoff);
+				createFilter(filter, FilterType::Ramp, cutoff);
 
 				for (coord_t i = 1; i < filter.width(); i++)
 				{
 					double factor = (PI * filter(i)) / cutoff;
 					filter(i) *= (float32_t)(0.5 + 0.5 * cos(factor));
+				}
+
+				break;
+			}
+			case FilterType::Blackman:
+			{
+				createFilter(filter, FilterType::Ramp, cutoff);
+
+				for (coord_t i = 1; i < filter.width(); i++)
+				{
+					double factor = (PI * filter(i)) / cutoff + PI;
+					filter(i) *= (float32_t)(0.42 - 0.5 * cos(factor) + 0.08 * cos(2 * factor));
+				}
+
+				break;
+			}
+			case FilterType::Parzen:
+			{
+				createFilter(filter, FilterType::Ramp, cutoff);
+
+				for (coord_t i = 1; i < filter.width(); i++)
+				{
+					double L = 2.0 * (double)filter.width() * cutoff;
+					double n = (double)i;// filter(i);
+					double q = n / (L / 2);
+
+					double w;
+					if (n <= L / 4)
+						w = 1 - 6 * q * q * (1 - q);
+					else
+						w = 2 * (1 - q) * (1 - q) * (1 - q);
+					filter(i) *= (float32_t)w;
 				}
 
 				break;
