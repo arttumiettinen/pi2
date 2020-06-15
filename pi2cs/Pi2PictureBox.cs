@@ -454,22 +454,34 @@ namespace pi2cs
         /// <param name="height"></param>
         /// <param name="depth"></param>
         /// <param name="dt"></param>
-        private void CopyFromPointerToTemp(IntPtr data, int width, int height, int depth, ImageDataType dt)
+        private void CopyFromPointerToTemp(IntPtr data, long width, long height, long depth, ImageDataType dt)
         {
+            if (width > int.MaxValue)
+                throw new InvalidOperationException("Image width is too large to be shown. Maximum supported width is " + int.MaxValue);
+            if (height > int.MaxValue)
+                throw new InvalidOperationException("Image height is too large to be shown. Maximum supported height is " + int.MaxValue);
+            if (depth > int.MaxValue)
+                throw new InvalidOperationException("Image depth is too large to be shown. Maximum supported depth is " + int.MaxValue);
+
+            long capacity = width * height;
+
+            if (capacity > int.MaxValue)
+                throw new InvalidOperationException("Size of single slice is too large to be shown. Maximum supported count of pixels is " + int.MaxValue);
+
             OriginalBitmap.Clear();
-            OriginalBitmap.Capacity = width * height;
+            OriginalBitmap.Capacity = (int)capacity;
             for (int n = 0; n < width * height; n++)
                 OriginalBitmap.Add(0);
-            OriginalWidth = width;
-            OriginalHeight = height;
-            OriginalDepth = depth;
+            OriginalWidth = (int)width;
+            OriginalHeight = (int)height;
+            OriginalDepth = (int)depth;
 
             OriginalDataType = dt;
 
             if (Slice < 0)
                 Slice = 0;
             else if (Slice >= depth)
-                Slice = depth - 1;
+                Slice = (int)(depth - 1);
 
             if (data != IntPtr.Zero)
             {
@@ -520,12 +532,13 @@ namespace pi2cs
                     }
 
                     // Copy pixel values to the array.
+                    int iw = (int)width;
                     for (int y = 0; y < height; y++)
                     {
                         for (int x = 0; x < width; x++)
                         {
                             float val = getPixel(x, y);
-                            OriginalBitmap[x + y * width] = val;
+                            OriginalBitmap[x + y * iw] = val;
                         }
                     }
                 }
@@ -555,14 +568,7 @@ namespace pi2cs
                 ImageDataType dt;
                 IntPtr data = PiImage.GetData(out w, out h, out d, out dt);
 
-                if (w > int.MaxValue)
-                    throw new InvalidOperationException("Image width is too large to be shown.");
-                if (h > int.MaxValue)
-                    throw new InvalidOperationException("Image height is too large to be shown.");
-                if (d > int.MaxValue)
-                    throw new InvalidOperationException("Image depth is too large to be shown.");
-
-                CopyFromPointerToTemp(data, (int)w, (int)h, (int)d, dt);
+                CopyFromPointerToTemp(data, w, h, d, dt);
             }
             else
             {
