@@ -419,7 +419,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> pixel_t replaceOp(pixel_t a, const Vec2<pixel_t> data)
 		{
-			if (NumberUtils<pixel_t>::equals(a, data.x))
+			if (NumberUtils<pixel_t>::equals(a, data.x) || (NumberUtils<pixel_t>::isnan(a) && NumberUtils<pixel_t>::isnan(data.x)))
 				return data.y;
 
 			return a;
