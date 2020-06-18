@@ -1337,9 +1337,10 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	{
 		internals::sanityCheck(transmissionProjections, settings);
 		output.mustNotBe(transmissionProjections);
-		output.ensureSize(settings.roiSize);
-
+		
 		internals::applyBinningToParameters(settings);
+
+		output.ensureSize(settings.roiSize);
 
 		internals::CLEnv env = internals::backprojectOpenCLPrepare(settings);
 		internals::backprojectOpenCLReset(env, output);
@@ -1551,9 +1552,10 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 		internals::sanityCheck(transmissionProjections, settings);
 		output.mustNotBe(transmissionProjections);
-		output.ensureSize(settings.roiSize);
-
+		
 		internals::applyBinningToParameters(settings);
+
+		output.ensureSize(settings.roiSize);
 
 		try
 		{
@@ -1574,9 +1576,10 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	{
 		internals::sanityCheck(transmissionProjections, settings);
 		output.mustNotBe(transmissionProjections);
-		output.ensureSize(settings.roiSize);
-
+		
 		internals::applyBinningToParameters(settings);
+
+		output.ensureSize(settings.roiSize);
 
 		try
 		{
