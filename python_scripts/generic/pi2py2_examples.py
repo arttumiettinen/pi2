@@ -405,12 +405,13 @@ def big_endian_and_little_endian():
     pi.swapbyteorder(geometry)
     pi.writeraw(geometry, output_file("big_endian_ramp"))
 
-    # NOTE: Here the geometry image is stored in big endian format, and you cannot do
+    # NOTE: At this point the geometry image is stored in big endian format, and you cannot do
     # any calculations on it until you run the swapbyteorder command on it again!
+
     # For example, writing something else than .raw files for image in non-native byte
     # order does not make sense! The .tif file saved below will
-    # contain pixel values in wrong byte order.
-    pi.writetif(geometry, output_file("big_endian_ramp.tif"))
+    # contain pixel values in the wrong byte order.
+    pi.writetif(geometry, output_file("ramp_wrong_byte_order.tif"))
 
     
 

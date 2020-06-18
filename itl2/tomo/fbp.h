@@ -639,7 +639,13 @@ namespace itl2
 	*/
 	template<typename out_t> void backproject(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
 	{
+		//internals::sanityCheck(transmissionProjections, settings);
+
 		internals::sanityCheck(transmissionProjections, settings);
+		output.mustNotBe(transmissionProjections);
+		output.ensureSize(settings.roiSize);
+
+		internals::applyBinningToParameters(settings);
 
 		float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
 		float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
@@ -660,7 +666,7 @@ namespace itl2
 
 		for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
 		{
-			double angle = rotMul * (settings.angles[anglei] - 90 + settings.rotation) / 180.0 * PI;
+			double angle = rotMul * ((double)settings.angles[anglei] - 90 + (double)settings.rotation) / 180.0 * PI;
 
 			float32_t c = (float32_t)cos(angle);
 			float32_t s = (float32_t)sin(angle);
@@ -684,7 +690,7 @@ namespace itl2
 
 		LinearInterpolator<float32_t, float32_t> interpolator(BoundaryCondition::Zero);
 
-		output.ensureSize(settings.roiSize);
+		//output.ensureSize(settings.roiSize);
 
 		// NOTE: -0.5 ensures that if roiSize.z == 1, roiCenter.z = 1 / 2 - roiCenter.z - 0.5 = roiCenter.z
 		// TODO: Should subtraction be done for all the components?
