@@ -205,7 +205,7 @@ namespace itl2
 	}
 
 	/**
-	Performs phase retrieval or -log operation on single transmission projection slice.
+	Performs phase retrieval or -log operation on a single transmission projection slice.
 	*/
 	void phaseRetrievalSlice(Image<float32_t>& slice, PhaseMode phaseMode, PadType padType, float32_t padFraction, float32_t objectSourceDistance, float32_t objectCameraDistance, float32_t delta, float32_t mu)
 	{
@@ -837,6 +837,14 @@ namespace itl2
 		}
 	}
 
+	/**
+	Replaces NaN values by zeroes.
+	*/
+	void replaceNaNs(Image<float32_t>& img)
+	{
+		replace(img, Vec2<float32_t>(numeric_limits<float32_t>::signaling_NaN(), (float32_t)1));
+		replace(img, Vec2<float32_t>(numeric_limits<float32_t>::quiet_NaN(), (float32_t)1));
+	}
 
 	void fbpPreprocess(const Image<float32_t>& transmissionProjections, Image<float32_t>& preprocessedProjections, RecSettings settings)
 	{
@@ -921,6 +929,8 @@ namespace itl2
 					// No binning, no cropping
 					setValue(slice, origSlice);
 				}
+
+				replaceNaNs(slice);
 				
 				if(settings.removeDeadPixels)
 					deadPixelRemovalSlice(slice, med, tmp);
