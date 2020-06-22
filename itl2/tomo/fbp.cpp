@@ -838,6 +838,16 @@ namespace itl2
 					settings.objectShifts[n] /= b;
 				settings.roiCenter /= (coord_t)settings.binning;
 				settings.roiSize /= (coord_t)settings.binning;
+				
+				if (settings.roiSize.x < 1)
+					settings.roiSize.x = 1;
+
+				if (settings.roiSize.y < 1)
+					settings.roiSize.y = 1;
+
+				if (settings.roiSize.z < 1)
+					settings.roiSize.z = 1;
+
 				settings.sourceToRA /= b;
 				settings.binning = 1;
 
@@ -1643,15 +1653,16 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		{
 			// TODO: Test data is not available.
 
-			string logFile = readText("./rec/fibre_log.txt", true);
+			string logFile = readText("./cylinders.log", true);
 			RecSettings settings = fromString<RecSettings>(logFile);
 
-			settings.cropSize.y = 127;
+			//settings.cropSize.y = 127;
+			//settings.binning = 2;
 			settings.binning = 2;
 
 			Image<float32_t> projections;
 			Image<float32_t> preProcProjections;
-			raw::read(projections, "./rec/fibre_projections");
+			raw::read(projections, "./cylinders_200x21x180.raw");
 
 			Timer timer;
 			timer.start();
@@ -1665,7 +1676,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			timer.stop();
 			cout << "Reconstruction took " << timer.getSeconds() << " s." << endl;
 
-			raw::writed(output, "./rec/fibre_reconstruction_mid");
+			raw::writed(output, "./rec/reconstruction_mid");
 
 		}
 

@@ -157,7 +157,7 @@ int main()
 	//test(itl2::tests::disconnectStraightThroughPerformance, "network optimization performance");
 	//test(itl2::tests::pruning, "pruning");
 	//test(itl2::tests::lineLength, "line length calculation");
-	test(itl2::tests::skeletonToPointsAndLines, "skeleton to point-line form");
+	//test(itl2::tests::skeletonToPointsAndLines, "skeleton to point-line form");
 
 	//test(itl2::tests::structureTensor, "structure tensor");
 	//test(itl2::tests::lineFilter, "line filtering");
@@ -197,7 +197,7 @@ int main()
 	//test(itl2::tests::recSettings, "Rec settings");
 	//test(itl2::tests::paganin, "Paganin method");
 	//// NOTE: Data for these tests is not publicly available (yet)
-	////test(itl2::tests::fbp, "Filtered backprojection");
+	test(itl2::tests::fbp, "Filtered backprojection");
 	////test(itl2::tests::openCLBackProjection, "OpenCL filtered backprojection");
 	////test(itl2::tests::openCLBackProjectionRealBin2, "OpenCL filtered backprojection, real dataset, binning 2");
 	////test(itl2::tests::openCLBackProjectionRealBin1, "OpenCL filtered backprojection, real dataset, binning 1"); 
