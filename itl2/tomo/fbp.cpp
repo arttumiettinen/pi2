@@ -318,11 +318,18 @@ namespace itl2
 
 			// Roi size and position
 			if (settings.roiSize.x <= 0)
-				settings.roiSize.x = projectionsAreBinned ? transmissionProjections.width() / settings.binning : transmissionProjections.width();
+				settings.roiSize.x = projectionsAreBinned ? transmissionProjections.width() * settings.binning : transmissionProjections.width();
+			if (settings.roiSize.x <= 0)
+				settings.roiSize.x = 1;
 			if (settings.roiSize.y <= 0)
-				settings.roiSize.y = projectionsAreBinned ? transmissionProjections.width() / settings.binning : transmissionProjections.width();
+				settings.roiSize.y = projectionsAreBinned ? transmissionProjections.width() * settings.binning : transmissionProjections.width();
+			if (settings.roiSize.y <= 0)
+				settings.roiSize.y = 1;
 			if (settings.roiSize.z <= 0)
-				settings.roiSize.z = projectionsAreBinned ? transmissionProjections.height() / settings.binning : transmissionProjections.height();
+				settings.roiSize.z = projectionsAreBinned ? transmissionProjections.height() * settings.binning : transmissionProjections.height();
+			if (settings.roiSize.z <= 0)
+				settings.roiSize.z = 1;
+
 		}
 	}
 
