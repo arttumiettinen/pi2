@@ -302,7 +302,7 @@ namespace itl2
 		Checks that projection images and settings correspond to each other.
 		Adjusts zero elements in roi size vector to full image dimension.
 		*/
-		void sanityCheck(const Image<float32_t>& transmissionProjections, RecSettings& settings)
+		void sanityCheck(const Image<float32_t>& transmissionProjections, RecSettings& settings, bool projectionsAreBinned)
 		{
 			if (transmissionProjections.depth() != settings.angles.size())
 				throw ITLException("Count of projection images and count of angles do not match.");
@@ -313,13 +313,16 @@ namespace itl2
 			if (NumberUtils<float32_t>::lessThanOrEqual(settings.sourceToRA, 0))
 				throw ITLException("Non-positive source to rotation axis distance.");
 
+			if (settings.binning < 1)
+				throw ITLException("Binning must be at least 1.");
+
 			// Roi size and position
 			if (settings.roiSize.x <= 0)
-				settings.roiSize.x = transmissionProjections.width();
+				settings.roiSize.x = projectionsAreBinned ? transmissionProjections.width() / settings.binning : transmissionProjections.width();
 			if (settings.roiSize.y <= 0)
-				settings.roiSize.y = transmissionProjections.width();
+				settings.roiSize.y = projectionsAreBinned ? transmissionProjections.width() / settings.binning : transmissionProjections.width();
 			if (settings.roiSize.z <= 0)
-				settings.roiSize.z = transmissionProjections.height();
+				settings.roiSize.z = projectionsAreBinned ? transmissionProjections.height() / settings.binning : transmissionProjections.height();
 		}
 	}
 
@@ -848,7 +851,7 @@ namespace itl2
 
 	void fbpPreprocess(const Image<float32_t>& transmissionProjections, Image<float32_t>& preprocessedProjections, RecSettings settings)
 	{
-		internals::sanityCheck(transmissionProjections, settings);
+		internals::sanityCheck(transmissionProjections, settings, false);
 
 		size_t origBinning = settings.binning;
 
@@ -1337,10 +1340,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	{
 		internals::sanityCheck(transmissionProjections, settings);
 		output.mustNotBe(transmissionProjections);
+		output.ensureSize(settings.roiSize);
 		
 		internals::applyBinningToParameters(settings);
-
-		output.ensureSize(settings.roiSize);
 
 		internals::CLEnv env = internals::backprojectOpenCLPrepare(settings);
 		internals::backprojectOpenCLReset(env, output);
@@ -1552,10 +1554,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 		internals::sanityCheck(transmissionProjections, settings);
 		output.mustNotBe(transmissionProjections);
+		output.ensureSize(settings.roiSize);
 		
 		internals::applyBinningToParameters(settings);
-
-		output.ensureSize(settings.roiSize);
 
 		try
 		{
@@ -1576,10 +1577,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	{
 		internals::sanityCheck(transmissionProjections, settings);
 		output.mustNotBe(transmissionProjections);
+		output.ensureSize(settings.roiSize);
 		
 		internals::applyBinningToParameters(settings);
-
-		output.ensureSize(settings.roiSize);
 
 		try
 		{

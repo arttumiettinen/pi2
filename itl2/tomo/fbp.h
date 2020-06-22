@@ -639,9 +639,7 @@ namespace itl2
 	*/
 	template<typename out_t> void backproject(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
 	{
-		//internals::sanityCheck(transmissionProjections, settings);
-
-		internals::sanityCheck(transmissionProjections, settings);
+		internals::sanityCheck(transmissionProjections, settings, true);
 		output.mustNotBe(transmissionProjections);
 		
 		internals::applyBinningToParameters(settings);
