@@ -2,12 +2,7 @@
 
 //#if defined(_WIN32)
 #if !defined(NO_OPENCL)
-	#if __has_include(<CL/cl.hpp>)
-		#pragma message("Compiling with OpenCL.")
-		#define USE_OPENCL
-	#else
-		#pragma message("Compiling without OpenCL as CL/cl.hpp is not found.")
-	#endif
+	#define USE_OPENCL
 #else
 	#pragma message("NO_OPENCL defined, skipping OpenCL compilation.")
 #endif
@@ -595,7 +590,7 @@ namespace itl2
 
 	namespace internals
 	{
-		void sanityCheck(const Image<float32_t>& transmissionProjections, RecSettings& settings);
+		void sanityCheck(const Image<float32_t>& transmissionProjections, RecSettings& settings, bool projectionsAreBinned);
 
 		float32_t calculateTrueCentralAngle(float32_t centralAngleFor180degScan, const std::vector<float32_t>& angles, float32_t gammamax0);
 

@@ -1338,11 +1338,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	*/
 	void backprojectOpenCLSimple(Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output)
 	{
-		internals::sanityCheck(transmissionProjections, settings);
+		internals::sanityCheck(transmissionProjections, settings, true);
 		output.mustNotBe(transmissionProjections);
-		output.ensureSize(settings.roiSize);
 		
 		internals::applyBinningToParameters(settings);
+
+		output.ensureSize(settings.roiSize);
 
 		internals::CLEnv env = internals::backprojectOpenCLPrepare(settings);
 		internals::backprojectOpenCLReset(env, output);
@@ -1359,9 +1360,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			// Output data size > device memory size
 			// Divide output to ROIs and process each ROI separately
 			// In this function reconstruct one ROI
-
-			//internals::sanityCheck(transmissionProjections, settings);
-
 
 			// Calculate positions of all 8 corners of the ROI
 			// Project all 8 ROI corners to the projection plane in all angles,
@@ -1488,51 +1486,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 
 			internals::backprojectOpenCLFinalize(settings, output, env);
-
-
-			//internals::sanityCheck(transmissionProjections, settings);
-
-			//Vec3c projBlockSize = env.max3DImageSize;
-
-			//if (projBlockSize.x < transmissionProjections.width() ||
-			//	projBlockSize.y < transmissionProjections.height())
-			//	throw ITLException("OpenCL device does not support large enough 3D images to hold single projection image.");
-
-			//projBlockSize.x = transmissionProjections.width();
-			//projBlockSize.y = transmissionProjections.height();
-
-			//projBlockSize.z = std::min(projBlockSize.z, transmissionProjections.depth());
-			//projBlockSize.z = std::min(projBlockSize.z, maxProjBlockSizeZ);
-
-			//size_t outputSize = output.pixelCount() * sizeof(float32_t);
-			//size_t allocSize = projBlockSize.x * projBlockSize.y * projBlockSize.z * sizeof(float32_t);
-			//while (outputSize + allocSize >= 0.95 * env.globalMemSize ||
-			//		allocSize >= env.maxAllocSize)
-			//{
-			//	projBlockSize.z--;
-			//	allocSize = projBlockSize.x * projBlockSize.y * projBlockSize.z * sizeof(float32_t);
-			//}
-
-			//cout << "Dividing projection images into blocks of size " << projBlockSize << endl;
-
-			//coord_t zStart = 0;
-			//do
-			//{
-			//	coord_t zEnd = zStart + projBlockSize.z - 1;
-			//	if (zEnd >= transmissionProjections.depth())
-			//		zEnd = transmissionProjections.depth() - 1;
-			//	Image<float32_t> projBlock(transmissionProjections, zStart, zEnd);
-
-			//	cout << "Backprojecting projections " << zStart << " - " << zEnd << endl;
-
-			//	// Backproject this block of projections
-			//	internals::backprojectOpenCL(projBlock, zStart, settings, output, env);
-
-			//	zStart = zEnd + 1;
-			//} while (zStart < transmissionProjections.depth());
-
-
-			//internals::backprojectOpenCLFinalize(settings, output, env);
 		}
 	}
 
@@ -1552,11 +1505,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		// Divide output to ROIs and process each ROI separately
 		// In this function reconstruct one ROI
 
-		internals::sanityCheck(transmissionProjections, settings);
+		internals::sanityCheck(transmissionProjections, settings, true);
 		output.mustNotBe(transmissionProjections);
-		output.ensureSize(settings.roiSize);
 		
 		internals::applyBinningToParameters(settings);
+		
+		output.ensureSize(settings.roiSize);
 
 		try
 		{
@@ -1575,11 +1529,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	*/
 	void backprojectOpenCLProjectionOutputBlocks(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output, coord_t maxOutputBlockSizeZ, coord_t maxProjectionBlockSizeZ)
 	{
-		internals::sanityCheck(transmissionProjections, settings);
+		internals::sanityCheck(transmissionProjections, settings, true);
 		output.mustNotBe(transmissionProjections);
-		output.ensureSize(settings.roiSize);
 		
 		internals::applyBinningToParameters(settings);
+		
+		output.ensureSize(settings.roiSize);
 
 		try
 		{
@@ -1782,7 +1737,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			Image<float32_t> projections("C:\\mytemp\\cfrp\\CRPE_small", true, 988, 988, 1441);
 			Image<float32_t> preProcessedProjections("C:\\mytemp\\cfrp\\CRPE_small_preprocessed", false, 988, 988, 1441);
 
-			itl2::internals::sanityCheck(projections, settings);
+			itl2::internals::sanityCheck(projections, settings, false);
 
 			Timer timer;
 
@@ -1817,7 +1772,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			Timer timer;
 			{
 				Image<float32_t> projections("C:\\mytemp\\cfrp\\CRPE_test_scans_20X_Tomo_AreaB", true, 1976, 1976, 1441);
-				itl2::internals::sanityCheck(projections, settings);
+				itl2::internals::sanityCheck(projections, settings, false);
 
 				timer.start();
 				itl2::fbpPreprocess(projections, preProcessedProjections, settings);
