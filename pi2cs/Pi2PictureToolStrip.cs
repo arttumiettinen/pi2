@@ -37,11 +37,7 @@ namespace pi2cs
             }
         }
 
-        /// <summary>
-        /// Zoom levels that the zoom buttons use.
-        /// </summary>
-        private List<float> ZoomLevels = new List<float> { 0.05f, 0.075f, 0.1f, 0.15f, 0.2f, 0.25f, 0.3333f, 0.4f, 0.5f, 0.6f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.5f, 10.0f };
-
+        
         private Pi2PictureViewer pictureViewer;
 
         /// <summary>
@@ -63,7 +59,6 @@ namespace pi2cs
                 if(pictureViewer != null)
                     pictureViewer.ToolStrip = this;
 
-                UpdateZoomLabel();
                 UpdateToolButtons();
             }
         }
@@ -176,6 +171,9 @@ namespace pi2cs
 
         private void buttonActivateAnnotationClick(object sender, EventArgs e)
         {
+            if (PictureViewer == null)
+                return;
+
             string annotationName = ((ToolStripButton)sender).Name;
 
             if (AnnotationFactory.Create(annotationName).RequiredPointCount > 0)
@@ -193,40 +191,57 @@ namespace pi2cs
 
         private void buttonCrossClick(object sender, EventArgs e)
         {
+            if (PictureViewer == null)
+                return;
+
             PictureViewer.Mode = Pi2PictureViewer.MouseMode.Pick;
             UpdateToolButtons();
         }
 
         private void buttonEraseClick(object sender, EventArgs e)
         {
+            if (PictureViewer == null)
+                return;
+
             PictureViewer.Mode = Pi2PictureViewer.MouseMode.Erase;
             UpdateToolButtons();
         }
 
         private void buttonHandClick(object sender, EventArgs e)
         {
+            if (PictureViewer == null)
+                return;
+
             PictureViewer.Mode = Pi2PictureViewer.MouseMode.Pan;
             UpdateToolButtons();
         }
 
         private void buttonProfileClick(object sender, EventArgs e)
         {
+            if (PictureViewer == null)
+                return;
+
             PictureViewer.Mode = Pi2PictureViewer.MouseMode.Profile;
             UpdateToolButtons();
         }
 
         /// <summary>
-        /// Updates pressed/up state of annotation and mouse mode buttons.
+        /// Updates pressed/up state of annotation and mouse mode buttons and other controls on the tool strip.
         /// </summary>
-        private void UpdateToolButtons()
+        public void UpdateToolButtons()
         {
-            buttonCross.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Pick;
-            buttonErase.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Erase;
-            buttonHand.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Pan;
-            buttonProfile.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Profile;
+            if (PictureViewer != null)
+            {
+                buttonCross.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Pick;
+                buttonErase.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Erase;
+                buttonHand.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Pan;
+                buttonProfile.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.Profile;
 
-            foreach (ToolStripButton btn in annotationButtons)
-                btn.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.AddAnnotation && String.Equals(btn.Name, PictureViewer.NewAnnotationName);
+                foreach (ToolStripButton btn in annotationButtons)
+                    btn.Checked = PictureViewer.Mode == Pi2PictureViewer.MouseMode.AddAnnotation && String.Equals(btn.Name, PictureViewer.NewAnnotationName);
+            }
+
+            UpdateZoomLabel();
         }
 
         /// <summary>
@@ -250,88 +265,29 @@ namespace pi2cs
             labelZoom.Text = $"{(zoom * 100):F0} %";
         }
 
-        private void SetZoomLevel(float level)
-        {
-            PictureViewer.Zoom = level;
-            UpdateZoomLabel();
-        }
-
-
-        /// <summary>
-        /// Performs zoom in function.
-        /// </summary>
-        public void ZoomIn()
-        {
-            if (PictureViewer != null)
-            {
-                float level = ZoomLevels.FirstOrDefault(x => x > PictureViewer.Zoom);
-                if (level == default(float))
-                    level = ZoomLevels[ZoomLevels.Count - 1];
-
-                SetZoomLevel(level);
-            }
-        }
-
-        /// <summary>
-        /// Performs zoom out function.
-        /// </summary>
-        public void ZoomOut()
-        {
-            if (PictureViewer != null)
-            {
-                float level = ZoomLevels.LastOrDefault(x => x < PictureViewer.Zoom);
-                if (level == default(float))
-                    level = ZoomLevels[0];
-
-                SetZoomLevel(level);
-            }
-        }
-
-        /// <summary>
-        /// Zooms so that image fits into the viewer.
-        /// </summary>
-        public void ZoomFit()
-        {
-            if (PictureViewer != null && PictureViewer.PictureBox.PiImage != null)
-            {
-                float z = 1;
-                for(int n = ZoomLevels.Count - 1; n >= 0; n--)
-                {
-                    z = ZoomLevels[n];
-                    float zoomedWidth = PictureViewer.PictureBox.OriginalWidth * z;
-                    float zoomedHeight = PictureViewer.PictureBox.OriginalHeight * z;
-                    if(zoomedWidth <= PictureViewer.PictureBox.Width &&
-                        zoomedHeight <= PictureViewer.PictureBox.Height)
-                    {
-                        break;
-                    }
-                }
-                SetZoomLevel(z);
-            }
-        }
-        
 
         private void buttonZoomFitClick(object sender, EventArgs e)
         {
-            ZoomFit();
+            if(PictureViewer != null)
+                PictureViewer.ZoomFit();
         }
 
         private void buttonZoomFullClick(object sender, EventArgs e)
         {
             if (PictureViewer != null)
-            {
-                SetZoomLevel(1.0f);
-            }
+                PictureViewer.ZoomFull();
         }
 
         private void buttonZoomOutClick(object sender, EventArgs e)
         {
-            ZoomOut();
+            if (PictureViewer != null)
+                PictureViewer.ZoomOut();
         }
 
         private void buttonZoomInClick(object sender, EventArgs e)
         {
-            ZoomIn();
+            if (PictureViewer != null)
+                PictureViewer.ZoomIn();
         }
 
         private void buttonHistogramClick(object sender, EventArgs e)
@@ -347,9 +303,7 @@ namespace pi2cs
         private void buttonAutoContrastClick(object sender, EventArgs e)
         {
             if(PictureViewer != null)
-            {
                 PictureViewer.SetAutoContrast();
-            }
         }
 
     }

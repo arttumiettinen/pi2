@@ -18,8 +18,8 @@ namespace pi2csWinFormsTest
             Application.SetCompatibleTextRenderingDefault(false);
 
             //Application.Run(new PictureBoxTestForm());
-            //Application.Run(new PictureViewerTestForm());
-            Application.Run(new ChartTestForm());
+            Application.Run(new PictureViewerTestForm());
+            //Application.Run(new ChartTestForm());
         }
     }
 }
