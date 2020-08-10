@@ -344,8 +344,9 @@ namespace pilib
 			start = floor(minp);
 			end = ceil(maxp);
 
-			clamp(start, Vec3c(0, 0, 0), inputDimensions);
-			clamp(end, Vec3c(0, 0, 0), inputDimensions);
+			Vec3c M = inputDimensions - Vec3c(1, 1, 1);
+			clamp(start, Vec3c(0, 0, 0), M);
+			clamp(end, Vec3c(0, 0, 0), M);
 		}
 
 	public:
@@ -396,7 +397,7 @@ namespace pilib
 
 				// Assign read start and size
 				readStart = start;
-				readSize = end - start;
+				readSize = end - start + Vec3c(1, 1, 1);
 			}
 		}
 

@@ -540,7 +540,7 @@ namespace pilib
 						DistributedImageBase* img = getDistributedImage(d.getArgs()[n]);
 						if (blocksPerImage.find(img) != blocksPerImage.end())
 						{
-							// There is already blocks list for this image.
+							// There is already a blocks list for this image.
 							// Make sure it is the same than what was generated now.
 							if (blocksPerImage[img] != blocksPerParameter[n])
 								throw ITLException("The delayed commands require different block sizes for the same images.");
