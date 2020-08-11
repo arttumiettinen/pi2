@@ -4,17 +4,20 @@
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for fast jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
-extra_args_fast_jobs = --partition=hour
+extra_args_fast_jobs_sinfo = --partition=hour
+extra_args_fast_jobs_sbatch = --partition=hour
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for normal jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
-extra_args_normal_jobs = --partition=day --time=1440
+extra_args_normal_jobs_sinfo = --partition=day
+extra_args_normal_jobs_sbatch = --partition=day --time=1440
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for slow jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
-extra_args_slow_jobs = --partition=week --time=10080
+extra_args_slow_jobs_sinfo = --partition=week
+extra_args_slow_jobs_sbatch = --partition=week --time=10080
 
 ; Shell commands run on node before starting job.
 ; Use, e.g., to load modules or mount disks.
@@ -51,4 +54,5 @@ max_resubmit_count = 5
 ;squeue_command = squeue
 ;scancel_command = scancel
 ;sinfo_command = sinfo
+
 
