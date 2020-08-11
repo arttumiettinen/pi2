@@ -51,6 +51,7 @@
     <ClInclude Include="math\qrdecomposition.h" />
     <ClInclude Include="maxima.h" />
     <ClInclude Include="montage.h" />
+    <ClInclude Include="progress.h" />
     <ClInclude Include="surfaceskeleton2.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="indexforest.h" />
@@ -157,6 +158,7 @@
     <ClCompile Include="neighbourhood.cpp" />
     <ClCompile Include="network.cpp" />
     <ClCompile Include="pointprocess.cpp" />
+    <ClCompile Include="progress.cpp" />
     <ClCompile Include="projections.cpp" />
     <ClCompile Include="raw.cpp" />
     <ClCompile Include="regionremoval.cpp" />
