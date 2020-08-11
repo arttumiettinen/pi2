@@ -32,17 +32,17 @@ namespace pilib
 		if(p2.has_filename())
 			p2 = p2.replace_filename(piName);
 
-		if (fs::exists(p1))
+		if (fs::exists(p1) && fs::is_regular_file(p1))
 			return p1;
-		if (fs::exists(p2))
+		if (fs::exists(p2) && fs::is_regular_file(p2))
 			return p2;
-		if (fs::exists(p3))
+		if (fs::exists(p3) && fs::is_regular_file(p3))
 			return p3;
 
 		string message = "Unable to find " + piName + " program. It was searched from " + p1.string();
 		if (p2 != p1)
 			message += " and " + p2.string();
-		if(p3 != p2 && p3 != p1)
+		if (p3 != p2 && p3 != p1)
 			message += " and " + p3.string();
 		message += ".";
 
