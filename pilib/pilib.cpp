@@ -1,9 +1,13 @@
 
+#include <mutex>
+
 #include "pilib.h"
 
 #include "pisystem.h"
 
 using namespace pilib;
+
+std::mutex mutex;
 
 void* createPI()
 {
@@ -12,37 +16,37 @@ void* createPI()
 
 void destroyPI(void* pi)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	delete (PISystem*)pi;
 }
 
 uint8_t run(void* pi, const char* commands)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	return ((PISystem*)pi)->run(commands) ? 1 : 0;
 }
 
 const char* lastErrorMessage(void* pi)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	return ((PISystem*)pi)->getLastErrorMessage();
 }
 
 int32_t lastErrorLine(void* pi)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	return (int32_t)((PISystem*)pi)->getLastErrorLine();
 }
 
 void clearLastError(void* pi)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	((PISystem*)pi)->clearLastError();
 }
 
 void getImageInfo(void* pi, const char* imgName, int64_t* width, int64_t* height, int64_t* depth, int32_t* dataType)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	PISystem* sys = (PISystem*)pi;
 	coord_t w = 0, h = 0, d = 0;
 	ImageDataType dt = ImageDataType::Unknown;
@@ -55,7 +59,7 @@ void getImageInfo(void* pi, const char* imgName, int64_t* width, int64_t* height
 
 void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, int64_t* depth, int32_t* dataType)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	PISystem* sys = (PISystem*)pi;
 	ImageBase* img = sys->getImageNoThrow(imgName);
 
@@ -78,7 +82,7 @@ void* getImage(void* pi, const char* imgName, int64_t* width, int64_t* height, i
 
 uint8_t finishUpdate(void* pi, const char* imgName)
 {
-	// Lock?
+	std::lock_guard<std::mutex> lock(mutex);
 	return ((PISystem*)pi)->flushIfDistributedNoThrow(imgName) ? 1 : 0;
 }
 
