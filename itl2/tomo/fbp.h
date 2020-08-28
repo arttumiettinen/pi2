@@ -15,6 +15,7 @@
 #include "stringutils.h"
 #include "interpolation.h"
 #include "math/vectoroperations.h"
+#include "imagemetadata.h"
 
 namespace itl2
 {
@@ -397,40 +398,7 @@ namespace itl2
 		friend std::ostream& operator<<(std::ostream& stream, const RecSettings& s);
 	};
 
-    inline bool isLineEnd(char c)
-    {
-        return c == '\r' || c == '\n';
-    }
-
-	/**
-	Get a piece of string from the beginning of the string.
-	The returned token is terminated by any character for which isSeparator returns true.
-	Separators are not returned but they are removed from the string.
-	*/
-	template<typename output_t> output_t getToken(string& s, bool(*isSeparator)(char) = isLineEnd)
-	//template<typename output_t> output_t getToken(string& s, bool(*isSeparator)(char) = [](char c) { return c == '\r' || c == '\n';  }) // Don't use this as gcc does not like lambda as default argument.
-	{
-		// Get first token
-		string tok = "";
-		while (s.length() > 0 && !isSeparator(s[0]))
-		{
-			tok += s[0];
-			s = s.substr(1);
-		}
-
-		// Remove separators
-		while (s.length() > 0 && isSeparator(s[0]))
-		{
-			s = s.substr(1);
-		}
-
-		return fromString<output_t>(tok);
-	}
-	
-	inline bool isLineEndOrValueSeparator(char c)
-	{
-    	return c == ' ' || c == '=' || c == '\r' || c == '\n';
-	}
+    
 
 	/**
 	Create reconstruction settings from string similar to what << operator outputs.
@@ -441,133 +409,42 @@ namespace itl2
 		// This makes default settings
 		RecSettings s;
 
-        
-		string str = strOrig;
+		ImageMetadata id;
+		id.readFromString(strOrig);
 
-		// Read everything in the string
-		while (str.length() > 0)
-		{
-			string token = getToken<string>(str, isLineEndOrValueSeparator);
-			if (token == "source_to_ra")
-				s.sourceToRA = getToken<float32_t>(str);
-			else if (token == "rotation_direction")
-				s.rotationDirection = getToken<RotationDirection>(str);
-			else if (token == "bhc")
-				s.bhc = getToken<float32_t>(str);
-			else if (token == "rec_as_180_deg_scan")
-				s.reconstructAs180degScan = getToken<bool>(str);
-			else if (token == "central_angle")
-				s.centralAngleFor180degScan = getToken<float32_t>(str);
-			else if (token == "hswp")
-				s.heuristicSinogramWindowingParameter = getToken<float32_t>(str);
-			else if (token == "rotation")
-				s.rotation = getToken<float32_t>(str);
-			else if (token == "roi_center")
-				s.roiCenter = getToken<Vec3c>(str);
-			else if (token == "roi_size")
-				s.roiSize = getToken<Vec3c>(str);
-			else if (token == "crop_size")
-				s.cropSize = getToken<Vec2c>(str);
-			else if (token == "binning")
-				s.binning = getToken<size_t>(str);
-			else if (token == "remove_dead_pixels")
-				s.removeDeadPixels = getToken<bool>(str);
+		s.sourceToRA = id.get("source_to_ra", s.sourceToRA);
+		s.rotationDirection = id.get("rotation_direction", s.rotationDirection);
+		s.bhc = id.get("bhc", s.bhc);
+		s.reconstructAs180degScan = id.get("rec_as_180_deg_scan", s.reconstructAs180degScan);
+		s.centralAngleFor180degScan = id.get("central_angle", s.centralAngleFor180degScan);
+		s.heuristicSinogramWindowingParameter = id.get("hswp", s.heuristicSinogramWindowingParameter);
+		s.rotation = id.get("rotation", s.rotation);
+		s.roiCenter = id.get("roi_center", s.roiCenter);
+		s.roiSize = id.get("roi_size", s.roiSize);
+		s.cropSize = id.get("crop_size", s.cropSize);
+		s.binning = id.get("binning", s.binning);
+		s.removeDeadPixels = id.get("remove_dead_pixels", s.removeDeadPixels);
+		s.centerShift = id.get("center_shift", s.centerShift);
+		s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
+		s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
+		s.csZSlope = id.get("cs_z_slope", s.csZSlope);
+		s.padType = id.get("pad_type", s.padType);
+		s.padFraction = id.get("pad_size", s.padFraction);
+		s.filterType = id.get("filter_type", s.filterType);
+		s.filterCutOff = id.get("filter_cut_off", s.filterCutOff);
+		s.phaseMode = id.get("phase_mode", s.phaseMode);
+		s.phasePadType = id.get("phase_pad_type", s.phasePadType);
+		s.phasePadFraction = id.get("phase_pad_size", s.phasePadFraction);
+		s.objectCameraDistance = id.get("propagation_distance", s.objectCameraDistance);
+		s.delta = id.get("delta", s.delta);
+		s.mu = id.get("mu", s.mu);
+		s.dynMin = id.get("range_min", s.dynMin);
+		s.dynMax = id.get("range_max", s.dynMax);
+		s.shiftScaling = id.get("shift_scale", s.shiftScaling);
+		s.useShifts = id.get("use_shifts", s.useShifts);
 
-			else if (token == "center_shift")
-				s.centerShift = getToken<float32_t>(str);
-			else if (token == "camera_z_shift")
-				s.cameraZShift = getToken<float32_t>(str);
-			else if (token == "cs_angle_slope")
-				s.csAngleSlope = getToken<float32_t>(str);
-			else if (token == "cs_z_slope")
-				s.csZSlope = getToken<float32_t>(str);
-
-			else if (token == "pad_type")
-				s.padType = getToken<PadType>(str);
-			else if (token == "pad_size")
-				s.padFraction = getToken<float32_t>(str);
-			else if (token == "filter_type")
-				s.filterType = getToken<FilterType>(str);
-			else if(token == "filter_cut_off")
-				s.filterCutOff = getToken<float32_t>(str);
-
-			else if (token == "phase_mode")
-				s.phaseMode = getToken<PhaseMode>(str);
-			else if (token == "phase_pad_type")
-				s.phasePadType = getToken<PadType>(str);
-			else if (token == "phase_pad_size")
-				s.phasePadFraction = getToken<float32_t>(str);
-			else if (token == "propagation_distance")
-				s.objectCameraDistance = getToken<float32_t>(str);
-			else if (token == "delta")
-				s.delta = getToken<float32_t>(str);
-			else if (token == "mu")
-				s.mu = getToken<float32_t>(str);
-
-			else if (token == "range_min")
-				s.dynMin = getToken<float32_t>(str);
-			else if (token == "range_max")
-				s.dynMax = getToken<float32_t>(str);
-
-			else if (token == "shift_scale")
-				s.shiftScaling = getToken<float32_t>(str);
-			else if (token == "use_shifts")
-				s.useShifts = getToken<bool>(str);
-
-			else if (token == "angles")
-			{
-				while(true)
-				{
-					token = getToken<string>(str);
-					
-					if (token.length() > 0 && (!isdigit(token[0]) && token[0] != '-'))
-					{
-						str = token + '\n' + str;
-						break;
-					}
-
-					trim(token);
-
-					if (token.length() > 0)
-					{
-						float32_t x = fromString<float32_t>(token);
-						s.angles.push_back(x);
-					}
-
-					if (str.length() <= 0)
-						break;
-				}
-			}
-			else if (token == "sample_shifts")
-			{
-				while (true)
-				{
-					token = getToken<string>(str);
-
-					if (token.length() > 0 && token[0] != '[')
-					{
-						str = token + '\n' + str;
-						break;
-					}
-
-					trim(token);
-
-					if (token.length() > 0)
-					{
-						Vec2f x = fromString<Vec2f>(token);
-						s.objectShifts.push_back(x);
-					}
-
-					if (str.length() <= 0)
-						break;
-				}
-			}
-			else
-			{
-				// No exception so that extra settings can be present in the settings file.
-				//throw ITLException("Invalid string passed to RecSettings parser.");
-			}
-		}
+		s.angles = id.getList<float32_t>("angles");
+		s.objectShifts = id.getList<Vec2f>("sample_shifts");
 
 		// If there are no shifts supplied, set all shifts to zero.
 		if (s.objectShifts.size() <= 0)

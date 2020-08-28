@@ -162,6 +162,9 @@
     <ClInclude Include="infocommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="metadatacommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">

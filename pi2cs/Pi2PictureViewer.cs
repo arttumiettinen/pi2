@@ -670,6 +670,8 @@ namespace pi2cs
             }
         }
 
+        private bool contrastSet = false;
+
         private void PictureBox_ImageLoaded(object sender, EventArgs e)
         {
             scrollBarSlice.Visible = PictureBox.OriginalDepth > 1;
@@ -680,6 +682,13 @@ namespace pi2cs
                 ToolStrip.UpdateToolButtons();
 
             UpdateProfile();
+
+            if (!contrastSet && GlobalMin != GlobalMax)
+            {
+                contrastSet = true;
+                SetAutoContrast();
+                ZoomFit();
+            }
         }
 
         private void scrollBarSlice_ValueChanged(object sender, EventArgs e)

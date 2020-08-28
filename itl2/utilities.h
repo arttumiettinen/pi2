@@ -34,6 +34,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include "math/mathutils.h"
 #include "math/vec3.h"
 #include "math/vec2.h"
@@ -385,6 +386,7 @@ namespace itl2
 				if (value.length() < 1)
 					throw ITLException("Empty string.");
 
+				trim(value);
 				trimStart(value, " [");
 				trimEnd(value, " ]");
 
@@ -580,7 +582,7 @@ namespace itl2
 			return "-inf";
 
 		::std::stringstream s;
-		s << x;
+		s << std::setprecision(std::numeric_limits<double>::digits10 + 1) << x;
 		return s.str();
 	}
 
@@ -595,7 +597,7 @@ namespace itl2
 			return "-inf";
 
 		::std::stringstream s;
-		s << x;
+		s << std::setprecision(std::numeric_limits<float>::digits10 + 1) << x;
 		return s.str();
 	}
 

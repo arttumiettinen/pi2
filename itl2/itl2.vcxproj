@@ -44,6 +44,7 @@
     <ClInclude Include="floodfill.h" />
     <ClInclude Include="generation.h" />
     <ClInclude Include="histogram.h" />
+    <ClInclude Include="imagemetadata.h" />
     <ClInclude Include="io\nrrd.h" />
     <ClInclude Include="iteration.h" />
     <ClInclude Include="marchingcubes.h" />
@@ -127,6 +128,7 @@
     <ClCompile Include="generation.cpp" />
     <ClCompile Include="fastbilateralfilter.cpp" />
     <ClCompile Include="fillskeleton.cpp" />
+    <ClCompile Include="imagemetadata.cpp" />
     <ClCompile Include="io\io.cpp" />
     <ClCompile Include="io\nrrd.cpp" />
     <ClCompile Include="io\tiff.cpp" />
