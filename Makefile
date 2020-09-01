@@ -2,7 +2,7 @@
 # NOTE: Use "make" or "make all" to do a normal build.
 #       Use "make NO_OPENCL=1" or "make all NO_OPENCL=1" to do a build without OpenCL support.
 
-CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -march=sandybridge
+CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -march=native
 LDFLAGS := -fopenmp
 
 OPENCL_LIB := -lOpenCL

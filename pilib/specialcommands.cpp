@@ -678,6 +678,8 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	*/
 	void parseArgs(string& name, string& fname, Vec3c& dimensions, ImageDataType& dt)
 	{
+		raw::internals::expandRawFilename(fname);
+
 		// Parse dimensions from file name if no dimensions are provided
 		if (dimensions.x <= 0 || dimensions.y <= 0 || dimensions.z <= 0 || dt == ImageDataType::Unknown)
 		{
@@ -686,9 +688,6 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			string reason;
 			if (!raw::getInfo(fname, dims, dt2, reason))
 				throw ParseException(string("Unable to find dimensions from file name or file not found: ") + fname + ". " + reason);
-
-			// Not required in this command. This is done later in raw::read.
-			//internals::expandRawFilename(filename);
 
 			if (dt == ImageDataType::Unknown)
 				dt = dt2;
@@ -702,7 +701,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			raw::read<pixel_t>(img, filename);
+			raw::readNoParse<pixel_t>(img, filename);
 		}
 	};
 
