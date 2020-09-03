@@ -13,6 +13,7 @@
 #include "memorybuffer.h"
 #include "diskmappedbuffer.h"
 #include "io/imagedatatype.h"
+#include "imagemetadata.h"
 
 namespace itl2
 {
@@ -104,6 +105,11 @@ namespace itl2
 		Get data type of this image.
 		*/
 		virtual ImageDataType dataType() const = 0;
+
+		/**
+		Metadata of this image.
+		*/
+		ImageMetadata metadata;
 
 		/**
 		Returns the dimensionality of the image.

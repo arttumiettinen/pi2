@@ -418,7 +418,7 @@ namespace pilib
 
 		virtual JobType getJobType(const vector<ParamVariant>& args) const override
 		{
-			Vec3c r = std::get<Vec3c>(args[2]);
+			Vec3c r = std::get<Vec3c>(args[1]);
 			if (r.max() > 10)
 				return JobType::Slow;
 			else

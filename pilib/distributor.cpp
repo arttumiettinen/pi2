@@ -32,17 +32,17 @@ namespace pilib
 		if(p2.has_filename())
 			p2 = p2.replace_filename(piName);
 
-		if (fs::exists(p1))
+		if (fs::exists(p1) && fs::is_regular_file(p1))
 			return p1;
-		if (fs::exists(p2))
+		if (fs::exists(p2) && fs::is_regular_file(p2))
 			return p2;
-		if (fs::exists(p3))
+		if (fs::exists(p3) && fs::is_regular_file(p3))
 			return p3;
 
 		string message = "Unable to find " + piName + " program. It was searched from " + p1.string();
 		if (p2 != p1)
 			message += " and " + p2.string();
-		if(p3 != p2 && p3 != p1)
+		if (p3 != p2 && p3 != p1)
 			message += " and " + p3.string();
 		message += ".";
 
@@ -540,7 +540,7 @@ namespace pilib
 						DistributedImageBase* img = getDistributedImage(d.getArgs()[n]);
 						if (blocksPerImage.find(img) != blocksPerImage.end())
 						{
-							// There is already blocks list for this image.
+							// There is already a blocks list for this image.
 							// Make sure it is the same than what was generated now.
 							if (blocksPerImage[img] != blocksPerParameter[n])
 								throw ITLException("The delayed commands require different block sizes for the same images.");
@@ -644,7 +644,6 @@ namespace pilib
 
 	/**
 	Convert argument to string.
-	@param isDistributed Set to true to convert arguments of type Image* to DistributedImage*
 	*/
 	string argumentToString(const CommandArgumentBase& argument, const ParamVariant& value)
 	{
@@ -674,17 +673,6 @@ namespace pilib
 		case ArgumentDataType::ImageInt64:
 		case ArgumentDataType::ImageFloat32:
 		case ArgumentDataType::ImageComplex32:
-			// Fall through to distributed image case as all the images are be distributed anyway.
-		case ArgumentDataType::DImageUInt8: 
-		case ArgumentDataType::DImageUInt16:
-		case ArgumentDataType::DImageUInt32:
-		case ArgumentDataType::DImageUInt64:
-		case ArgumentDataType::DImageInt8:
-		case ArgumentDataType::DImageInt16:
-		case ArgumentDataType::DImageInt32:
-		case ArgumentDataType::DImageInt64:
-		case ArgumentDataType::DImageFloat32:
-		case ArgumentDataType::DImageComplex32:
 			return getDistributedImage(value)->uniqueName();
 		default: throw ITLException("Data type not configured.");
 		}

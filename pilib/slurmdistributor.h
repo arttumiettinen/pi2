@@ -23,17 +23,17 @@ namespace pilib
 		/**
 		Extra arguments for sbatch and sinfo, for fast jobs
 		*/
-		std::string extraArgsFastJobs;
+		std::string extraArgsFastJobsSBatch, extraArgsFastJobsSInfo;
 
 		/**
 		Extra arguments for sbatch and sinfo, for normal jobs
 		*/
-		std::string extraArgsNormalJobs;
+		std::string extraArgsNormalJobsSBatch, extraArgsNormalJobsSInfo;
 
 		/**
 		Extra arguments for sbatch and sinfo, for slow jobs
 		*/
-		std::string extraArgsSlowJobs;
+		std::string extraArgsSlowJobsSBatch, extraArgsSlowJobsSInfo;
 
 		/**
 		Commands used to run sbatch, squeue, scancel and sinfo.
@@ -43,13 +43,13 @@ namespace pilib
 		/**
 		Returns suitable sbatch arguments given type of job.
 		*/
-		std::string extraArgs(JobType jobType) const
+		std::string extraArgsSBatch(JobType jobType) const
 		{
 			switch (jobType)
 			{
-			case JobType::Fast: return extraArgsFastJobs;
-			case JobType::Normal: return extraArgsNormalJobs;
-			case JobType::Slow: return extraArgsSlowJobs;
+			case JobType::Fast: return extraArgsFastJobsSBatch;
+			case JobType::Normal: return extraArgsNormalJobsSBatch;
+			case JobType::Slow: return extraArgsSlowJobsSBatch;
 			default: throw std::logic_error("Invalid JobType value.");
 			}
 		}

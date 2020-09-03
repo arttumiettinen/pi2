@@ -534,7 +534,7 @@ namespace itl2
 	// double		any					double
 	// float32_t	any not double		float32_t
 	// larger int	smaller int			larger int
-	// larger uint	smaller uint		larger uint
+	// larger uint	smaller uint		WAS: larger uint, NOW IS: larger int such that overflow is avoided.
 	// uint			int					smallest type that can represent values of both types
 
 
@@ -576,8 +576,11 @@ namespace itl2
 			// T is not signed, U is signed. Return signed type wider than both arguments.
 			typename one_wider_signed<T, U>::type
 			,
-			// T is not signed, U is not signed. Return wider type.
-			typename wider<T, U>::type
+			// T is not signed, U is not signed.
+			// Return wider type.
+			//typename wider<T, U>::type
+			// NOTE: Using unsigned (wider) type results in overflow in subtractions, to this has been changed into wider signed type.
+			typename one_wider_signed<T, U>::type
 			>::type
 		>::type;
 	};

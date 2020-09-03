@@ -330,6 +330,12 @@
     <ClInclude Include="filesystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="progress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imagemetadata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
@@ -492,6 +498,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="montage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="progress.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imagemetadata.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

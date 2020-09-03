@@ -164,6 +164,7 @@ namespace pi2cs
             PictureBox.MouseMove += PictureBox_MouseMove;
             PictureBox.MouseUp += PictureBox_MouseUp;
             PictureBox.MouseWheel += PictureBox_MouseWheel;
+            PictureBox.ImageLoaded += PictureBox_ImageLoaded;
             Controls.Add(PictureBox);
 
             //Mode = MouseMode.AddAnnotation;
@@ -199,13 +200,85 @@ namespace pi2cs
         }
 
         /// <summary>
-        /// Zooms so that the image fits into the window.
-        /// Requires tool strip.
+        /// Zoom levels that the zoom buttons use.
         /// </summary>
-        public void ZoomToFit()
+        private List<float> ZoomLevels = new List<float> { 0.05f, 0.075f, 0.1f, 0.15f, 0.2f, 0.25f, 0.3333f, 0.4f, 0.5f, 0.6f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.5f, 10.0f };
+
+        /// <summary>
+        /// Set zoom level and optionally move image so that mouse cursor stays in the same location in the image.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="retainMousePosition"></param>
+        private void SetZoom(float level, bool retainMousePosition)
         {
-            if (ToolStrip != null)
-                ToolStrip.ZoomFit();
+            Vec2 picPosBefore = PictureBox.ScreenToPicture(new Vec2(PictureBox.PointToClient(Cursor.Position)));
+
+            PictureBox.Zoom = level;
+
+            if (retainMousePosition)
+            {
+                Vec2 picPosAfter = PictureBox.ScreenToPicture(new Vec2(PictureBox.PointToClient(Cursor.Position)));
+                PictureBox.PicturePosition = (new Vec2(PictureBox.PicturePosition) - (picPosAfter - picPosBefore)).ToPointF();
+            }
+
+            UpdateUI();
+        }
+
+        /// <summary>
+        /// Performs zoom in function.
+        /// </summary>
+        public void ZoomIn(bool retainMousePosition = false)
+        {
+            float level = ZoomLevels.FirstOrDefault(x => x > Zoom);
+            if (level == default(float))
+                level = ZoomLevels[ZoomLevels.Count - 1];
+
+            SetZoom(level, retainMousePosition);
+        }
+
+        /// <summary>
+        /// Performs zoom out function.
+        /// </summary>
+        public void ZoomOut(bool retainMousePosition = false)
+        {
+            float level = ZoomLevels.LastOrDefault(x => x < Zoom);
+            if (level == default(float))
+                level = ZoomLevels[0];
+
+            SetZoom(level, retainMousePosition);
+        }
+
+        /// <summary>
+        /// Zooms so that image fits into the viewer.
+        /// </summary>
+        public void ZoomFit()
+        {
+            if (PictureBox.PiImage != null)
+            {
+                float z = 1;
+                for (int n = ZoomLevels.Count - 1; n >= 0; n--)
+                {
+                    z = ZoomLevels[n];
+                    float zoomedWidth = PictureBox.OriginalWidth * z;
+                    float zoomedHeight = PictureBox.OriginalHeight * z;
+                    if (zoomedWidth <= PictureBox.Width &&
+                        zoomedHeight <= PictureBox.Height)
+                    {
+                        break;
+                    }
+                }
+
+                Zoom = z;
+            }
+
+        }
+
+        /// <summary>
+        /// Zooms the picture box to 100 % zoom.
+        /// </summary>
+        public void ZoomFull()
+        {
+            Zoom = 1.0f;
         }
 
 
@@ -560,9 +633,9 @@ namespace pi2cs
                 if(ToolStrip != null)
                 {
                     if (delta > 0)
-                        ToolStrip.ZoomOut();
+                        ZoomOut(true);
                     else
-                        ToolStrip.ZoomIn();
+                        ZoomIn(true);
                 }
             }
             else
@@ -583,20 +656,60 @@ namespace pi2cs
         public void UpdateUI(bool updateImageFromPi = false)
         {
             if (updateImageFromPi)
-                PictureBox.UpdateImage();
-            else
-                PictureBox.UpdateScreen();
+            {
+                // Update slice number for more responsive UI feel.
+                labelSliceNumber.Text = $"{PictureBox.Slice + 1} / {PictureBox.OriginalDepth}";
 
+                PictureBox.UpdateImage();
+            }
+            else
+            {
+                PictureBox.UpdateScreen();
+                // UpdateScreen does not fire ImageLoaded event, so we do it manually.
+                PictureBox_ImageLoaded(this, EventArgs.Empty);
+            }
+        }
+
+        private bool contrastSet = false;
+
+        private void PictureBox_ImageLoaded(object sender, EventArgs e)
+        {
             scrollBarSlice.Visible = PictureBox.OriginalDepth > 1;
             scrollBarSlice.Maximum = PictureBox.OriginalDepth + scrollBarSlice.LargeChange - 2; // Note: -2 makes the scroll bar to stop to correct position - probably.
             labelSliceNumber.Text = $"{PictureBox.Slice + 1} / {PictureBox.OriginalDepth}";
+
+            if (ToolStrip != null)
+                ToolStrip.UpdateToolButtons();
+
+            UpdateProfile();
+
+            if (!contrastSet && GlobalMin != GlobalMax)
+            {
+                contrastSet = true;
+                SetAutoContrast();
+                ZoomFit();
+            }
         }
-        
+
         private void scrollBarSlice_ValueChanged(object sender, EventArgs e)
         {
             PictureBox.Slice = scrollBarSlice.Value;
             UpdateUI(true);
-            UpdateProfile();
+        }
+
+        private void Pi2PictureViewer_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (ToolStrip != null)
+            {
+                if (e.KeyChar == '+')
+                    ZoomIn(true);
+                else if (e.KeyChar == '-')
+                    ZoomOut(true);
+                else if (e.KeyChar == '*')
+                    ZoomFit();
+                else if (e.KeyChar == '/')
+                    ZoomFull();
+            }
         }
     }
 }

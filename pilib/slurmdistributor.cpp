@@ -38,13 +38,16 @@ namespace pilib
 		{		
 			configPath = configPath.replace_filename("slurm_config.txt");
 			
-//			cout << "Reading settings from " << configPath << endl;
+			//cout << "Reading settings from " << configPath << endl;
 
 			INIReader reader(configPath.string());
 
-			extraArgsFastJobs = reader.get<string>("extra_args_fast_jobs", "");
-			extraArgsNormalJobs = reader.get<string>("extra_args_normal_jobs", "");
-			extraArgsSlowJobs = reader.get<string>("extra_args_slow_jobs", "");
+			extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
+			extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
+			extraArgsSlowJobsSBatch = reader.get<string>("extra_args_slow_jobs_sbatch", "");
+			extraArgsFastJobsSInfo = reader.get<string>("extra_args_fast_jobs_sinfo", "");
+			extraArgsNormalJobsSInfo = reader.get<string>("extra_args_normal_jobs_sinfo", "");
+			extraArgsSlowJobsSInfo = reader.get<string>("extra_args_slow_jobs_sinfo", "");
 			jobInitCommands = reader.get<string>("job_init_commands", "");
 			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
 			maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
@@ -54,6 +57,8 @@ namespace pilib
 			sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
 
 			readSettings(reader);
+			
+			//cout << "done" << endl;
 		}
 		
 		allowedMemory(mem);
@@ -72,7 +77,7 @@ namespace pilib
 		{
 			// Run cluster info command to get amount of memory in megabytes
 			//string cmd = string("sinfo --Node --Format=freemem ") + extraArgs; // Memory available to start new programs. Jobs running on nodes may affect this.
-			string cmd = sinfoCommand + string(" --Node --Format=memory ") + extraArgsNormalJobs; // Total installed memory. Not all of that may be available!
+			string cmd = sinfoCommand + string(" --Node --Format=memory ") + extraArgsNormalJobsSInfo; // Total installed memory. Not all of that may be available!
 			string output = execute(cmd);
 
 			// Split lines
@@ -133,24 +138,36 @@ namespace pilib
 			jobCmdLine = jobInitCommands + "; ";
 		jobCmdLine += "'" + getPiCommand() + "' " + inputName;
 
-		string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgs(jobType) + " --wrap=\"" + jobCmdLine + "\"";
+		string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgsSBatch(jobType) + " --wrap=\"" + jobCmdLine + "\"";
 
-	    //cout << "sbatch input: " << sbatchArgs << endl;
+	//cout << "sbatch input: " << sbatchArgs << endl;
 
 		string result = execute("sbatch", sbatchArgs);
 
-		//cout << "sbatch output: " << result << endl;
+	//cout << "sbatch output: " << result << endl;
 
 		vector<string> lines = split(result);
 		if (lines.size() == 1)
 		{
 			vector<string> parts = split(*lines.rbegin(), false, ' ');
-			if (parts.size() < 1)
+			
+			size_t slurmId;
+			try
 			{
-				cout << result << endl;
-				throw ITLException("SLURM returned no batch job id.");
+			    if (parts.size() < 1)
+				    throw ITLException("SLURM returned no batch job id.");
+			    
+			    slurmId = fromString<int>(parts[parts.size() - 1]);
 			}
-			size_t slurmId = fromString<int>(parts[parts.size() - 1]);
+			catch(ITLException e)
+			{
+			    cout << "Command" << endl;
+				cout << "sbatch " << sbatchArgs << endl;
+				cout << "returned" << endl;
+				cout << result << endl;
+				throw ITLException("Command sbatch did not return job id. The received output has been printed to standard output.");
+			}
+			
 			get<0>(submittedJobs[jobIndex]) = slurmId;
 			get<2>(submittedJobs[jobIndex])++;
 		}
@@ -504,14 +521,14 @@ namespace pilib
 									JobType oldType = type;
 									if (type == JobType::Fast)
 									{
-										if (extraArgsFastJobs != extraArgsNormalJobs)
+										if (extraArgsFastJobsSBatch != extraArgsNormalJobsSBatch)
 											type = JobType::Normal;
-										else if (extraArgsFastJobs != extraArgsSlowJobs)
+										else if (extraArgsFastJobsSBatch != extraArgsSlowJobsSBatch)
 											type = JobType::Slow;
 									}
 									else if (type == JobType::Normal)
 									{
-										if (extraArgsNormalJobs != extraArgsSlowJobs)
+										if (extraArgsNormalJobsSBatch != extraArgsSlowJobsSBatch)
 											type = JobType::Slow;
 									}
 

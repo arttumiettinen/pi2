@@ -12,7 +12,7 @@
 #include "io/sequence.h"
 #include "io/fileutils.h"
 #include "math/vec3.h"
-
+#include "progress.h"
 
 namespace itl2
 {
@@ -468,45 +468,49 @@ namespace itl2
 				throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 
 			const pixel_t* pBuffer = img.getData();
-			for (coord_t z = cStart.z; z < cEnd.z; z++)
 			{
-				if (cStart.x == 0 && cEnd.x == fileDimensions.x)
+				ProgressIndicator prog(cEnd.z - cStart.z, showProgressInfo);
+
+				for (coord_t z = cStart.z; z < cEnd.z; z++)
 				{
-					// Writing whole scanlines.
-					// Write all scanlines in region [cStart.y, cEnd.y[ at once in order to increase write speed.
-					size_t filePos = (z * fileDimensions.x * fileDimensions.y + cStart.y * fileDimensions.x + cStart.x) * sizeof(pixel_t);
-					out.seekp(filePos);
-
-					size_t imgPos = img.getLinearIndex(imagePosition.x, imagePosition.y, z - cStart.z + imagePosition.z);
-					out.write((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * (cEnd.y - cStart.y) * sizeof(pixel_t));
-
-					if (!out)
+					if (cStart.x == 0 && cEnd.x == fileDimensions.x)
 					{
-						showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
-						throw ITLException(std::string("Unable to write (fast) to ") + filename + std::string(", ") + getStreamErrorMessage());
-					}
-				}
-				else
-				{
-					// Writing partial scanlines.
-
-					for (coord_t y = cStart.y; y < cEnd.y; y++)
-					{
-						size_t filePos = (z * fileDimensions.x * fileDimensions.y + y * fileDimensions.x + cStart.x) * sizeof(pixel_t);
+						// Writing whole scanlines.
+						// Write all scanlines in region [cStart.y, cEnd.y[ at once in order to increase write speed.
+						size_t filePos = (z * fileDimensions.x * fileDimensions.y + cStart.y * fileDimensions.x + cStart.x) * sizeof(pixel_t);
 						out.seekp(filePos);
 
-						size_t imgPos = img.getLinearIndex(imagePosition.x, y - cStart.y + imagePosition.y, z - cStart.z + imagePosition.z);
-						out.write((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * sizeof(pixel_t));
+						if (!out)
+							throw ITLException(std::string("Seek failed (fast write) for file ") + filename + std::string(", ") + getStreamErrorMessage());
+
+						size_t imgPos = img.getLinearIndex(imagePosition.x, imagePosition.y, z - cStart.z + imagePosition.z);
+						out.write((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * (cEnd.y - cStart.y) * sizeof(pixel_t));
 
 						if (!out)
+							throw ITLException(std::string("Unable to write (fast) to ") + filename + std::string(", ") + getStreamErrorMessage());
+					}
+					else
+					{
+						// Writing partial scanlines.
+
+						for (coord_t y = cStart.y; y < cEnd.y; y++)
 						{
-							showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
-							throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
+							size_t filePos = (z * fileDimensions.x * fileDimensions.y + y * fileDimensions.x + cStart.x) * sizeof(pixel_t);
+							out.seekp(filePos);
+
+							if (!out)
+								throw ITLException(std::string("Seek failed for file ") + filename + std::string(", ") + getStreamErrorMessage());
+
+							size_t imgPos = img.getLinearIndex(imagePosition.x, y - cStart.y + imagePosition.y, z - cStart.z + imagePosition.z);
+							out.write((char*)&pBuffer[imgPos], (cEnd.x - cStart.x) * sizeof(pixel_t));
+
+							if (!out)
+								throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
 						}
 					}
+
+					prog.Show(z - cStart.z);
 				}
-				
-				showProgress(z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
 			}
 		}
 

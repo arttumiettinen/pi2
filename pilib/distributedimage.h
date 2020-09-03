@@ -263,7 +263,7 @@ namespace pilib
 		/**
 		Creates new Image<pixel_t> object and reads the distributed image data to that image.
 		*/
-		virtual std::shared_ptr<ImageBase> toNormalImage() const = 0;
+		virtual std::unique_ptr<ImageBase> toNormalImage() const = 0;
 
 		/**
 		Set data of this distributed image from given normal image.
@@ -390,10 +390,10 @@ namespace pilib
 		/**
 		Converts this distributed image to non-distributed image.
 		*/
-		virtual std::shared_ptr<ImageBase> toNormalImage() const override
+		virtual std::unique_ptr<ImageBase> toNormalImage() const override
 		{
 			DistributedImageBase::flush();
-			std::shared_ptr<itl2::Image<pixel_t>> pNormalImg = std::make_shared<itl2::Image<pixel_t> >(dimensions());
+			std::unique_ptr<itl2::Image<pixel_t>> pNormalImg = std::make_unique<itl2::Image<pixel_t> >(dimensions());
 			readTo(*pNormalImg);
 			return pNormalImg;
 		}

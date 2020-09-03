@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing.Imaging;
+using System.Threading;
+using System.Diagnostics;
 
 namespace pi2cs
 {
@@ -45,7 +47,7 @@ namespace pi2cs
         }
 
         /// <summary>
-        /// Sets the position in the Pi2 picture corresponding to the top left of the picture box.
+        /// Get and sets the position in the original picture that will be located in the center of the picture box.
         /// </summary>
         public PointF PicturePosition
         {
@@ -71,58 +73,330 @@ namespace pi2cs
             set;
         }
 
+
         /// <summary>
-        /// Holds version of original without contrast and zoom adjustment.
+        /// Contents of this are necessary for showing an image on screen,
+        /// and we have two copies of the data so that while one set of data is active,
+        /// we can load another data set to the other copy in a background thread and then
+        /// swap the two data sets.
         /// </summary>
-        private List<float> OriginalBitmap
+        private class OriginalBitmapData
+        {
+            /// <summary>
+            /// Holds version of original without contrast and zoom adjustment.
+            /// </summary>
+            public List<float> OriginalBitmap
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Width of the original image.
+            /// </summary>
+            public int OriginalWidth
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Depth of the original image.
+            /// </summary>
+            public int OriginalDepth
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Height of the original image.
+            /// </summary>
+            public int OriginalHeight
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Original pixel data type of the image.
+            /// </summary>
+            public ImageDataType OriginalDataType
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Minimum pixel value in the original image.
+            /// </summary>
+            public float GlobalMin
+            {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Maximum pixel value in the original image.
+            /// </summary>
+            public float GlobalMax
+            {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Minimum possible value in the original image.
+            /// </summary>
+            public float DynamicMin
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Maximum possible value in the original image.
+            /// </summary>
+            public float DynamicMax
+            {
+                get;
+                set;
+            }
+
+            /// <summary>
+            /// Gets the histogram of this image.
+            /// </summary>
+            public IReadOnlyList<PointF> Histogram
+            {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Backing field for histogram array.
+            /// </summary>
+            private PointF[] histogram;
+
+            /// <summary>
+            /// Re-calculates histogram of the shown image.
+            /// </summary>
+            public void UpdateHistogram()
+            {
+                if (histogram == null || histogram.Length != 256)
+                {
+                    histogram = new PointF[256];
+
+                    Histogram = histogram;
+                }
+
+                if (OriginalBitmap != null && OriginalBitmap.Count > 0)
+                {
+                    // Find global min and max, skip inf and nan pixels.
+                    GlobalMin = float.PositiveInfinity;
+                    GlobalMax = float.NegativeInfinity;
+
+                    foreach (float pix in OriginalBitmap)
+                    {
+                        if (!float.IsNaN(pix) && !float.IsInfinity(pix))
+                        {
+                            GlobalMin = Math.Min(GlobalMin, pix);
+                            GlobalMax = Math.Max(GlobalMax, pix);
+                        }
+                    }
+
+                    if (float.IsInfinity(GlobalMin) && float.IsInfinity(GlobalMax))
+                    {
+                        GlobalMin = 0;
+                        GlobalMax = 1;
+                    }
+                    else if (float.IsInfinity(GlobalMin))
+                    {
+                        GlobalMin = GlobalMax - 1;
+                    }
+                    else if (float.IsInfinity(GlobalMax))
+                    {
+                        GlobalMax = GlobalMin + 1;
+                    }
+
+
+                    // Init bin centers and set counts to zero.
+                    for (int n = 0; n < histogram.Length; n++)
+                    {
+                        float binCenter = GlobalMin + (n + 0.5f) * (GlobalMax - GlobalMin) / histogram.Length;
+                        histogram[n].X = binCenter;
+                        histogram[n].Y = 0;
+                    }
+
+                    // Calculate histogram
+                    for (int n = 0; n < OriginalBitmap.Count; n++)
+                    {
+                        float pix = OriginalBitmap[n];
+
+                        if (!float.IsNaN(pix) && !float.IsInfinity(pix))
+                        {
+                            int bin = (int)Math.Round((pix - GlobalMin) / (GlobalMax - GlobalMin) * (histogram.Length - 1));
+                            if (bin < 0)
+                                bin = 0;
+                            else if (bin > histogram.Length - 1)
+                                bin = histogram.Length - 1;
+
+                            histogram[bin].Y++;
+                        }
+                    }
+
+                    // Adjust dynamic min and max for unbounded data types
+                    if (OriginalDataType == ImageDataType.Float32)
+                    {
+                        float headroom = 0.1f * (GlobalMax - GlobalMin);
+                        DynamicMin = GlobalMin - headroom;
+                        DynamicMax = GlobalMax + headroom;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Copies one slice of image data from given pi2 pointer to array in this picture storage object.
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="width"></param>
+            /// <param name="height"></param>
+            /// <param name="depth"></param>
+            /// <param name="dt"></param>
+            public void CopyFromPointerToTemp(IntPtr data, long width, long height, long depth, ImageDataType dt, int slice, CancellationToken cancellationToken)
+            {
+                if (width > int.MaxValue)
+                    throw new InvalidOperationException("Image width is too large to be shown. Maximum supported width is " + int.MaxValue);
+                if (height > int.MaxValue)
+                    throw new InvalidOperationException("Image height is too large to be shown. Maximum supported height is " + int.MaxValue);
+                if (depth > int.MaxValue)
+                    throw new InvalidOperationException("Image depth is too large to be shown. Maximum supported depth is " + int.MaxValue);
+
+                long capacity = width * height;
+
+                if (capacity > int.MaxValue)
+                    throw new InvalidOperationException("Size of single slice is too large to be shown. Maximum supported count of pixels is " + int.MaxValue);
+
+                OriginalBitmap.Clear();
+                OriginalBitmap.Capacity = (int)capacity;
+                for (int n = 0; n < width * height; n++)
+                    OriginalBitmap.Add(0);
+                OriginalWidth = (int)width;
+                OriginalHeight = (int)height;
+                OriginalDepth = (int)depth;
+
+                OriginalDataType = dt;
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (slice < 0)
+                    slice = 0;
+                else if (slice >= depth)
+                    slice = (int)(depth - 1);
+
+                if (data != IntPtr.Zero)
+                {
+                    unsafe
+                    {
+                        // Construct pixel getter function that converts all pixel data types to float.
+                        byte* pi8 = (byte*)data.ToPointer();
+                        UInt16* pi16 = (UInt16*)pi8;
+                        UInt32* pi32 = (UInt32*)pi8;
+                        UInt64* pi64 = (UInt64*)pi8;
+                        float* pif = (float*)pi8;
+
+                        Func<int, int, float> getPixel;
+
+                        switch (dt)
+                        {
+                            case ImageDataType.UInt8:
+                                getPixel = (int x, int y) => pi8[x + y * width + slice * width * height];
+                                DynamicMin = uint.MinValue;
+                                DynamicMax = uint.MaxValue;
+                                break;
+                            case ImageDataType.UInt16:
+                                getPixel = (int x, int y) => pi16[x + y * width + slice * width * height];
+                                DynamicMin = UInt16.MinValue;
+                                DynamicMax = UInt16.MaxValue;
+                                break;
+                            case ImageDataType.UInt32:
+                                getPixel = (int x, int y) => pi32[x + y * width + slice * width * height];
+                                DynamicMin = UInt32.MinValue;
+                                DynamicMax = UInt32.MaxValue;
+                                break;
+                            case ImageDataType.UInt64:
+                                getPixel = (int x, int y) => pi64[x + y * width + slice * width * height];
+                                DynamicMin = UInt64.MinValue;
+                                DynamicMax = UInt64.MaxValue;
+                                break;
+                            case ImageDataType.Float32:
+                                getPixel = (int x, int y) => pif[x + y * width + slice * width * height];
+                                // These are updated later as MinValue and MaxValue are not practically very usable choices.
+                                //DynamicMin = float.MinValue;
+                                //DynamicMax = float.MaxValue;
+                                break;
+                            default:
+                                getPixel = (int x, int y) => 0;
+                                DynamicMin = 0;
+                                DynamicMax = 0;
+                                break;
+                        }
+
+                        // Copy pixel values to the array.
+                        int iw = (int)width;
+                        for (int y = 0; y < height; y++)
+                        {
+                            for (int x = 0; x < width; x++)
+                            {
+                                float val = getPixel(x, y);
+                                OriginalBitmap[x + y * iw] = val;
+                            }
+
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
+                    }
+                }
+
+                UpdateHistogram();
+            }
+
+            /// <summary>
+            /// Constructor
+            /// </summary>
+            public OriginalBitmapData()
+            {
+                OriginalBitmap = new List<float>();
+                UpdateHistogram();
+            }
+        }
+
+        /// <summary>
+        /// Data of bitmap that is currently shown on the screen.
+        /// </summary>
+        private OriginalBitmapData ActiveBitmapData
         {
             get;
             set;
         }
 
         /// <summary>
-        /// Width of the original image.
+        /// Data of bitmap that we are reading/preparing for viewing.
         /// </summary>
-        public int OriginalWidth
+        private OriginalBitmapData TemporaryBitmapData
         {
             get;
-            private set;
+            set;
         }
 
-        /// <summary>
-        /// Depth of the original image.
-        /// </summary>
-        public int OriginalDepth
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        /// Height of the original image.
-        /// </summary>
-        public int OriginalHeight
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        /// Original pixel data type of the image.
-        /// </summary>
-        public ImageDataType OriginalDataType
-        {
-            get;
-            private set;
-        }
 
         /// <summary>
         /// Minimum pixel value in the original image.
         /// </summary>
         public float GlobalMin
         {
-            get;
-            private set;
+            get
+            {
+                return ActiveBitmapData.GlobalMin;
+            }
         }
 
         /// <summary>
@@ -130,8 +404,10 @@ namespace pi2cs
         /// </summary>
         public float GlobalMax
         {
-            get;
-            private set;
+            get
+            {
+                return ActiveBitmapData.GlobalMax;
+            }
         }
 
         /// <summary>
@@ -139,8 +415,10 @@ namespace pi2cs
         /// </summary>
         public float DynamicMin
         {
-            get;
-            private set;
+            get
+            {
+                return ActiveBitmapData.DynamicMin;
+            }
         }
 
         /// <summary>
@@ -148,8 +426,65 @@ namespace pi2cs
         /// </summary>
         public float DynamicMax
         {
-            get;
-            private set;
+            get
+            {
+                return ActiveBitmapData.DynamicMax;
+            }
+        }
+
+        /// <summary>
+        /// Gets width of the image before any zoom has been applied.
+        /// </summary>
+        public int OriginalWidth
+        {
+            get
+            {
+                return ActiveBitmapData.OriginalWidth;
+            }
+        }
+
+        /// <summary>
+        /// Gets height of the image before any zoom has been applied.
+        /// </summary>
+        public int OriginalHeight
+        {
+            get
+            {
+                return ActiveBitmapData.OriginalHeight;
+            }
+        }
+
+        /// <summary>
+        /// Gets depth of the image.
+        /// </summary>
+        public int OriginalDepth
+        {
+            get
+            {
+                return ActiveBitmapData.OriginalDepth;
+            }
+        }
+
+        /// <summary>
+        /// Gets histogram of the visible image.
+        /// </summary>
+        public IReadOnlyList<PointF> Histogram
+        {
+            get
+            {
+                return ActiveBitmapData.Histogram;
+            }
+        }
+
+        /// <summary>
+        /// Gets the data type of the image.
+        /// </summary>
+        public ImageDataType OriginalDataType
+        {
+            get
+            {
+                return ActiveBitmapData.OriginalDataType;
+            }
         }
 
         /// <summary>
@@ -172,20 +507,6 @@ namespace pi2cs
         }
 
         /// <summary>
-        /// Gets the histogram of this image.
-        /// </summary>
-        public IReadOnlyList<PointF> Histogram
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        /// Backing field for histogram array.
-        /// </summary>
-        private PointF[] histogram;
-
-        /// <summary>
         /// Constructor
         /// </summary>
         public Pi2PictureBox() : this(null)
@@ -200,6 +521,11 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Event that occurs when the image has been loaded or updated from the pi2 system.
+        /// </summary>
+        public event EventHandler ImageLoaded;
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="img"></param>
@@ -208,23 +534,24 @@ namespace pi2cs
         /// <param name="max"></param>
         public Pi2PictureBox(Pi2Image img, float zoom = 1, float min = 0, float max = 255)
         {
+            sync = SynchronizationContext.Current;
             InitializeComponent();
-            OriginalBitmap = new List<float>();
+            ActiveBitmapData = new OriginalBitmapData();
+            TemporaryBitmapData = new OriginalBitmapData();
             PiImage = img;
             Zoom = zoom;
             Min = min;
             Max = max;
-            UpdateHistogram();
         }
 
         private double ScreenToPictureY(double y)
         {
-            return (y - Height / 2) / Zoom + PicturePosition.Y + OriginalHeight / 2;
+            return (y - Height / 2) / Zoom + PicturePosition.Y + ActiveBitmapData.OriginalHeight / 2;
         }
 
         private double ScreenToPictureX(double x)
         {
-            return (x - Width / 2) / Zoom + PicturePosition.X + OriginalWidth / 2;
+            return (x - Width / 2) / Zoom + PicturePosition.X + ActiveBitmapData.OriginalWidth / 2;
         }
 
         /// <summary>
@@ -244,8 +571,8 @@ namespace pi2cs
         /// <returns>Point in screen coordinates.</returns>
         public Vec2 PictureToScreen(Vec2 p)
         {
-            return new Vec2((p.X - PicturePosition.X - OriginalWidth / 2) * Zoom + Width / 2,
-                (p.Y - PicturePosition.Y - OriginalHeight / 2) * Zoom + Height / 2);
+            return new Vec2((p.X - PicturePosition.X - ActiveBitmapData.OriginalWidth / 2) * Zoom + Width / 2,
+                (p.Y - PicturePosition.Y - ActiveBitmapData.OriginalHeight / 2) * Zoom + Height / 2);
         }
 
 
@@ -270,10 +597,10 @@ namespace pi2cs
         {
             int origX = (int)Math.Round(p.X);
             int origY = (int)Math.Round(p.Y);
-            if (origX < 0 || origY < 0 || origX >= OriginalWidth || origY >= OriginalHeight)
+            if (origX < 0 || origY < 0 || origX >= ActiveBitmapData.OriginalWidth || origY >= ActiveBitmapData.OriginalHeight)
                 return float.NaN;
 
-            return OriginalBitmap[origX + origY * OriginalWidth];
+            return ActiveBitmapData.OriginalBitmap[origX + origY * ActiveBitmapData.OriginalWidth];
         }
 
 
@@ -284,8 +611,8 @@ namespace pi2cs
         {
             if (AutoResize)
             {
-                Width = (int)Math.Round(OriginalWidth * Zoom);
-                Height = (int)Math.Round(OriginalHeight * Zoom);
+                Width = (int)Math.Round(ActiveBitmapData.OriginalWidth * Zoom);
+                Height = (int)Math.Round(ActiveBitmapData.OriginalHeight * Zoom);
 
                 if (Width <= 0)
                     Width = 1;
@@ -321,11 +648,11 @@ namespace pi2cs
                             int srcy = (int)Math.Round(ScreenToPictureY(y));
                             for (int x = 0; x < Width; x++)
                             {
-                                int srcx = (int)Math.Round((x - Width / 2) / Zoom + PicturePosition.X + OriginalWidth / 2);
+                                int srcx = (int)Math.Round((x - Width / 2) / Zoom + PicturePosition.X + ActiveBitmapData.OriginalWidth / 2);
 
-                                if (srcx >= 0 && srcx < OriginalWidth && srcy >= 0 && srcy < OriginalHeight)
+                                if (srcx >= 0 && srcx < ActiveBitmapData.OriginalWidth && srcy >= 0 && srcy < ActiveBitmapData.OriginalHeight)
                                 {
-                                    float val = OriginalBitmap[srcx + srcy * OriginalWidth];
+                                    float val = ActiveBitmapData.OriginalBitmap[srcx + srcy * ActiveBitmapData.OriginalWidth];
 
                                     // Transform to [0, 1]
                                     val = (val - Min) / (Max - Min);
@@ -376,205 +703,89 @@ namespace pi2cs
             }
         }
 
-        /// <summary>
-        /// Re-calculates histogram of the shown image.
-        /// </summary>
-        private void UpdateHistogram()
+        private void CopyFromPiTask(CancellationToken cancellationToken)
         {
-            if(histogram == null || histogram.Length != 256)
+            try
             {
-                histogram = new PointF[256];
+                if (PiImage != null)
+                {
+                    // NOTE: This can be used for testing the task system responsiveness
+                    //for (int n = 0; n < 100; n++)
+                    //{
+                    //    cancellationToken.ThrowIfCancellationRequested();
+                    //    Thread.Sleep(1);
+                    //}
 
-                Histogram = histogram;
+                    long w = 0;
+                    long h = 0;
+                    long d = 0;
+                    ImageDataType dt;
+                    IntPtr data = PiImage.GetData(out w, out h, out d, out dt);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    TemporaryBitmapData.CopyFromPointerToTemp(data, w, h, d, dt, Slice, cancellationToken);
+                }
+                else
+                {
+                    TemporaryBitmapData.CopyFromPointerToTemp(IntPtr.Zero, 0, 0, 0, ImageDataType.UInt8, Slice, cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Swap the bitmaps in the UI thread
+                sync.Post(new SendOrPostCallback(o =>
+                {
+                    // NOTE: Here we are in the UI thread but a new loading task might have started before we get here.
+                    // Proceed only if a new loading task has not been started, i.e. the token source is the same than
+                    // what it was when this task was started.
+                    if (canc != null && canc.Token == cancellationToken)
+                    {
+                        var temp = ActiveBitmapData;
+                        ActiveBitmapData = TemporaryBitmapData;
+                        TemporaryBitmapData = temp;
+                        UpdateScreen();
+                        if (ImageLoaded != null)
+                            ImageLoaded(this, EventArgs.Empty);
+                    }
+                }), new object());
+
             }
-
-            if (OriginalBitmap != null && OriginalBitmap.Count > 0)
+            catch(TaskCanceledException)
             {
-                // Find global min and max, skip inf and nan pixels.
-                GlobalMin = float.PositiveInfinity;
-                GlobalMax = float.NegativeInfinity;
-
-                foreach(float pix in OriginalBitmap)
-                {
-                    if(!float.IsNaN(pix) && !float.IsInfinity(pix))
-                    {
-                        GlobalMin = Math.Min(GlobalMin, pix);
-                        GlobalMax = Math.Max(GlobalMax, pix);
-                    }
-                }
-
-                if(float.IsInfinity(GlobalMin) && float.IsInfinity(GlobalMax))
-                {
-                    GlobalMin = 0;
-                    GlobalMax = 1;
-                }
-                else if(float.IsInfinity(GlobalMin))
-                {
-                    GlobalMin = GlobalMax - 1;
-                }
-                else if(float.IsInfinity(GlobalMax))
-                {
-                    GlobalMax = GlobalMin + 1;
-                }
-
-
-                // Init bin centers and set counts to zero.
-                for (int n = 0; n < histogram.Length; n++)
-                {
-                    float binCenter = GlobalMin + (n + 0.5f) * (GlobalMax - GlobalMin) / histogram.Length;
-                    histogram[n].X = binCenter;
-                    histogram[n].Y = 0;
-                }
-
-                // Calculate histogram
-                for (int n = 0; n < OriginalBitmap.Count; n++)
-                {
-                    float pix = OriginalBitmap[n];
-
-                    if (!float.IsNaN(pix) && !float.IsInfinity(pix))
-                    {
-                        int bin = (int)Math.Round((pix - GlobalMin) / (GlobalMax - GlobalMin) * (histogram.Length - 1));
-                        if (bin < 0)
-                            bin = 0;
-                        else if (bin > histogram.Length - 1)
-                            bin = histogram.Length - 1;
-
-                        histogram[bin].Y++;
-                    }
-                }
+                throw;
             }
         }
 
-
-        /// <summary>
-        /// Copies image data from given pi2 pointer to array in this picture box.
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <param name="depth"></param>
-        /// <param name="dt"></param>
-        private void CopyFromPointerToTemp(IntPtr data, long width, long height, long depth, ImageDataType dt)
-        {
-            if (width > int.MaxValue)
-                throw new InvalidOperationException("Image width is too large to be shown. Maximum supported width is " + int.MaxValue);
-            if (height > int.MaxValue)
-                throw new InvalidOperationException("Image height is too large to be shown. Maximum supported height is " + int.MaxValue);
-            if (depth > int.MaxValue)
-                throw new InvalidOperationException("Image depth is too large to be shown. Maximum supported depth is " + int.MaxValue);
-
-            long capacity = width * height;
-
-            if (capacity > int.MaxValue)
-                throw new InvalidOperationException("Size of single slice is too large to be shown. Maximum supported count of pixels is " + int.MaxValue);
-
-            OriginalBitmap.Clear();
-            OriginalBitmap.Capacity = (int)capacity;
-            for (int n = 0; n < width * height; n++)
-                OriginalBitmap.Add(0);
-            OriginalWidth = (int)width;
-            OriginalHeight = (int)height;
-            OriginalDepth = (int)depth;
-
-            OriginalDataType = dt;
-
-            if (Slice < 0)
-                Slice = 0;
-            else if (Slice >= depth)
-                Slice = (int)(depth - 1);
-
-            if (data != IntPtr.Zero)
-            {
-                unsafe
-                {
-                    // Construct pixel getter function that converts all pixel data types to float.
-                    byte* pi8 = (byte*)data.ToPointer();
-                    UInt16* pi16 = (UInt16*)pi8;
-                    UInt32* pi32 = (UInt32*)pi8;
-                    UInt64* pi64 = (UInt64*)pi8;
-                    float* pif = (float*)pi8;
-
-                    Func<int, int, float> getPixel;
-
-                    switch (dt)
-                    {
-                        case ImageDataType.UInt8:
-                            getPixel = (int x, int y) => pi8[x + y * width + Slice * width * height];
-                            DynamicMin = uint.MinValue;
-                            DynamicMax = uint.MaxValue;
-                            break;
-                        case ImageDataType.UInt16:
-                            getPixel = (int x, int y) => pi16[x + y * width + Slice * width * height];
-                            DynamicMin = UInt16.MinValue;
-                            DynamicMax = UInt16.MaxValue;
-                            break;
-                        case ImageDataType.UInt32:
-                            getPixel = (int x, int y) => pi32[x + y * width + Slice * width * height];
-                            DynamicMin = UInt32.MinValue;
-                            DynamicMax = UInt32.MaxValue;
-                            break;
-                        case ImageDataType.UInt64:
-                            getPixel = (int x, int y) => pi64[x + y * width + Slice * width * height];
-                            DynamicMin = UInt64.MinValue;
-                            DynamicMax = UInt64.MaxValue;
-                            break;
-                        case ImageDataType.Float32:
-                            getPixel = (int x, int y) => pif[x + y * width + Slice * width * height];
-                            // These are updated later as MinValue and MaxValue are not practically very usable choices.
-                            //DynamicMin = float.MinValue;
-                            //DynamicMax = float.MaxValue;
-                            break;
-                        default:
-                            getPixel = (int x, int y) => 0;
-                            DynamicMin = 0;
-                            DynamicMax = 0;
-                            break;
-                    }
-
-                    // Copy pixel values to the array.
-                    int iw = (int)width;
-                    for (int y = 0; y < height; y++)
-                    {
-                        for (int x = 0; x < width; x++)
-                        {
-                            float val = getPixel(x, y);
-                            OriginalBitmap[x + y * iw] = val;
-                        }
-                    }
-                }
-            }
-
-            UpdateHistogram();
-
-            if(dt == ImageDataType.Float32)
-            {
-                float headroom = 0.1f * (GlobalMax - GlobalMin);
-                DynamicMin = GlobalMin - headroom;
-                DynamicMax = GlobalMax + headroom;
-            }
-        }
+        private SynchronizationContext sync;
+        private Task runningTask = null;
+        private CancellationTokenSource canc;
 
         /// <summary>
         /// Updates the image in the picture box from the Pi system.
-        /// Image must be available in the Pi system when this method is executing.
+        /// Image must be available in the Pi system until it has been loaded.
         /// </summary>
         public void UpdateImage()
         {
-            if(PiImage != null)
+            // Cancel previous task if it is still running.
+            if(runningTask != null)
             {
-                long w = 0;
-                long h = 0;
-                long d = 0;
-                ImageDataType dt;
-                IntPtr data = PiImage.GetData(out w, out h, out d, out dt);
+                canc.Cancel();
+                try
+                {
+                    runningTask.Wait();
+                }
+                catch(AggregateException)
+                {
+                    // Expected, do nothing.
+                }
+                runningTask.Dispose();
+                runningTask = null;
+            }
 
-                CopyFromPointerToTemp(data, w, h, d, dt);
-            }
-            else
-            {
-                CopyFromPointerToTemp(IntPtr.Zero, 0, 0, 0, ImageDataType.UInt8);
-            }
-            UpdateScreen();
+            // Start new image load task.
+            canc = new CancellationTokenSource();
+            runningTask = Task.Run(() => CopyFromPiTask(canc.Token), canc.Token);
         }
 
 

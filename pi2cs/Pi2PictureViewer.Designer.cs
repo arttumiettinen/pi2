@@ -41,17 +41,18 @@
             this.panelScrollBarContainer.Controls.Add(this.labelSliceNumber);
             this.panelScrollBarContainer.Controls.Add(this.labelPixelValue);
             this.panelScrollBarContainer.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panelScrollBarContainer.Location = new System.Drawing.Point(0, 333);
+            this.panelScrollBarContainer.Location = new System.Drawing.Point(0, 410);
+            this.panelScrollBarContainer.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.panelScrollBarContainer.Name = "panelScrollBarContainer";
-            this.panelScrollBarContainer.Size = new System.Drawing.Size(499, 17);
+            this.panelScrollBarContainer.Size = new System.Drawing.Size(665, 21);
             this.panelScrollBarContainer.TabIndex = 2;
             // 
             // scrollBarSlice
             // 
             this.scrollBarSlice.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.scrollBarSlice.Location = new System.Drawing.Point(180, 0);
+            this.scrollBarSlice.Location = new System.Drawing.Point(239, 0);
             this.scrollBarSlice.Name = "scrollBarSlice";
-            this.scrollBarSlice.Size = new System.Drawing.Size(319, 17);
+            this.scrollBarSlice.Size = new System.Drawing.Size(426, 21);
             this.scrollBarSlice.TabIndex = 1;
             this.scrollBarSlice.ValueChanged += new System.EventHandler(this.scrollBarSlice_ValueChanged);
             // 
@@ -59,10 +60,11 @@
             // 
             this.labelSliceNumber.AutoSize = true;
             this.labelSliceNumber.Dock = System.Windows.Forms.DockStyle.Left;
-            this.labelSliceNumber.Location = new System.Drawing.Point(112, 0);
-            this.labelSliceNumber.MinimumSize = new System.Drawing.Size(56, 0);
+            this.labelSliceNumber.Location = new System.Drawing.Point(149, 0);
+            this.labelSliceNumber.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.labelSliceNumber.MinimumSize = new System.Drawing.Size(75, 0);
             this.labelSliceNumber.Name = "labelSliceNumber";
-            this.labelSliceNumber.Size = new System.Drawing.Size(68, 13);
+            this.labelSliceNumber.Size = new System.Drawing.Size(90, 17);
             this.labelSliceNumber.TabIndex = 2;
             this.labelSliceNumber.Text = "Slice number";
             // 
@@ -71,19 +73,22 @@
             this.labelPixelValue.AutoSize = true;
             this.labelPixelValue.Dock = System.Windows.Forms.DockStyle.Left;
             this.labelPixelValue.Location = new System.Drawing.Point(0, 0);
-            this.labelPixelValue.MinimumSize = new System.Drawing.Size(112, 0);
+            this.labelPixelValue.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.labelPixelValue.MinimumSize = new System.Drawing.Size(149, 0);
             this.labelPixelValue.Name = "labelPixelValue";
-            this.labelPixelValue.Size = new System.Drawing.Size(112, 13);
+            this.labelPixelValue.Size = new System.Drawing.Size(149, 17);
             this.labelPixelValue.TabIndex = 0;
             this.labelPixelValue.Text = "(x, y): V";
             // 
             // Pi2PictureViewer
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.panelScrollBarContainer);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "Pi2PictureViewer";
-            this.Size = new System.Drawing.Size(499, 350);
+            this.Size = new System.Drawing.Size(665, 431);
+            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Pi2PictureViewer_KeyPress);
             this.panelScrollBarContainer.ResumeLayout(false);
             this.panelScrollBarContainer.PerformLayout();
             this.ResumeLayout(false);

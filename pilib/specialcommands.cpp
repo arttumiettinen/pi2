@@ -1039,7 +1039,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	{
 		static void run(const Vec3c& dimensions, const string& imgName, const string& filename, bool readOnly, PISystem* system)
 		{
-			shared_ptr<itl2::Image<pixel_t>> img = make_shared<Image<pixel_t>>(filename, readOnly, dimensions);
+			shared_ptr<ParamVariant> img = make_shared<ParamVariant>(new Image<pixel_t>(filename, readOnly, dimensions));
 			system->replaceImage(imgName, img);
 		}
 	};

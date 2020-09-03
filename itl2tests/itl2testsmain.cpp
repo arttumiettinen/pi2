@@ -43,6 +43,8 @@
 #include "math/conjugategradient.h"
 #include "tomo/siddonprojections.h"
 #include "iteration.h"
+#include "progress.h"
+#include "imagemetadata.h"
 
 
 using namespace itl2;
@@ -54,6 +56,8 @@ using namespace std;
 
 int main()
 {
+
+	//test(itl2::tests::progress, "progress indicator");
 
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
@@ -194,10 +198,10 @@ int main()
 
 	//test(itl2::tests::surfaceCurvature, "surface curvature");
 
-	//test(itl2::tests::recSettings, "Rec settings");
+	test(itl2::tests::recSettings, "Rec settings");
 	//test(itl2::tests::paganin, "Paganin method");
 	//// NOTE: Data for these tests is not publicly available (yet)
-	test(itl2::tests::fbp, "Filtered backprojection");
+	////test(itl2::tests::fbp, "Filtered backprojection");
 	////test(itl2::tests::openCLBackProjection, "OpenCL filtered backprojection");
 	////test(itl2::tests::openCLBackProjectionRealBin2, "OpenCL filtered backprojection, real dataset, binning 2");
 	////test(itl2::tests::openCLBackProjectionRealBin1, "OpenCL filtered backprojection, real dataset, binning 1"); 
@@ -223,6 +227,7 @@ int main()
 
 	//test(itl2::tests::montage, "2D montage of 3D stack");
 
+	test(itl2::tests::imagemetadata, "image metadata");
 
 	
 
