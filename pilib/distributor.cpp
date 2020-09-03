@@ -644,7 +644,6 @@ namespace pilib
 
 	/**
 	Convert argument to string.
-	@param isDistributed Set to true to convert arguments of type Image* to DistributedImage*
 	*/
 	string argumentToString(const CommandArgumentBase& argument, const ParamVariant& value)
 	{
@@ -674,17 +673,6 @@ namespace pilib
 		case ArgumentDataType::ImageInt64:
 		case ArgumentDataType::ImageFloat32:
 		case ArgumentDataType::ImageComplex32:
-			// Fall through to distributed image case as all the images are be distributed anyway.
-		case ArgumentDataType::DImageUInt8: 
-		case ArgumentDataType::DImageUInt16:
-		case ArgumentDataType::DImageUInt32:
-		case ArgumentDataType::DImageUInt64:
-		case ArgumentDataType::DImageInt8:
-		case ArgumentDataType::DImageInt16:
-		case ArgumentDataType::DImageInt32:
-		case ArgumentDataType::DImageInt64:
-		case ArgumentDataType::DImageFloat32:
-		case ArgumentDataType::DImageComplex32:
 			return getDistributedImage(value)->uniqueName();
 		default: throw ITLException("Data type not configured.");
 		}

@@ -34,7 +34,7 @@ namespace pilib
 		/**
 		Maps image variable names to image objects.
 		*/
-		std::map<std::string, std::shared_ptr<ImageBase> > imgs;
+		std::map<std::string, std::pair<ArgumentDataType, std::shared_ptr<ParamVariant>>> namedValues;
 
 		/**
 		Maps image variable names to distributed image objects.
@@ -91,7 +91,7 @@ namespace pilib
 		If conversion is not possible, reason string is assigned an explanation of the error.
 		@return 0 if there is no match, 1 if the argument type and parameter type match, and 2 if they match after creation of new images.
 		*/
-		int tryConvert(std::string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, std::string& reason);
+		int tryConvert(std::string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, std::shared_ptr<ParamVariant> resultPtr, std::string& reason);
 
 		/**
 		Checks whether supplied string values can be converted to supplied types.
@@ -154,11 +154,6 @@ namespace pilib
 		std::vector<std::string> getImageNames() const;
 
 		/**
-		Returns name of the given image.
-		*/
-		std::string getImageName(const ImageBase* img) const;
-
-		/**
 		Returns names of distributed images in the system.
 		*/
 		std::vector<std::string> getDistributedImageNames() const;
@@ -174,11 +169,6 @@ namespace pilib
 		*/
 		std::shared_ptr<DistributedImageBase> getDistributedImagePointer(DistributedImageBase* img) const;
 
-		/**
-		Gets smart pointer to given image. Used to store images during command execution even if they are
-		removed from the PISystem.
-		*/
-		std::shared_ptr<ImageBase> getImagePointer(ImageBase* img) const;
 
 		/**
 		Gets a value indicating whether the given distributed image is still accessible from this PI system.
@@ -213,7 +203,9 @@ namespace pilib
 		Replace image with given image.
 		Replace image by null pointer to remove it from the system.
 		*/
-		void replaceImage(const std::string& name, std::shared_ptr<ImageBase> newImg);
+		void replaceImage(const std::string& name, std::shared_ptr<ParamVariant> img);
+
+		void replaceNamedValue(const std::string& name, ArgumentDataType dt, std::shared_ptr<ParamVariant> newValue);
 
 		/**
 		Get distributed image having given name.
@@ -268,12 +260,6 @@ namespace pilib
 		bool run(const std::string& commands);
 
 
-		/**
-		Convert argument to string.
-		@param isDistributed Set to true to convert arguments of type Image* to DistributedImage*
-		*/
-		//std::string argumentToString(const CommandArgumentBase& argument, const ParamVariant& value, bool isDistributed) const;
-
 		
 	};
 
@@ -286,9 +272,13 @@ namespace pilib
 	{
 		static Image<pixel_t>* run(const Vec3c& dimensions, const std::string& imgName, PISystem* system)
 		{
-			std::shared_ptr<Image<pixel_t>> img = std::make_shared<itl2::Image<pixel_t> >(dimensions);
-			system->replaceImage(imgName, img);
-			return img.get();
+			//std::shared_ptr<Image<pixel_t>> img = std::make_shared<itl2::Image<pixel_t> >(dimensions);
+			//system->replaceImage(imgName, img);
+
+			ArgumentDataType argDataType = imageDataTypeToArgumentDataType(imageDataType<pixel_t>());
+			std::shared_ptr<ParamVariant> p = std::make_shared<ParamVariant>(new itl2::Image<pixel_t>(dimensions));
+			system->replaceNamedValue(imgName, argDataType, p);
+			return std::get<Image<pixel_t>*>(*p.get());
 		}
 	};
 
@@ -425,7 +415,7 @@ namespace pilib
 				CommandArgument<std::string>(ParameterDirection::In, "image name", "Name of the new image in the system."),
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "template image", "Name of existing image where dimensions and data type will be copied from."),
 				CommandArgument<std::string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + ". Leave empty or set to Unknown to copy the value from the template image.", ""),
-				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set any component to zero to copy the value from the template image.", Vec3c(0, 0, 0)),
+				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set any component to zero to copy the value from the template image."), // NOTE: NewLikeCommand handles calls in form newlike(img1, template, uint32)
 			},
 			newlikeSeeAlso())
 		{

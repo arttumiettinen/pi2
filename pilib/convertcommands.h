@@ -17,10 +17,10 @@ namespace pilib
 				// Free memory if old output image is not in use anymore
 				system->replaceImage(outname, nullptr);
 
-				std::shared_ptr<ImageBase> ptr = std::make_shared<Image<out_t> >(in->dimensions());
+				std::shared_ptr<ParamVariant> ptr = std::make_shared<ParamVariant>(new Image<out_t>(in->dimensions()));
 				system->replaceImage(outname, ptr);
 
-				convert<in_t, out_t>(*in, *(Image<out_t>*)ptr.get());
+				convert<in_t, out_t>(*in, *std::get<Image<out_t>*>(*ptr));
 			}
 		};
 
