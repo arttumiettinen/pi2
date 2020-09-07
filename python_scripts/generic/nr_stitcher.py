@@ -73,9 +73,15 @@ def main():
     Reads configuration from stitch_settings.txt and runs the stitching process.
     """
 
+    settings_file = 'stitch_settings.txt'
+    if(len(sys.argv) >= 1)
+        settings_files = sys.argv[0]
+
+    print(f"Reading stitch settings from {settings_file}")
+
     config = configparser.ConfigParser()
     config.optionxform = str
-    config.read('stitch_settings_nongrid.txt')
+    config.read(settings_file)
 
     read_global_settings(config)
 

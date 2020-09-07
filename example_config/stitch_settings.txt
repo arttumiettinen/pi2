@@ -1,7 +1,7 @@
 [stitch]
 
-# Prefix for output and temporary files
-sample_name = N0098
+# Output name
+sample_name = stitched
 
 
 # Binning (downscaling) applied to inputs before stitching.
@@ -10,105 +10,38 @@ sample_name = N0098
 binning = 1
 
 
-# Filename template that is used to construct the names of the input files.
-# {index} resolves to index of the image in the grid (see xdir, ydir, and zdir),
-# {x}, {y}, and {z} resolve to the (zero-based) position of the image in the grid.
-input_file_template = N0098_B{index}_512x512x510.raw
-
-
-# Count of sub-images in each coordinate direction.
-grid_width = 9
-grid_height = 9
-grid_depth = 1
-
-
-# Direction of increasing image index in each coordinate direction with respect to sub-image coordinates.
-# If sub-image coordinates are like
-# ^ y
-# |
-# |
-# ----> x
-# and images are indexed like
-# 7 8 9
-# 4 5 6
-# 1 2 3
-# then xdir = 1 and ydir = 1 as image indices increase in the same direction as image coordinates.
-#
-# If images are indexed like
-# 1 2 3
-# 4 5 6
-# 7 8 9
-# then xdir = 1 and ydir = -1 as image index increases in the same direction where y decreases.
-#
-# Similarly, if images are placed like
-# 9 8 7
-# 6 5 4
-# 3 2 1
-# then xdir = -1 and ydir = 1
-# and if images are placed like
-# 3 2 1
-# 6 5 4
-# 9 8 7
-# then xdir = -1 and ydir = -1.
-#
-# For "snake" style and more general patterns consider using nr_stitcher_nongrid.py.
-xdir = 1
-ydir = 1
-zdir = 1
-
-
-# Approximate overlap between scans in each coordinate direction.
-# The value should scale with image size.
-overlap_x = 155
-overlap_y = 155
-overlap_z = 15
-
-
 # Space between points in the reference grid in the pairwise matching step.
-# Different value can be used when finding matches between images in different coordinate directions.
 # Specify such a value that the deformation is approximately linear between the grid points.
 # The value should scale with image size.
-point_spacing_x_stitch = 15
-point_spacing_y_stitch = 15
-point_spacing_z_stitch = 15
+point_spacing = 15
 
 
 # Size of image block in pairwise matching (coarse step).
-# Different value can be used when finding matches between images in different coordinate directions.
 # The block does not have to be cube, you can use syntax [a, b, c] to specify different dimension
 # for each coordinate direction.
 # The block radius is the maximal local shift that can be found between any two sub-images.
 # The value should scale with image size.
-coarse_block_radius_x_stitch = 30
-coarse_block_radius_y_stitch = 30
-coarse_block_radius_z_stitch = [35, 35, 15]
+coarse_block_radius = 30
 
 
 # Amount of binning for coarse matching
 # If set to 1, no fine matching is performed.
 # Set to value greater than one to make a coarse match first and then a fine match using settings below.
 # The value should scale with image size.
-coarse_binning_x_stitch = 1
-coarse_binning_y_stitch = 1
-coarse_binning_z_stitch = 1
+coarse_binning = 1
 
 
 # Size of image block in pairwise matching (fine step).
-# Different value can be used when stitching in different coordinate directions (see coarse_block_radius).
 # Indicates maximum shift on top of shift determined in coarse matching.
 # The value should scale with image size.
-fine_block_radius_x_stitch = 1
-fine_block_radius_y_stitch = 1
-fine_block_radius_z_stitch = 1
+fine_block_radius = 1
 
 
 # Amount of binning in fine matching.
 # If greater than one, the full resolution of the image is not used to find the shifts.
 # Sometimes the results seem to be very good although this value is greater than one.
 # The value should scale with image size.
-fine_binning_x_stitch = 1
-fine_binning_y_stitch = 1
-fine_binning_z_stitch = 1
+fine_binning = 1
 
 
 # Set to true to try to optimize locations and orientations of the sub-images so that
@@ -144,13 +77,11 @@ normalize_while_stitching = False
 displacement_filter_threshold = 3
 
 
-# Set to true to re-do pairwise matching in some coordinate direction.
+# Set to true to re-do pairwise matching.
 # If output files exist, the pairwise matching process is skipped for those images.
 # Use this if parameters of pairwise matching process are changed and you don't want to
 # manually remove the relevant output files.
-redo_x = False
-redo_y = False
-redo_z = False
+redo = False
 
 # Set to true to create an output image that shows the local amount of
 # deviation from perfect stitching.
@@ -161,7 +92,7 @@ create_goodness = False
 
 
 # Indicates if the calculations should be performed on a cluster
-use_cluster = True
+use_cluster = False
 
 
 # Indicates if the script should wait until submitted cluster jobs are finished, and then continue.
@@ -191,4 +122,24 @@ cluster_job_init_commands = module load gcc/7.3.0
 
 # Path to pi2 program
 #pipath = ./
+
+
+
+
+[positions]
+
+# Enter image file name and approximate position of that image here.
+# The positions should be given in the coordinate system of the first image, but the origin
+# can be anything.
+# You can skip the dimensions and extension as long as each file is uniquely identified.
+wc1_150x150x1.raw = 0, 80, 0
+wc2_150x150x1.raw = 110, 60, 0
+wc3_150x150x1.raw = 220, 40, 0
+wc4_150x150x1.raw = 330, 20, 0
+wc5_150x150x1.raw = 440, 0, 0
+wc6_150x150x1.raw = 0, 190, 0
+wc7_150x150x1.raw = 110, 170, 0
+wc8_150x150x1.raw = 220, 150, 0
+wc9_150x150x1.raw = 330, 130, 0
+wc10_150x150x1.raw = 440, 110, 0
 
