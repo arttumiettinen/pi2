@@ -159,6 +159,15 @@ namespace itl2
 	}
 
 
+	///**
+	//Scales image such that its mean and standard deviation have the given values.
+	//*/
+	//template<typename pixel_t> void normalize(Image<pixel_t>& img, pixel_t targetMean, pixel_t targetStdDev)
+	//{
+
+	//}
+
+
 	namespace tests
 	{
 		void edges();
