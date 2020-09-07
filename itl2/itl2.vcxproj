@@ -56,6 +56,7 @@
     <ClInclude Include="math\qrdecomposition.h" />
     <ClInclude Include="maxima.h" />
     <ClInclude Include="montage.h" />
+    <ClInclude Include="pathopening.h" />
     <ClInclude Include="progress.h" />
     <ClInclude Include="surfaceskeleton2.h" />
     <ClInclude Include="image.h" />
@@ -127,6 +128,7 @@
   <ItemGroup>
     <ClCompile Include="autothreshold.cpp" />
     <ClCompile Include="carpet.cpp" />
+    <ClCompile Include="csa.cpp" />
     <ClCompile Include="danielsson.cpp" />
     <ClCompile Include="diskmappedbuffer.cpp" />
     <ClCompile Include="generation.cpp" />
@@ -163,6 +165,7 @@
     <ClCompile Include="misc.cpp" />
     <ClCompile Include="neighbourhood.cpp" />
     <ClCompile Include="network.cpp" />
+    <ClCompile Include="pathopening.cpp" />
     <ClCompile Include="pointprocess.cpp" />
     <ClCompile Include="progress.cpp" />
     <ClCompile Include="projections.cpp" />

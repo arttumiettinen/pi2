@@ -17,7 +17,7 @@ namespace itl2
 			{
 				ProgressIndicator prog(MAX);
 				for (float n = 0; n < 3 * MAX / 4; n += 173)
-					prog.show(n);
+					prog.step();
 			}
 			std::cout << "this message interrupts the progress indicator..." << std::endl;
 		}

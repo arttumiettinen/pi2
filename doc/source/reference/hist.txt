@@ -46,7 +46,7 @@ Minimum value to be included in the histogram. Values less than minimum are incl
 histogram maximum [input]
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Data type:** real(255), real(65535), real(4.29497e+09), real(1.84467e+19), real(127), real(32767), real(2.14748e+09), real(9.22337e+18), real(3.40282e+38)
+**Data type:** real(255), real(65535), real(4294967295), real(1.844674407370955e+19), real(127), real(32767), real(2147483647), real(9.223372036854776e+18), real(3.402823466385289e+38)
 
 **Default value:** Shown along data types.
 

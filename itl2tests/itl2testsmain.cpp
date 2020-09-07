@@ -46,6 +46,7 @@
 #include "progress.h"
 #include "imagemetadata.h"
 #include "csa.h"
+#include "pathopening.h"
 
 
 using namespace itl2;
@@ -228,8 +229,8 @@ int main()
 
 	//test(itl2::tests::montage, "2D montage of 3D stack");
 
-
-	test(itl2::tests::csa, "Cross-section analysis");
+	test(itl2::tests::pathopening, "Path opening");
+	//test(itl2::tests::csa, "Cross-section analysis");
 
 	//test(itl2::tests::imagemetadata, "image metadata");
 

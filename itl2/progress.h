@@ -12,20 +12,22 @@ namespace itl2
 	class ProgressIndicator
 	{
 	private:
-		float currSteps;
+		float counter;
+
 		float maxSteps;
 		bool showIndicator;
 		bool isTerm;
 
 	public:
 		template<typename T> ProgressIndicator(T maxSteps, bool showIndicator = true) : 
-			currSteps(-(float)maxSteps),
+			counter(0),
 			maxSteps((float)maxSteps),
 			showIndicator(showIndicator)
 		{
 			isTerm = isTerminal();
 			// Always show the indicator
-			show(0);
+			if(showIndicator && isTerm)
+				std::cout << "0 %\r" << std::flush;
 		}
 
 
@@ -33,8 +35,16 @@ namespace itl2
 		{
 			if (showIndicator)
 			{
-				// Move to next line so that the progress bar does not conflict with future printing.
-				std::cout << std::endl;
+				if (isTerm)
+				{
+					// Remove the indicator
+					std::cout << "                   \r" << std::flush;
+				}
+				else
+				{
+					// Move to next line so that the progress bar does not conflict with future printing.
+					std::cout << std::endl;
+				}
 			}
 		}
 
@@ -43,39 +53,47 @@ namespace itl2
 		*/
 		void step()
 		{
-			show(currSteps + 1);
-		}
-
-		/**
-		Show progress indicator in given position.
-		*/
-		template<typename T> void show(T progress)
-		{
 			if (showIndicator)
 			{
+
+				float localCounter;
+
+#if defined(_MSC_VER)
+#pragma omp atomic
+				counter++;
+
+				localCounter = counter;
+#else
+#pragma omp atomic capture
+				localCounter = ++counter;
+#endif
+
+				if (localCounter > maxSteps)
+					localCounter = maxSteps;
+
 				if (isTerm)
 				{
-					coord_t prevProgress = round(currSteps / (maxSteps) * 100);
-					coord_t currProgress = round((float)progress / (maxSteps) * 100);
+					coord_t prevProgress = round((localCounter - 1) / maxSteps * 100);
+					coord_t currProgress = round(localCounter / maxSteps * 100);
 					if (currProgress != prevProgress)
 					{
+#pragma omp critical(showProgress)
 						std::cout << currProgress << " %              \r" << std::flush;
 					}
 				}
 				else
 				{
-					coord_t prevProgress = round(currSteps / (maxSteps) * 10);
-					coord_t currProgress = round((float)progress / (maxSteps) * 10);
-					for (coord_t n = prevProgress; n < currProgress; n++)
+					coord_t prevProgress = round((localCounter - 1) / (maxSteps) * 10);
+					coord_t currProgress = round(localCounter / (maxSteps) * 10);
+#pragma omp critical(showProgress)
 					{
-						std::cout << "=";
+						for (coord_t n = prevProgress; n < currProgress; n++)
+						{
+							std::cout << "=";
+						}
+						std::cout << std::flush;
 					}
-					std::cout << std::flush;
 				}
-
-				currSteps = (float)progress;
-				if (currSteps > maxSteps)
-					currSteps = maxSteps;
 			}
 		}
 

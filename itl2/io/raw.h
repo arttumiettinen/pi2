@@ -509,7 +509,7 @@ namespace itl2
 						}
 					}
 
-					prog.show(z - cStart.z);
+					prog.step();
 				}
 			}
 		}

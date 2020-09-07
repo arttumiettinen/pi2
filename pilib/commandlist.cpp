@@ -34,6 +34,7 @@ namespace pilib
 	void addStructureCommands();
 	void addAutoThresholdCommands();
 	void addInfoCommands();
+	void addPathCommands();
 
 
 	vector<unique_ptr<Command> > CommandList::commands;
@@ -63,6 +64,7 @@ namespace pilib
 		addStructureCommands();
 		addAutoThresholdCommands();
 		addInfoCommands();
+		addPathCommands();
 	}
 
 

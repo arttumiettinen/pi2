@@ -1,0 +1,49 @@
+.. _get:
+
+get
+***
+
+
+**Syntax:** :code:`get(image, output, positions, block origin)`
+
+Reads multiple pixels from an input image. In distributed operating mode, the output and positions images must fit into the RAM.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image where the pixels are read from.
+
+output [output]
+~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Values of the pixels read from the input image are stored in this image. The size of the image will be set to the number of pixels read.
+
+positions [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Positions of pixels to read. Each row of this image contains (x, y, z) coordinates of a pixel to read from the input image. The size of the image must be 3xN where N is the count of pixels to read.
+
+block origin [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Origin of current calculation block in coordinates of the full image. This argument is used internally in distributed processing. Set to zero in normal usage.
+
+See also
+--------
+
+:ref:`set`, :ref:`getpointsandlines`

@@ -34,9 +34,9 @@ filter type [input]
 
 **Data type:** string
 
-**Default value:** Ramp1
+**Default value:** Ramp
 
-Type of the filter. Supported values are Ramp1, Ramp2, Shepp-Logan, Cosine, Hamming, and Hann.
+Type of the filter. Supported values are Ideal ramp, Ramp, Shepp-Logan, Cosine, Hamming, Hann, Blackman, Parze.
 
 cut-off [input]
 ~~~~~~~~~~~~~~~

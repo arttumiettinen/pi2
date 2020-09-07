@@ -46,7 +46,7 @@ points [output]
 
 **Data type:** float32 image
 
-Image that stores coordinates of all points in the network. These include points on edges and centroids of intersection regions. Each row of image stores (x, y, z) of one point.
+Image that stores coordinates of all points in the network. These include points on edges and centroids of intersection regions. Each row of image stores (x, y, z) coordinates of one point.
 
 lines [output]
 ~~~~~~~~~~~~~~

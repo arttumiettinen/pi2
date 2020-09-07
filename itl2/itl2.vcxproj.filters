@@ -348,6 +348,9 @@
     <ClInclude Include="convexhull.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pathopening.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
@@ -516,6 +519,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imagemetadata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pathopening.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="csa.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

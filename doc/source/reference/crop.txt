@@ -6,7 +6,7 @@ crop
 
 **Syntax:** :code:`crop(input image, output image, position, size)`
 
-Crops the input image. If size parameter is set to zero, crops to current size of the output image.
+Crops the input image. If the size parameter is set to zero, crops to current size of the output image. NOTE: Input and output images must have the same data type. If not, output image is converted to the correct type.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

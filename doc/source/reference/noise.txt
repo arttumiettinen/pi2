@@ -6,7 +6,7 @@ noise
 
 **Syntax:** :code:`noise(image, mean, standard deviation, seed)`
 
-Adds Gaussian noise to the image.
+Adds additive Gaussian noise to the image.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
@@ -36,7 +36,7 @@ standard deviation [input]
 
 **Default value:** 0
 
-Standard deviation of the noise to add.
+Standard deviation of the noise to add. Specify zero to select standard deviation based on typical maximum value range of the pixel data type.
 
 seed [input]
 ~~~~~~~~~~~~

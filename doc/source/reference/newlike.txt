@@ -108,8 +108,6 @@ dimensions [input]
 
 **Data type:** 3-component integer vector
 
-**Default value:** "[0, 0, 0]"
-
 Dimensions of the image. Set any component to zero to copy the value from the template image.
 
 See also
