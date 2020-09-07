@@ -4,6 +4,8 @@
 
 #include "pathopening.h"
 
+#include "pisystem.h"
+
 namespace pilib
 {
 
@@ -27,7 +29,7 @@ namespace pilib
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			Image<float32_t>& out = *pop<Image<float32_t>* >(args);
 
-			std::string inName = system->imageName(in);
+			std::string inName = system->imageName(&in);
 
 			pathLength2Binary3dNormalOrChamferMemorySave(in, out, LengthType::Ones, std::string("TEMP-") + inName);
 		}
