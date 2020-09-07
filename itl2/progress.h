@@ -12,16 +12,16 @@ namespace itl2
 	class ProgressIndicator
 	{
 	private:
-		float counter;
+		size_t counter;
 
-		float maxSteps;
+		size_t maxSteps;
 		bool showIndicator;
 		bool isTerm;
 
 	public:
-		template<typename T> ProgressIndicator(T maxSteps, bool showIndicator = true) : 
+		ProgressIndicator(size_t maxSteps, bool showIndicator = true) : 
 			counter(0),
-			maxSteps((float)maxSteps),
+			maxSteps(maxSteps),
 			showIndicator(showIndicator)
 		{
 			isTerm = isTerminal();
@@ -56,7 +56,7 @@ namespace itl2
 			if (showIndicator)
 			{
 
-				float localCounter;
+				size_t localCounter;
 
 #if defined(_MSC_VER)
 #pragma omp atomic
@@ -73,8 +73,8 @@ namespace itl2
 
 				if (isTerm)
 				{
-					coord_t prevProgress = round((localCounter - 1) / maxSteps * 100);
-					coord_t currProgress = round(localCounter / maxSteps * 100);
+					coord_t prevProgress = round((float)(localCounter - 1) / maxSteps * 100);
+					coord_t currProgress = round((float)localCounter / maxSteps * 100);
 					if (currProgress != prevProgress)
 					{
 #pragma omp critical(showProgress)
@@ -83,8 +83,8 @@ namespace itl2
 				}
 				else
 				{
-					coord_t prevProgress = round((localCounter - 1) / (maxSteps) * 10);
-					coord_t currProgress = round(localCounter / (maxSteps) * 10);
+					coord_t prevProgress = round((float)(localCounter - 1) / (maxSteps) * 10);
+					coord_t currProgress = round((float)localCounter / (maxSteps) * 10);
 #pragma omp critical(showProgress)
 					{
 						for (coord_t n = prevProgress; n < currProgress; n++)

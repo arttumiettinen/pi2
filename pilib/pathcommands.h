@@ -22,9 +22,19 @@ namespace pilib
 
 	public:
 
+		virtual void runInternal(PISystem* system, std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			Image<float32_t>& out = *pop<Image<float32_t>* >(args);
+
+			std::string inName = system->imageName(in);
+
+			pathLength2Binary3dNormalOrChamferMemorySave(in, out, LengthType::Ones, std::string("TEMP-") + inName);
+		}
+
 		virtual void run(Image<pixel_t>& in, Image<float32_t>& out, std::vector<ParamVariant>& args) const override
 		{
-			pathLength2Binary3dNormalOrChamferMemorySave(in, out);
+			
 		}
 	};
 

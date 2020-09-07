@@ -8,8 +8,14 @@ namespace itl2
 		void progress()
 		{
 			{
-				ProgressIndicator prog(20);
-				for (size_t n = 0; n < 20; n++)
+				ProgressIndicator prog(5);
+				for (size_t n = 0; n < 5; n++)
+					prog.step();
+			}
+
+			{
+				ProgressIndicator prog(450 * 450 * 450);
+				for (size_t n = 0; n < 450 * 450 * 450; n++)
 					prog.step();
 			}
 
