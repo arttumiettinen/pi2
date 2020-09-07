@@ -880,7 +880,7 @@ namespace itl2
 		*/
 		template<typename pixel_t, typename real_t> void stitchOneVer3(
 			const Image<pixel_t>& src,
-			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts, pixel_t normFactor,
+			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts, real_t normFactor,
 			const Vec3c& outPos, Image<real_t>& mean, Image<real_t>& weight, Image<real_t>* S,
 			bool normalize)
 		{
@@ -1187,7 +1187,7 @@ namespace itl2
 
 				Image<pixel_t> src(srcDimensions);
 				io::read(src, imgFile);
-				internals::stitchOneVer3<pixel_t, float32_t>(src, refPoints, shifts, pixelRound<pixel_t>(normFact), outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
+				internals::stitchOneVer3<pixel_t, float32_t>(src, refPoints, shifts, (float32_t)normFact, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
 			}
 		}
 

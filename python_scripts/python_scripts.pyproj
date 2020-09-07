@@ -43,11 +43,10 @@
     <Folder Include="generic\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="generic\nr_stitcher_grid.py" />
     <Compile Include="generic\base.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="generic\nr_stitcher_nongrid.py">
+    <Compile Include="generic\nr_stitcher.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="generic\pi2py2.py" />
