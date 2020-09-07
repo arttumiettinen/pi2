@@ -8,6 +8,7 @@
 #include "distributor.h"
 #include "particleanalysis.h"
 #include "regionremoval.h"
+#include "csa.h"
 
 #include "othercommands.h"
 #include "pointprocesscommands.h"
@@ -25,7 +26,7 @@ namespace pilib
 
 	inline std::string particleSeeAlso()
 	{
-		return "analyzeparticles, listanalyzers, headers, fillparticles, drawellipsoids, label, analyzelabels, regionremoval";
+		return "analyzeparticles, listanalyzers, headers, fillparticles, drawellipsoids, label, analyzelabels, regionremoval, greedycoloring, csa";
 	}
 
 
@@ -49,7 +50,7 @@ namespace pilib
 			pixel_t color = pixelRound<pixel_t>(pop<double>(args));
 			Connectivity connectivity = pop<Connectivity>(args);
 
-			labelParticles(in, color, 1, connectivity);
+			labelParticles(in, color, (pixel_t)1, connectivity);
 		}
 	};
 
@@ -65,17 +66,31 @@ namespace pilib
 
 		}
 
-	public:
-		virtual void run(vector<ParamVariant>& args) const override
+	private:
+
+		static void print(const AnalyzerSet<Vec3sc, uint8_t>& analyzers)
 		{
-			auto analyzers = allAnalyzers<uint8_t>(Vec3c(1, 1, 1));
-			for(size_t n = 0; n < analyzers.size(); n++)
+			for (size_t n = 0; n < analyzers.size(); n++)
 			{
 				std::cout << analyzers[n]->name() << std::endl;
 				std::cout << analyzers[n]->description() << std::endl;
 				if (n < analyzers.size() - 1)
 					std::cout << std::endl;
 			}
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			std::cout << "For generic particle analysis:" << std::endl;
+			std::cout << "------------------------------" << std::endl;
+			std::cout << std::endl;
+			print(allAnalyzers<uint8_t>(Vec3c(1, 1, 1)));
+			std::cout << std::endl;
+			std::cout << "For fibre cross-section analysis:" << std::endl;
+			std::cout << "--------------------------------" << std::endl;
+			std::cout << std::endl;
+			print(allCrossSectionAnalyzers<uint8_t>());
 		}
 	};
 
@@ -86,7 +101,7 @@ namespace pilib
 
 		HeadersCommand() : Command("headers", "Shows headers of particle analysis result table.",
 			{
-				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers that were used. Use the same value that was passed to analyzeparticles command. Separate the analyzer names with any non-alphanumeric character sequence."),
+				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers that were used. Use the same value that was passed to `analyzeparticles` command. Separate the analyzer names with any non-alphanumeric character sequence."),
 			},
 			particleSeeAlso())
 		{
@@ -339,7 +354,7 @@ namespace pilib
 		AnalyzeParticlesCommand() : Command("analyzeparticles", "Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command `headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see `analyzelabels`.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::InOut, "input image", "Input image. The particles in this image will be filled with temporary color."),
-				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command 'headers' to retrieve meanings of columns."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command `headers` to retrieve meanings of columns."),
 				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers to use. Use command `listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.", "coordinates, volume"),
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours),
 				CommandArgument<size_t>(ParameterDirection::In, "volume limit", "Maximum size of particles to consider, in pixels. Specify zero to consider all particles.", 0),
@@ -760,7 +775,8 @@ namespace pilib
 		GreedyColoringCommand() : OneImageInPlaceCommand<pixel_t>("greedycoloring", "Perform greedy coloring of regions. Colors each region in image such that its neighbours are colored with different colors, and uses as little colors as possible. Uses greedy algorithm so the count of colors used might not be minimal. Assumes background to have value 0 and colors all non-zero regions.",
 			{
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the regions. ") + connectivityHelp(), Connectivity::AllNeighbours),
-			})
+			},
+			particleSeeAlso())
 		{
 		}
 
@@ -772,5 +788,60 @@ namespace pilib
 			greedyColoring(img, connectivity);
 		}
 
+	};
+
+
+
+	template<typename pixel_t> class CSACommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		CSACommand() : Command("csa", "Analyzes cross-sections of cylindrical, tubular, or fibre-like objects. Use to e.g. measure cross-sectional area of fibres. Requires that the local orientation of the fibres has been determined using, e.g., `cylinderorientation` command.",
+			{
+				CommandArgument<Image<pixel_t>>(ParameterDirection::In, "original", "Binary image containing the fibres as foreground."),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "energy", "Image corresponding to the energy output image of cylinderorientation command. Non-zero energy signifies that local orientation is available at that location."),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "phi", R"(The azimuthal angle of the local fibre orientation direction. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "theta", R"(The polar angle of the local fibre orientation direction. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.)"),
+				CommandArgument<Image<float32_t>>(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each fibre cross-section analyzed. Use command `headers` to retrieve meanings of columns."),
+				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers to use. Use command `listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.", "coordinates2d, volume, pca2d, convexhull2d, bounds2d"),
+				CommandArgument<size_t>(ParameterDirection::In, "slice radius", "Half width of one cross-sectional slice", 40),
+				CommandArgument<size_t>(ParameterDirection::In, "slice count", "Count of cross-sectional slices to analyze", 1000),
+				CommandArgument<size_t>(ParameterDirection::In, "random seed", "Seed for random number generator.", 123),
+				CommandArgument<Image<pixel_t>>(ParameterDirection::Out, "slices", "The extracted slices are placed into this image."),
+				CommandArgument<Image<pixel_t>>(ParameterDirection::Out, "visualization", "The locations where the slices are extracted from are drawn into this image"),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "length", "Image containing local fibre length."),
+				CommandArgument<Image<float32_t>>(ParameterDirection::Out, "length slices", "The extracted slices from the length image are placed into this image."),
+			},
+			particleSeeAlso() + ", cylinderorientation")
+		{
+
+		}
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>*>(args);
+			Image<float32_t>& energy = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& phi = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& theta = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& out = *pop<Image<float32_t>*>(args);
+			string analyzerNames = pop<string>(args);
+			size_t sliceRadius = pop<size_t>(args);
+			size_t sliceCount = pop<size_t>(args);
+			size_t randSeed = pop<size_t>(args);
+
+			Image<pixel_t>& slices = *pop<Image<pixel_t>*>(args);
+			Image<pixel_t>& vis = *pop<Image<pixel_t>*>(args);
+			Image<float32_t>& length = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& lengthSlices = *pop<Image<float32_t>*>(args);
+
+			auto analyzers = createCrossSectionAnalyzers<pixel_t>(analyzerNames);
+
+			Results results;
+			
+			csa<pixel_t>(in, energy, phi, theta, &length, analyzers, results, sliceRadius, sliceCount, randSeed, &slices, &lengthSlices, &vis);
+
+			results.toImage(out);
+		}
 	};
 }

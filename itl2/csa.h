@@ -27,11 +27,11 @@ namespace itl2
 	/**
 	Analyze cross-sections of fibres.
 	@param original Original binary image.
-	@param oriOrig Binary image that has been used to calculate orientation (phi and theta).
-	@param phi The azimuthal angle of local fibre orientation. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.
-	@param theta The polar angle of local fibre orientation. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.
+	@param oriEnergy Image corresponding to the 'energy' output of cylinderorientation command.
+	@param oriPhi The azimuthal angle of local fibre orientation. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.
+	@param oriTheta The polar angle of local fibre orientation. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.
 	@param pLength Pointer to image containing local length for each fibre pixel. If null, length won't be analyzed. If not null, length values are read from this image and their per-slice statistics are added to the end of results array in columns 'length min', 'length max', 'lengh mean', and 'length mode'.
-	@param analyzers Particle analyzers to apply to eahch fibre cross-section.
+	@param analyzers Particle analyzers to apply to each fibre cross-section.
 	@param results Results table for the particle analysis.
 	@param sliceRadius Radius of each slice. Slice width and height will be 2 x sliceRadius + 1
 	@param sliceCount Count of slices to extract and analyze.
@@ -42,26 +42,26 @@ namespace itl2
 	@param fillColor Temporary color. This must be a non-zero color other that what is used to mark the fibres in the original image.
 	*/
 	template<typename pixel_t> void csa(const Image<pixel_t>& original,
-		const Image<pixel_t>& oriOrig, const Image<float32_t>& phi, const Image<float32_t>& theta,
+		const Image<float32_t>& oriEnergy, const Image<float32_t>& oriPhi, const Image<float32_t>& oriTheta,
 		const Image<float32_t>* pLength,
 		const AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results,
 		coord_t sliceRadius,
 		coord_t sliceCount,
-		int randseed = 123,
+		size_t randseed = 123,
 		Image<pixel_t>* pSlices = 0,
-		Image<pixel_t>* pLengthSlices = 0,
+		Image<float32_t>* pLengthSlices = 0,
 		Image<pixel_t>* pVisualization = 0,
 		pixel_t fillColor = internals::SpecialColors<pixel_t>::fillColor())
 	{
 		if (sliceCount < 1)
 			throw ITLException("Slice count is too small.");
 
-		oriOrig.checkSize(phi);
-		oriOrig.checkSize(theta);
+		oriEnergy.checkSize(oriPhi);
+		oriEnergy.checkSize(oriTheta);
 
 		coord_t sliceSize = 2 * sliceRadius + 1;
 
-		double oriScale = (double)oriOrig.width() / (double)original.width();
+		double oriScale = (double)oriEnergy.width() / (double)original.width();
 		coord_t oriSliceSize = pixelRound<coord_t>(oriScale * sliceSize);
 
 		double lengthScale = 1.0;
@@ -137,10 +137,10 @@ namespace itl2
 				if (original.isInImage(pos) && original(pos) != 0)
 				{
 					Vec3c oriPos = itl2::round(Vec3d(pos) * oriScale);
-					if (oriOrig.isInImage(oriPos) && oriOrig(oriPos) != 0)
+					if (oriEnergy.isInImage(oriPos) && oriEnergy(oriPos) != 0)
 					{
-						double polar = theta(oriPos);
-						double azimuthal = phi(oriPos);
+						double polar = oriTheta(oriPos);
+						double azimuthal = oriPhi(oriPos);
 						Vec3d dir = toCartesian(1.0, azimuthal, polar);
 
 						bool touchesEdge = false;
@@ -254,20 +254,6 @@ namespace itl2
 				<< "no orientation available: " << noOrientationCount << " (" << std::setprecision(2) << ((double)noOrientationCount / totalTrials * 100) << " %)" << std::endl;
 	}
 
-	/**
-	Creates list of particle analyzers suitable for csa function.
-	*/
-	template<typename pixel_t> AnalyzerSet<Vec3sc, pixel_t> allCrossSectionAnalyzers()
-	{
-		AnalyzerSet<Vec3sc, pixel_t> analyzers;
-		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Coordinates2D<Vec3sc, pixel_t>()));
-		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Volume<Vec3sc, pixel_t>()));
-		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::PCA2D<Vec3sc, pixel_t>()));
-		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::ConvexHull2D<Vec3sc, pixel_t>()));
-		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::BoundingBox2D<Vec3sc, pixel_t>()));
-
-		return analyzers;
-	}
 
 	namespace tests
 	{
@@ -294,7 +280,7 @@ namespace itl2
 			Image<uint8_t> slices;
 			Image<uint8_t> vis;
 			convert(orig, vis);
-			itl2::csa<uint8_t>(orig, orig, phi, theta, nullptr, allCrossSectionAnalyzers<uint8_t>(), results, 20, 300, 123, &slices, nullptr, &vis);
+			itl2::csa<uint8_t>(orig, energy, phi, theta, nullptr, allCrossSectionAnalyzers<uint8_t>(), results, 20, 300, 123, &slices, nullptr, &vis);
 
 			// Save results
 			raw::writed(orig, "./csa/orig");

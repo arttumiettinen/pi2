@@ -288,7 +288,7 @@ namespace itl2
 
 			virtual std::string name() const override
 			{
-				return "coordinates";
+				return "coordinates2d";
 			}
 
 			virtual std::string description() const override
@@ -324,7 +324,7 @@ namespace itl2
 
 			virtual std::string description() const override
 			{
-				return "Shows total volume of the particle in pixels. Outputs one column with name 'Volume'.";
+				return "Shows total volume of the particle in pixels, or total area of the particle in the 2D case. Outputs one column with name 'Volume'.";
 			}
 		};
 
@@ -1106,6 +1106,21 @@ namespace itl2
 	}
 
 	/**
+	Creates list of particle analyzers suitable for csa function.
+	*/
+	template<typename pixel_t> AnalyzerSet<Vec3sc, pixel_t> allCrossSectionAnalyzers()
+	{
+		AnalyzerSet<Vec3sc, pixel_t> analyzers;
+		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Coordinates2D<Vec3sc, pixel_t>()));
+		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Volume<Vec3sc, pixel_t>()));
+		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::PCA2D<Vec3sc, pixel_t>()));
+		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::ConvexHull2D<Vec3sc, pixel_t>()));
+		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::BoundingBox2D<Vec3sc, pixel_t>()));
+
+		return analyzers;
+	}
+
+	/**
 	Creates list of all particle analyzers.
 	*/
 	template<typename pixel_t> AnalyzerSet<Vec3sc, pixel_t> allAnalyzers(const Image<pixel_t>& img)
@@ -1151,6 +1166,29 @@ namespace itl2
 		std::vector<string> parts = split(names, false, ' ');
 
 		AnalyzerSet<Vec3sc, pixel_t> all = allAnalyzers<pixel_t>(dimensions);
+		AnalyzerSet<Vec3sc, pixel_t> result;
+
+		for (size_t n = 0; n < parts.size(); n++)
+		{
+			std::shared_ptr<Analyzer<Vec3sc, pixel_t> > tmp = internals::getAnalyzer<pixel_t>(all, parts[n]);
+			result.push_back(tmp);
+		}
+
+		return result;
+	}
+
+
+	/**
+	Converts list of analyzer names to analyzer set.
+	*/
+	template<typename pixel_t> AnalyzerSet<Vec3sc, pixel_t> createCrossSectionAnalyzers(string names)
+	{
+		// Replace all possible delimiters by space
+		replace_if(names.begin(), names.end(), internals::isnotalnum, ' ');
+
+		std::vector<string> parts = split(names, false, ' ');
+
+		AnalyzerSet<Vec3sc, pixel_t> all = allCrossSectionAnalyzers<pixel_t>();
 		AnalyzerSet<Vec3sc, pixel_t> result;
 
 		for (size_t n = 0; n < parts.size(); n++)

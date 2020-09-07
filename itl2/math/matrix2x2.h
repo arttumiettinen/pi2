@@ -324,8 +324,8 @@ namespace itl2
 			// Sort eigenvalues and eigenvectors
 			if (lambda1 < lambda2)
 			{
-				swap(lambda1, lambda2);
-				swap(v1, v2);
+				std::swap(lambda1, lambda2);
+				std::swap(v1, v2);
 			}
 
 		}

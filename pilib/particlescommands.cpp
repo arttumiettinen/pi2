@@ -17,5 +17,7 @@ namespace pilib
 		ADD_REAL(FillParticlesCommand);
 		ADD_REAL(DrawEllipsoidsCommand);
 		ADD_REAL(GreedyColoringCommand);
+
+		ADD_REAL(CSACommand);
 	}
 }
