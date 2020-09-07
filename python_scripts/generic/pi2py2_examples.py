@@ -4,8 +4,10 @@ This file contains examples of how to use pi2py2 library.
 
 
 
-
-
+# If pi2py2 is not found from the Python path, you can add it manually using
+# these lines. The '../pi2' path should point to the pi2 installation directory.
+#import sys
+#sys.path.append('../pi2')
 
 
 

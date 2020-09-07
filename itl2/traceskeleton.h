@@ -16,6 +16,7 @@
 #include "indexforest.h"
 #include "lineskeleton.h"
 #include "misc.h"
+#include "getslice.h"
 
 #include <omp.h>
 #include <vector>
@@ -525,60 +526,6 @@ namespace itl2
 		@return Length estimate.
 		*/
 		float32_t lineLength(std::vector<Vec3f>& points, /*float32_t* pStraightLength, */double sigma = 1, double maxDisplacement = 1);
-
-		/**
-		Extracts 2D slice from 3D image.
-		@param img Image where the pixel data is extracted.
-		@param pos Position of the center point of the slice.
-		@param dir Direction of slice normal.
-		@param slice Slice pixels will be set to this image. The size of the image must be the required size of the slice.
-		*/
-		template<typename pixel_t> void getSlice(const Image<pixel_t>& img, const Vec3d& pos, Vec3d dir, Image<pixel_t>& slice)
-		{
-			const Interpolator<pixel_t, pixel_t, double>& interpolator = LinearInterpolator<pixel_t, pixel_t, double, double>(BoundaryCondition::Zero);
-
-			// Create orthogonal base by choosing two more directions
-			dir = dir.normalized();
-			Vec3d up(0, 0, 1);
-			Vec3d right = dir.cross(up);
-			if (right.norm() < 0.0001)
-			{
-				up = Vec3d(1, 0, 0);
-				right = dir.cross(up);
-			}
-			right = right.normalized();
-			up = right.cross(dir);
-
-			// Build rotation matrix
-			Matrix3x3d rot(up.x, right.x, dir.x,
-								up.y, right.y, dir.y,
-								up.z, right.z, dir.z);
-
-			if (!NumberUtils<double>::equals(rot.det(), 1.0, 100 * NumberUtils<double>::tolerance()))
-				throw ITLException("Invalid rotation matrix.");
-
-			Vec2d sliceRadius = Vec2d((double)slice.width() - 1, (double)slice.height() - 1) / 2.0;
-
-			for (coord_t yi = 0; yi < (coord_t)slice.height(); yi++)
-			{
-				for (coord_t xi = 0; xi < (coord_t)slice.width(); xi++)
-				{
-					Vec3d p(xi - (double)sliceRadius.x, (double)yi - (double)sliceRadius.y, 0);
-					Vec3d x = rot * p + pos;
-					Vec3c xc = round(x);
-					
-					if (img.isInImage(xc))
-					{
-						pixel_t pixel = interpolator(img, x);
-						slice(xi, yi) = pixel;
-					}
-					else
-					{
-						slice(xi, yi) = 0;
-					}
-				}
-			}
-		}
 
 		/**
 		Estimates properties of skeleton edge from the points that belong to the edge.

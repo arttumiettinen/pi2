@@ -336,6 +336,18 @@
     <ClInclude Include="imagemetadata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="csa.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="getslice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math\matrix2x2.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="convexhull.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">

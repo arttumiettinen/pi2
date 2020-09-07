@@ -36,7 +36,8 @@ namespace pilib
 
 		LabelCommand() : OneImageInPlaceCommand<pixel_t>("label", "Labels distinct regions in the image with individual colors. The regions do not need to be separated by background. Execution is terminated in an error if the pixel data type does not support large enough values to label all the particles.",
 			{
-				CommandArgument<double>(ParameterDirection::In, "region color", "Current color of regions that should be labeled. Set to zero to label all non-zero regions.", 0)
+				CommandArgument<double>(ParameterDirection::In, "region color", "Current color of regions that should be labeled. Set to zero to label all non-zero regions.", 0),
+				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours),
 			},
 			particleSeeAlso())
 		{
@@ -46,8 +47,9 @@ namespace pilib
 		virtual void run(Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
 		{
 			pixel_t color = pixelRound<pixel_t>(pop<double>(args));
+			Connectivity connectivity = pop<Connectivity>(args);
 
-			labelParticles(in, color);
+			labelParticles(in, color, 1, connectivity);
 		}
 	};
 

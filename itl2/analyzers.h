@@ -7,7 +7,8 @@
 #include <memory>
 #include <algorithm>
 
-#include "math/vec3.h"
+#include "math/matrix2x2.h"
+#include "math/matrix3x3.h"
 #include "image.h"
 #include "resultstable.h"
 #include "sphere.h"
@@ -15,8 +16,7 @@
 #include "marchingcubes.h"
 #include "ellipsoid.h"
 
-//#include "math/matrix3x3.h"
-//#include "convexhull.h"
+#include "convexhull.h"
 //#include "sphere.h"
 
 
@@ -219,7 +219,7 @@ namespace itl2
 		/**
 		Returns the coordinates of the first point on the particle.
 		*/
-		template<class POINT, typename pixel_t> class Coordinates : public Analyzer<POINT, pixel_t>
+		template<class POINT, typename pixel_t> class Coordinates3D : public Analyzer<POINT, pixel_t>
 		{
 		public:
 			virtual std::vector<std::string> getTitles() const
@@ -254,6 +254,46 @@ namespace itl2
 			virtual std::string description() const override
 			{
 				return "Shows (zero-based) coordinates of a pixel that is guaranteed to be inside the particle. Output column names are 'X', 'Y', and 'Z'.";
+			}
+		};
+
+
+		/**
+		Returns the coordinates of the first point on the particle.
+		*/
+		template<class POINT, typename pixel_t> class Coordinates2D : public Analyzer<POINT, pixel_t>
+		{
+		public:
+			virtual std::vector<std::string> getTitles() const
+			{
+				std::vector<std::string> labels;
+				labels.push_back("X [pixel]");
+				labels.push_back("Y [pixel]");
+				return labels;
+			}
+
+			virtual std::vector<double> analyze(const std::vector<POINT>& points) const override
+			{
+				// This is needed so that threaded and non-threaded particle analysis versions
+				// give exactly the same results.
+				// TODO: The comparer template is not compatible with all POINT arguments.
+				auto pi = std::min_element(points.begin(), points.end(), vecComparer<int32_t>);
+				POINT p = *pi;
+
+				std::vector<double> results;
+				results.push_back((double)p[0]);
+				results.push_back((double)p[1]);
+				return results;
+			}
+
+			virtual std::string name() const override
+			{
+				return "coordinates";
+			}
+
+			virtual std::string description() const override
+			{
+				return "Shows (zero-based) coordinates of a pixel that is guaranteed to be inside the particle. Output column names are 'X' and 'Y'.";
 			}
 		};
 
@@ -357,79 +397,89 @@ namespace itl2
 			}
 		};
 
-		///**
-		//Calculates measures of the convex hull of the particle.
-		//*/
-  //      template<class POINT, typename pixel_t> class ConvexHull2D : public Analyzer<POINT, pixel_t>
-  //      {
-		//private:
-		//	/**
-		//	Calculates area of convex 2D polygon.
-		//	*/
-		//	double convexPolyArea(const std::vector<POINT>& v)
-		//	{
-		//		double area = 0;
-		//		for(size_t n = 1; n < v.size()-1; n++)
-		//		{
-		//			POINT A = v[0];
-		//			POINT B = v[n];
-		//			POINT C = v[n + 1];
-		//			area += abs((A.x-C.x)*(B.y-A.y)-(A.x-B.x)*(C.y-A.y));
-		//		}
-		//		area *= 0.5;
+		/**
+		Calculates measures of the convex hull of the particle.
+		*/
+        template<class POINT, typename pixel_t> class ConvexHull2D : public Analyzer<POINT, pixel_t>
+        {
+		private:
+			/**
+			Calculates area of convex 2D polygon.
+			*/
+			static double convexPolyArea(const std::vector<POINT>& v)
+			{
+				double area = 0;
+				for(size_t n = 1; n < v.size()-1; n++)
+				{
+					POINT A = v[0];
+					POINT B = v[n];
+					POINT C = v[n + 1];
+					area += abs((A.x-C.x)*(B.y-A.y)-(A.x-B.x)*(C.y-A.y));
+				}
+				area *= 0.5;
 
-		//		return area;
-		//	}
+				return area;
+			}
 
-		//	/**
-		//	Calculates edge length of polygon.
-		//	*/
-		//	double polyPerimeter(const std::vector<POINT>& v)
-		//	{
-		//		double p = 0;
-		//		for(size_t n = 0; n < v.size() - 1; n++)
-		//			p += (v[n + 1] - v[n]).norm();
-		//		p += (v[0] - v[v.size() - 1]).norm();
-		//		return p;
-		//	}
+			/**
+			Calculates edge length of polygon.
+			*/
+			static double polyPerimeter(const std::vector<POINT>& v)
+			{
+				double p = 0;
+				for(size_t n = 0; n < v.size() - 1; n++)
+					p += (v[n + 1] - v[n]).norm();
+				p += (v[0] - v[v.size() - 1]).norm();
+				return p;
+			}
 
-  //      public:
-  //          virtual std::vector<string> getTitles() const
-  //          {
-		//		std::vector<string> labels;
-		//		labels.push_back("Convex area [pixel^2]");
-		//		labels.push_back("Convex perimeter [pixel]");
-  //              return labels;
-  //          }
+        public:
+			virtual std::vector<std::string> getTitles() const override
+			{
+				std::vector<std::string> labels;
+				labels.push_back("Convex area [pixel^2]");
+				labels.push_back("Convex perimeter [pixel]");
+				return labels;
+			}
 
-  //          virtual std::vector<double> analyze(const std::vector<POINT >& points)
-  //          {
-		//		std::vector<double> results;
+			virtual std::vector<double> analyze(const std::vector<POINT>& points) const override
+			{
+				std::vector<double> results;
 
-		//		// Calculate convex hull from edge points so that area of convex hull is always >= nonconvex area.
-		//		std::vector<POINT > edgePoints;
-		//		for(size_t n = 0; n < points.size(); n++)
-		//		{
-		//			POINT p = points[n];
-		//			int ix = (int)p.x;
-		//			int iy = (int)p.y;
+				// Calculate convex hull from edge points so that area of convex hull is always >= nonconvex area.
+				std::vector<POINT > edgePoints;
+				for(size_t n = 0; n < points.size(); n++)
+				{
+					POINT p = points[n];
+					int ix = (int)p.x;
+					int iy = (int)p.y;
 
-		//			edgePoints.push_back(POINT(ix, iy));
-		//			edgePoints.push_back(POINT(ix+1, iy));
-		//			edgePoints.push_back(POINT(ix, iy+1));
-		//			edgePoints.push_back(POINT(ix+1, iy+1));
-		//		}
+					edgePoints.push_back(POINT(ix, iy, 0));
+					edgePoints.push_back(POINT(ix+1, iy, 0));
+					edgePoints.push_back(POINT(ix, iy+1, 0));
+					edgePoints.push_back(POINT(ix+1, iy+1, 0));
+				}
 
-		//		std::vector<POINT> hull;
-		//		convexHull2D(edgePoints, hull);
-		//		double area = convexPolyArea(hull);
-		//		double perimeter = polyPerimeter(hull);
+				std::vector<POINT> hull;
+				convexHull2D(edgePoints, hull);
+				double area = convexPolyArea(hull);
+				double perimeter = polyPerimeter(hull);
 
-		//		results.push_back(area);
-		//		results.push_back(perimeter);
-		//		return results;
-  //          }
-  //      };
+				results.push_back(area);
+				results.push_back(perimeter);
+				return results;
+            }
+
+			virtual std::string name() const override
+			{
+				return "convexhull2d";
+			}
+
+			virtual std::string description() const override
+			{
+				return "Shows area and perimeter of the convex hull of the particle. Outputs columns 'Convex area' and 'Convex perimeter'.";
+			}
+        };
 
 
 		/**
@@ -522,7 +572,7 @@ namespace itl2
 					"Maximum diameter of the projection of the particle on each principal component in columns 'd1', 'd2', and 'd3'.\n"
 					"Scaling factor for a bounding ellipsoid in column 'bounding scale'. An ellipsoid that bounds the\n"
 					"particle and whose semi-axes correspond to the principal components has semi-axis lengths\n"
-					"$b \\sqrt{lN}$, where $b$ is the bounding scale and $lN$ are the lengths of the principal axes.";
+					"$b lN$, where $b$ is the bounding scale and $lN$ are the lengths of the principal axes.";
 			}
 
 			virtual std::vector<string> getTitles() const
@@ -545,7 +595,7 @@ namespace itl2
 				titles.push_back("d1 [pixel]");     // Maximum diameter in direction of first principal component.
 				titles.push_back("d2 [pixel]");     // Maximum diameter in direction of second principal component.
 				titles.push_back("d3 [pixel]");     // Maximum diameter in direction of third principal component.
-				titles.push_back("bounding scale"); // Semi-axis of bounding ellipsoid are calculated as (bounding scale)*l1, (bounding scale)*l2, etc.
+				titles.push_back("bounding scale");
 				return titles;
 			}
 
@@ -665,6 +715,139 @@ namespace itl2
 			}
 		};
 
+		/**
+		Calculates principal components.
+		*/
+		template<class POINT, typename pixel_t> class PCA2D : public Analyzer<POINT, pixel_t>
+		{
+			virtual std::string name() const override
+			{
+				return "pca2d";
+			}
+
+			virtual std::string description() const override
+			{
+				return "Calculates orientation of the particle using principal component analysis. Outputs:\n"
+					"Centroid of the particle in columns 'CX', and 'CY'.\n"
+					"Eccentricity in column 'e'.\n"
+					"Standard deviations of the projections of the particle points to the principal axes in columns 'l1', and 'l2'.\n"
+					"Orientation of the first principal axis of the particle in column 'alpha'.\n"
+					"The alpha value is angle in radians between positive $x$-axis and particle orientation.\n"
+					"Maximum distance from the centroid to the edge of the particle in colum 'rmax'.\n"
+					"Maximum diameter of the projection of the particle on each principal component in columns 'd1', and 'd2'.\n"
+					"Scaling factor for a bounding ellipse in column 'bounding scale'. An ellipse that bounds the\n"
+					"particle and whose semi-axes correspond to the principal components, has semi-axis lengths\n"
+					"$b lN$, where $b$ is the bounding scale and $lN$ are the lengths of the principal axes.";
+			}
+
+			virtual std::vector<string> getTitles() const
+			{
+				std::vector<string> titles;
+				titles.push_back("CX [pixel]");
+				titles.push_back("CY [pixel]");
+				titles.push_back("e");
+				titles.push_back("l1 [pixel]");
+				titles.push_back("l2 [pixel]");
+				titles.push_back("alpha [rad]");
+				titles.push_back("rmax [pixel]");	// Overall maximum radius from center point
+				titles.push_back("d1 [pixel]");     // Maximum diameter in direction of first principal component.
+				titles.push_back("d2 [pixel]");     // Maximum diameter in direction of second principal component.
+				titles.push_back("bounding scale");
+				return titles;
+			}
+
+			virtual std::vector<double> analyze(const std::vector<POINT>& points) const override
+			{
+				std::vector<double> results;
+
+
+				Vec3d centroid3 = mean<POINT, Vec3d, double>(points);
+				centroid3.z = 0;
+				Vec2d centroid(centroid3.x, centroid3.y);
+
+				Matrix2x2d CI;
+				for (const auto& p : points)
+				{
+					Vec2d d = Vec2d(p.x, p.y) - centroid;
+					CI += Matrix2x2d::outer(d, d);
+				}
+				CI /= (double)points.size();
+
+				Vec2d t1, t2;
+				double lambda1, lambda2;
+				CI.eigsym(t1, t2, lambda1, lambda2);
+
+
+				if (lambda1 < lambda2)
+					throw ITLException("Eigenvalues are unsorted.");
+
+				double r1, phi1;
+
+				toPolar(t1.x, t1.y, r1, phi1);
+
+				double e = 0.0;
+				if (abs(lambda1) > 1e-6)
+					e = sqrt(1.0 - (lambda2 * lambda2) / (lambda1 * lambda1));
+
+				double l1 = sqrt(lambda1);
+				double l2 = sqrt(lambda2);
+
+				results.push_back(centroid.x);
+				results.push_back(centroid.y);
+
+				results.push_back(e);
+
+				results.push_back(l1);
+				results.push_back(l2);
+
+				results.push_back(phi1);
+
+
+				// Calculate maximum radius, projections to principal axes, etc.
+				double maxr = 0;
+				t1.normalize();
+				t2.normalize();
+				double maxd1 = 0;
+				double mind1 = 0;
+				double maxd2 = 0;
+				double mind2 = 0;
+				double boundingScale = 0;
+				for (size_t n = 0; n < points.size(); n++)
+				{
+					Vec2d p = Vec2d(points[n].x, points[n].y) - centroid;
+					double r = p.norm();
+					maxr = std::max(maxr, r);
+
+					r = t1.dot(p);
+					if (r > maxd1)
+						maxd1 = r;
+					if (r < mind1)
+						mind1 = r;
+
+					r = t2.dot(p);
+					if (r > maxd2)
+						maxd2 = r;
+					if (r < mind2)
+						mind2 = r;
+
+
+					double f = getEllipseFunctionValue(Vec2d(points[n].x, points[n].y),
+						centroid,
+						l1, l2,
+						phi1);
+					double scale = sqrt(f);
+					if (!std::isnan(scale) && !std::isinf(scale))
+						boundingScale = std::max(boundingScale, scale);
+				}
+				results.push_back(maxr);
+				results.push_back(maxd1 - mind1);
+				results.push_back(maxd2 - mind2);
+				results.push_back(boundingScale);
+
+				return results;
+			}
+		};
+
 		///**
 		//Returns measurements of histogram (from another image) at the points of the particle.
 		//*/
@@ -753,12 +936,12 @@ namespace itl2
 			virtual std::vector<std::string> getTitles() const override
 			{
 				std::vector<std::string> labels;
-				labels.push_back("minx");
-				labels.push_back("maxx");
-				labels.push_back("miny");
-				labels.push_back("maxy");
-				labels.push_back("minz");
-				labels.push_back("maxz");
+				labels.push_back("minx [pix]");
+				labels.push_back("maxx [pix]");
+				labels.push_back("miny [pix]");
+				labels.push_back("maxy [pix]");
+				labels.push_back("minz [pix]");
+				labels.push_back("maxz [pix]");
 				return labels;
 			}
 
@@ -804,6 +987,63 @@ namespace itl2
 			}
 		};
 
+
+		/**
+		Calculates axis-aligned bounding box of the particle.
+		*/
+		template<class POINT, typename pixel_t> class BoundingBox2D : public Analyzer<POINT, pixel_t>
+		{
+		private:
+
+
+		public:
+			virtual std::vector<std::string> getTitles() const override
+			{
+				std::vector<std::string> labels;
+				labels.push_back("minx [pix]");
+				labels.push_back("maxx [pix]");
+				labels.push_back("miny [pix]");
+				labels.push_back("maxy [pix]");
+				return labels;
+			}
+
+			virtual std::vector<double> analyze(const std::vector<POINT >& points) const override
+			{
+				// Calculate bounds
+				POINT min = points[0];
+				POINT max = points[0];
+				for (size_t n = 1; n < points.size(); n++)
+				{
+					if (points[n].x < min.x)
+						min.x = points[n].x;
+					if (points[n].y < min.y)
+						min.y = points[n].y;
+					if (points[n].x > max.x)
+						max.x = points[n].x;
+					if (points[n].y > max.y)
+						max.y = points[n].y;
+				}
+
+				std::vector<double> results;
+				results.push_back((double)min.x);
+				results.push_back((double)max.x);
+				results.push_back((double)min.y);
+				results.push_back((double)max.y);
+				return results;
+			}
+
+			virtual std::string name() const override
+			{
+				return "bounds2d";
+			}
+
+			virtual std::string description() const override
+			{
+				return "Calculates axis-aligned bounding box of the particle. Returns minimum and maximum coordinates of particle points in all coordinate dimensions. Outputs columns 'minX' and 'maxX' for each dimension, where X is either x, or y.";
+			}
+		};
+
+
 		/**
 		Calculates minimum bounding sphere of the particle
 		*/
@@ -848,12 +1088,12 @@ namespace itl2
 	}
 
 	/**
-	Creates list of all particle analyzers.
+	Creates list of all particle analyzers for 3D particles.
 	*/
 	template<typename pixel_t> AnalyzerSet<Vec3sc, pixel_t> allAnalyzers(const Vec3c& dimensions)
 	{
 		AnalyzerSet<Vec3sc, pixel_t> analyzers;
-		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Coordinates<Vec3sc, pixel_t>()));
+		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Coordinates3D<Vec3sc, pixel_t>()));
 		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::IsOnEdge<Vec3sc, pixel_t>(dimensions)));
 		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::Volume<Vec3sc, pixel_t>()));
 		analyzers.push_back(std::shared_ptr<Analyzer<Vec3sc, pixel_t> >(new analyzers::PCA3D<Vec3sc, pixel_t>()));

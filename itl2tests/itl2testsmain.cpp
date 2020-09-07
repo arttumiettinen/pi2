@@ -45,6 +45,7 @@
 #include "iteration.h"
 #include "progress.h"
 #include "imagemetadata.h"
+#include "csa.h"
 
 
 using namespace itl2;
@@ -198,7 +199,7 @@ int main()
 
 	//test(itl2::tests::surfaceCurvature, "surface curvature");
 
-	test(itl2::tests::recSettings, "Rec settings");
+	//test(itl2::tests::recSettings, "Rec settings");
 	//test(itl2::tests::paganin, "Paganin method");
 	//// NOTE: Data for these tests is not publicly available (yet)
 	////test(itl2::tests::fbp, "Filtered backprojection");
@@ -227,7 +228,10 @@ int main()
 
 	//test(itl2::tests::montage, "2D montage of 3D stack");
 
-	test(itl2::tests::imagemetadata, "image metadata");
+
+	test(itl2::tests::csa, "Cross-section analysis");
+
+	//test(itl2::tests::imagemetadata, "image metadata");
 
 	
 

@@ -9,6 +9,37 @@ namespace itl2
 {
 
 	/**
+	Gets value of left side of ellipse equation at p for ellipsoid located at c that has
+	semi-axis lengths l1 and l2 and whose semi-axis orientations are given by phi1, phi1 + PI/2.
+	Points inside the ellipse are characterized by return value <= 1.
+	*/
+	inline double getEllipseFunctionValue(const Vec2d& p,
+		const Vec2d& c,
+		double l1, double l2,
+		double phi1)
+	{
+		// Make the ellipsoid centered to origin
+		Vec2d pdot = p - c;
+
+		// Rotate pdot such that ellipsoid axes are aligned with coordinate axes
+		Vec2d u1 = toCartesian(1.0, phi1);
+		Vec2d u2 = toCartesian(1.0, phi1 + PI / 2.0);
+
+		Matrix3x3d R(u1.x, u2.x, 0,
+			u1.y, u2.y, 0,
+			0, 0, 1);
+
+		R.transpose();
+		Vec3d tmp = R * Vec3d(pdot.x, pdot.y, 0);
+		pdot = Vec2d(tmp.x, tmp.y);
+
+		// Use ellipse equation
+		double f = (pdot.x * pdot.x) / (l1 * l1) + (pdot.y * pdot.y) / (l2 * l2);
+
+		return f;
+	}
+
+	/**
 	Gets value of left side of ellipsoid equation at p for ellipsoid located at c that has
 	semi-axis lengths l1, l2 and l3	and whose semi-axis orientations are given by (phiN, thetaN), N=1..3.
 	Points inside the ellipsoid are characterized by return value <= 1.
@@ -34,10 +65,6 @@ namespace itl2
 
 		R.transpose();
 		pdot = R * pdot;
-
-		//Matrix3x3d Ri;
-		//R.inverse(Ri);
-		//pdot = Ri * pdot;
 
 		// Use ellipsoid equation
 		double f = (pdot.x * pdot.x) / (l1 * l1) + (pdot.y * pdot.y) / (l2 * l2) + (pdot.z * pdot.z) / (l3 * l3);

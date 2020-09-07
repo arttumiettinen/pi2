@@ -386,6 +386,21 @@ namespace itl2
 	}
 
 	/**
+	Calculates orientation of cylindrical or tubular structures.
+	@param img At input, must contain the original image, possibly binary. At output, contains 'energy' as defined in the structure tensor documentation.
+	@param phi The azimuthal angle of orientation direction will be stored in this image. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.
+	@param theta The polar angle of orientation direction will be stored in this image. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.
+	@param derSigma Scale parameter. Set to the preferred scale of edges that define the cylinders. Derivatives required in the stucture tensor are calculated using convolutions with derivative of a Gaussian function, and this parameter defines the standard deviation of the Gaussian.
+	@param smoothSigma The structure tensor is smoothed by convolution with a Gaussian. This parameter defines the standard deviation of the smoothing Gaussian.
+	*/
+	inline void cylinderOrientation(Image<float32_t>& img,
+		Image<float32_t>& phi, Image<float32_t>& theta,
+		double derSigma = 1.0, double smoothSigma = 1.0)
+	{
+		structureTensor<float32_t>(img, derSigma, smoothSigma, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, &phi, &theta, nullptr, nullptr, &img, 0.0);
+	}
+
+	/**
 	Calculate filters that respond to lines and tubes.
 	Creates 6 temporary images of the same size than the original.
 	All output images can equal to the input image.

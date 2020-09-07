@@ -30,6 +30,8 @@
     <ClInclude Include="carpet.h" />
     <ClInclude Include="connectivity.h" />
     <ClInclude Include="conversions.h" />
+    <ClInclude Include="convexhull.h" />
+    <ClInclude Include="csa.h" />
     <ClInclude Include="danielsson.h" />
     <ClInclude Include="datatypes.h" />
     <ClInclude Include="diskmappedbuffer.h" />
@@ -43,12 +45,14 @@
     <ClInclude Include="filters.h" />
     <ClInclude Include="floodfill.h" />
     <ClInclude Include="generation.h" />
+    <ClInclude Include="getslice.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="imagemetadata.h" />
     <ClInclude Include="io\nrrd.h" />
     <ClInclude Include="iteration.h" />
     <ClInclude Include="marchingcubes.h" />
     <ClInclude Include="math\ludecomposition.h" />
+    <ClInclude Include="math\matrix2x2.h" />
     <ClInclude Include="math\qrdecomposition.h" />
     <ClInclude Include="maxima.h" />
     <ClInclude Include="montage.h" />

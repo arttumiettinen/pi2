@@ -121,8 +121,10 @@ namespace itl2
 							particleNumber++;
 					}
 
-					showThreadProgress(counter, image.pixelCount(), showProgress);
+					
 				}
+
+				showThreadProgress(counter, image.depth() * image.height(), showProgress);
 			}
 		}
 

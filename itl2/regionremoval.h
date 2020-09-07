@@ -19,7 +19,7 @@ namespace itl2
 		// Analyze particles
 		Results results;
 		AnalyzerSet<Vec3sc, pixel_t> analyzers;
-		analyzers.push_back(new analyzers::Coordinates<Vec3sc, pixel_t>());
+		analyzers.push_back(new analyzers::Coordinates3D<Vec3sc, pixel_t>());
 		analyzers.push_back(new analyzers::Volume<Vec3sc, pixel_t>());
 		if (preserveEdges)
 			analyzers.push_back(new analyzers::IsOnEdge<Vec3sc, pixel_t>(img.dimensions()));

@@ -59,7 +59,7 @@ At the time of writing the analyzers are
 		* Orientations of the three principal axes of the particle, in spherical coordinates, in columns 'phiN' and 'thetaN', where N is in 1...3, phiN is the azimuthal angle and thetaN is the polar angle.
 		* Maximum distance from the centroid to the edge of the particle in colum 'rmax'.
 		* Maximum diameter of the projection of the particle on each principal component in columns 'd1', 'd2', and 'd3'.
-		* Scaling factor for a bounding ellipsoid in column 'bounding scale'. An ellipsoid that bounds the particle and whose semi-axes correspond to the principal components has semi-axis lengths :math:`b \sqrt{lN}`, where :math:`b` is the bounding scale and :math:`lN` are the lengths of the principal axes.
+		* Scaling factor for a bounding ellipsoid in column 'bounding scale'. An ellipsoid that bounds the particle and whose semi-axes correspond to the principal components has semi-axis lengths :math:`b lN`, where :math:`b` is the bounding scale and :math:`lN` are the lengths of the principal axes.
 
 	**surfacearea**
 	

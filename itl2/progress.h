@@ -14,45 +14,49 @@ namespace itl2
 	private:
 		float currSteps;
 		float maxSteps;
-		bool show;
+		bool showIndicator;
 		bool isTerm;
 
 	public:
-		//ProgressIndicator(float maxSteps, bool show = true) :
-		template<typename T> ProgressIndicator(T maxSteps, bool show = true) : 
+		template<typename T> ProgressIndicator(T maxSteps, bool showIndicator = true) : 
 			currSteps(-(float)maxSteps),
 			maxSteps((float)maxSteps),
-			show(show)
+			showIndicator(showIndicator)
 		{
 			isTerm = isTerminal();
 			// Always show the indicator
-			Show(0);
+			show(0);
 		}
 
 
 		virtual ~ProgressIndicator()
 		{
-			if (show)
+			if (showIndicator)
 			{
 				// Move to next line so that the progress bar does not conflict with future printing.
 				std::cout << std::endl;
 			}
 		}
 
-		void Step()
+		/**
+		Step progress indicator to the next position
+		*/
+		void step()
 		{
-			Show(currSteps + 1);
+			show(currSteps + 1);
 		}
 
-		//void Show(float progress)
-		template<typename T> void Show(T progress)
+		/**
+		Show progress indicator in given position.
+		*/
+		template<typename T> void show(T progress)
 		{
-			if (show)
+			if (showIndicator)
 			{
 				if (isTerm)
 				{
-					coord_t prevProgress = round(currSteps / (maxSteps - 1) * 100);
-					coord_t currProgress = round((float)progress / (maxSteps - 1) * 100);
+					coord_t prevProgress = round(currSteps / (maxSteps) * 100);
+					coord_t currProgress = round((float)progress / (maxSteps) * 100);
 					if (currProgress != prevProgress)
 					{
 						std::cout << currProgress << " %              \r" << std::flush;
@@ -60,8 +64,8 @@ namespace itl2
 				}
 				else
 				{
-					coord_t prevProgress = round(currSteps / (maxSteps - 1) * 10);
-					coord_t currProgress = round((float)progress / (maxSteps - 1) * 10);
+					coord_t prevProgress = round(currSteps / (maxSteps) * 10);
+					coord_t currProgress = round((float)progress / (maxSteps) * 10);
 					for (coord_t n = prevProgress; n < currProgress; n++)
 					{
 						std::cout << "=";
@@ -70,6 +74,8 @@ namespace itl2
 				}
 
 				currSteps = (float)progress;
+				if (currSteps > maxSteps)
+					currSteps = maxSteps;
 			}
 		}
 
