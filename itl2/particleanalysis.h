@@ -956,28 +956,36 @@ namespace itl2
 
 		// Divide pixels into point sets based on their value
 		std::map<pixel_t, std::vector<Vec3sc> > points;
-		for (coord_t z = 0; z < image.depth(); z++)
 		{
-			for (coord_t y = 0; y < image.height(); y++)
+			ProgressIndicator prog(image.depth());
+			for (coord_t z = 0; z < image.depth(); z++)
 			{
-				for (coord_t x = 0; x < image.width(); x++)
+				for (coord_t y = 0; y < image.height(); y++)
 				{
-					pixel_t pixel = image(x, y, z);
-					if (pixel != 0)
+					for (coord_t x = 0; x < image.width(); x++)
 					{
-						points[pixel].push_back(Vec3sc(Vec3c(x, y, z)));
+						pixel_t pixel = image(x, y, z);
+						if (pixel != 0)
+						{
+							points[pixel].push_back(Vec3sc(Vec3c(x, y, z)));
+						}
 					}
 				}
+				prog.step();
 			}
 		}
 
 		// Analyze each set
 		results.headers() = analyzers.headers();
-		for (auto& item : points)
 		{
-			std::vector<double> resultLine;
-			analyzers.analyze(item.second, resultLine);
-			results.push_back(resultLine);
+			ProgressIndicator prog(points.size());
+			for (auto& item : points)
+			{
+				std::vector<double> resultLine;
+				analyzers.analyze(item.second, resultLine);
+				results.push_back(resultLine);
+				prog.step();
+			}
 		}
 	}
 
