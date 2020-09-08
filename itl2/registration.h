@@ -321,7 +321,7 @@ namespace itl2
 		stdDef = statsDef.y;
 
 		normFact = meanRef - meanDef;
-		normFactStd = meanRef / meanDef;
+		normFactStd = stdRef / stdDef;
 		
 		if (std::isnan(normFact))
 			normFact = 0;
