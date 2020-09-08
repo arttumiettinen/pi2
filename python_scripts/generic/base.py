@@ -231,8 +231,10 @@ class Scan:
     # of the sub-images.
     position = np.array([0, 0, 0])
 
-    # Normalization factor for gray values
+    # Normalization factors for gray values
     norm_fact = 0
+    norm_fact_std = 1
+    mean_def = 0
 
     def is_rec_ok(self):
         """
@@ -430,10 +432,12 @@ def read_displacement_field(sample_name, scan1, scan2):
     """
     Reads displacement field between scan1 and scan 2 from files saved by pi2 program.
 
-    Returns (x0, y0, z0, x1, y1, z1, gof, norm_fact), where
+    Returns (x0, y0, z0, x1, y1, z1, gof, norm_fact, norm_fact_std, mean_def), where
     x0, y0, z0 contain points in reference image, and
     x1, y1, z1 contain corresponding points in deformed image.
     norm_fact is value that must be added to deformed image to make mean of deformed image and reference image the same.
+    norm_fact_std is multiplicative normalization factor. Values of scan2 must be multiplied by this value after subtraction of mean_def.
+    mean_def is mean of scan2 in the overlapping region.
     """
 
     # Read reference point definition file
@@ -453,6 +457,8 @@ def read_displacement_field(sample_name, scan1, scan2):
         zmax = int(parts[1])
         zstep = int(parts[2])
         norm_fact = float(lines[3])
+        norm_fact_std = float(lines[4])
+        mean_def = float(lines[5])
 
 
     xcount = int(np.floor((xmax - xmin) / xstep)) + 1
@@ -490,7 +496,7 @@ def read_displacement_field(sample_name, scan1, scan2):
 
 
 
-    return x, y, z, x1, y1, z1, gof, norm_fact
+    return x, y, z, x1, y1, z1, gof, norm_fact, norm_fact_std, mean_def
 
 
 
@@ -696,7 +702,7 @@ def read_displacement_fields(sample_name, relations, allow_rotation):
 
         print(f"{scan1.index} -> {scan2.index} ({scan1.rec_file} -> {scan2.rec_file})")
 
-        x, y, z, x1, y1, z1, gof, norm_fact = read_displacement_field(sample_name, scan1, scan2)
+        x, y, z, x1, y1, z1, gof, norm_fact, norm_fact_std, mean_def = read_displacement_field(sample_name, scan1, scan2)
         u = x1 - x
         v = y1 - y
         w = z1 - z
@@ -721,6 +727,8 @@ def read_displacement_fields(sample_name, relations, allow_rotation):
         edge[2]["a"] = a
         edge[2]["R"] = R
         edge[2]["norm_fact"] = norm_fact
+        edge[2]["norm_fact_std"] = norm_fact_std
+        edge[2]["mean_def"] = mean_def
 
         # Store point correspondences for global optimization
         # r0 = (x0, y0, z0) are points in scan1 coordinates,
@@ -744,6 +752,8 @@ def convert_to_world(parent_scan, child_scan, tree):
     a = tree[parent_scan][child_scan]["a"]
     R = tree[parent_scan][child_scan]["R"]
     norm_fact = tree[parent_scan][child_scan]["norm_fact"]
+    norm_fact_std = tree[parent_scan][child_scan]["norm_fact_std"]
+    mean_def = tree[parent_scan][child_scan]["mean_def"]
 
     deltadot = c + delta
 
@@ -756,8 +766,10 @@ def convert_to_world(parent_scan, child_scan, tree):
     wR = np.matmul(parent_scan.R, R)
     wc = 1 / a * np.matmul(np.linalg.inv(R), parent_scan.c - deltadot) + c
     wnorm_fact = parent_scan.norm_fact + norm_fact
+    wnorm_fact_std = parent_scan.norm_fact_std * norm_fact_std
+    wmean_def = mean_def
 
-    return wa, wR, wc, wnorm_fact
+    return wa, wR, wc, wnorm_fact, wnorm_fact_std, wmean_def
 
 
 
@@ -780,16 +792,20 @@ def determine_average_transformations(relations):
         ctot = 0
         qtot = Quaternion(0, 0, 0, 0)
         normtot = 0
+        normtot_std = 0
+        mean_tot = 0
 
         parent_scans = relations.predecessors(scan)
         for parent in parent_scans:
 
-            a, R, c, nf = convert_to_world(parent, scan, relations)
+            a, R, c, nf, nf_std, mean_def = convert_to_world(parent, scan, relations)
             atot = atot + a
             ctot = ctot + c
             # TODO: This quaternion averaging is just approximation that might work if all the rotations are almost the same...
             qtot = qtot + Quaternion(matrix=R)
             normtot = normtot + nf
+            normtot_std = normtot_std + nf_std
+            mean_tot = mean_tot + mean_def
             count = count + 1
 
 
@@ -800,6 +816,8 @@ def determine_average_transformations(relations):
             qtot = qtot.normalised
             scan.R = qtot.rotation_matrix
             scan.norm_fact = normtot / count
+            scan.norm_fact_std = normtot_std / count
+            scan.mean_def = mean_tot / count
 
         scan.transformation_set = True
 
@@ -1448,6 +1466,8 @@ def save_transformation(sample_name, scan, relations):
     R = scan.R
     c = scan.c
     norm_fact = scan.norm_fact
+    norm_fact_std = scan.norm_fact_std
+    mean_def = scan.mean_def
 
     scan_name = fix_directories(scan.rec_file)
     file = f"{scan_name}_transformation.txt"
@@ -1457,6 +1477,8 @@ def save_transformation(sample_name, scan, relations):
         np.savetxt(f, c)
         np.savetxt(f, R)
         np.savetxt(f, np.array([norm_fact]))
+        np.savetxt(f, np.array([norm_fact_std]))
+        np.savetxt(f, np.array([mean_def]))
 
         # Save information about parent node indices
         parents = list(relations.predecessors(scan))

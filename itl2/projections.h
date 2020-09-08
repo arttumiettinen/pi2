@@ -407,7 +407,6 @@ namespace itl2
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
-				//res_private += (out_t)img(n);
 				res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)img(n));
 
 				// Showing progress info here would induce more processing than is done in the whole loop.
@@ -415,7 +414,6 @@ namespace itl2
 
 			#pragma omp critical(sum_reduction)
 			{
-				//res += res_private;
 				res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
 			}
 		}
@@ -452,8 +450,8 @@ namespace itl2
 			#pragma omp for nowait
 			for (coord_t n = 0; n < img.pixelCount(); n++)
 			{
-				//res_private += (out_t)img(n) * (out_t)img(n);
-				res_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)img(n), (temp_t)img(n)));
+				temp_t val = (temp_t)img(n);
+				res_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply(val, val));
 
 				// Showing progress info here would induce more processing than is done in the whole loop.
 			}
@@ -468,6 +466,41 @@ namespace itl2
 		return pixelRound<out_t>(res);
 	}
 
+	/**
+	Calculates sum of all pixels and sum of squares of all pixels in the image.
+	*/
+	template<typename pixel_t, typename out_t = double> Vec2<out_t> sumAndSquareSum(const Image<pixel_t>& img)
+	{
+		using temp_t = typename sum_intermediate_type<pixel_t>::type;
+
+		temp_t total = temp_t();
+		temp_t total2 = temp_t();
+
+#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+		{
+			temp_t total_private = temp_t();
+			temp_t total2_private = temp_t();
+
+#pragma omp for nowait
+			for (coord_t n = 0; n < img.pixelCount(); n++)
+			{
+				temp_t val = (temp_t)img(n);
+				total_private = NumberUtils<temp_t>::saturatingAdd(total_private, val);
+				total2_private = NumberUtils<temp_t>::saturatingAdd(total2_private, NumberUtils<temp_t>::saturatingMultiply(val, val));
+
+				// Showing progress info here would induce more processing than is done in the whole loop.
+			}
+
+#pragma omp critical(meanandstddev_reduction)
+			{
+				total = NumberUtils<temp_t>::saturatingAdd(total, total_private);
+				total2 = NumberUtils<temp_t>::saturatingAdd(total2, total2_private);
+			}
+		}
+
+		return Vec2<out_t>(pixelRound<out_t>(total), pixelRound<out_t>(total2));
+	}
+
 
 	/*
 	Calculates sum of all pixels except those whose value is ignoreValue.
@@ -477,7 +510,7 @@ namespace itl2
 	@param count Count of pixels that do not have ignoreValue.
 	@return Sum of all pixels except those whose value is ignoreValue.
 	*/
-	template<typename pixel_t, typename out_t = double> out_t maskedsum(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
+	template<typename pixel_t, typename out_t = double> out_t maskedSum(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
 	{
 		using temp_t = typename sum_intermediate_type<pixel_t>::type;
 
@@ -495,8 +528,6 @@ namespace itl2
 					pixel_t p = img(n);
 					if (p != ignoreValue)
 					{
-						//res_private += (out_t)p;
-						//count_private++;
 						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
 						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
 					}
@@ -506,8 +537,6 @@ namespace itl2
 
 #pragma omp critical(maskedsum_reduction)
 				{
-					//res += res_private;
-					//count += count_private;
 					res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
 					tempCount = NumberUtils<temp_t>::saturatingAdd(tempCount, count_private);
 				}
@@ -531,8 +560,6 @@ namespace itl2
 					pixel_t p = img(n);
 					if (!NumberUtils<pixel_t>::isnan(p))
 					{
-						//res_private += (out_t)p;
-						//count_private++;
 						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
 						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
 					}
@@ -542,8 +569,6 @@ namespace itl2
 
 #pragma omp critical(maskedsum_reduction)
 				{
-					//res += res_private;
-					//count += count_private;
 					res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
 					tempCount = NumberUtils<temp_t>::saturatingAdd(tempCount, count_private);
 				}
@@ -551,6 +576,92 @@ namespace itl2
 
 			count = pixelRound<out_t>(tempCount);
 			return pixelRound<out_t>(res);
+		}
+	}
+
+
+	/*
+	Calculates sum and sum of squares of all pixels except those whose value is ignoreValue.
+	Counts pixels that contributes to the sum and places the count to count argument.
+	@param img Image to process.
+	@param ignoreValue Value that should be ignored while calculating sum.
+	@param count Count of pixels that do not have ignoreValue.
+	@return Sum and sum of squares of all pixels except those whose value is ignoreValue, in Vec2::x and Vec2::y, respectively.
+	*/
+	template<typename pixel_t, typename out_t = double> Vec2<out_t> maskedSumAndSquareSum(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
+	{
+		using temp_t = typename sum_intermediate_type<pixel_t>::type;
+
+		if (!NumberUtils<pixel_t>::isnan(ignoreValue))
+		{
+			temp_t res = temp_t();
+			temp_t res2 = temp_t();
+			temp_t tempCount = temp_t();
+#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+			{
+				temp_t res_private = temp_t();
+				temp_t res2_private = temp_t();
+				temp_t count_private = temp_t();
+#pragma omp for nowait
+				for (coord_t n = 0; n < img.pixelCount(); n++)
+				{
+					pixel_t p = img(n);
+					if (p != ignoreValue)
+					{
+						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
+						res2_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)p, (temp_t)p));
+						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
+					}
+
+					// Showing progress info here would induce more processing than is done in the whole loop.
+				}
+
+#pragma omp critical(maskedsum2_reduction)
+				{
+					res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
+					res2 = NumberUtils<temp_t>::saturatingAdd(res2, res2_private);
+					tempCount = NumberUtils<temp_t>::saturatingAdd(tempCount, count_private);
+				}
+			}
+
+			count = pixelRound<out_t>(tempCount);
+			return Vec2<out_t>(pixelRound<out_t>(res), pixelRound<out_t>(res2));
+		}
+		else
+		{
+			// ignoreValue is NaN, comparison logic must be different
+			temp_t res = temp_t();
+			temp_t res2 = temp_t();
+			temp_t tempCount = temp_t();
+#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+			{
+				temp_t res_private = temp_t();
+				temp_t res2_private = temp_t();
+				temp_t count_private = temp_t();
+#pragma omp for nowait
+				for (coord_t n = 0; n < img.pixelCount(); n++)
+				{
+					pixel_t p = img(n);
+					if (!NumberUtils<pixel_t>::isnan(p))
+					{
+						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
+						res2_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)p, (temp_t)p));
+						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
+					}
+
+					// Showing progress info here would induce more processing than is done in the whole loop.
+				}
+
+#pragma omp critical(maskedsum2_reduction)
+				{
+					res = NumberUtils<temp_t>::saturatingAdd(res, res_private);
+					res2 = NumberUtils<temp_t>::saturatingAdd(res2, res2_private);
+					tempCount = NumberUtils<temp_t>::saturatingAdd(tempCount, count_private);
+				}
+			}
+
+			count = pixelRound<out_t>(tempCount);
+			return Vec2<out_t>(pixelRound<out_t>(res), pixelRound<out_t>(res2));
 		}
 	}
 
@@ -645,7 +756,20 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename out_t = double> out_t mean(const Image<pixel_t>& img)
 	{
-		return sum<pixel_t, out_t>(img) / (out_t)img.pixelCount();
+		return NumberUtils<out_t>::saturatingDivide(sum<pixel_t, out_t>(img), (out_t)img.pixelCount());
+	}
+
+	/**
+	Calculates mean of all pixels in the image, except those that have specified value.
+	@param img Image to process.
+	@param ignoreValue Value that should not be accounted for when calculating mean.
+	@param count At output, count of pixels whose value is not ignoreValue.
+	@return Mean of all pixels.
+	*/
+	template<typename pixel_t, typename out_t = double> out_t maskedMean(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
+	{
+		out_t s = maskedSum<pixel_t, out_t>(img, ignoreValue, count);
+		return NumberUtils<out_t>::saturatingDivide(s, count);
 	}
 
 	/**
@@ -654,66 +778,27 @@ namespace itl2
 	@param ignoreValue Value that should not be accounted for when calculating mean.
 	@return Mean of all pixels.
 	*/
-	template<typename pixel_t, typename out_t = double> out_t maskedmean(const Image<pixel_t>& img, pixel_t ignoreValue, out_t& count)
-	{
-		out_t s = maskedsum<pixel_t, out_t>(img, ignoreValue, count);
-		return s / count;
-	}
-
-	template<typename pixel_t, typename out_t = double> out_t maskedmean(const Image<pixel_t>& img, pixel_t ignoreValue)
+	template<typename pixel_t, typename out_t = double> out_t maskedMean(const Image<pixel_t>& img, pixel_t ignoreValue)
 	{
 		out_t dummy;
-		return maskedmean<pixel_t, out_t>(img, ignoreValue, dummy);
+		return maskedMean<pixel_t, out_t>(img, ignoreValue, dummy);
 	}
 
-	/**
-	Calculates sum of all pixels and sum of squares of all pixels in the image.
-	*/
-	template<typename pixel_t, typename out_t = double> Vec2<out_t> sumAndSquareSum(const Image<pixel_t>& img)
+	namespace internals
 	{
-		// Non-threaded version
-		//out_t total = out_t();
-		//out_t total2 = out_t();
-
-		//for (coord_t n = 0; n < img.pixelCount(); n++)
-		//{
-		//	out_t val = (out_t)img(n);
-		//	total += val;
-		//	total2 += val * val;
-		//}
-
-
-		//out_t avg = total / img.pixelCount();
-		//out_t std = sqrt((total2 - (total * total / img.pixelCount())) / (img.pixelCount() - 1));
-
-		//return Vec2<out_t>(avg, std);
-
-		out_t total = out_t();
-		out_t total2 = out_t();
-
-#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+		/**
+		Converts sum, square sum, and count to mean and standard deviation.
+		*/
+		template<typename out_t> Vec2<out_t> sumAndSquareSumToMeanAndStdDev(const Vec2<out_t>& stats, out_t count)
 		{
-			out_t total_private = out_t();
-			out_t total2_private = out_t();
+			out_t total = stats[0];
+			out_t total2 = stats[1];
 
-#pragma omp for nowait
-			for (coord_t n = 0; n < img.pixelCount(); n++)
-			{
-				out_t val = (out_t)img(n);
-				total_private += val;
-				total2_private += val * val;
+			out_t avg = total / count;
+			out_t std = sqrt((total2 - (total * total / count)) / (count - 1));
 
-				// Showing progress info here would induce more processing than is done in the whole loop.
-			}
-
-#pragma omp critical(meanandstddev_reduction)
-			{
-				total += total_private;
-				total2 += total2_private;
-			}
+			return Vec2<out_t>(avg, std);
 		}
-
-		return Vec2<out_t>(total, total2);
 	}
 
 	/**
@@ -724,13 +809,19 @@ namespace itl2
 	template<typename pixel_t, typename out_t = double> Vec2<out_t> meanAndStdDev(const Image<pixel_t>& img)
 	{
 		Vec2<out_t> stats = sumAndSquareSum<pixel_t, out_t>(img);
-		out_t total = stats[0];
-		out_t total2 = stats[1];
+		return internals::sumAndSquareSumToMeanAndStdDev(stats, (out_t)img.pixelCount());
+	}
 
-		out_t avg = total / img.pixelCount();
-		out_t std = sqrt((total2 - (total * total / img.pixelCount())) / (img.pixelCount() - 1));
-
-		return Vec2<out_t>(avg, std);
+	/**
+	Calculates mean and standard deviation of all pixels in the image, except those whose value equals to ignoreValue.
+	@param img Image to process.
+	@return Vec2 containing mean at Vec2::x and standard deviation at Vec2::y.
+	*/
+	template<typename pixel_t, typename out_t = double> Vec2<out_t> maskedMeanAndStdDev(const Image<pixel_t>& img, pixel_t ignoreValue)
+	{
+		out_t count = 0;
+		Vec2<out_t> stats = maskedSumAndSquareSum<pixel_t, out_t>(img, ignoreValue, count);
+		return internals::sumAndSquareSumToMeanAndStdDev(stats, count);
 	}
 
 	/**

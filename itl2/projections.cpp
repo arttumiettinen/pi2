@@ -74,8 +74,8 @@ namespace itl2
 			checkResult(xprojection, "./input_data/xproj_sum_true_129x256x1.raw", "x projection");
 
 			double count;
-			double sum = maskedsum(zprojection, (float32_t)0, count);
-			double sum2 = maskedsum(zprojection, std::numeric_limits<float32_t>::signaling_NaN(), count);
+			double sum = maskedSum(zprojection, (float32_t)0, count);
+			double sum2 = maskedSum(zprojection, std::numeric_limits<float32_t>::signaling_NaN(), count);
 
 			Image<float32_t> minproj, maxproj, meanproj;
 			min(head, 2, minproj);

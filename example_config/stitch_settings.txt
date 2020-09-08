@@ -56,18 +56,28 @@ global_optimization = True
 # of long Nx1x1 mosaic)
 allow_rotation = False
 
+# Allow local deformations?
+# Disallow to make a rigid stitch instead of non-rigid one. Use e.g. for testing
+# the effect of the non-rigid transformation on the output.
+# Note that the local displacement fields are calculated anyway for determination
+# of optimal positions for the sub-images, even if local deformations are not
+# allowed in the final mosaic.
+allow_local_deformations = True
 
-# Normalization of gray values in pairwise matching phase.
-# Set to true to make means of the images in the overlapping regions the same before pairwise
-# matching. The value does not have any effect on the gray levels of the final mosaic.
+
+# Normalization of gray values in the pairwise matching phase.
+# Set to true to make means and standard deviations of the sub-images same in
+# the overlapping regions before pairwise matching.
+# The value does not have any effect on the gray levels of the final mosaic.
 normalize_in_blockmatch = True
 
 
 # Normalization of gray values in the final mosaic.
-# Set to true to make mean of the images in the overlapping regions the same before
-# assembly of the final mosaic. Enabling or disabling this option may cause global
-# or local gray-value gradients, respectively.
-normalize_while_stitching = False
+# Set to true to make means and standard deviations of the sub-images same in
+# the overlapping regions before the assembly of the final mosaic.
+# Enabling or disabling this option may cause global or local gray-value
+# gradients, respectively.
+normalize_while_stitching = True
 
 
 # Threshold value for displacement filtering.

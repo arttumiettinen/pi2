@@ -19,7 +19,7 @@ namespace itl2
 					prog.step();
 			}
 
-			float MAX = 2235450000.0f;
+			size_t MAX = 2235450000;
 			{
 				ProgressIndicator prog(MAX);
 				for (float n = 0; n < 3 * MAX / 4; n += 173)

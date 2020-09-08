@@ -153,7 +153,7 @@ namespace itl2
 	
 
 
-	inline void writeBlockMatchResult(const string& filenamePrefix, const PointGrid3D<coord_t>& refPoints, const Image<Vec3d>& defPoints, const Image<float32_t>& gof, double normFact)
+	inline void writeBlockMatchResult(const string& filenamePrefix, const PointGrid3D<coord_t>& refPoints, const Image<Vec3d>& defPoints, const Image<float32_t>& gof, double normFact, double normFactStd, double meanDef)
 	{
 		if (refPoints.pointCount() != defPoints.pixelCount () || gof.pixelCount() != refPoints.pointCount())
 			throw ITLException("Point counts in reference, deformed and gof objects must be equal.");
@@ -167,6 +167,8 @@ namespace itl2
 		out << refPoints.yg.first << ", " << refPoints.yg.maximum << ", " << refPoints.yg.step << endl;
 		out << refPoints.zg.first << ", " << refPoints.zg.maximum << ", " << refPoints.zg.step << endl;
 		out << normFact << endl;
+		out << normFactStd << endl;
+		out << meanDef << endl;
 
 	}
 
@@ -187,7 +189,7 @@ namespace itl2
 		return g1;
 	}
 
-	void readBlockMatchResult(const string& filenamePrefix, PointGrid3D<coord_t>& refPoints, Image<Vec3d>& defPoints, Image<float32_t>& gof, double& normFact)
+	void readBlockMatchResult(const string& filenamePrefix, PointGrid3D<coord_t>& refPoints, Image<Vec3d>& defPoints, Image<float32_t>& gof, double& normFact, double& normFactStd, double& meanDef)
 	{
 		ifstream in(filenamePrefix + "_refpoints.txt");
 
@@ -202,77 +204,81 @@ namespace itl2
 		std::string line;
 		getline(in, line);
 		normFact = fromString<double>(line);
+		getline(in, line);
+		normFactStd = fromString<double>(line);
+		getline(in, line);
+		meanDef = fromString<double>(line);
 
 		raw::read(defPoints, filenamePrefix + "_defpoints_" + toString(g1.pointCount()) + "x" + toString(g2.pointCount()) + "x" + toString(g3.pointCount()) + ".raw");
 		raw::read(gof, filenamePrefix + "_gof_" + toString(g1.pointCount()) + "x" + toString(g2.pointCount()) + "x" + toString(g3.pointCount()) + ".raw");
 	}
 
 
-	/*
-	Writes result of block matching to file.
-	*/
-	void writeBlockMatchResult(const std::string& filename, const vector<Vec3c>& refPoints, const vector<Vec3d>& defPoints, const std::vector<double> gof)
-	{
-		if (refPoints.size() != defPoints.size() || gof.size() != refPoints.size())
-			throw ITLException("Sizes of reference, deformed and gof point lists must be equal.");
+	///*
+	//Writes result of block matching to file.
+	//*/
+	//void writeBlockMatchResult(const std::string& filename, const vector<Vec3c>& refPoints, const vector<Vec3d>& defPoints, const std::vector<double> gof)
+	//{
+	//	if (refPoints.size() != defPoints.size() || gof.size() != refPoints.size())
+	//		throw ITLException("Sizes of reference, deformed and gof point lists must be equal.");
 
-		std::ofstream out;
-		out.open(filename);
-		for (coord_t n = 0; n < (coord_t)refPoints.size(); n++)
-		{
-			Vec3c refPoint = refPoints[n];
-			Vec3d defPoint = defPoints[n];
+	//	std::ofstream out;
+	//	out.open(filename);
+	//	for (coord_t n = 0; n < (coord_t)refPoints.size(); n++)
+	//	{
+	//		Vec3c refPoint = refPoints[n];
+	//		Vec3d defPoint = defPoints[n];
 
-			out << refPoint.x << ", " << refPoint.y << ", " << refPoint.z << ", " << defPoint.x << ", " << defPoint.y << ", " << defPoint.z << ", " << gof[n] << endl;
-		}
-	}
+	//		out << refPoint.x << ", " << refPoint.y << ", " << refPoint.z << ", " << defPoint.x << ", " << defPoint.y << ", " << defPoint.z << ", " << gof[n] << endl;
+	//	}
+	//}
 
-	/*
-	Reads file written by writeBlockMatchResult.
-	*/
-	void readBlockMatchResult(const std::string& filename, vector<Vec3d>& refPoints, std::vector<Vec3d>& defPoints, std::vector<double>& gof)
-	{
-		std::ifstream in(filename);
+	///*
+	//Reads file written by writeBlockMatchResult.
+	//*/
+	//void readBlockMatchResult(const std::string& filename, vector<Vec3d>& refPoints, std::vector<Vec3d>& defPoints, std::vector<double>& gof)
+	//{
+	//	std::ifstream in(filename);
 
-		if (!in.good())
-			throw ITLException(std::string("Unable to read file ") + filename);
+	//	if (!in.good())
+	//		throw ITLException(std::string("Unable to read file ") + filename);
 
-		std::vector<double> row;
-		row.reserve(7);
-		while (in.good())
-		{
-			std::string line;
-			getline(in, line);
+	//	std::vector<double> row;
+	//	row.reserve(7);
+	//	while (in.good())
+	//	{
+	//		std::string line;
+	//		getline(in, line);
 
-			row.clear();
-			if (!line.empty())
-			{
-				std::stringstream str;
-				str << line;
+	//		row.clear();
+	//		if (!line.empty())
+	//		{
+	//			std::stringstream str;
+	//			str << line;
 
-				while (str.good())
-				{
-					std::string svalue;
-					getline(str, svalue, ',');
-					if (svalue.length() > 0)
-					{
-						row.push_back(fromString<double>(svalue));
-					}
-				}
-			}
+	//			while (str.good())
+	//			{
+	//				std::string svalue;
+	//				getline(str, svalue, ',');
+	//				if (svalue.length() > 0)
+	//				{
+	//					row.push_back(fromString<double>(svalue));
+	//				}
+	//			}
+	//		}
 
-			if (row.size() == 7)
-			{
-				Vec3d refPoint(row[0], row[1], row[2]);
-				Vec3d defPoint(row[3], row[4], row[5]);
-				double g = row[6];
+	//		if (row.size() == 7)
+	//		{
+	//			Vec3d refPoint(row[0], row[1], row[2]);
+	//			Vec3d defPoint(row[3], row[4], row[5]);
+	//			double g = row[6];
 
-				refPoints.push_back(refPoint);
-				defPoints.push_back(defPoint);
-				gof.push_back(g);
-			}
-		}
-	}
+	//			refPoints.push_back(refPoint);
+	//			defPoints.push_back(defPoint);
+	//			gof.push_back(g);
+	//		}
+	//	}
+	//}
 
 	namespace tests
 	{
@@ -340,7 +346,7 @@ namespace itl2
 				}
 			}
 
-			writeBlockMatchResult("./registration/blockmatch2_result", refPoints, defPoints, fitGoodness);
+			writeBlockMatchResult("./registration/blockmatch2_result", refPoints, defPoints, fitGoodness, 0, 1, 0);
 		}
 
 		void blockMatch2Pullback()
@@ -350,8 +356,8 @@ namespace itl2
 			PointGrid3D<coord_t> refPoints;
 			Image<Vec3d> defPoints;
 			Image<float32_t> fitGoodness;
-			double normFact;
-			readBlockMatchResult("./registration/blockmatch2_result", refPoints, defPoints, fitGoodness, normFact);
+			double normFact, normFactStd, meanDef;
+			readBlockMatchResult("./registration/blockmatch2_result", refPoints, defPoints, fitGoodness, normFact, normFactStd, meanDef);
 
 			Vec3c referenceDimensions(256, 256, 129);
 

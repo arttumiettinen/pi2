@@ -366,7 +366,7 @@ namespace pilib
 			if (doSqrt)
 				squareRoot(in);
 
-			double res = itl2::maskedmean<in_t, double>(in, ignoreValue, count);
+			double res = itl2::maskedMean<in_t, double>(in, ignoreValue, count);
 
 			out.ensureSize(1, 1, 1);																		
 			out(0) = (float32_t)res;																					

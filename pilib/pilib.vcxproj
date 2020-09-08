@@ -125,7 +125,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;itl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -138,6 +139,7 @@
     <CustomBuildStep>
       <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
+copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
 copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       <Outputs>non-existent-file</Outputs>
@@ -167,7 +169,8 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;itl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -180,6 +183,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <CustomBuildStep>
       <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
+copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
 copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       <Outputs>non-existent-file</Outputs>
@@ -223,6 +227,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <CustomBuildStep>
       <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
+copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
 copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       <Outputs>non-existent-file</Outputs>
@@ -264,6 +269,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <CustomBuildStep>
       <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
+copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
 copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       <Outputs>non-existent-file</Outputs>

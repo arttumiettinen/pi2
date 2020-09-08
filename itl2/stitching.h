@@ -229,7 +229,7 @@ namespace itl2
 			return itl2::fromString<out_t>(line);
 		}
 
-		template<typename real_t> std::tuple<Vec3<real_t>, real_t, Matrix3x3<real_t>, real_t> readcaR(std::ifstream& in)
+		template<typename real_t> std::tuple<Vec3<real_t>, real_t, Matrix3x3<real_t>, real_t, real_t, real_t> readcaR(std::ifstream& in)
 		{
 			// First line is a
 			real_t a = fromString<real_t>(in);
@@ -279,14 +279,16 @@ namespace itl2
 
 			// Then normalization factor
 			real_t normFact = fromString<real_t>(in);
+			real_t normFactStd = fromString<real_t>(in);
+			real_t meanDef = fromString<real_t>(in);
 
-			return std::make_tuple(c, a, R, normFact);
+			return std::make_tuple(c, a, R, normFact, normFactStd, meanDef);
 		}
 
 		/*
 		Reads refpoints saved by TransformationVer2::save.
 		*/
-		template<typename real_t> void readRefPoints(const std::string& prefix, PointGrid3D<coord_t>& refPoints, real_t& normFact)
+		template<typename real_t> void readRefPoints(const std::string& prefix, PointGrid3D<coord_t>& refPoints, real_t& normFact, real_t& normFactStd, real_t& meanDef)
 		{
 			std::ifstream in(prefix + "_refpoints.txt");
 
@@ -299,6 +301,8 @@ namespace itl2
 			refPoints = PointGrid3D<coord_t>(g1, g2, g3);
 
 			normFact = fromString<real_t>(in);
+			normFactStd = fromString<real_t>(in);
+			meanDef = fromString<real_t>(in);
 		}
 
 		/*
@@ -333,9 +337,9 @@ namespace itl2
 			Vec3<real_t> c;
 
 			/*
-			Normalization factor for gray values.
+			Normalization factors for gray values.
 			*/
-			real_t normFactor = 1;
+			real_t normFactor = 0, normFactorStd = 1, meanDef = 0;
 
 			/*
 			World to parent refpoints, world to parent shifts, parent to me refpoints, parent to me shifts.
@@ -372,13 +376,16 @@ namespace itl2
 			{
 				std::ifstream in(filename);
 
-				// Read c, a, R, and normalization factor
-				std::tuple<Vec3<real_t>, real_t, Matrix3x3<real_t>, real_t> caR = readcaR<real_t>(in);
+				// Read c, a, R, and normalization factors
+				std::tuple<Vec3<real_t>, real_t, Matrix3x3<real_t>, real_t, real_t, real_t> caR = readcaR<real_t>(in);
 
 				c = std::get<0>(caR);
 				a = std::get<1>(caR);
 				R = std::get<2>(caR);
 				normFactor = std::get<3>(caR);
+				normFactorStd = std::get<4>(caR);
+				meanDef = std::get<5>(caR);
+
 				R.inverse(Rinv);
 
 				// Next line contains count of neighbours
@@ -393,8 +400,8 @@ namespace itl2
 
 					PointGrid3D<coord_t> wpRefPoints;
 					std::shared_ptr<Image<Vec3<real_t> > > wpShifts(new Image<Vec3<real_t> >());
-					real_t dummy;
-					readRefPoints(wpPrefix, wpRefPoints, dummy);
+					real_t dummy, dummy2, dummy3;
+					readRefPoints(wpPrefix, wpRefPoints, dummy, dummy2, dummy3);
 					readShifts<real_t>(wpPrefix, wpRefPoints, *wpShifts);
 
 					// Parent to me transformation name
@@ -406,8 +413,8 @@ namespace itl2
 					Image<Vec3d> tmp;
 					Image<float32_t> gof;
 					std::shared_ptr<Image<Vec3<real_t> > > pmDefPoints(new Image<Vec3<real_t> >());
-					double dummy2;
-					readBlockMatchResult(pmPrefix, pmRefPoints, tmp, gof, dummy2);
+					double ddummy2, ddummy3, ddummy4;
+					readBlockMatchResult(pmPrefix, pmRefPoints, tmp, gof, ddummy2, ddummy3, ddummy4);
 					convert(tmp, *pmDefPoints);
 					tmp.deleteData();
 					convertToShifts(pmRefPoints, *pmDefPoints);
@@ -761,6 +768,8 @@ namespace itl2
 				out << worldGrid.yg.first << ", " << worldGrid.yg.maximum << ", " << worldGrid.yg.step << std::endl;
 				out << worldGrid.zg.first << ", " << worldGrid.zg.maximum << ", " << worldGrid.zg.step << std::endl;
 				out << normFactor << std::endl;
+				out << normFactorStd << std::endl;
+				out << meanDef << std::endl;
 			}
 
 		};
@@ -880,7 +889,8 @@ namespace itl2
 		*/
 		template<typename pixel_t, typename real_t> void stitchOneVer3(
 			const Image<pixel_t>& src,
-			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts, real_t normFactor,
+			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts,
+			real_t normFactor, real_t normFactorStd, real_t meanDef,
 			const Vec3c& outPos, Image<real_t>& mean, Image<real_t>& weight, Image<real_t>* S,
 			bool normalize)
 		{
@@ -946,7 +956,8 @@ namespace itl2
 							if (pix != 0) // Don't process pixels that could not be interpolated (are given background value)
 							{
 								if (normalize)
-									pix += normFactor;
+									pix = (pix - meanDef) * normFactorStd + meanDef + normFactor;
+									//pix += normFactor;
 
 								real_t w1 = 2 * std::min(p.x, srcDimensions.x - 1 - p.x) / s;
 								real_t w2 = 2 * std::min(p.y, srcDimensions.y - 1 - p.y) / s;
@@ -1147,8 +1158,8 @@ namespace itl2
 				throw ITLException(string("Data type of input image ") + imgFile + " is " + toString(dt) + " but " + toString(imageDataType<pixel_t>()) + " was expected.");
 
 			PointGrid3D<coord_t> refPoints;
-			float32_t normFact;
-			internals::readRefPoints(wlPrefix, refPoints, normFact);
+			float32_t normFact, normFactStd, meanDef;
+			internals::readRefPoints(wlPrefix, refPoints, normFact, normFactStd, meanDef);
 
 			Vec3c cc(refPoints.xg.first, refPoints.yg.first, refPoints.zg.first);
 			Vec3c cd(refPoints.xg.maximum, refPoints.yg.maximum, refPoints.zg.maximum);
@@ -1187,7 +1198,7 @@ namespace itl2
 
 				Image<pixel_t> src(srcDimensions);
 				io::read(src, imgFile);
-				internals::stitchOneVer3<pixel_t, float32_t>(src, refPoints, shifts, (float32_t)normFact, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
+				internals::stitchOneVer3<pixel_t, float32_t>(src, refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
 			}
 		}
 

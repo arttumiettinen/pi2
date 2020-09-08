@@ -9,6 +9,7 @@
 
 from base import *
 
+import sys
 import configparser
 
 
@@ -74,7 +75,7 @@ def main():
     """
 
     settings_file = 'stitch_settings.txt'
-    if(len(sys.argv) >= 1)
+    if len(sys.argv) >= 1:
         settings_files = sys.argv[0]
 
     print(f"Reading stitch settings from {settings_file}")

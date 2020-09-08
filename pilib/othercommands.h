@@ -86,7 +86,7 @@ namespace pilib
 			blockMatch(ref, def, refPoints, defPoints, fitGoodness, compRadius);
 
 			//filterDisplacements(refPoints, defPoints, fitGoodness);
-			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness);
+			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, 0, 1, 0);
 		}
 	};
 
@@ -180,7 +180,7 @@ namespace pilib
 			PointGrid3D<coord_t> refPoints(PointGrid1D<coord_t>(xmin, xmax, xstep), PointGrid1D<coord_t>(ymin, ymax, ystep), PointGrid1D<coord_t>(zmin, zmax, zstep));
 			Image<Vec3d> defPoints(refPoints.pointCounts());
 			Image<float32_t> fitGoodness(defPoints.dimensions());
-			double normFact;
+			double normFact, normFactStd, meanDef;
 
 			// Construct initial guess of the deformed points
 			for (coord_t zi = 0; zi < defPoints.depth(); zi++)
@@ -196,20 +196,20 @@ namespace pilib
 
 			if (refDT == ImageDataType::UInt8)
 			{
-				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
+				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef);
 			}
 			else if (refDT == ImageDataType::UInt16)
 			{
-				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
+				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef);
 			}
 			else if (refDT == ImageDataType::Float32)
 			{
-				blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact);
+				blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef);
 			}
 			else
 				throw ParseException("Unsupported image data type (Please add the data type to BlockMatchPartialLoadCommand in commands.h file).");
 
-			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, normFact);
+			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, normFact, normFactStd, meanDef);
 		}
 	};
 
@@ -242,8 +242,8 @@ namespace pilib
 			PointGrid3D<coord_t> refPoints;
 			Image<Vec3d> defPoints;
 			Image<float32_t> fitGoodness;
-			double normFact;
-			readBlockMatchResult(fname, refPoints, defPoints, fitGoodness, normFact);
+			double normFact, normFactStd, meanDef;
+			readBlockMatchResult(fname, refPoints, defPoints, fitGoodness, normFact, normFactStd, meanDef);
 
 			pullback.ensureSize(deformed);
 
@@ -337,13 +337,13 @@ namespace pilib
 			PointGrid3D<coord_t> refPoints;
 			Image<Vec3d> defPoints;
 			Image<float32_t> gof;
-			double normFact;
+			double normFact, normFactStd, meanDef;
 
-			readBlockMatchResult(fname, refPoints, defPoints, gof, normFact);
+			readBlockMatchResult(fname, refPoints, defPoints, gof, normFact, normFactStd, meanDef);
 
 			filterDisplacements(refPoints, defPoints, gof, 5, (float32_t)threshold);
 
-			writeBlockMatchResult(fname + std::string("_filtered"), refPoints, defPoints, gof, normFact);
+			writeBlockMatchResult(fname + std::string("_filtered"), refPoints, defPoints, gof, normFact, normFactStd, meanDef);
 		}
 	};
 

@@ -1,5 +1,8 @@
 #pragma once
 
+// NOTE: This file contains experiments on "new-style" iteration that is to replace most loops over the image,
+// and in particular replace pointprocess.h.
+
 #include "image.h"
 #include "aabox.h"
 
@@ -81,4 +84,15 @@ namespace itl2
 		forAllInBox(AABox<coord_t>(Vec3c(), img.dimensions()), lambda);
 	}
 
+	/**
+	Perform img(x, y, z) = pixelRound<pixel_t>(lambda(img(x, y, z))) for all (x, y, z) in the image.
+	*/
+	template<typename pixel_t, typename F>
+	void forAll(Image<pixel_t>& img, F&& lambda)
+	{
+		forAllPixels(img, [&](coord_t x, coord_t y, coord_t z)
+			{
+				img(x, y, z) = pixelRound<pixel_t>(lambda(img(x, y, z)));
+			});
+	}
 }

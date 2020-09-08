@@ -867,15 +867,15 @@ namespace itl2
 
 				convert(ridge2, tmp);
 				squareRoot(tmp);
-				result.ridgeMeanR = maskedmean(tmp, 0.0f);
+				result.ridgeMeanR = maskedMean(tmp, 0.0f);
 
 				pow(tmp, 2);
-				result.ridgeMeanR2 = maskedmean(tmp, 0.0f);
+				result.ridgeMeanR2 = maskedMean(tmp, 0.0f);
 
 				convert(ridge2, tmp);
 				squareRoot(tmp);
 				pow(tmp, 3);
-				result.ridgeMeanR3 = maskedmean(tmp, 0.0f);
+				result.ridgeMeanR3 = maskedMean(tmp, 0.0f);
 
 				convert(ridge2, tmp);
 				threshold(tmp, 0);

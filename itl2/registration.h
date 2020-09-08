@@ -279,7 +279,7 @@ namespace itl2
 	template<typename ref_t, typename def_t> void blockMatchPartialLoad(const string& referenceFile, const string& deformedFile, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
 		const Vec3c& coarseBlockRadius, size_t coarseBinning,
 		const Vec3c& fineBlockRadius, size_t fineBinning,
-		bool normalize, double& normFact)
+		bool normalize, double& normFact, double& normFactStd, double& meanDef)
 	{
 		accuracy.ensureSize(refGrid.pointCounts());
 		defPoints.ensureSize(refGrid.pointCounts());
@@ -310,17 +310,33 @@ namespace itl2
 		io::readBlock(deformedBlock, deformedFile, defStart, true);
 
 		// Calculate normalization factor for gray values
-		normFact = 1;
-		double meanRef = maskedmean(referenceBlock, (ref_t)0);
-		double meanDef = maskedmean(deformedBlock, (def_t)0);
+		double meanRef, stdRef;
+		Vec2d statsRef = maskedMeanAndStdDev(referenceBlock, (ref_t)0);
+		meanRef = statsRef.x;
+		stdRef = statsRef.y;
+
+		double stdDef;
+		Vec2d statsDef = maskedMeanAndStdDev(deformedBlock, (def_t)0);
+		meanDef = statsDef.x;
+		stdDef = statsDef.y;
+
 		normFact = meanRef - meanDef;
+		normFactStd = meanRef / meanDef;
 		
 		if (std::isnan(normFact))
-			normFact = 1;
+			normFact = 0;
+		if (std::isnan(normFactStd))
+			normFactStd = 1;
 
 		if (normalize)
 		{
-			maskedAdd(deformedBlock, normFact, (def_t)0);
+			//maskedAdd(deformedBlock, normFact, (def_t)0);
+
+			//normalized = (deformedBlock - meanDef) * normFactStd + meanDef + normFact
+			// = deformedBlock * normFactStd + (-meanDef * normFactStd + meanDef + normFact)
+			//auto func = [](def_t pix, int param) return ((double)pix - meanDef) * normFactStd + meanDef + normFact;
+			//maskedPointProcessImageParam<def_t, int, double, typeof(func)>(deformedBlock, 1);
+			forAll(deformedBlock, [&](def_t val) { return ((double)val - meanDef) * normFactStd + meanDef + normFact; });
 		}
 
 		
@@ -441,12 +457,12 @@ namespace itl2
 	/*
 	Writes a result of blockmatch operation to disk.
 	*/
-	void writeBlockMatchResult(const string& filenamePrefix, const PointGrid3D<coord_t>& refPoints, const Image<Vec3d>& defPoints, const Image<float32_t>& gof, double normFact = 1);
+	void writeBlockMatchResult(const string& filenamePrefix, const PointGrid3D<coord_t>& refPoints, const Image<Vec3d>& defPoints, const Image<float32_t>& gof, double normFact, double normFactStd, double meanDef);
 
 	/*
 	Reads a result of blockmatch operation from disk.
 	*/
-	void readBlockMatchResult(const string& filenamePrefix, PointGrid3D<coord_t>& refPoints, Image<Vec3d>& defPoints, Image<float32_t>& gof, double& normFact);
+	void readBlockMatchResult(const string& filenamePrefix, PointGrid3D<coord_t>& refPoints, Image<Vec3d>& defPoints, Image<float32_t>& gof, double& normFact, double& normFactStd, double& meanDef);
 
 	/*
 	Used to read PointGrid1D from file.
