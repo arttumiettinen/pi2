@@ -61,7 +61,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ListAnalyzersCommand() : Command("listanalyzers", "Shows names of all available analysis methods that can be used in conjunction with `analyzeparticles` command. See also `headers` command.", {}, particleSeeAlso())
+		ListAnalyzersCommand() : Command("listanalyzers", "Shows names of all available analysis methods that can be used in conjunction with `analyzeparticles` or `csa` commands. See also `headers` command.", {}, particleSeeAlso())
 		{
 
 		}
@@ -113,7 +113,17 @@ namespace pilib
 		{
 			string titles = pop<string>(args);
 
-			auto analyzers = createAnalyzers<uint8_t>(titles, Vec3c(1, 1, 1));
+			AnalyzerSet<Vec3sc, uint8_t> analyzers;
+			if (contains(titles, "2d"))
+			{
+				// Probably cross-section analyzers
+				analyzers = createCrossSectionAnalyzers<uint8_t>(titles);
+			}
+			else
+			{
+				// Probably 3D analyzers
+				analyzers = createAnalyzers<uint8_t>(titles, Vec3c(1, 1, 1));
+			}
 
 			std::cout << analyzers.headers() << std::endl;
 		}
