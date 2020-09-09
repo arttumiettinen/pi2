@@ -287,5 +287,8 @@
     <ClCompile Include="pathcommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="metadatacommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

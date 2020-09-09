@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2020
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30225.117
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "itl2", "itl2\itl2.vcxproj", "{0016FE37-4BCD-44DC-A6EC-0470999ECCE6}"
 EndProject
@@ -25,7 +25,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CA616BFE-3881-423D-9002-07CE74B909E6}"
 	ProjectSection(SolutionItems) = preProject
 		LICENSE.txt = LICENSE.txt
+		example_config\local_config.txt = example_config\local_config.txt
 		README.md = README.md
+		example_config\rm-stitch-temp.cmd = example_config\rm-stitch-temp.cmd
+		example_config\rm-stitch-temp.sh = example_config\rm-stitch-temp.sh
+		example_config\slurm_config.txt = example_config\slurm_config.txt
+		example_config\stitch_settings.txt = example_config\stitch_settings.txt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pi2csWinFormsTest", "pi2csWinFormsTest\pi2csWinFormsTest.csproj", "{03216D9A-B86B-4738-8B88-5B7D3382E70D}"

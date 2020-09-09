@@ -609,7 +609,7 @@ namespace itl2
 					if (p != ignoreValue)
 					{
 						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
-						res2_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)p, (temp_t)p));
+						res2_private = NumberUtils<temp_t>::saturatingAdd(res2_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)p, (temp_t)p));
 						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
 					}
 
@@ -645,7 +645,7 @@ namespace itl2
 					if (!NumberUtils<pixel_t>::isnan(p))
 					{
 						res_private = NumberUtils<temp_t>::saturatingAdd(res_private, (temp_t)p);
-						res2_private = NumberUtils<temp_t>::saturatingAdd(res_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)p, (temp_t)p));
+						res2_private = NumberUtils<temp_t>::saturatingAdd(res2_private, NumberUtils<temp_t>::saturatingMultiply((temp_t)p, (temp_t)p));
 						count_private = NumberUtils<temp_t>::saturatingAdd(count_private, (temp_t)1);
 					}
 

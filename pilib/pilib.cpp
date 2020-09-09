@@ -105,3 +105,11 @@ const char* help(void* pi, const char* commandName)
 	}
 	return hlp.c_str();
 }
+
+const char* getString(void* pi, const char* name)
+{
+	std::lock_guard<std::mutex> lock(mutex);
+	PISystem* sys = (PISystem*)pi;
+
+	sys->getValueNoThrow(name);
+}

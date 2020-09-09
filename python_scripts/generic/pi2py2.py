@@ -189,29 +189,24 @@ class AutoThresholdMethod(Enum):
 
 
 
-
-
-
-
-class Pi2Image:
+class Pi2Object:
     """
-    Represents image stored in the Pi2 system.
+    Base class for objects (values and images) stored in the Pi2 system.
     """
 
-    
-    # Name of the image in the Pi2 system.
-    image_name = ""
+    # Name of the object in the Pi2 system.
+    name = ""
 
-    # Pi2 object that owns this image.
+    # Pi2 object that owns this object.
     pi2 = 0
 
 
-    def __init__(self, pi2, image_name):
+    def __init__(self, pi2, name):
         """
-        Do not use the constructor directly, instead use Pi2.newimage.
+        Do not use the constructor directly, instead use Pi2.newimage etc.
         """
         self.pi2 = pi2
-        self.image_name = image_name
+        self.name = name
 
 
     def clear(self):
@@ -220,7 +215,7 @@ class Pi2Image:
         After a call to clear this image cannot be used in pi2 commands.
         """
         if not self.pi2.piobj is None:
-            self.pi2.clear(self.image_name)
+            self.pi2.clear(self.name)
 
 
     def __del__(self):
@@ -229,6 +224,31 @@ class Pi2Image:
         Clears this image from Pi2 system.
         """
         self.clear()
+
+
+
+class Pi2Value(Pi2Object):
+    """
+    Represents any non-image value stored in the Pi2 system.
+    """
+
+    def as_string():
+        """
+        Retrieves the value of the object as string.
+        Raises error if the value is not a string.
+        """
+
+        val = self.pi2.pilib.getString(self.name.encode('ASCII'))
+        # TODO: Check for errors
+        return val
+        
+
+
+
+class Pi2Image(Pi2Object):
+    """
+    Represents image stored in the Pi2 system.
+    """
 
 
     def get_raw_pointer(self):
@@ -240,7 +260,7 @@ class Pi2Image:
         h = c_longlong(0)
         d = c_longlong(0)
         dt = c_int(0)
-        ptr = self.pi2.pilib.getImage(self.pi2.piobj, self.image_name.encode('ASCII'), byref(w), byref(h), byref(d), byref(dt))
+        ptr = self.pi2.pilib.getImage(self.pi2.piobj, self.name.encode('ASCII'), byref(w), byref(h), byref(d), byref(dt))
 
         w = w.value
         h = h.value
@@ -262,7 +282,7 @@ class Pi2Image:
         h = c_longlong(0)
         d = c_longlong(0)
         dt = c_int(0)
-        self.pi2.pilib.getImageInfo(self.pi2.piobj, self.image_name.encode('ASCII'), byref(w), byref(h), byref(d), byref(dt))
+        self.pi2.pilib.getImageInfo(self.pi2.piobj, self.name.encode('ASCII'), byref(w), byref(h), byref(d), byref(dt))
 
         w = w.value
         h = h.value
@@ -328,7 +348,7 @@ class Pi2Image:
         Local changes can be made through objects returned by get_data_pointer method.
         """
 
-        if not self.pi2.pilib.finishUpdate(self.pi2.piobj, self.image_name.encode('ASCII')):
+        if not self.pi2.pilib.finishUpdate(self.pi2.piobj, self.name.encode('ASCII')):
             err = self.pi2.pilib.lastErrorMessage(self.pi2.piobj).decode('ASCII')
             raise RuntimeError(err)
 
@@ -375,7 +395,7 @@ class Pi2Image:
         if numpy_array.dtype == np.float64:
             dtype = ImageDataType.FLOAT32
 
-        self.pi2.run_script(f"newimage({self.image_name}, {dtype}, {h}, {w}, {d})")
+        self.pi2.run_script(f"newimage({self.name}, {dtype}, {h}, {w}, {d})")
         target_array = self.get_data_pointer()
         if numpy_array.size > 0:
             target_array.squeeze()[:] = numpy_array.squeeze()[:]
@@ -599,10 +619,10 @@ class Pi2:
                 # Set data of that image to the numpy array
                 temp_image.set_data(arg)
                 
-                arg_as_string = temp_image.image_name
+                arg_as_string = temp_image.name
 
-            elif isinstance(arg, Pi2Image):
-                arg_as_string = arg.image_name
+            elif isinstance(arg, Pi2Object):
+                arg_as_string = arg.name
 
             else:
                 # Argument is something else... Just convert it to string.
