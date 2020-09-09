@@ -112,4 +112,5 @@ const char* getString(void* pi, const char* name)
 	PISystem* sys = (PISystem*)pi;
 
 	//sys->getValueNoThrow(name);
+	return 0;
 }
