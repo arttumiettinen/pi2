@@ -682,7 +682,7 @@ class Pi2:
         """
 
         image_name = self.generate_image_name()
-        self.run_script(f"newlike({image_name}, {template_image.image_name}, {data_type}, {width}, {height}, {depth})")
+        self.run_script(f"newlike({image_name}, {template_image.name}, {data_type}, {width}, {height}, {depth})")
         
         return Pi2Image(self, image_name)
 
@@ -694,7 +694,7 @@ class Pi2:
         
         temp_image = self.newimage()
 
-        self.run_script(f"isimagefile({filename}, {temp_image.image_name})")
+        self.run_script(f"isimagefile({filename}, {temp_image.name})")
 
         return temp_image.get_value() != 0
          
@@ -715,7 +715,7 @@ class Pi2:
             image_name = self.generate_image_name()
             target_image = Pi2Image(self, image_name)
 
-        self.run_script(f"read({target_image.image_name}, \"{filename}\", {data_type_override})")
+        self.run_script(f"read({target_image.name}, \"{filename}\", {data_type_override})")
         return target_image
         
 

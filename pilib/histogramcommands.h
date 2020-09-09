@@ -360,6 +360,133 @@ namespace pilib
 	};
 
 
+	template<typename pixel_t> class WeightedHistogramCommand : public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		WeightedHistogramCommand() : Command("whist", "Calculate weighted histogram of an image.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image whose histogram will be calculated."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "weight", "Weight image. This image must contain weight value for each pixel in the input images"),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "histogram", "Image that will contain the histogram on output. The number of pixels in this image will be set to match bin count."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "bin starts", "Image that will contain the histogram bin start coordinates when the function finishes."),
+				CommandArgument<double>(ParameterDirection::In, "histogram minimum", "Minimum value to be included in the histogram. Values less than minimum are included in the first bin.", 0),
+				CommandArgument<double>(ParameterDirection::In, "histogram maximum", "The end of the last bin. Values greater than maximum are included in the last bin.", (double)std::numeric_limits<pixel_t>::max()),
+				CommandArgument<coord_t>(ParameterDirection::In, "bin count", "Count of bins. The output image will be resized to contain this many pixels.", 256),
+				CommandArgument<std::string>(ParameterDirection::In, "output file", "Name of file where the histogram data is to be saved. Specify empty string to disable saving. This argument is used internally in distributed processing, but can be used to (conveniently?) save the histogram in .raw format.", ""),
+				CommandArgument<Distributor::BLOCK_INDEX_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_INDEX_ARG_NAME, "Index of image block that we are currently processing. This argument is used internally in distributed processing and should normally be set to negative value. If positive, this number is appended to output file name.", -1)
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			Image<float32_t>& weight = *pop<Image<float32_t>* >(args);
+			Image<float32_t>& hist = *pop<Image<float32_t>* >(args);
+			Image<float32_t>& bins = *pop<Image<float32_t>*>(args);
+			double hmin = pop<double>(args);
+			double hmax = pop<double>(args);
+			coord_t bincount = pop<coord_t>(args);
+			std::string fname = pop<std::string>(args);
+			Distributor::BLOCK_INDEX_ARG_TYPE blockIndex = pop<Distributor::BLOCK_INDEX_ARG_TYPE>(args);
+
+			using sum_t = typename histogram_intermediate_type<float32_t, float32_t>::type;
+			Image<sum_t> rawHist;
+
+			weight.checkSize(in);
+			rawHist.ensureSize(bincount);
+			itl2::histogram(in, rawHist, Vec2d(hmin, hmax), 0, &weight);
+
+			internals::saveHist(fname, rawHist, blockIndex);
+
+			internals::fillBins(bins, hmin, hmax, bincount);
+
+			setValue(hist, rawHist);
+		}
+
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
+		{
+			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
+			DistributedImage<float32_t>& weight = *pop<DistributedImage<float32_t>*>(args);
+			DistributedImage<float32_t>& hist = *pop<DistributedImage<float32_t>* >(args);
+			DistributedImage<float32_t>& bins = *pop<DistributedImage<float32_t>*>(args);
+			double hmin = pop<double>(args);
+			double hmax = pop<double>(args);
+			coord_t bincount = pop<coord_t>(args);
+			std::string fname = pop<std::string>(args);
+			Distributor::BLOCK_INDEX_ARG_TYPE blockIndex = pop<Distributor::BLOCK_INDEX_ARG_TYPE>(args);
+
+			weight.checkSize(in.dimensions());
+			hist.ensureSize(bincount);
+			bins.ensureSize(bincount);
+
+
+			std::string tempFilename = createTempFilename("histogram");
+
+
+
+			// Run the block histograms using suitable data type
+			//using sum_t = typename histogram_intermediate_type<float32_t, float32_t>::type;
+			//DistributedTempImage<sum_t> dummy(distributor, "histogram_dummy", Vec3c(1, 1, 1));
+			std::vector<ParamVariant> args2 = { &in, &weight, &hist, &bins, hmin, hmax, bincount, tempFilename, Distributor::BLOCK_INDEX_ARG_TYPE() };
+
+			std::vector<std::string> output = distributor.distribute(&CommandList::get<WeightedHistogramCommand<pixel_t> >(), args2);
+
+			// Combine everything
+			hist.ensureSize(bincount);
+			using sum_t = typename histogram_intermediate_type<float32_t, float32_t>::type;
+			Image<sum_t> temp(hist.dimensions());
+			internals::combineHistograms(output.size(), tempFilename, hist, temp);
+
+			internals::saveHist(fname, temp, blockIndex);
+
+			// Create bins
+			Image<float32_t> tempBins(bincount);
+			internals::fillBins(tempBins, hmin, hmax, bincount);
+			bins.setData(tempBins);
+
+			return std::vector<std::string>();
+		}
+
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
+		{
+			if (argIndex == 2)
+			{
+				// Always load output image and the bins image, but do not write.
+				DistributedImage<float32_t>& hist = *std::get<DistributedImage<float32_t>* >(args[argIndex]);
+				readStart = Vec3c(0, 0, 0);
+				readSize = hist.dimensions();
+				writeFilePos = Vec3c(0, 0, 0);
+				writeImPos = Vec3c(0, 0, 0);
+				writeSize = Vec3c(0, 0, 0);
+			}
+			else if (argIndex == 3)
+			{
+				// Always load output image and the bins image, but do not write.
+				DistributedImage<float32_t>& hist = *std::get<DistributedImage<float32_t>* >(args[argIndex]);
+				readStart = Vec3c(0, 0, 0);
+				readSize = hist.dimensions();
+				writeFilePos = Vec3c(0, 0, 0);
+				writeImPos = Vec3c(0, 0, 0);
+				writeSize = Vec3c(0, 0, 0);
+			}
+		}
+
+		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const override
+		{
+			// Input image is the reference image.
+			return 0;
+		}
+
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
+		{
+			return 1;
+		}
+	};
+
 
 	template<typename pixel1_t, typename pixel2_t> class WeightedHistogram2Command : public Command, public Distributable
 	{

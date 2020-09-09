@@ -937,6 +937,7 @@ pi2.echo(True, False)
 
 #test_difference_normal_distributed('hist', ['img', 'result', 'temp1', 0, 1000, 1000], 'result')
 #test_difference_normal_distributed('hist', ['img', 'result', 'temp1', 0, 500, 500], 'result')
+test_difference_normal_distributed('whist', ['img', 'img', 'result', 'temp1', 0, 500, 500], 'result', convert_to_type=ImageDataType.FLOAT32)
 #test_difference_normal_distributed('hist2', ['img', 0, 1000, 1000, 'img', 0, 100, 100, 'result', 'temp1', 'temp2'], 'result')
 #test_difference_normal_distributed('whist2', ['img', 0, 1000, 1000, 'img', 0, 100, 100, 'img', 'result', 'temp1', 'temp2'], 'result', convert_to_type=ImageDataType.FLOAT32)
 
