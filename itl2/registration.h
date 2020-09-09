@@ -309,7 +309,9 @@ namespace itl2
 		std::cout << "Loading block of deformed image, size  = " << (deformedBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << std::endl;
 		io::readBlock(deformedBlock, deformedFile, defStart, true);
 
-		// Calculate normalization factor for gray values
+		// Calculate normalization factors for gray values
+		// NOTE: This calculates the normalization factors for region that is not the assumed overlapping region but
+		// [overlapping region start - coarse block radius, overlapping region end + coarse block radius]
 		double meanRef, stdRef;
 		Vec2d statsRef = maskedMeanAndStdDev(referenceBlock, (ref_t)0);
 		meanRef = statsRef.x;
@@ -334,8 +336,6 @@ namespace itl2
 
 			//normalized = (deformedBlock - meanDef) * normFactStd + meanDef + normFact
 			// = deformedBlock * normFactStd + (-meanDef * normFactStd + meanDef + normFact)
-			//auto func = [](def_t pix, int param) return ((double)pix - meanDef) * normFactStd + meanDef + normFact;
-			//maskedPointProcessImageParam<def_t, int, double, typeof(func)>(deformedBlock, 1);
 			forAll(deformedBlock, [&](def_t val) { return ((double)val - meanDef) * normFactStd + meanDef + normFact; });
 		}
 

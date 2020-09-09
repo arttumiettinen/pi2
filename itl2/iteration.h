@@ -95,4 +95,17 @@ namespace itl2
 				img(x, y, z) = pixelRound<pixel_t>(lambda(img(x, y, z)));
 			});
 	}
+
+	/**
+	Perform l(x, y, z) = pixelRound<pixel_t>(lambda(l(x, y, z), r(x, y, z))) for all (x, y, z) in the image.
+	*/
+	template<typename pixel1_t, typename pixel2_t, typename F>
+	void forAll(Image<pixel1_t>& l, const Image<pixel2_t>& r, F&& lambda)
+	{
+		l.ensureSize(r);
+		forAllPixels(l, [&](coord_t x, coord_t y, coord_t z)
+			{
+				l(x, y, z) = pixelRound<pixel1_t>(lambda(l(x, y, z), r(x, y, z)));
+			});
+	}
 }

@@ -7,6 +7,7 @@
 #include "projections.h"
 #include "interpolation.h"
 #include "floodfill.h"
+#include "iteration.h"
 
 namespace itl2
 {
@@ -702,6 +703,30 @@ namespace itl2
 		}
 	}
 
+	/**
+	Calculates angle between orientation direction and given main direction for each pixel in the image.
+	For pixel at x, calculates angle between (phi(x), theta(x)) and (phim, thetam), and assigns it to alpha(x).
+	@param phi, theta Azimuthal (phi) and polar (theta) angles as described in the documentation of structureTensor function.
+	@param alpha Output image. This image CAN be either phi or theta.
+	@param phim, thetam Azimuthal and polar component of comparison angle.
+	*/
+	inline void orientationDifference(const Image<float32_t>& phi, const Image<float32_t>& theta, Image<float32_t>& alpha, double phim, double thetam)
+	{
+		phi.checkSize(theta);
+		alpha.ensureSize(phi);
+		if (&alpha != &phi)
+			setValue(alpha, phi);
+		forAll(alpha, theta, [=](float32_t p, float32_t t)
+			{
+				double alpha = (cos(p) * cos(phim) + sin(p) * sin(phim)) * sin(t) * sin(thetam) + cos(t) * cos(thetam);
+				if (alpha > 1)
+					alpha = 1;
+				else if (alpha < -1)
+					alpha = -1;
+				alpha = acos(abs(alpha));
+				return alpha;
+			});
+	}
 
 	/**
 	Color codes orientation data according to deviation from a given main orientation.

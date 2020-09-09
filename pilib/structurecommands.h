@@ -10,7 +10,7 @@ namespace pilib
 {
 	inline std::string orientationSeeAlso()
 	{
-		return "cylindricality, cylinderorientation, plateorientation, mainorientationcolor, axelssoncolor";
+		return "cylindricality, cylinderorientation, plateorientation, mainorientationcolor, axelssoncolor, orientationdifference";
 	}
 
 	class CylindricalityCommand : public OverlapDistributable<OneImageInPlaceCommand<float32_t> >
@@ -196,6 +196,69 @@ namespace pilib
 		}
 	};
 
+
+
+	class OrientationDifferenceCommand : public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		OrientationDifferenceCommand() : Command("orientationdifference",
+			R"(For each pixel $x$, calculates angle between $(\phi(x), \theta(x))$ and $(\phi_m, \theta_m)$ and assigns that to the output image.)"
+			"This command does the same calculation than what `mainorientationcode` command does, but outputs the angular difference values instead of color map, and does not weight the output values by the original geometry in any way.",
+			{
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "phi", R"(The azimuthal angle of the local orientation direction. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "theta", R"(The polar angle of the local orientation direction. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.)"),
+				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "alpha", R"(The output image. The values are in range $[0, \pi/2]$.)"),
+				CommandArgument<double>(ParameterDirection::In, "phim", "The azimuthal angle of the main orientation direction in radians."),
+				CommandArgument<double>(ParameterDirection::In, "thetam", "The polar angle of the main orientation direction in radians."),
+			},
+			orientationSeeAlso())
+		{
+		}
+
+	public:
+
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<float32_t>& phi = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& theta = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& out = *pop<Image<float32_t>*>(args);
+			double phim = pop<double>(args);
+			double thetam = pop<double>(args);
+
+			orientationDifference(phi, theta, out, phim, thetam);
+		}
+
+		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		{
+			DistributedImage<float32_t>& phi = *std::get<DistributedImage<float32_t>*>(args[0]);
+			DistributedImage<float32_t>& theta = *std::get<DistributedImage<float32_t>*>(args[1]);
+			DistributedImage<float32_t>& out = *std::get<DistributedImage<float32_t>*>(args[2]);
+
+			phi.checkSize(theta.dimensions());
+			out.ensureSize(phi);
+
+			return distributor.distribute(this, args);
+		}
+
+		using Distributable::runDistributed;
+
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
+		{
+			return 1;
+		}
+
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
+		{
+			return JobType::Fast;
+		}
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return true;
+		}
+	};
 
 
 
