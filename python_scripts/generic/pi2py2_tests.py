@@ -874,9 +874,26 @@ def metadata():
     pi2.setmeta(img, "key2", "value2")
     pi2.getmeta(img, "key1", str, "DEF1")
 
-    print(str.as_string())
+    check_result(str.as_string() == "value1", "value")
+    
+    pi2.listmeta(img, str)
+    check_result(str.as_string() == "key1, key2", "listmeta before")
 
+    pi2.writemeta(img, output_file("metadata"))
+    pi2.clearmeta(img)
 
+    pi2.listmeta(img, str)
+    check_result(str.as_string() == "", "meta key list not empty")
+
+    pi2.readmeta(img, output_file("metadata"))
+    pi2.listmeta(img, str)
+    check_result(str.as_string() == "key1, key2", "meta key list contains incorrect values")
+
+    pi2.getmeta(img, "key1", str, "DEF1")
+    check_result(str.as_string() == "value1", "key1 after read")
+
+    pi2.getmeta(img, "key2", str, "DEF2")
+    check_result(str.as_string() == "value2", "key2 after read")
 
 def named_variables():
     """
@@ -1107,7 +1124,7 @@ pi2.echo(True, False)
 #distributed_numpy()
 #memory()
 
-named_variables()
+#named_variables()
 metadata()
 
 print(f"{total_tests} checks run.")
