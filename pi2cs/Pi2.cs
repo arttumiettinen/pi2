@@ -7,15 +7,12 @@ using System.Threading.Tasks;
 
 namespace pi2cs
 {
-    /// <summary>
-    /// Represents image stored in the Pi2 system.
-    /// </summary>
-    public class Pi2Image : IDisposable
+    public abstract class Pi2Object : IDisposable
     {
         /// <summary>
         /// Gets the name of this image in the Pi system.
         /// </summary>
-        public string ImageName
+        public string Name
         {
             get;
             private set;
@@ -32,14 +29,14 @@ namespace pi2cs
 
         /// <summary>
         /// Constructor.
-        /// Images should be created with Pi2.newimage function, otherwise the image does not exist in the Pi2 system.
+        /// Images and variables should be created with Pi2.new* functions, otherwise they do not exist in the Pi2 system.
         /// </summary>
         /// <param name="pi"></param>
-        /// <param name="imageName"></param>
-        public Pi2Image(Pi2 pi, string imageName)
+        /// <param name="name">Object name</param>
+        public Pi2Object(Pi2 pi, string name)
         {
             Pi = pi;
-            ImageName = imageName;
+            Name = name;
         }
 
         #region Dispose pattern
@@ -69,11 +66,11 @@ namespace pi2cs
                 // Free any other managed objects here.
             }
 
-            if (ImageName != String.Empty)
+            if (Name != String.Empty)
             {
                 // Delete image from Pi ssytem
-                PiLib.Run(Pi.Handle, $"clear({ImageName})");
-                ImageName = String.Empty;
+                PiLib.Run(Pi.Handle, $"clear({Name})");
+                Name = String.Empty;
             }
 
             disposed = true;
@@ -86,6 +83,56 @@ namespace pi2cs
         //}
 
         #endregion
+    }
+
+    /// <summary>
+    /// Represents named value stored in the Pi2 system.
+    /// </summary>
+    public class Pi2Value : Pi2Object
+    {
+        /// <summary>
+        /// Constructor.
+        /// Images and variables should be created with Pi2.new* functions, otherwise they do not exist in the Pi2 system.
+        /// </summary>
+        /// <param name="pi"></param>
+        /// <param name="name">Object name</param>
+        public Pi2Value(Pi2 pi, string name) : base(pi, name)
+        {
+        }
+
+        /// <summary>
+        /// Gets the value of this object as a string.
+        /// Throws an exception if the value is not a string.
+        /// </summary>
+        /// <returns></returns>
+        public string AsString()
+        {
+            string s = PiLib.GetString(Pi.Handle, Name);
+            if (s == null)
+                throw new InvalidOperationException($"The object {Name} is not a string.");
+            return s;
+        }
+
+        public static implicit operator string(Pi2Value val)
+        {
+            return val.AsString();
+        }
+    }
+
+    /// <summary>
+    /// Represents image stored in the Pi2 system.
+    /// </summary>
+    public class Pi2Image : Pi2Object
+    {
+        /// <summary>
+        /// Constructor.
+        /// Images and variables should be created with Pi2.new* functions, otherwise they do not exist in the Pi2 system.
+        /// </summary>
+        /// <param name="pi"></param>
+        /// <param name="name">Object name</param>
+        public Pi2Image(Pi2 pi, string name) : base(pi, name)
+        {
+        }
 
 
         #region Data getters
@@ -101,9 +148,9 @@ namespace pi2cs
         /// <returns></returns>
         public IntPtr GetData(out Int64 width, out Int64 height, out Int64 depth, out ImageDataType dataType)
         {
-            IntPtr data = PiLib.GetImage(Pi.Handle, ImageName, out width, out height, out depth, out dataType);
+            IntPtr data = PiLib.GetImage(Pi.Handle, Name, out width, out height, out depth, out dataType);
             if (data == IntPtr.Zero || dataType == ImageDataType.Unknown)
-                throw new InvalidOperationException("Image " + ImageName + " is inaccessible because it has been deleted from the Pi system.");
+                throw new InvalidOperationException("Image " + Name + " is inaccessible because it has been deleted from the Pi system.");
             return data;
         }
 
@@ -333,7 +380,7 @@ namespace pi2cs
         #endregion
 
         /// <summary>
-        /// Creates new Pi2 image object.
+        /// Creates a new Pi2 image object.
         /// </summary>
         /// <param name="width"></param>
         /// <param name="height"></param>
@@ -349,6 +396,19 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Creates a new Pi2 string value.
+        /// </summary>
+        /// <param name="s">Value that will be assigned to the newly created object.</param>
+        /// <returns>Pi2 object representing the value.</returns>
+        public Pi2Value NewString(string s = "")
+        {
+            string name = "value_" + RandomString();
+
+            PiLib.RunAndCheck(Handle, $"newvalue({name}, \"string\", {s})");
+            return new Pi2Value(this, name);
+        }
+
+        /// <summary>
         /// Makes sure that the size of the image equals the given dimensions.
         /// Reallocates the image in case of size difference.
         /// </summary>
@@ -358,8 +418,39 @@ namespace pi2cs
         /// <param name="depth"></param>
         public void EnsureSize(Pi2Image img, int width = 1, int height = 1, int depth = 1)
         {
-            PiLib.RunAndCheck(Handle, $"ensuresize({img.ImageName}, {width}, {height}, {depth})");
+            PiLib.RunAndCheck(Handle, $"ensuresize({img.Name}, {width}, {height}, {depth})");
         }
+
+        #region Metadata commands
+
+        public void SetMeta(Pi2Image img, string name, string value)
+        {
+            PiLib.RunAndCheck(Handle, $"setmeta({img.Name}, {name}, {value})");
+        }
+
+        public string GetMeta(Pi2Image img, string name, string defaultValue)
+        {
+            Pi2Value value = NewString();
+            PiLib.RunAndCheck(Handle, $"getmeta({img.Name}, {name}, {value}, {defaultValue})");
+            return value.AsString();
+        }
+
+        public void ClearMeta(Pi2Image img)
+        {
+            PiLib.RunAndCheck(Handle, $"clearmeta({img.Name})");
+        }
+
+        public void WriteMeta(Pi2Image img, string filename)
+        {
+            PiLib.RunAndCheck(Handle, $"writemeta({img.Name}, {filename})");
+        }
+
+        public void ReadMeta(Pi2Image img, string filename)
+        {
+            PiLib.RunAndCheck(Handle, $"readmeta({img.Name}, {filename})");
+        }
+
+        #endregion
 
         #region I/O commands
 
@@ -372,7 +463,7 @@ namespace pi2cs
         {
             using (Pi2Image result = NewImage(ImageDataType.UInt8))
             {
-                PiLib.RunAndCheck(Handle, $"isimagefile({filename}, {result.ImageName})");
+                PiLib.RunAndCheck(Handle, $"isimagefile({filename}, {result.Name})");
                 return result.GetValue() != 0;
             }
         }
@@ -390,7 +481,7 @@ namespace pi2cs
 
             using (Pi2Image result = NewImage(ImageDataType.UInt32, 4))
             {
-                PiLib.RunAndCheck(Handle, $"fileinfo({filename}, {result.ImageName})");
+                PiLib.RunAndCheck(Handle, $"fileinfo({filename}, {result.Name})");
                 dimensions.X = result.GetValue(0);
                 dimensions.Y = result.GetValue(1);
                 dimensions.Z = result.GetValue(2);
@@ -405,7 +496,7 @@ namespace pi2cs
         /// <param name="filename"></param>
         public void Read(Pi2Image target, string filename)
         {
-            PiLib.RunAndCheck(Handle, $"read({target.ImageName}, {filename})");
+            PiLib.RunAndCheck(Handle, $"read({target.Name}, {filename})");
         }
 
         /// <summary>
@@ -465,7 +556,7 @@ namespace pi2cs
         /// <param name="depth">Depth of the image. Omit width, height and depth to infer dimensions from file name.</param>
         public void MapRaw(Pi2Image image, string filename, ImageDataType dataType = ImageDataType.Unknown, int width = 0, int height = 0, int depth = 0)
         {
-            PiLib.RunAndCheck(Handle, $"mapraw({image.ImageName}, {filename}, {dataType}, {width}, {height}, {depth})");
+            PiLib.RunAndCheck(Handle, $"mapraw({image.Name}, {filename}, {dataType}, {width}, {height}, {depth})");
         }
 
         /// <summary>
@@ -476,7 +567,7 @@ namespace pi2cs
         /// <param name="filename"></param>
         public void WriteRaw(Pi2Image img, string filename)
         {
-            PiLib.RunAndCheck(Handle, $"writeraw({img.ImageName}, {filename})");
+            PiLib.RunAndCheck(Handle, $"writeraw({img.Name}, {filename})");
         }
 
         /// <summary>
@@ -487,7 +578,7 @@ namespace pi2cs
         /// <param name="filename"></param>
         public void WriteTif(Pi2Image img, string filename)
         {
-            PiLib.RunAndCheck(Handle, $"writetif({img.ImageName}, {filename})");
+            PiLib.RunAndCheck(Handle, $"writetif({img.Name}, {filename})");
         }
 
         #endregion
@@ -502,7 +593,7 @@ namespace pi2cs
         /// <param name="settings"></param>
         public void FBPPreprocess(Pi2Image projections, Pi2Image preprocessed, string settings)
         {
-            PiLib.RunAndCheck(Handle, $"fbppreprocess({projections.ImageName}, {preprocessed.ImageName}, {settings})");
+            PiLib.RunAndCheck(Handle, $"fbppreprocess({projections.Name}, {preprocessed.Name}, {settings})");
         }
 
         /// <summary>
@@ -513,7 +604,7 @@ namespace pi2cs
         /// <param name="settings"></param>
         public void FBP(Pi2Image preprocessed, Pi2Image output, string settings)
         {
-            PiLib.RunAndCheck(Handle, $"fbp({preprocessed.ImageName}, {output.ImageName}, {settings})");
+            PiLib.RunAndCheck(Handle, $"fbp({preprocessed.Name}, {output.Name}, {settings})");
         }
 
         /// <summary>
@@ -525,7 +616,7 @@ namespace pi2cs
         /// <param name="cutoff">Filter cutoff frequency.</param>
         public void CreateFBPFilter(Pi2Image output, int size = 100, string filterType = "Ramp", float cutoff = 1.0f)
         {
-            PiLib.RunAndCheck(Handle, $"createfbpfilter({output.ImageName}, {size}, {filterType}, {cutoff.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"createfbpfilter({output.Name}, {size}, {filterType}, {cutoff.ToString(CultureInfo.InvariantCulture)})");
         }
 
         #endregion
@@ -540,7 +631,7 @@ namespace pi2cs
         /// <param name="dt"></param>
         public void Convert(Pi2Image img, ImageDataType dt)
         {
-            PiLib.RunAndCheck(Handle, $"convert({img.ImageName}, {dt})");
+            PiLib.RunAndCheck(Handle, $"convert({img.Name}, {dt})");
         }
 
         #endregion
@@ -554,7 +645,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void Set(Pi2Image img, float value)
         {
-            PiLib.RunAndCheck(Handle, $"set({img.ImageName}, {value.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"set({img.Name}, {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -564,7 +655,7 @@ namespace pi2cs
         /// <param name="img2"></param>
         public void Set(Pi2Image img, Pi2Image img2)
         {
-            PiLib.RunAndCheck(Handle, $"set({img.ImageName}, {img2.ImageName})");
+            PiLib.RunAndCheck(Handle, $"set({img.Name}, {img2.Name})");
         }
 
         /// <summary>
@@ -574,7 +665,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void Add(Pi2Image img, float value)
         {
-            PiLib.RunAndCheck(Handle, $"add({img.ImageName}, {value.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"add({img.Name}, {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -584,7 +675,7 @@ namespace pi2cs
         /// <param name="img2"></param>
         public void Add(Pi2Image img, Pi2Image img2)
         {
-            PiLib.RunAndCheck(Handle, $"add({img.ImageName}, {img2.ImageName})");
+            PiLib.RunAndCheck(Handle, $"add({img.Name}, {img2.Name})");
         }
 
         /// <summary>
@@ -594,7 +685,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void Subtract(Pi2Image img, float value)
         {
-            PiLib.RunAndCheck(Handle, $"subtract({img.ImageName}, {value.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"subtract({img.Name}, {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -605,7 +696,7 @@ namespace pi2cs
         /// <param name="allowBroadcast">Set to true to allow size of parameter image differ from size of input image. If there is a need to access pixel outside of parameter image, the nearest value inside the image is taken instead.If set to false, dimensions of input and parameter images must be equal. If set to true, the parameter image is always loaded in its entirety in distributed processing mode.</param>
         public void Subtract(Pi2Image img, Pi2Image img2, bool allowBroadcast = false)
         {
-            PiLib.RunAndCheck(Handle, $"subtract({img.ImageName}, {img2.ImageName}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"subtract({img.Name}, {img2.Name}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -615,7 +706,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void InvSubtract(Pi2Image img, float value)
         {
-            PiLib.RunAndCheck(Handle, $"invsubtract({img.ImageName}, {value.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"invsubtract({img.Name}, {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -626,7 +717,7 @@ namespace pi2cs
         /// <param name="allowBroadcast">Set to true to allow size of parameter image differ from size of input image. If there is a need to access pixel outside of parameter image, the nearest value inside the image is taken instead.If set to false, dimensions of input and parameter images must be equal. If set to true, the parameter image is always loaded in its entirety in distributed processing mode.</param>
         public void InvSubtract(Pi2Image img, Pi2Image img2, bool allowBroadcast = false)
         {
-            PiLib.RunAndCheck(Handle, $"invsubtract({img.ImageName}, {img2.ImageName}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"invsubtract({img.Name}, {img2.Name}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -636,7 +727,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void Multiply(Pi2Image img, float value)
         {
-            PiLib.RunAndCheck(Handle, $"multiply({img.ImageName}, {value.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"multiply({img.Name}, {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -647,7 +738,7 @@ namespace pi2cs
         /// <param name="allowBroadcast">Set to true to allow size of parameter image differ from size of input image. If there is a need to access pixel outside of parameter image, the nearest value inside the image is taken instead.If set to false, dimensions of input and parameter images must be equal. If set to true, the parameter image is always loaded in its entirety in distributed processing mode.</param>
         public void Multiply(Pi2Image img, Pi2Image img2, bool allowBroadcast = false)
         {
-            PiLib.RunAndCheck(Handle, $"multiply({img.ImageName}, {img2.ImageName}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"multiply({img.Name}, {img2.Name}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -657,7 +748,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void Divide(Pi2Image img, float value)
         {
-            PiLib.RunAndCheck(Handle, $"divide({img.ImageName}, {value.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"divide({img.Name}, {value.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -668,7 +759,7 @@ namespace pi2cs
         /// <param name="allowBroadcast">Set to true to allow size of parameter image differ from size of input image. If there is a need to access pixel outside of parameter image, the nearest value inside the image is taken instead.If set to false, dimensions of input and parameter images must be equal. If set to true, the parameter image is always loaded in its entirety in distributed processing mode.</param>
         public void Divide(Pi2Image img, Pi2Image img2, bool allowBroadcast = false)
         {
-            PiLib.RunAndCheck(Handle, $"divide({img.ImageName}, {img2.ImageName}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"divide({img.Name}, {img2.Name}, {allowBroadcast.ToString(CultureInfo.InvariantCulture)})");
         }
 
         #endregion
@@ -685,7 +776,7 @@ namespace pi2cs
         /// <param name="value"></param>
         public void Set(Pi2Image img, int x, int y, int z, float value)
         {
-            PiLib.RunAndCheck(Handle, String.Format(CultureInfo.InvariantCulture, "set({0}, [{1}, {2}, {3}], {4})", img.ImageName, x, y, z, value));
+            PiLib.RunAndCheck(Handle, String.Format(CultureInfo.InvariantCulture, "set({0}, [{1}, {2}, {3}], {4})", img.Name, x, y, z, value));
         }
 
         /// <summary>
@@ -695,7 +786,7 @@ namespace pi2cs
         /// <param name="dimension">Dimension where gray values increase.</param>
         public void Ramp(Pi2Image img, int dimension)
         {
-            PiLib.RunAndCheck(Handle, $"ramp({img.ImageName}, {dimension})");
+            PiLib.RunAndCheck(Handle, $"ramp({img.Name}, {dimension})");
         }
 
         /// <summary>
@@ -706,7 +797,7 @@ namespace pi2cs
         /// <param name="stddev">Standard deviation of the noise.</param>
         public void Noise(Pi2Image img, float mean = 0.0f, float stddev = 50.0f)
         {
-            PiLib.RunAndCheck(Handle, $"noise({img.ImageName}, {mean.ToString(CultureInfo.InvariantCulture)}, {stddev.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"noise({img.Name}, {mean.ToString(CultureInfo.InvariantCulture)}, {stddev.ToString(CultureInfo.InvariantCulture)})");
         }
 
         #endregion
@@ -722,7 +813,7 @@ namespace pi2cs
         public void Scale(Pi2Image inImg, Pi2Image outImg, float scaleFactor = 0)
         {
             // TODO: Vector scaling factor, interpolation mode, boundary condition.
-            PiLib.RunAndCheck(Handle, $"scale({inImg.ImageName}, {outImg.ImageName}, {scaleFactor.ToString(CultureInfo.InvariantCulture)})");
+            PiLib.RunAndCheck(Handle, $"scale({inImg.Name}, {outImg.Name}, {scaleFactor.ToString(CultureInfo.InvariantCulture)})");
         }
 
         /// <summary>
@@ -732,7 +823,7 @@ namespace pi2cs
         /// <param name="outImg"></param>
         public void Rot90CW(Pi2Image inImg, Pi2Image outImg)
         {
-            PiLib.RunAndCheck(Handle, $"rot90cw({inImg.ImageName}, {outImg.ImageName})");
+            PiLib.RunAndCheck(Handle, $"rot90cw({inImg.Name}, {outImg.Name})");
         }
 
         /// <summary>
@@ -743,7 +834,7 @@ namespace pi2cs
         /// <param name="target"></param>
         public void Copy(Pi2Image source, Pi2Image target)
         {
-            PiLib.RunAndCheck(Handle, $"copy({source.ImageName}, {target.ImageName})");
+            PiLib.RunAndCheck(Handle, $"copy({source.Name}, {target.Name})");
         }
 
         /// <summary>
@@ -755,7 +846,7 @@ namespace pi2cs
         /// <param name="position"></param>
         public void Copy(Pi2Image source, Pi2Image target, Vec3 position)
         {
-            PiLib.RunAndCheck(Handle, $"copy({source.ImageName}, {target.ImageName}, {ToIntVec(position)})");
+            PiLib.RunAndCheck(Handle, $"copy({source.Name}, {target.Name}, {ToIntVec(position)})");
         }
 
         /// <summary>
@@ -768,7 +859,7 @@ namespace pi2cs
         /// <param name="size">Size of output image. Specify zeroes or nothing to crop to current size of output image.</param>
         public void Crop(Pi2Image input, Pi2Image output, Vec3 position, Vec3 size)
         {
-            PiLib.RunAndCheck(Handle, $"crop({input.ImageName}, {output.ImageName}, {ToIntVec(position)}, {ToIntVec(size)})");
+            PiLib.RunAndCheck(Handle, $"crop({input.Name}, {output.Name}, {ToIntVec(position)}, {ToIntVec(size)})");
         }
 
         #endregion
@@ -783,7 +874,7 @@ namespace pi2cs
         /// <param name="dimension"></param>
         public void MeanProject(Pi2Image source, Pi2Image target, int dimension)
         {
-            PiLib.RunAndCheck(Handle, $"meanproject({source.ImageName}, {target.ImageName}, {dimension})");
+            PiLib.RunAndCheck(Handle, $"meanproject({source.Name}, {target.Name}, {dimension})");
         }
 
         #endregion

@@ -131,7 +131,7 @@ namespace pi2cs
         Gets list of commands available
         */
         [DllImport("pi")]
-        public static extern IntPtr commandList(IntPtr pi);
+        private static extern IntPtr commandList(IntPtr pi);
 
         /**
         Get error message identifying the last error that has occured.
@@ -150,6 +150,21 @@ namespace pi2cs
 	    */
         [DllImport("pi", EntryPoint = "getImage")]
         public static extern IntPtr GetImage(IntPtr pi, string imgName, out Int64 width, out Int64 height, out Int64 depth, out ImageDataType dataType);
+
+        /**
+        Gets a string value from the Pi2 system.
+        */
+        [DllImport("pi", EntryPoint = "getString")]
+        private static extern IntPtr getString(IntPtr pi, string name);
+
+        /**
+        Gets a string value from the Pi2 system.
+        */
+        public static string GetString(IntPtr pi, string name)
+        {
+            IntPtr ptr = getString(pi, name);
+            return Marshal.PtrToStringAnsi(ptr);
+        }
     }
 
 
