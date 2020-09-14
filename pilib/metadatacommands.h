@@ -52,9 +52,9 @@ namespace pilib
 	public:
 		virtual void run(Image<input_t>& in, std::vector<ParamVariant>& args) const override
 		{
-			string key = std::get<string>(args[0]);
+			const string& key = std::get<string>(args[0]);
 			string* value = std::get<string*>(args[1]);
-			string def = std::get<string>(args[2]);
+			const string& def = std::get<string>(args[2]);
 			*value = in.metadata.get(key, def);
 		}
 	};

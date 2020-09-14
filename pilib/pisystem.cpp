@@ -161,9 +161,10 @@ namespace pilib
 	{
 		if (img)
 		{
-			for (auto it = namedValues.begin(); it != namedValues.end(); it++)
+			for (auto it = images.begin(); it != images.end(); it++)
 			{
-				ImageBase* ptr = pilib::getImageNoThrow(*it->second.second.get());
+				//ImageBase* ptr = pilib::getImageNoThrow(*it->second.second.get());
+				ImageBase* ptr = it->second.get();
 				if (ptr == img)
 					return it->first;
 			}
@@ -235,7 +236,7 @@ namespace pilib
 	*/
 	bool PISystem::getImageAsVec3(const string& name, Vec3d& v)
 	{
-		if (namedValues.find(name) != namedValues.end() || distributedImgs.find(name) != distributedImgs.end())
+		if (images.find(name) != images.end() || distributedImgs.find(name) != distributedImgs.end())
 		{
 			// First get info as getImage reads the whole image into memory.
 			coord_t w = 0, h = 0, d = 0;
@@ -307,14 +308,31 @@ namespace pilib
 	If conversion is not possible, reason string is assigned an explanation of the error.
 	@return 0 if there is no match, 1 if the argument type and parameter type match, and 2 if they match after creation of new images.
 	*/
-	int PISystem::tryConvert(string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, shared_ptr<ParamVariant> resultPtr, string& reason)
+	int PISystem::tryConvert(string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, string& reason)
 	{
 		ArgumentDataType dt = type.dataType();
 
 		if (type.direction() == ParameterDirection::In || type.direction() == ParameterDirection::InOut)
 		{
 			// Input parameter.
-			// Strings must be convertible to primitives, images must exist.
+			// Strings must be convertible to primitives, images and variabels must exist.
+
+
+			if (isValidImageName(value, reason))
+			{
+				// Find string variable
+				if (dt == ArgumentDataType::String)
+				{
+					auto it = strings.find(value);
+					if (it != strings.end())
+					{
+						if(doConversion)
+							result = *(it->second);
+						return 1;
+					}
+				}
+			}
+
 
 			if (trySimpleConversion<string>(dt, value, doConversion, result, reason))
 				return 1;
@@ -359,32 +377,95 @@ namespace pilib
 			if (trySimpleConversion<InterpolationMode>(dt, value, doConversion, result, reason))
 				return 1;
 
-			if (isValidImageName(value, reason))
+			//if (isValidImageName(value, reason))
+			//{
+			//	if (!isDistributed())
+			//	{
+			//		// Non-distributed case
+			//		auto it = images.find(value);
+			//		if (it == images.end())
+			//		{
+			//			reason = string("Image ") + value + string(" does not exist.");
+			//			return 0;
+			//		}
+
+			//		// Check that data type is correct
+			//		auto& p = it->second;
+
+			//		ArgumentDataType pdt = p.first;
+			//		if (pdt != dt)
+			//		{
+			//			reason = string("Expected ") + toString(dt) + string(", but ") + value + string(" is ") + toString(pdt) + string(".");
+			//			return 0;
+			//		}
+
+			//		if (doConversion)
+			//		{
+			//			resultPtr = p.second;
+			//			result = *resultPtr;
+			//		}
+
+			//		return 1;
+			//	}
+			//	else
+			//	{
+			//		auto it = distributedImgs.find(value);
+			//		if (it == distributedImgs.end())
+			//		{
+			//			reason = string("Image ") + value + string(" does not exist.");
+			//			return 0;
+			//		}
+
+			//		// Check that image data type is correct
+			//		DistributedImageBase* p = it->second.get();
+
+			//		ImageDataType idt = argumentDataTypeToImageDataType(dt);
+			//		if (idt != p->dataType())
+			//		{
+			//			reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
+			//			return 0;
+			//		}
+
+			//		if (doConversion)
+			//			pick<CastDistributedImage>(idt, p, result);
+
+			//		return 1;
+			//	}
+			//}
+
+			if (isImage(dt))
 			{
+				// Find image with given name
+
+				if (!isValidImageName(value, reason))
+					return 0;
+
+				ImageDataType idt = argumentDataTypeToImageDataType(dt);
+
 				if (!isDistributed())
 				{
 					// Non-distributed case
-					auto it = namedValues.find(value);
-					if (it == namedValues.end())
+
+					auto it = images.find(value);
+					if (it == images.end())
 					{
-						reason = string("Named value ") + value + string(" does not exist.");
+						reason = string("Image ") + value + string(" does not exist.");
 						return 0;
 					}
 
-					// Check that data type is correct
-					auto& p = it->second;
+					// Check that image data type is correct
+					ImageBase* p = it->second.get();
 
-					ArgumentDataType pdt = p.first;
-					if (pdt != dt)
+					if (idt != p->dataType())
 					{
-						reason = string("Expected ") + toString(dt) + string(", but ") + value + string(" is ") + toString(pdt) + string(".");
+						reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
 						return 0;
 					}
-
+					
 					if (doConversion)
 					{
-						resultPtr = p.second;
-						result = *resultPtr;
+						imageStore.push_back(it->second);
+						pick<CastImage>(idt, p, result);
 					}
 
 					return 1;
@@ -401,7 +482,6 @@ namespace pilib
 					// Check that image data type is correct
 					DistributedImageBase* p = it->second.get();
 
-					ImageDataType idt = argumentDataTypeToImageDataType(dt);
 					if (idt != p->dataType())
 					{
 						reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
@@ -409,72 +489,16 @@ namespace pilib
 					}
 
 					if (doConversion)
+					{
+						distributedImageStore.push_back(it->second);
 						pick<CastDistributedImage>(idt, p, result);
+					}
 
 					return 1;
 				}
+
+
 			}
-
-			//if (isImage(dt))
-			//{
-			//	// Find image with given name
-
-			//	if (!isValidImageName(value, reason))
-			//		return 0;
-
-			//	ImageDataType idt = argumentDataTypeToImageDataType(dt);
-
-			//	if (!isDistributed())
-			//	{
-			//		// Non-distributed case
-
-			//		auto it = imgs.find(value);
-			//		if (it == imgs.end())
-			//		{
-			//			reason = string("Image ") + value + string(" does not exist.");
-			//			return 0;
-			//		}
-
-			//		// Check that image data type is correct
-			//		ImageBase* p = it->second.get();
-
-			//		if (idt != p->dataType())
-			//		{
-			//			reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-			//			return 0;
-			//		}
-			//		
-			//		if (doConversion)
-			//			pick<CastImage>(idt, p, result);
-
-			//		return 1;
-			//	}
-			//	else
-			//	{
-			//		auto it = distributedImgs.find(value);
-			//		if (it == distributedImgs.end())
-			//		{
-			//			reason = string("Image ") + value + string(" does not exist.");
-			//			return 0;
-			//		}
-
-			//		// Check that image data type is correct
-			//		DistributedImageBase* p = it->second.get();
-
-			//		if (idt != p->dataType())
-			//		{
-			//			reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-			//			return 0;
-			//		}
-
-			//		if (doConversion)
-			//			pick<CastDistributedImage>(idt, p, result);
-
-			//		return 1;
-			//	}
-
-
-			//}
 
 			return 0;
 		}
@@ -482,69 +506,70 @@ namespace pilib
 		{
 			// Output parameter
 
-
 			if (!isValidImageName(value, reason))
 				return 0;
 
-
-			// Search match from existing values.
-			Vec3c oldSize(1, 1, 1);
-			if (!isDistributed())
-			{
-				auto it = namedValues.find(value);
-				if (it != namedValues.end())
-				{
-					ArgumentDataType pdt = it->second.first;
-					ParamVariant& var = *it->second.second.get();
-
-					if (isImage(pdt))
-						oldSize = pilib::getImageNoThrow(var)->dimensions();
-					
-					if (pdt == dt)
-					{
-						if (doConversion)
-						{
-							resultPtr = it->second.second;
-							result = var;
-						}
-						return 1;
-					}
-				}
-			}
-			else
-			{
-				auto it = distributedImgs.find(value);
-				if (it != distributedImgs.end())
-				{
-					DistributedImageBase* p = it->second.get();
-					oldSize = p->dimensions();
-
-					ImageDataType idt = argumentDataTypeToImageDataType(dt);
-					if (p->dataType() == idt)
-					{
-						// Match
-						if (doConversion)
-							pick<CastDistributedImage>(idt, p, result);
-						return 1;
-					}
-				}
-			}
-
-
-			// No match found from existing values.
-			// Create value if it does not exist.
-			if (doConversion)
+			if (isImage(dt))
 			{
 				ImageDataType idt = argumentDataTypeToImageDataType(dt);
-				if (idt != ImageDataType::Unknown)
+
+				// Any image type can be output automatically, but existing images get higher priority
+
+				// Search match from existing images.
+				Vec3c oldSize(1, 1, 1);
+				if (!isDistributed())
+				{
+					auto it = images.find(value);
+					if (it != images.end())
+					{
+						ImageBase* p = it->second.get();
+						oldSize = p->dimensions();
+
+						if (p->dataType() == idt)
+						{
+							// Match
+							if (doConversion)
+							{
+								imageStore.push_back(it->second);
+								pick<CastImage>(idt, p, result);
+							}
+							return 1;
+						}
+					}
+				}
+				else
+				{
+					auto it = distributedImgs.find(value);
+					if (it != distributedImgs.end())
+					{
+						DistributedImageBase* p = it->second.get();
+						oldSize = p->dimensions();
+
+						if (p->dataType() == idt)
+						{
+							// Match
+							if (doConversion)
+							{
+								distributedImageStore.push_back(it->second);
+								pick<CastDistributedImage>(idt, p, result);
+							}
+							return 1;
+						}
+					}
+				}
+
+				// No match found from existing images.
+				// Create image if it does not exist.
+				if (doConversion)
 				{
 					if (!isDistributed())
 					{
 						// Create normal image
 						// Retain size of old image of the same name
 						pick<CreateImage>(idt, oldSize, value, this);
-						resultPtr = namedValues[value].second;
-						ImageBase* p = pilib::getImageNoThrow(*resultPtr.get());
+						auto ptr = images.at(value);
+						imageStore.push_back(ptr);
+						ImageBase* p = ptr.get();
 						pick<CastImage>(idt, p, result);
 					}
 					else
@@ -552,107 +577,45 @@ namespace pilib
 						// Create distributed image
 						// Retain size of old image of the same name
 						pick<CreateEmptyDistributedImage>(idt, value, oldSize, this);
-						DistributedImageBase* p = distributedImgs[value].get();
+						auto ptr = distributedImgs.at(value);
+						distributedImageStore.push_back(ptr);
+						DistributedImageBase* p = ptr.get();
 						pick<CastDistributedImage>(idt, p, result);
 					}
 				}
-				else
-				{
-					// non-image data type
-					if (dt == ArgumentDataType::String)
-					{
-						resultPtr = make_shared<ParamVariant>(new string());
-						result = *resultPtr;
-						namedValues[value] = make_pair(dt, resultPtr);
-					}
-					else
-					{
-						// Any other output data type is not supported...
-						throw runtime_error("Output parameter data type not implemented.");
-					}
-				}
+
+				return 2;
 			}
+			else if (dt == ArgumentDataType::String)
+			{
+				// Search match from existing values.
+				auto it = strings.find(value);
+				if(it != strings.end())
+				{
+					if (doConversion)
+					{
+						stringStore.push_back(it->second);
+						result = it->second.get();
+					}
+					return 1;
+				}
 
-			return 2;
+				// No match found from existing values. Create new value.
+				if (doConversion)
+				{
+					shared_ptr<string> ptr = make_shared<string>("");
+					stringStore.push_back(it->second);
+					strings[value] = ptr;
+					result = ptr.get();
+				}
 
-
-
-
-			//if (isImage(dt))
-			//{
-			//	if (!isValidImageName(value, reason))
-			//		return 0;
-
-			//	ImageDataType idt = argumentDataTypeToImageDataType(dt);
-
-			//	// Any image type can be output automatically, but existing images get higher priority
-
-			//	// Search match from existing images.
-			//	Vec3c oldSize(1, 1, 1);
-			//	if (!isDistributed())
-			//	{
-			//		auto it = imgs.find(value);
-			//		if (it != imgs.end())
-			//		{
-			//			ImageBase* p = it->second.get();
-			//			oldSize = p->dimensions();
-
-			//			if (p->dataType() == idt)
-			//			{
-			//				// Match
-			//				if (doConversion)
-			//					pick<CastImage>(idt, p, result);
-			//				return 1;
-			//			}
-			//		}
-			//	}
-			//	else
-			//	{
-			//		auto it = distributedImgs.find(value);
-			//		if (it != distributedImgs.end())
-			//		{
-			//			DistributedImageBase* p = it->second.get();
-			//			oldSize = p->dimensions();
-
-			//			if (p->dataType() == idt)
-			//			{
-			//				// Match
-			//				if (doConversion)
-			//					pick<CastDistributedImage>(idt, p, result);
-			//				return 1;
-			//			}
-			//		}
-			//	}
-
-			//	// No match found from existing images.
-			//	// Create image if it does not exist.
-			//	if (doConversion)
-			//	{
-			//		if (!isDistributed())
-			//		{
-			//			// Create normal image
-			//			// Retain size of old image of the same name
-			//			pick<CreateImage>(idt, oldSize, value, this);
-			//			ImageBase* p = imgs[value].get();
-			//			pick<CastImage>(idt, p, result);
-			//		}
-			//		else
-			//		{
-			//			// Create distributed image
-			//			// Retain size of old image of the same name
-			//			pick<CreateEmptyDistributedImage>(idt, value, oldSize, this);
-			//			DistributedImageBase* p = distributedImgs[value].get();
-			//			pick<CastDistributedImage>(idt, p, result);
-			//		}
-			//	}
-
-			//	return 2;
-			//}
-			//else
-			//{
-			//	// Any other output data type is not supported...
-			//	throw runtime_error("Output parameter data type not implemented.");
-			//}
+				return 2;
+			}
+			else
+			{
+				// Any other output data type is not supported...
+				throw runtime_error("Output parameter data type not implemented.");
+			}
 		}
 
 
@@ -678,9 +641,8 @@ namespace pilib
 		for (size_t n = 0; n < values.size(); n++)
 		{
 			ParamVariant dummy;
-			shared_ptr<ParamVariant> dummyPtr;
 			string convertReason;
-			int result = tryConvert(values[n], types[n], false, dummy, dummyPtr, convertReason);
+			int result = tryConvert(values[n], types[n], false, dummy, convertReason);
 			if (result == 0) // No match
 			{
 				reason = types[n].name() + ": " + convertReason;
@@ -844,32 +806,32 @@ namespace pilib
 		vector<ParamVariant> convertedArgs;
 		convertedArgs.reserve(realArgs.size());
 
-		vector<shared_ptr<ParamVariant> > imageStore;
+		//vector<shared_ptr<ImageBase> > imageStore;
 		
 		for (size_t n = 0; n < realArgs.size(); n++)
 		{
 			ParamVariant res;
-			shared_ptr<ParamVariant> resPtr;
 			string dummy;
-			tryConvert(realArgs[n], cmd->args()[n], true, res, resPtr, dummy);
+			tryConvert(realArgs[n], cmd->args()[n], true, res, dummy);
 
-			// Store shared_ptrs to image arguments so that they don't get deleted if the next parameters override them.
-			// NOTE: We just hold the pointers but don't do anything with them.
-			DistributedImageBase* db = getDistributedImageNoThrow(res);
-			if (db)
-			{
-				distributedImageStore.push_back(getDistributedImagePointer(db));
-			}
+			//// Store shared_ptrs to image arguments so that they don't get deleted if the next parameters override them.
+			//// NOTE: We just hold the pointers but don't do anything with them.
+			//DistributedImageBase* db = getDistributedImageNoThrow(res);
+			//if (db)
+			//{
+			//	distributedImageStore.push_back(getDistributedImagePointer(db));
+			//}
 
 			//ImageBase* ib = pilib::getImageNoThrow(res);
 			//if (ib)
 			//{
 			//	imageStore.push_back(getImagePointer(ib));
 			//}
-			if (resPtr)
-			{
-				imageStore.push_back(resPtr);
-			}
+
+			//if (resPtr)
+			//{
+			//	imageStore.push_back(resPtr);
+			//}
 
 
 			convertedArgs.push_back(res);
@@ -902,6 +864,8 @@ namespace pilib
 		if (showTiming && !isNoShow)
 			cout << "Operation took " << setprecision(3) << timer.getSeconds() << " s" << endl;
 
+		imageStore.clear();
+		stringStore.clear();
 		distributedImageStore.clear();
 	}
 
@@ -990,15 +954,25 @@ namespace pilib
 	vector<string> PISystem::getImageNames() const
 	{
 		std::vector<string> keys;
-		//keys.reserve(imgs.size());
-		for (auto const& item : namedValues)
+		keys.reserve(images.size());
+		for (auto const& item : images)
 		{
-			if(pilib::isImage(item.second.first))
+			//if(pilib::isImage(item.second.first))
 				keys.push_back(item.first);
 		}
 		return keys;
 	}
 
+	std::vector<std::string> PISystem::getStringNames() const
+	{
+		std::vector<string> keys;
+		keys.reserve(strings.size());
+		for (auto const& item : strings)
+		{
+			keys.push_back(item.first);
+		}
+		return keys;
+	}
 	
 
 	/**
@@ -1021,17 +995,34 @@ namespace pilib
 		if (isDistributed())
 		{
 			// Convert the distributed image to normal image and return that.
-			unique_ptr<ImageBase> ptr = distributedImgs[name]->toNormalImage();
+			unique_ptr<ImageBase> ptr = distributedImgs.at(name)->toNormalImage();
 
-			std::shared_ptr<ParamVariant> sptr = std::make_shared<ParamVariant>((coord_t)0);
-			ImageDataType dt = ptr->dataType();
-			pick<CastImage>(dt, ptr.release(), *sptr);
+			//std::shared_ptr<ParamVariant> sptr = std::make_shared<ParamVariant>((coord_t)0);
+			//ImageDataType dt = ptr->dataType();
+			//pick<CastImage>(dt, ptr.release(), *sptr);
 
-			replaceImage(name, sptr);
+			//replaceImage(name, sptr);
+
+			replaceImage(name, std::move(ptr));
 		}
 
 		//return imgs[name].get();
-		return pilib::getImage(*namedValues[name].second);
+		//return pilib::getImage(*namedValues.at(name).second);
+		return images.at(name).get();
+	}
+
+	string* PISystem::getString(const string& name)
+	{
+		return strings.at(name).get();
+	}
+
+	string* PISystem::getStringNoThrow(const string& name)
+	{
+		return noThrow([&]
+			{
+				return getString(name);
+			},
+			"String with given name not found.");
 	}
 
 	/**
@@ -1043,8 +1034,9 @@ namespace pilib
 	{
 		if (isDistributed())
 		{
-			distributedImgs[imgName]->setData(pilib::getImage(*namedValues[imgName].second));
-			replaceNamedValue(imgName, ArgumentDataType::Int, 0);
+			distributedImgs.at(imgName)->setData(images.at(imgName).get());
+			//distributedImgs[imgName]->setData(pilib::getImage(*namedValues[imgName].second));
+			//replaceNamedValue(imgName, ArgumentDataType::Int, 0);
 		}
 	}
 
@@ -1054,20 +1046,11 @@ namespace pilib
 	*/
 	bool PISystem::flushIfDistributedNoThrow(const string& name)
 	{
-		try
-		{
-			flushIfDistributed(name);
-			return true;
-		}
-		catch (ITLException& e)
-		{
-			lastException = e.message();
-		}
-		catch (exception& e)
-		{
-			lastException = e.what();
-		}
-		return false;
+		return noThrow([&]
+			{
+				flushIfDistributed(name);
+				return true;
+			});
 	}
 
 	/**
@@ -1075,39 +1058,28 @@ namespace pilib
 	*/
 	void PISystem::getImageInfoNoThrow(const string& name, coord_t& width, coord_t& height, coord_t& depth, ImageDataType& dt)
 	{
-		try
-		{
-			// NOTE: Do not use getImage as that results in reading distributed images to RAM.
-			if (!isDistributed())
+		noThrow([&]
 			{
-				shared_ptr<ParamVariant> val = namedValues[name].second;
-				auto p = pilib::getImageNoThrow(*val.get());
-				width = p->width();
-				height = p->height();
-				depth = p->depth();
-				dt = p->dataType();
-			}
-			else
-			{
-				auto p = distributedImgs[name];
-				width = p->width();
-				height = p->height();
-				depth = p->depth();
-				dt = p->dataType();
-			}
-			return;
-		}
-		catch (ITLException& e)
-		{
-			lastException = e.message();
-		}
-		catch (exception& e)
-		{
-			lastException = e.what();
-		}
-
-		if (lastException == "")
-			lastException = "Image not found.";
+				// NOTE: Do not use getImage as that results in reading distributed images to RAM.
+				if (!isDistributed())
+				{
+					shared_ptr<ImageBase> p = images.at(name);
+					width = p->width();
+					height = p->height();
+					depth = p->depth();
+					dt = p->dataType();
+				}
+				else
+				{
+					auto p = distributedImgs.at(name);
+					width = p->width();
+					height = p->height();
+					depth = p->depth();
+					dt = p->dataType();
+				}
+				return true;
+			},
+			"Image not found.");
 	}
 
 	/**
@@ -1115,21 +1087,15 @@ namespace pilib
 	*/
 	ImageBase* PISystem::getImageNoThrow(const string& name)
 	{
-		try
-		{
-			return getImage(name);
-		}
-		catch (ITLException& e)
-		{
-			lastException = e.message();
-		}
-		catch (exception& e)
-		{
-			lastException = e.what();
-		}
-		if (lastException == "")
+		ImageBase* img = noThrow([&]
+			{
+				return getImage(name);
+			});
+
+		if (!img)
 			lastException = "Image not found.";
-		return 0;
+
+		return img;
 	}
 
 
@@ -1138,27 +1104,42 @@ namespace pilib
 	Replace image with given image.
 	Replace image by null pointer to remove it from the system.
 	*/
-	void PISystem::replaceImage(const string& name, shared_ptr<ParamVariant> img)
+	void PISystem::replaceImage(const string& name, shared_ptr<ImageBase> newValue)
 	{
-		if (img)
-		{
-			ArgumentDataType dt = imageDataTypeToArgumentDataType(pilib::getImage(*img)->dataType());
-			replaceNamedValue(name, dt, img);
-		}
-		else
-		{
-			replaceNamedValue(name, ArgumentDataType::Int, img);
-		}
+		if (images.find(name) != images.end())
+			images.erase(name);
+
+		if (newValue)
+			images[name] = newValue;
+
+		//if (img)
+		//{
+		//	ArgumentDataType dt = imageDataTypeToArgumentDataType(pilib::getImage(*img)->dataType());
+		//	replaceNamedValue(name, dt, img);
+		//}
+		//else
+		//{
+		//	replaceNamedValue(name, ArgumentDataType::Int, img);
+		//}
 	}
 
-	void PISystem::replaceNamedValue(const string& name, ArgumentDataType dt, shared_ptr<ParamVariant> newValue)
+	void PISystem::replaceString(const std::string& name, std::shared_ptr<string> newValue)
 	{
-		if (namedValues.find(name) != namedValues.end())
-			namedValues.erase(name);
-		
+		if (strings.find(name) != strings.end())
+			strings.erase(name);
+
 		if (newValue)
-			namedValues[name] = make_pair(dt, newValue);
+			strings[name] = newValue;
 	}
+
+	//void PISystem::replaceNamedValue(const string& name, ArgumentDataType dt, shared_ptr<ParamVariant> newValue)
+	//{
+	//	if (namedValues.find(name) != namedValues.end())
+	//		namedValues.erase(name);
+	//	
+	//	if (newValue)
+	//		namedValues[name] = make_pair(dt, newValue);
+	//}
 
 	/**
 	Get distributed image having given name.

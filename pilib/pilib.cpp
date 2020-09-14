@@ -111,6 +111,8 @@ const char* getString(void* pi, const char* name)
 	std::lock_guard<std::mutex> lock(mutex);
 	PISystem* sys = (PISystem*)pi;
 
-	//sys->getValueNoThrow(name);
-	return 0;
+	std::string* s = sys->getStringNoThrow(name);
+	if (s)
+		return s->c_str();
+	return nullptr;
 }

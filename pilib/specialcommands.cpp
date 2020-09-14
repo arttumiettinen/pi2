@@ -38,6 +38,9 @@ namespace pilib
 		CommandList::add<MapRawCommand>();
 		CommandList::add<MapRaw2Command>();
 
+		CommandList::add<NewValueCommand>();
+		CommandList::add<SetStringCommand>();
+
 		CommandList::add<NewImageCommand>();
 		CommandList::add<NewImage2Command>();
 
@@ -475,6 +478,9 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 	void ListCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
 	{
+		cout << "Images:" << endl;
+		cout << "-------" << endl;
+
 		double totalSize = 0;
 		for (const string& name : system->getImageNames())
 		{
@@ -487,7 +493,48 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 			cout << name << ", " << dimensions << ", " << itl2::toString(img->dataType()) << ", " << bytesToString((double)dataSize) << endl;
 		}
-		cout << "Total " << bytesToString(totalSize) << endl;
+		if (totalSize > 0)
+			cout << "Total " << bytesToString(totalSize) << endl;
+		else
+			cout << "-- none --" << endl;
+
+		cout << "Variables:" << endl;
+		cout << "----------" << endl;
+		size_t count = 0;
+		auto v = system->getStringNames();
+		for (const string& name : v)
+		{
+			count++;
+			cout << name << " (string)" << endl;
+		}
+
+		if (count > 0)
+			cout << "Total " << count << " variables." << endl;
+		else
+			cout << "-- none --" << endl;
+
+		//double totalSize = 0;
+		//auto v = system->getVariableNames();
+		//for (const string& name : v)
+		//{
+		//	ImageBase* img = system->getImageNoThrow(name);
+		//	if (img)
+		//	{
+		//		Vec3c dimensions = img->dimensions();
+		//		size_t pixelSize = img->pixelSize();
+		//		size_t dataSize = img->pixelCount() * pixelSize;
+		//		totalSize += dataSize;
+
+		//		cout << name << ", " << dimensions << ", " << itl2::toString(img->dataType()) << ", " << bytesToString((double)dataSize) << endl;
+		//	}
+		//	else
+		//	{
+		//		cout << name << " (variable)" << endl;
+		//	}
+		//}
+		//if(v.size() > 0)
+		//	cout << "Images occupy total of " << bytesToString(totalSize) << " RAM." << endl;
+
 	}
 
 	vector<string> ListCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
@@ -511,8 +558,48 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 	
 
+	void NewValueCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string dts = pop<string>(args);
+		string value = pop<string>(args);
 
-	
+		if (dts == "string")
+		{
+			system->replaceString(name, make_shared<string>(value));
+		}
+		else
+		{
+			throw ITLException(string("Unsupported variable type: ") + dts);
+		}
+	}
+
+	vector<string> NewValueCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+	void SetStringCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string* name = pop<string*>(args);
+		string value = pop<string>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetStringCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
 
 
 
@@ -1039,7 +1126,9 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	{
 		static void run(const Vec3c& dimensions, const string& imgName, const string& filename, bool readOnly, PISystem* system)
 		{
-			shared_ptr<ParamVariant> img = make_shared<ParamVariant>(new Image<pixel_t>(filename, readOnly, dimensions));
+			//shared_ptr<ParamVariant> img = make_shared<ParamVariant>(new Image<pixel_t>(filename, readOnly, dimensions));
+			//system->replaceImage(imgName, img);
+			shared_ptr<ImageBase> img = make_shared<Image<pixel_t>>(filename, readOnly, dimensions);
 			system->replaceImage(imgName, img);
 		}
 	};
@@ -1124,6 +1213,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		{
 			system->replaceImage(name, nullptr);
 			system->replaceDistributedImage(name, nullptr);
+			system->replaceString(name, nullptr);
 		}
 		else
 		{
@@ -1132,6 +1222,8 @@ the FAQ for more information on the distribution of modified source versions.)EN
 				system->replaceImage(name, nullptr);
 				system->replaceDistributedImage(name, nullptr);
 			}
+			for (auto name : system->getStringNames())
+				system->replaceString(name, nullptr);
 		}
 	}
 

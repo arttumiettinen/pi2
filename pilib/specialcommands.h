@@ -472,6 +472,63 @@ namespace pilib
 
 
 
+	class SetStringCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetStringCommand() : Command("set", "Sets value of a string variable",
+			{
+				CommandArgument<string>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<string>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+
+
+	class NewValueCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		NewValueCommand() : Command("newvalue", "Creates a new variable.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "name", "Name of the variable in the system."),
+				CommandArgument<string>(ParameterDirection::In, "type", "Data type of the variable. Can be 'string'.", "string"),
+				CommandArgument<string>(ParameterDirection::In, "value", "Initial value of the variable", ""),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
 	class NewImageCommand : virtual public Command, public Distributable
 	{
 	protected:
@@ -534,9 +591,9 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ClearCommand() : Command("clear", "Dispose image from the system (and free memory that the image consumes).",
+		ClearCommand() : Command("clear", "Dispose image or value from the system (and free memory that the object consumes).",
 			{
-				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image to erase. Specify empty name to clear everything.", "")
+				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image or value to erase. Specify empty name to clear everything.", "")
 			},
 			"list")
 		{

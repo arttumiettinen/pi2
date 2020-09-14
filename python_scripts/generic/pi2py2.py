@@ -226,22 +226,29 @@ class Pi2Object:
         self.clear()
 
 
+    def __str__(self):
+        
+        return "Pi2 object: " + self.name
+
 
 class Pi2Value(Pi2Object):
     """
     Represents any non-image value stored in the Pi2 system.
     """
 
-    def as_string():
+    def as_string(self):
         """
         Retrieves the value of the object as string.
         Raises error if the value is not a string.
         """
 
-        val = self.pi2.pilib.getString(self.name.encode('ASCII'))
-        # TODO: Check for errors
-        return val
+        val = self.pi2.pilib.getString(self.pi2.piobj, self.name.encode('ASCII'))
+        if val is None:
+            self.pi2.raise_last_error()
+        return val.decode('ASCII')
         
+
+
 
 
 
@@ -268,8 +275,7 @@ class Pi2Image(Pi2Object):
         dt = dt.value
 
         if w == 0 and h == 0 and d == 0:
-            err = self.pi2.pilib.lastErrorMessage(self.pi2.piobj).decode('ASCII')
-            raise RuntimeError(err)
+            self.pi2.raise_last_error()
 
         return ptr, w, h, d, dt
 
@@ -290,8 +296,7 @@ class Pi2Image(Pi2Object):
         dt = dt.value
 
         if w == 0 and h == 0 and d == 0:
-            err = self.pi2.pilib.lastErrorMessage(self.pi2.piobj).decode('ASCII')
-            raise RuntimeError(err)
+            self.pi2.raise_last_error()
 
         return w, h, d, dt
 
@@ -349,8 +354,7 @@ class Pi2Image(Pi2Object):
         """
 
         if not self.pi2.pilib.finishUpdate(self.pi2.piobj, self.name.encode('ASCII')):
-            err = self.pi2.pilib.lastErrorMessage(self.pi2.piobj).decode('ASCII')
-            raise RuntimeError(err)
+            self.pi2.raise_last_error()
 
 
     def get_data(self):
@@ -551,6 +555,9 @@ class Pi2:
         self.pilib.finishUpdate.restype = c_uint8
         self.pilib.finishUpdate.argtypes = [c_void_p, c_char_p]
 
+        self.pilib.getString.restype = c_char_p
+        self.pilib.getString.argtypes = [c_void_p, c_char_p]
+
 
         def cleanup(ptr):
             ptr.closepi()
@@ -584,6 +591,15 @@ class Pi2:
         self.closepi()
 
 
+    def raise_last_error(self):
+        """
+        Raises an RuntimeError with message corresponding to the last error in the pi2 system.
+        """
+
+        err = self.pilib.lastErrorMessage(self.piobj).decode('ASCII')
+        raise RuntimeError(err)
+
+
 
     def run_script(self, script):
         """
@@ -591,8 +607,7 @@ class Pi2:
         """
 
         if not self.pilib.run(self.piobj, script.encode('ASCII')):
-            err = self.pilib.lastErrorMessage(self.piobj).decode('ASCII')
-            raise RuntimeError(err)
+            self.raise_last_error()
 
 
     def run_command(self, cmd_name, args):
@@ -657,6 +672,9 @@ class Pi2:
     def generate_image_name(self):
         return self.id_generator("image_")
 
+    def generate_value_name(self):
+        return self.id_generator("value_")
+
 
     ############ Implementations of functions that require special arrangements ############
 
@@ -673,6 +691,16 @@ class Pi2:
             self.run_script(f"newimage({image_name}, {data_type}, {width})")
 
         return Pi2Image(self, image_name)
+
+    def newstring(self, value = ""):
+        """
+        Creates new string object.
+        """
+
+        name = self.generate_value_name()
+        value = value.replace("\"", "\\\"")
+        self.run_script(f"newvalue({name}, \"string\", \"{value}\")")
+        return Pi2Value(self, name)
 
 
     def newlike(self, template_image, data_type = ImageDataType.UNKNOWN, width = 0, height = 0, depth = 0):

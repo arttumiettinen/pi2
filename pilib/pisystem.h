@@ -34,7 +34,24 @@ namespace pilib
 		/**
 		Maps image variable names to image objects.
 		*/
-		std::map<std::string, std::pair<ArgumentDataType, std::shared_ptr<ParamVariant>>> namedValues;
+		std::map<std::string, std::shared_ptr<ImageBase>> images;
+
+		/**
+		Temporary store for values so that they don't get deleted during tryConvert calls
+		if another argument overrides previous one.
+		*/
+		std::vector<std::shared_ptr<ImageBase>> imageStore;
+
+		/**
+		Maps string variable names to string objects.
+		*/
+		std::map<std::string, std::shared_ptr<std::string>> strings;
+
+		/**
+		Temporary store for values so that they don't get deleted during tryConvert calls
+		if another argument overrides previous one.
+		*/
+		std::vector<std::shared_ptr<std::string>> stringStore;
 
 		/**
 		Maps image variable names to distributed image objects.
@@ -43,6 +60,8 @@ namespace pilib
 
 		/**
 		Temporary storage for distributed images that may be deleted during tryConvert calls.
+		This is particularly required for distributed images due to the delaying system,
+		where images might otherwise get deleted during the delaying operation!
 		*/
 		std::vector<std::shared_ptr<DistributedImageBase> > distributedImageStore;
 
@@ -91,7 +110,7 @@ namespace pilib
 		If conversion is not possible, reason string is assigned an explanation of the error.
 		@return 0 if there is no match, 1 if the argument type and parameter type match, and 2 if they match after creation of new images.
 		*/
-		int tryConvert(std::string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, std::shared_ptr<ParamVariant> resultPtr, std::string& reason);
+		int tryConvert(std::string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, std::string& reason);
 
 		/**
 		Checks whether supplied string values can be converted to supplied types.
@@ -131,6 +150,30 @@ namespace pilib
 		*/
 		static std::string getDataTypeString(const DistributedImageBase* p);
 		
+		/**
+		Calls given function and returns its return value.
+		If the function throws an exception, stores its error message in
+		lastException and returns default value of the return type.
+		*/
+		template<typename F> auto noThrow(F&& func, const std::string customMessage = "")
+		{
+			lastException = "";
+			try
+			{
+				return func();
+			}
+			catch (ITLException& e)
+			{
+				lastException = e.message();
+			}
+			catch (exception& e)
+			{
+				lastException = e.what();
+			}
+			if (customMessage.length() > 0)
+				lastException = customMessage + " (" + lastException + ")";
+			return decltype(func())();
+		}
 
 	public:
 
@@ -147,6 +190,11 @@ namespace pilib
 		Converts distributed image to variable name.
 		*/
 		//std::string distributedImageName(const DistributedImageBase* img) const;
+
+		/**
+		Retrieves names of all variables (images and values).
+		*/
+		std::vector<std::string> getStringNames() const;
 
 		/**
 		Returns names of images in the system.
@@ -200,12 +248,27 @@ namespace pilib
 		ImageBase* getImageNoThrow(const std::string& name);
 
 		/**
+		Retrieve value of variable as string.
+		*/
+		std::string* getString(const std::string& name);
+
+		/**
+		Retrieve value of variable as string.
+		*/
+		std::string* getStringNoThrow(const std::string& name);
+
+		/**
 		Replace image with given image.
 		Replace image by null pointer to remove it from the system.
 		*/
-		void replaceImage(const std::string& name, std::shared_ptr<ParamVariant> img);
+		void replaceImage(const std::string& name, std::shared_ptr<ImageBase> img);
 
-		void replaceNamedValue(const std::string& name, ArgumentDataType dt, std::shared_ptr<ParamVariant> newValue);
+		/**
+		Replace a value with a new one.
+		Replace a value by null pointer to remove it from the system.
+		*/
+		void replaceString(const std::string& name, std::shared_ptr<string> value);
+		//void replaceNamedValue(const std::string& name, ArgumentDataType dt, std::shared_ptr<ParamVariant> newValue);
 
 		/**
 		Get distributed image having given name.
@@ -272,13 +335,14 @@ namespace pilib
 	{
 		static Image<pixel_t>* run(const Vec3c& dimensions, const std::string& imgName, PISystem* system)
 		{
-			//std::shared_ptr<Image<pixel_t>> img = std::make_shared<itl2::Image<pixel_t> >(dimensions);
-			//system->replaceImage(imgName, img);
+			std::shared_ptr<Image<pixel_t>> img = std::make_shared<itl2::Image<pixel_t> >(dimensions);
+			system->replaceImage(imgName, img);
+			return img.get();
 
-			ArgumentDataType argDataType = imageDataTypeToArgumentDataType(imageDataType<pixel_t>());
-			std::shared_ptr<ParamVariant> p = std::make_shared<ParamVariant>(new itl2::Image<pixel_t>(dimensions));
-			system->replaceNamedValue(imgName, argDataType, p);
-			return std::get<Image<pixel_t>*>(*p.get());
+			//ArgumentDataType argDataType = imageDataTypeToArgumentDataType(imageDataType<pixel_t>());
+			//std::shared_ptr<ParamVariant> p = std::make_shared<ParamVariant>(new itl2::Image<pixel_t>(dimensions));
+			//system->replaceNamedValue(imgName, argDataType, p);
+			//return std::get<Image<pixel_t>*>(*p.get());
 		}
 	};
 

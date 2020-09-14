@@ -837,17 +837,76 @@ def distributed_numpy():
     pi2.writeraw(nparr, output_file("np_distributed"))
 
 
+def memory():
+    """
+    Checks that image memory is freed when variables are cleared.
+    """
+
+
+    import os
+    import psutil
+    process = psutil.Process(os.getpid())
+
+    mem = process.memory_info().rss
+    check_result(mem < 250 * 1024 * 1024, "consuming too much memory before allocation of an image")
+
+    img = pi2.newimage(ImageDataType.UINT8, 1000, 1000, 1000)
+
+    mem = process.memory_info().rss
+    check_result(mem > 500 * 1024 * 1024, "consuming too little memory after allocation of an image")
+
+    pi2.clear(img.name)
+
+    mem = process.memory_info().rss
+    check_result(mem < 250 * 1024 * 1024, "consuming too much memory after de-allocation of an image")
+
+
+
 def metadata():
     """
     Tests storing and retrieving image meta-data.
     """
 
-    img = pi2.newimage(ImageDataType.UINT8, 100, 100, 100)
+    img = pi2.newimage(ImageDataType.UINT8, 1, 1, 1)
+    str = pi2.newstring()
 
     pi2.setmeta(img, "key1", "value1")
     pi2.setmeta(img, "key2", "value2")
+    pi2.getmeta(img, "key1", str, "DEF1")
 
-    pi2.getmeta(img, "string1", "key1", "DEF1")
+    print(str.as_string())
+
+
+
+def named_variables():
+    """
+    Tests named non-image variables.
+    """
+
+    img = pi2.newimage(ImageDataType.UINT8, 1, 1, 1)
+    str_key = pi2.newstring()
+    str_value = pi2.newstring("VALUE")
+
+    check_result(str_key.as_string() == "", "key before doing anything")
+    check_result(str_value.as_string() == "VALUE", "value before doing anything")
+
+    pi2.set(str_key, "KEY")
+
+    check_result(str_key.as_string() == "KEY", "key after setting")
+
+    pi2.setmeta(img, str_key, str_value)
+
+    check_result(str_key.as_string() == "KEY", "key after setmeta")
+    check_result(str_value.as_string() == "VALUE", "value after setmeta")
+
+    pi2.set(str_value, "---")
+    check_result(str_value.as_string() == "---", "value after set")
+
+    pi2.getmeta(img, str_key, str_value)
+    
+    check_result(str_key.as_string() == "KEY", "key after getmeta")
+    check_result(str_value.as_string() == "VALUE", "value after getmeta")
+
 
 
 # Enable or disable echoing of commands and timing info on screen
@@ -937,7 +996,7 @@ pi2.echo(True, False)
 
 #test_difference_normal_distributed('hist', ['img', 'result', 'temp1', 0, 1000, 1000], 'result')
 #test_difference_normal_distributed('hist', ['img', 'result', 'temp1', 0, 500, 500], 'result')
-test_difference_normal_distributed('whist', ['img', 'img', 'result', 'temp1', 0, 500, 500], 'result', convert_to_type=ImageDataType.FLOAT32)
+#test_difference_normal_distributed('whist', ['img', 'img', 'result', 'temp1', 0, 500, 500], 'result', convert_to_type=ImageDataType.FLOAT32)
 #test_difference_normal_distributed('hist2', ['img', 0, 1000, 1000, 'img', 0, 100, 100, 'result', 'temp1', 'temp2'], 'result')
 #test_difference_normal_distributed('whist2', ['img', 0, 1000, 1000, 'img', 0, 100, 100, 'img', 'result', 'temp1', 'temp2'], 'result', convert_to_type=ImageDataType.FLOAT32)
 
@@ -1046,7 +1105,9 @@ test_difference_normal_distributed('whist', ['img', 'img', 'result', 'temp1', 0,
 #tif_and_tiff()
 #get_pixels()
 #distributed_numpy()
+#memory()
 
+named_variables()
 metadata()
 
 print(f"{total_tests} checks run.")
