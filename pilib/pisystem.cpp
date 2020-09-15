@@ -315,14 +315,14 @@ namespace pilib
 		if (type.direction() == ParameterDirection::In || type.direction() == ParameterDirection::InOut)
 		{
 			// Input parameter.
-			// Strings must be convertible to primitives, images and variabels must exist.
-
+			// Strings must be convertible to primitives, images and variables must exist.
 
 			if (isValidImageName(value, reason))
 			{
-				// Find string variable
 				if (dt == ArgumentDataType::String)
 				{
+					// Find string variable
+
 					auto it = strings.find(value);
 					if (it != strings.end())
 					{
@@ -331,7 +331,69 @@ namespace pilib
 						return 1;
 					}
 				}
+				else if (isImage(dt))
+				{
+					// Find image with given name
+
+					ImageDataType idt = argumentDataTypeToImageDataType(dt);
+
+					if (!isDistributed())
+					{
+						// Non-distributed case
+
+						auto it = images.find(value);
+						if (it == images.end())
+						{
+							reason = string("Image ") + value + string(" does not exist.");
+							return 0;
+						}
+
+						// Check that image data type is correct
+						ImageBase* p = it->second.get();
+
+						if (idt != p->dataType())
+						{
+							reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
+							return 0;
+						}
+
+						if (doConversion)
+						{
+							imageStore.push_back(it->second);
+							pick<CastImage>(idt, p, result);
+						}
+
+						return 1;
+					}
+					else
+					{
+						auto it = distributedImgs.find(value);
+						if (it == distributedImgs.end())
+						{
+							reason = string("Image ") + value + string(" does not exist.");
+							return 0;
+						}
+
+						// Check that image data type is correct
+						DistributedImageBase* p = it->second.get();
+
+						if (idt != p->dataType())
+						{
+							reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
+							return 0;
+						}
+
+						if (doConversion)
+						{
+							distributedImageStore.push_back(it->second);
+							pick<CastDistributedImage>(idt, p, result);
+						}
+
+						return 1;
+					}
+				}
 			}
+
 
 
 			if (trySimpleConversion<string>(dt, value, doConversion, result, reason))
@@ -376,129 +438,6 @@ namespace pilib
 				return 1;
 			if (trySimpleConversion<InterpolationMode>(dt, value, doConversion, result, reason))
 				return 1;
-
-			//if (isValidImageName(value, reason))
-			//{
-			//	if (!isDistributed())
-			//	{
-			//		// Non-distributed case
-			//		auto it = images.find(value);
-			//		if (it == images.end())
-			//		{
-			//			reason = string("Image ") + value + string(" does not exist.");
-			//			return 0;
-			//		}
-
-			//		// Check that data type is correct
-			//		auto& p = it->second;
-
-			//		ArgumentDataType pdt = p.first;
-			//		if (pdt != dt)
-			//		{
-			//			reason = string("Expected ") + toString(dt) + string(", but ") + value + string(" is ") + toString(pdt) + string(".");
-			//			return 0;
-			//		}
-
-			//		if (doConversion)
-			//		{
-			//			resultPtr = p.second;
-			//			result = *resultPtr;
-			//		}
-
-			//		return 1;
-			//	}
-			//	else
-			//	{
-			//		auto it = distributedImgs.find(value);
-			//		if (it == distributedImgs.end())
-			//		{
-			//			reason = string("Image ") + value + string(" does not exist.");
-			//			return 0;
-			//		}
-
-			//		// Check that image data type is correct
-			//		DistributedImageBase* p = it->second.get();
-
-			//		ImageDataType idt = argumentDataTypeToImageDataType(dt);
-			//		if (idt != p->dataType())
-			//		{
-			//			reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-			//			return 0;
-			//		}
-
-			//		if (doConversion)
-			//			pick<CastDistributedImage>(idt, p, result);
-
-			//		return 1;
-			//	}
-			//}
-
-			if (isImage(dt))
-			{
-				// Find image with given name
-
-				if (!isValidImageName(value, reason))
-					return 0;
-
-				ImageDataType idt = argumentDataTypeToImageDataType(dt);
-
-				if (!isDistributed())
-				{
-					// Non-distributed case
-
-					auto it = images.find(value);
-					if (it == images.end())
-					{
-						reason = string("Image ") + value + string(" does not exist.");
-						return 0;
-					}
-
-					// Check that image data type is correct
-					ImageBase* p = it->second.get();
-
-					if (idt != p->dataType())
-					{
-						reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-						return 0;
-					}
-					
-					if (doConversion)
-					{
-						imageStore.push_back(it->second);
-						pick<CastImage>(idt, p, result);
-					}
-
-					return 1;
-				}
-				else
-				{
-					auto it = distributedImgs.find(value);
-					if (it == distributedImgs.end())
-					{
-						reason = string("Image ") + value + string(" does not exist.");
-						return 0;
-					}
-
-					// Check that image data type is correct
-					DistributedImageBase* p = it->second.get();
-
-					if (idt != p->dataType())
-					{
-						reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-						return 0;
-					}
-
-					if (doConversion)
-					{
-						distributedImageStore.push_back(it->second);
-						pick<CastDistributedImage>(idt, p, result);
-					}
-
-					return 1;
-				}
-
-
-			}
 
 			return 0;
 		}

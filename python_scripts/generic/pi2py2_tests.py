@@ -925,6 +925,13 @@ def named_variables():
     check_result(str_value.as_string() == "VALUE", "value after getmeta")
 
 
+def set_overloads():
+
+    img1 = pi2.newimage(ImageDataType.UINT16)
+    img2 = pi2.newlike(img1)
+
+    pi2.set(img2, img1)
+
 
 # Enable or disable echoing of commands and timing info on screen
 pi2.echo(True, False)
@@ -1125,7 +1132,8 @@ pi2.echo(True, False)
 #memory()
 
 #named_variables()
-metadata()
+#metadata()
+set_overloads()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")
