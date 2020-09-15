@@ -114,53 +114,53 @@ namespace itl2
 	}
 
 
-	/**
-	Finds array indices from keys like name[0] and name[7][3].
-	*/
-	void ImageMetadata::getIndices(string& key, int& i, int& j)
+	///**
+	//Finds array indices from keys like name[0] and name[7][3].
+	//*/
+	//void ImageMetadata::getIndices(string& key, int& i, int& j)
+	//{
+	//	vector<string> parts = split(key, true, '[');
+	//	if (parts.size() <= 1)
+	//	{
+	//		i = 0;
+	//		j = 0;
+	//		return;
+	//	}
+	//	else if (parts.size() == 2)
+	//	{
+	//		key = parts[0];
+	//		string ind = parts[1];
+	//		trimEnd(ind, "]");
+	//		i = 0;
+	//		j = (int)fromString<unsigned int>(ind);
+	//		return;
+	//	}
+	//	else if (parts.size() == 3)
+	//	{
+	//		key = parts[0];
+	//		string ind1 = parts[1];
+	//		trimEnd(ind1);
+	//		string ind2 = parts[2];
+	//		trimEnd(ind2, "]");
+	//		i = (int)fromString<unsigned int>(ind1);
+	//		j = (int)fromString<unsigned int>(ind2);
+	//		return;
+	//	}
+	//	throw ITLException("Invalid key: " + key);
+	//}
+
+
+	void ImageMetadata::setStr(const string& key, const string& value, size_t i, size_t j)
 	{
-		vector<string> parts = split(key, true, '[');
-		if (parts.size() <= 1)
-		{
-			i = 0;
-			j = 0;
-			return;
-		}
-		else if (parts.size() == 2)
-		{
-			key = parts[0];
-			string ind = parts[1];
-			trimEnd(ind, "]");
-			i = 0;
-			j = (int)fromString<unsigned int>(ind);
-			return;
-		}
-		else if (parts.size() == 3)
-		{
-			key = parts[0];
-			string ind1 = parts[1];
-			trimEnd(ind1);
-			string ind2 = parts[2];
-			trimEnd(ind2, "]");
-			i = (int)fromString<unsigned int>(ind1);
-			j = (int)fromString<unsigned int>(ind2);
-			return;
-		}
-		throw ITLException("Invalid key: " + key);
-	}
+		//string k = key;
 
+		//int i, j;
+		//getIndices(k, i, j);
 
-	void ImageMetadata::setStr(const string& key, const string& value)
-	{
-		string k = key;
+		if (!contains(key))
+			addEmptyItem(key);
 
-		int i, j;
-		getIndices(k, i, j);
-
-		if (!contains(k))
-			addEmptyItem(k);
-
-		vector<vector<string>>& mat = getStringMatrix(k);
+		vector<vector<string>>& mat = getStringMatrix(key);
 
 		while (mat.size() <= i)
 			mat.push_back(vector<string>());

@@ -633,6 +633,10 @@ namespace itl2
 		//}
 
 		
+		const string& mappedFile() const
+		{
+			return mapFile;
+		}
 
 		virtual void* getRawData() override
 		{

@@ -433,7 +433,7 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image. Omit width, height and depth to infer dimensions from file name."),
 				CommandArgument<bool>(ParameterDirection::In, "read only", "Set to true to do read-only mapping. This might be beneficial if the image file is accessed through a network share. WARNING: If set to true, writes to the image result in undefined behaviour, probably program crash to access violation or equivalent error.", false)
 			},
-			"readrawblock, readraw")
+			"readrawblock, readraw, getmapfile")
 		{
 		}
 
@@ -458,7 +458,7 @@ namespace pilib
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set to zero to infer dimensions from file name.", Vec3c(0, 0, 0)),
 				CommandArgument<bool>(ParameterDirection::In, "read only", "Set to true to do read-only mapping. This might be beneficial if the image file is accessed through a network share. WARNING: If set to true, writes to the image result in undefined behaviour, probably program crash to access violation or equivalent error.", false)
 			},
-			"readrawblock, readraw")
+			"readrawblock, readraw, getmapfile")
 		{
 		}
 
@@ -467,6 +467,27 @@ namespace pilib
 
 		virtual void run(vector<ParamVariant>& args) const override
 		{
+		}
+	};
+
+
+	template<typename pixel_t> class GetMapFileCommand : public OneImageInPlaceCommand<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		GetMapFileCommand() : OneImageInPlaceCommand<pixel_t>("getmapfile", "Get a path to the file where the argument image has been memory-mapped to. Returns empty string if no mapping has been made for the argument image.",
+			{
+				CommandArgument<string>(ParameterDirection::Out, "mapfile", "The name and path to the memory-mapped file."),
+			},
+			"mapraw")
+		{
+		}
+	public:
+		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const override
+		{
+			string* out = get<string*>(args[0]);
+			*out = in.mappedFile();
 		}
 	};
 

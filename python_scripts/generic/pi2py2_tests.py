@@ -872,7 +872,7 @@ def metadata():
 
     pi2.setmeta(img, "key1", "value1")
     pi2.setmeta(img, "key2", "value2")
-    pi2.getmeta(img, "key1", str, "DEF1")
+    pi2.getmeta(img, "key1", str)
 
     check_result(str.as_string() == "value1", "value")
     
@@ -889,10 +889,10 @@ def metadata():
     pi2.listmeta(img, str)
     check_result(str.as_string() == "key1, key2", "meta key list contains incorrect values")
 
-    pi2.getmeta(img, "key1", str, "DEF1")
+    pi2.getmeta(img, "key1", str)
     check_result(str.as_string() == "value1", "key1 after read")
 
-    pi2.getmeta(img, "key2", str, "DEF2")
+    pi2.getmeta(img, "key2", str)
     check_result(str.as_string() == "value2", "key2 after read")
 
 def named_variables():

@@ -19,6 +19,8 @@ namespace pilib
 			{
 				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
 				CommandArgument<string>(ParameterDirection::In, "value", "Value of the metadata item."),
+				CommandArgument<size_t>(ParameterDirection::In, "i", "Row index of the item to set in the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "j", "Column index of the item to set in the data matrix.", 0),
 			},
 			metaSeeAlso())
 		{
@@ -29,7 +31,9 @@ namespace pilib
 		{
 			const string& key = std::get<string>(args[0]);
 			const string& value = std::get<string>(args[1]);
-			in.metadata.set(key, value);
+			size_t i = std::get<size_t>(args[2]);
+			size_t j = std::get<size_t>(args[3]);
+			in.metadata.set(key, value, i, j);
 		}
 	};
 
@@ -43,6 +47,8 @@ namespace pilib
 			{
 				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
 				CommandArgument<string>(ParameterDirection::Out, "value", "Value of the metadata item is placed into this string."),
+				CommandArgument<size_t>(ParameterDirection::In, "i", "Row index of the item to retrieve from the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "j", "Column index of the item to retrieve from the data matrix.", 0),
 				CommandArgument<string>(ParameterDirection::In, "default", "This value is returned if the key is not found", ""),
 			},
 			metaSeeAlso())
@@ -54,8 +60,11 @@ namespace pilib
 		{
 			const string& key = std::get<string>(args[0]);
 			string* value = std::get<string*>(args[1]);
-			const string& def = std::get<string>(args[2]);
-			*value = in.metadata.get(key, def);
+			size_t i = std::get<size_t>(args[2]);
+			size_t j = std::get<size_t>(args[3]);
+			const string& def = std::get<string>(args[4]);
+
+			*value = in.metadata.get(key, def, i, j);
 		}
 	};
 

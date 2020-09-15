@@ -58,6 +58,8 @@ namespace pilib
 		
 		ADD_ALL(EnsureSizeCommand);
 		ADD_ALL(EnsureSize2Command);
+
+		ADD_ALL(GetMapFileCommand);
 	}
 
 

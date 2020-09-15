@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace pi2cs
 {
+    /// <summary>
+    /// Abstract base class for representing objects stored in the Pi2 system.
+    /// </summary>
     public abstract class Pi2Object : IDisposable
     {
         /// <summary>
@@ -113,6 +116,10 @@ namespace pi2cs
             return s;
         }
 
+        /// <summary>
+        /// Converts Pi2Value to string, assuming the object contains a string.
+        /// </summary>
+        /// <param name="val"></param>
         public static implicit operator string(Pi2Value val)
         {
             return val.AsString();
@@ -423,28 +430,100 @@ namespace pi2cs
 
         #region Metadata commands
 
-        public void SetMeta(Pi2Image img, string name, string value)
+        /// <summary>
+        /// Set metadata item with given name to given value.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        public void SetMeta(Pi2Image img, string name, string value, int i = 0, int j = 0)
         {
-            PiLib.RunAndCheck(Handle, $"setmeta({img.Name}, {name}, {value})");
+            PiLib.RunAndCheck(Handle, $"setmeta({img.Name}, {name}, {value}, {i}, {j})");
         }
 
-        public string GetMeta(Pi2Image img, string name, string defaultValue)
+        /// <summary>
+        /// Set metadata item with given name to given value.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        public void SetMeta(Pi2Image img, string name, int value, int i = 0, int j = 0)
+        {
+            SetMeta(img, name, value.ToString(CultureInfo.InvariantCulture), i, j);
+        }
+
+        /// <summary>
+        /// Set metadata item with given name to given value.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        public void SetMeta(Pi2Image img, string name, double value, int i = 0, int j = 0)
+        {
+            SetMeta(img, name, value.ToString(CultureInfo.InvariantCulture), i, j);
+        }
+
+        /// <summary>
+        /// Get a value of a metadata item.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="name"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        /// <returns></returns>
+        public string GetMeta(Pi2Image img, string name, string defaultValue, int i = 0, int j = 0)
         {
             Pi2Value value = NewString();
-            PiLib.RunAndCheck(Handle, $"getmeta({img.Name}, {name}, {value}, {defaultValue})");
+            PiLib.RunAndCheck(Handle, $"getmeta({img.Name}, {name}, {value.Name}, {i}, {j}, {defaultValue})");
             return value.AsString();
         }
 
+        /// <summary>
+        /// Retrieves list of metadata item keys.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <returns></returns>
+        public string[] ListMeta(Pi2Image img)
+        {
+            Pi2Value value = NewString();
+            PiLib.RunAndCheck(Handle, $"listmeta({img.Name}, {value.Name})");
+            string s = value.AsString();
+            if (String.IsNullOrEmpty(s))
+                return new string[0];
+            return s.Split(new string[] { ", " }, StringSplitOptions.None);
+        }
+
+        /// <summary>
+        /// Clear all metadata items.
+        /// </summary>
+        /// <param name="img"></param>
         public void ClearMeta(Pi2Image img)
         {
             PiLib.RunAndCheck(Handle, $"clearmeta({img.Name})");
         }
 
+        /// <summary>
+        /// Write metadata to disk as a text file.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="filename"></param>
         public void WriteMeta(Pi2Image img, string filename)
         {
             PiLib.RunAndCheck(Handle, $"writemeta({img.Name}, {filename})");
         }
 
+        /// <summary>
+        /// Read metadata from a file previously written by the WriteMeta command.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="filename"></param>
         public void ReadMeta(Pi2Image img, string filename)
         {
             PiLib.RunAndCheck(Handle, $"readmeta({img.Name}, {filename})");
@@ -557,6 +636,18 @@ namespace pi2cs
         public void MapRaw(Pi2Image image, string filename, ImageDataType dataType = ImageDataType.Unknown, int width = 0, int height = 0, int depth = 0)
         {
             PiLib.RunAndCheck(Handle, $"mapraw({image.Name}, {filename}, {dataType}, {width}, {height}, {depth})");
+        }
+
+        /// <summary>
+        /// Returns the name and path to the file that has been mapped to the given image, or an empty string if no mapping has been made.
+        /// </summary>
+        /// <param name="image"></param>
+        /// <returns></returns>
+        public string GetMapFile(Pi2Image image)
+        {
+            Pi2Value str = NewString();
+            PiLib.RunAndCheck(Handle, $"getmapfile({image.Name}, {str.Name})");
+            return str;
         }
 
         /// <summary>

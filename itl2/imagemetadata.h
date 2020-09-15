@@ -54,15 +54,15 @@ namespace itl2
 			return dl;
 		}
 
-		void setStr(const std::string& key, const std::string& value);
+		void setStr(const std::string& key, const std::string& value, size_t i = 0, size_t j = 0);
 
-		std::string getStr(const std::string& k, int i, int j) const
+		std::string getStr(const std::string& k, size_t i, size_t j) const
 		{
 			const auto& mat = getStringMatrix(k);
 			return mat[i][j];
 		}
 
-		static void getIndices(string& key, int& i, int& j);
+		//static void getIndices(string& key, int& i, int& j);
 
 	public:
 		static void appendValueOrVector(std::ostringstream& str, const std::vector<std::string>& value);
@@ -116,15 +116,22 @@ namespace itl2
 			data.clear();
 		}
 
+		///**
+		//Sets value corresponding to a key.
+		//Key string can be followed by at most two indices, e.g. key[0][1] would set element (0, 1) at given key.
+		//*/
+		//template<typename T> void set(const std::string& key, T value)
+		//{
+		//	setStr(key, toString(value));
+		//}
+
 		/**
 		Sets value corresponding to a key.
-		Key string can be followed by at most two indices, e.g. key[0][1] would set element (0, 1) at given key.
 		*/
-		template<typename T> void set(const std::string& key, T value)
+		template<typename T> void set(const std::string& key, T value, size_t i = 0, size_t j = 0)
 		{
-			setStr(key, toString(value));
+			setStr(key, toString(value), i, j);
 		}
-
 
 		
 
@@ -132,14 +139,26 @@ namespace itl2
 		Retrieves data with given key.
 		If the key does not exist, returns the given default value.
 		*/
-		template<typename T> T get(const std::string& key, T def) const
+		//template<typename T> T get(const std::string& key, T def) const
+		//{
+		//	string k = key;
+		//	int i, j;
+		//	getIndices(k, i, j);
+		//	if (!contains(k))
+		//		return def;
+		//	return fromString<T>(getStr(k, i, j));
+		//}
+
+		/**
+		Retrieves data with given key.
+		If the key does not exist, returns the given default value.
+		@param i, j Coordinates of the element to get in the data matrix.
+		*/
+		template<typename T> T get(const std::string& key, T def, size_t i = 0, size_t j = 0) const
 		{
-			string k = key;
-			int i, j;
-			getIndices(k, i, j);
-			if (!contains(k))
+			if (!contains(key))
 				return def;
-			return fromString<T>(getStr(k, i, j));
+			return fromString<T>(getStr(key, i, j));
 		}
 
 		/**

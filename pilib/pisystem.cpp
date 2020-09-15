@@ -604,7 +604,7 @@ namespace pilib
 				if (doConversion)
 				{
 					shared_ptr<string> ptr = make_shared<string>("");
-					stringStore.push_back(it->second);
+					stringStore.push_back(ptr);
 					strings[value] = ptr;
 					result = ptr.get();
 				}
