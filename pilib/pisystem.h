@@ -166,7 +166,7 @@ namespace pilib
 			{
 				lastException = e.message();
 			}
-			catch (exception& e)
+			catch (std::exception& e)
 			{
 				lastException = e.what();
 			}
