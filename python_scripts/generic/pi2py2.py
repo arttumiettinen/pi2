@@ -748,15 +748,14 @@ class Pi2:
         
 
 
-    def mapraw(self, filename):
+    def mapraw(self, filename, data_type = ImageDataType.UNKNOWN, width = 0, height = 0, depth = 0):
         """
-        Create a disk-mapped image from existing .raw file.
-        Image name must contain dimensions of the image, i.e. it must be in format corresponding to image_name_123x456x789.raw.
+        Create a disk-mapped image from existing or newly created .raw file.
         Returns Pi2Image object.
         """
 
         image_name = self.generate_image_name()
-        self.run_script(f"mapraw({image_name}, {filename})")
+        self.run_script(f"mapraw({image_name}, {filename}, {data_type}, [{width}, {height}, {depth}])")
         return Pi2Image(self, image_name)
 
 

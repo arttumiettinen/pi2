@@ -31,15 +31,25 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Value indicating whether this class owns the object and is responsible of deleting it.
+        /// </summary>
+        public bool OwnsHandle
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
         /// Constructor.
         /// Images and variables should be created with Pi2.new* functions, otherwise they do not exist in the Pi2 system.
         /// </summary>
         /// <param name="pi"></param>
         /// <param name="name">Object name</param>
-        public Pi2Object(Pi2 pi, string name)
+        public Pi2Object(Pi2 pi, string name, bool ownsHandle)
         {
             Pi = pi;
             Name = name;
+            OwnsHandle = true;
         }
 
         #region Dispose pattern
@@ -72,7 +82,8 @@ namespace pi2cs
             if (Name != String.Empty)
             {
                 // Delete image from Pi ssytem
-                PiLib.Run(Pi.Handle, $"clear({Name})");
+                if(OwnsHandle)
+                    PiLib.Run(Pi.Handle, $"clear({Name})");
                 Name = String.Empty;
             }
 
@@ -99,7 +110,7 @@ namespace pi2cs
         /// </summary>
         /// <param name="pi"></param>
         /// <param name="name">Object name</param>
-        public Pi2Value(Pi2 pi, string name) : base(pi, name)
+        public Pi2Value(Pi2 pi, string name, bool ownsHandle) : base(pi, name, ownsHandle)
         {
         }
 
@@ -137,7 +148,7 @@ namespace pi2cs
         /// </summary>
         /// <param name="pi"></param>
         /// <param name="name">Object name</param>
-        public Pi2Image(Pi2 pi, string name) : base(pi, name)
+        public Pi2Image(Pi2 pi, string name, bool ownsHandle) : base(pi, name, ownsHandle)
         {
         }
 
@@ -399,7 +410,7 @@ namespace pi2cs
             string imageName = "image_" + RandomString();
 
             PiLib.RunAndCheck(Handle, $"newimage({imageName}, {dt}, {width}, {height}, {depth})");
-            return new Pi2Image(this, imageName);
+            return new Pi2Image(this, imageName, true);
         }
 
         /// <summary>
@@ -412,7 +423,7 @@ namespace pi2cs
             string name = "value_" + RandomString();
 
             PiLib.RunAndCheck(Handle, $"newvalue({name}, \"string\", {s})");
-            return new Pi2Value(this, name);
+            return new Pi2Value(this, name, true);
         }
 
         /// <summary>
@@ -587,7 +598,7 @@ namespace pi2cs
         {
             string imageName = "image_" + RandomString();
             PiLib.RunAndCheck(Handle, $"read({imageName}, {filename})");
-            return new Pi2Image(this, imageName);
+            return new Pi2Image(this, imageName, true);
         }
 
         /// <summary>
@@ -602,7 +613,7 @@ namespace pi2cs
         {
             string imageName = "image_" + RandomString();
             PiLib.RunAndCheck(Handle, $"readblock({imageName}, {filename}, {(int)start.X}, {(int)start.Y}, {(int)start.Z}, {(int)size.X}, {(int)size.Y}, {(int)size.Z}, {dataType})");
-            return new Pi2Image(this, imageName);
+            return new Pi2Image(this, imageName, true);
         }
 
         /// <summary>
@@ -618,7 +629,7 @@ namespace pi2cs
         public Pi2Image MapRaw(string filename, ImageDataType dataType = ImageDataType.Unknown, int width = 0, int height = 0, int depth = 0)
         {
             string imageName = "image_" + RandomString();
-            Pi2Image img = new Pi2Image(this, imageName);
+            Pi2Image img = new Pi2Image(this, imageName, true);
             MapRaw(img, filename, dataType, width, height, depth);
             return img;
         }
