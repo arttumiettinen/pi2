@@ -486,7 +486,7 @@ namespace pilib
 	public:
 		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const override
 		{
-			string* out = get<string*>(args[0]);
+			std::string* out = std::get<std::string*>(args[0]);
 			*out = in.mappedFile();
 		}
 	};
