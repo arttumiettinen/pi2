@@ -205,7 +205,7 @@ namespace pilib
 
 		OrientationDifferenceCommand() : Command("orientationdifference",
 			R"(For each pixel $x$, calculates angle between $(\phi(x), \theta(x))$ and $(\phi_m, \theta_m)$ and assigns that to the output image.)"
-			"This command does the same calculation than what `mainorientationcode` command does, but outputs the angular difference values instead of color map, and does not weight the output values by the original geometry in any way.",
+			"This command does the same calculation than what `mainorientationcolor` command does, but outputs the angular difference values instead of color map, and does not weight the output values by the original geometry in any way.",
 			{
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "phi", R"(The azimuthal angle of the local orientation direction. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "theta", R"(The polar angle of the local orientation direction. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.)"),

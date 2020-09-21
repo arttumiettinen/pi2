@@ -54,15 +54,53 @@ namespace itl2
 			return dl;
 		}
 
-		void setStr(const std::string& key, const std::string& value, size_t i = 0, size_t j = 0);
+		void setStr(const std::string& key, const std::string& value, coord_t i, coord_t j);
 
-		std::string getStr(const std::string& k, size_t i, size_t j) const
+		static std::string listToString(const std::vector<std::string>& list)
 		{
-			const auto& mat = getStringMatrix(k);
-			return mat[i][j];
+			std::ostringstream str;
+			appendValueOrVector(str, list);
+			return str.str();
 		}
 
-		//static void getIndices(string& key, int& i, int& j);
+		std::string getStr(const std::string& k, coord_t i, coord_t j) const
+		{
+			const auto& mat = getStringMatrix(k);
+			if (i >= 0)
+			{
+				if (j >= 0)
+				{
+					// Retrieve single element
+					return mat[i][j];
+				}
+				else
+				{
+					// Retrieve whole row i as string
+					return listToString(mat[i]);
+				}
+			}
+			else
+			{
+				if (j >= 0)
+				{
+					// Retrieve one column
+					throw ITLException("Unimplemented: Retrieval of a column of data from image metadata object.");
+				}
+				else
+				{
+					// Retrieve whole thing
+					std::ostringstream str;
+					for (size_t n = 0; n < mat.size(); n++)
+					{
+						appendValueOrVector(str, mat[n]);
+						if(n < mat.size() - 1)
+							str << std::endl;
+					}
+					return str.str();
+				}
+			}
+			
+		}
 
 	public:
 		static void appendValueOrVector(std::ostringstream& str, const std::vector<std::string>& value);
@@ -116,45 +154,21 @@ namespace itl2
 			data.clear();
 		}
 
-		///**
-		//Sets value corresponding to a key.
-		//Key string can be followed by at most two indices, e.g. key[0][1] would set element (0, 1) at given key.
-		//*/
-		//template<typename T> void set(const std::string& key, T value)
-		//{
-		//	setStr(key, toString(value));
-		//}
-
 		/**
 		Sets value corresponding to a key.
 		*/
-		template<typename T> void set(const std::string& key, T value, size_t i = 0, size_t j = 0)
+		template<typename T> void set(const std::string& key, T value, coord_t i = -1, coord_t j = -1)
 		{
 			setStr(key, toString(value), i, j);
 		}
 
 		
-
 		/**
 		Retrieves data with given key.
 		If the key does not exist, returns the given default value.
+		@param i, j Coordinates of the element to get in the data matrix. Specify -1 to retrieve whole row or column.
 		*/
-		//template<typename T> T get(const std::string& key, T def) const
-		//{
-		//	string k = key;
-		//	int i, j;
-		//	getIndices(k, i, j);
-		//	if (!contains(k))
-		//		return def;
-		//	return fromString<T>(getStr(k, i, j));
-		//}
-
-		/**
-		Retrieves data with given key.
-		If the key does not exist, returns the given default value.
-		@param i, j Coordinates of the element to get in the data matrix.
-		*/
-		template<typename T> T get(const std::string& key, T def, size_t i = 0, size_t j = 0) const
+		template<typename T> T get(const std::string& key, T def, coord_t i = -1, coord_t j = -1) const
 		{
 			if (!contains(key))
 				return def;

@@ -59,7 +59,7 @@ using namespace std;
 int main()
 {
 
-	test(itl2::tests::progress, "progress indicator");
+	//test(itl2::tests::progress, "progress indicator");
 
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
@@ -232,7 +232,7 @@ int main()
 	//test(itl2::tests::pathopening, "Path opening");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
-	//test(itl2::tests::imagemetadata, "image metadata");
+	test(itl2::tests::imagemetadata, "image metadata");
 
 	
 

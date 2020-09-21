@@ -114,61 +114,48 @@ namespace itl2
 	}
 
 
-	///**
-	//Finds array indices from keys like name[0] and name[7][3].
-	//*/
-	//void ImageMetadata::getIndices(string& key, int& i, int& j)
-	//{
-	//	vector<string> parts = split(key, true, '[');
-	//	if (parts.size() <= 1)
-	//	{
-	//		i = 0;
-	//		j = 0;
-	//		return;
-	//	}
-	//	else if (parts.size() == 2)
-	//	{
-	//		key = parts[0];
-	//		string ind = parts[1];
-	//		trimEnd(ind, "]");
-	//		i = 0;
-	//		j = (int)fromString<unsigned int>(ind);
-	//		return;
-	//	}
-	//	else if (parts.size() == 3)
-	//	{
-	//		key = parts[0];
-	//		string ind1 = parts[1];
-	//		trimEnd(ind1);
-	//		string ind2 = parts[2];
-	//		trimEnd(ind2, "]");
-	//		i = (int)fromString<unsigned int>(ind1);
-	//		j = (int)fromString<unsigned int>(ind2);
-	//		return;
-	//	}
-	//	throw ITLException("Invalid key: " + key);
-	//}
-
-
-	void ImageMetadata::setStr(const string& key, const string& value, size_t i, size_t j)
+	void ImageMetadata::setStr(const string& key, const string& value, coord_t i, coord_t j)
 	{
-		//string k = key;
-
-		//int i, j;
-		//getIndices(k, i, j);
-
 		if (!contains(key))
 			addEmptyItem(key);
 
 		vector<vector<string>>& mat = getStringMatrix(key);
 
-		while (mat.size() <= i)
+		if (i >= 0)
+		{
+			while (mat.size() <= (size_t)i)
+				mat.push_back(vector<string>());
+
+			if (j >= 0)
+			{
+				while (mat[i].size() <= (size_t)j)
+					mat[i].push_back("");
+			}
+		}
+
+		if (i >= 0 && j >= 0)
+		{
+			// Set single item in the matrix
+			mat[i][j] = value;
+		}
+		else if (i >= 0 && j < 0)
+		{
+			// Set single row
+			mat[i].clear();
+			mat[i].push_back(value);
+		}
+		else if (i < 0 && j >= 0)
+		{
+			// Set single column
+			throw ITLException("Unimplemented: setting column of values in image metadata object.");
+		}
+		else
+		{
+			// Set whole thing
+			mat.clear();
 			mat.push_back(vector<string>());
-
-		while (mat[i].size() <= j)
-			mat[i].push_back("");
-
-		mat[i][j] = value;
+			mat[0].push_back(value);
+		}
 	}
 
 
@@ -239,23 +226,48 @@ namespace itl2
 
 	namespace tests
 	{
+		void testGetters(const ImageMetadata& data)
+		{
+			testAssert(data.get<Vec3c>("single_vec3", Vec3c(0, 0, 0)) == Vec3c(1, 2, 3), "single vec3");
+			testAssert(data.get<string>("string", "") == "test test test", "string");
+			testAssert(data.get<int>("key1", 0) == 1, "int");
+			testAssert(data.get<double>("pi", 0) == 3.14159265, "double");
+			testAssert(data.get<int>("list", 0, 3) == 4, "list int");
+			testAssert(data.get<int>("matrix", 0, 4, 2) == 4 * 2, "int matrix element");
+
+			// List as individual elements
+			testAssert(data.get<int>("vec_list", -1, 0, 0) == 0, "list element");
+			testAssert(data.get<int>("vec_list", -1, 0, 1) == 1, "list element");
+			testAssert(data.get<int>("vec_list", -1, 1, 0) == 1, "list element");
+			testAssert(data.get<int>("vec_list", -1, 1, 1) == 2, "list element");
+			testAssert(data.get<int>("vec_list", -1, 2, 0) == 2, "list element");
+			testAssert(data.get<int>("vec_list", -1, 2, 1) == 3, "list element");
+
+			// List as vector of Vec2f
+			vector<Vec2f> vlist = data.getList<Vec2f>("vec_list");
+			testAssert(vlist[0] == Vec2f(0 + 0, 0 + 1), "element");
+			testAssert(vlist[1] == Vec2f(1 + 0, 1 + 1), "element");
+			testAssert(vlist[2] == Vec2f(2 + 0, 2 + 1), "element");
+		}
+
 		void imagemetadata()
 		{
 			ImageMetadata data;
 			data.set("string", "test test test");
 			data.set("key1", 1);
 			data.set("pi", 3.14159265);
-			data.set("list[0]", 1);
-			data.set("list[1]", 2);
-			data.set("list[2]", 3);
-			data.set("list[3]", 4);
-			data.set("list[4]", 5);
+			data.set("list", 1, 0);
+			data.set("list", 2, 1);
+			data.set("list", 3, 2);
+			data.set("list", 4, 3);
+			data.set("list", 5, 4);
+			data.set("single_vec3", Vec3c(1, 2, 3));
 
 			for (int n = 0; n < 5; n++)
 			{
 				for (int m = 0; m < 3; m++)
 				{
-					data.set(string("matrix[") + toString(n) + "][" + toString(m) + "]", n * m);
+					data.set(string("matrix"), n * m, n, m);
 				}
 			}
 
@@ -263,22 +275,11 @@ namespace itl2
 			{
 				for (int m = 0; m < 2; m++)
 				{
-					data.set(string("vec_list[") + toString(n) + "][" + toString(m) + "]", n + m);
+					data.set(string("vec_list"), n + m, n, m);
 				}
 			}
 
-			// getters
-			testAssert(data.get<string>("string", "") == "test test test", "string");
-			testAssert(data.get<int>("key1", 0) == 1, "int");
-			testAssert(data.get<double>("pi", 0) == 3.14159265, "double");
-			testAssert(data.get<int>("list[3]", 0) == 4, "list int");
-			testAssert(data.get<int>("matrix[4][2]", 0) == 4*2, "matrix int");
-
-			vector<Vec2f> vlist = data.getList<Vec2f>("vec_list");
-			testAssert(vlist[0] == Vec2f(0 + 0, 0 + 1), "element");
-			testAssert(vlist[1] == Vec2f(1 + 0, 1 + 1), "element");
-			testAssert(vlist[2] == Vec2f(2 + 0, 2 + 1), "element");
-
+			testGetters(data);
 
 			string str = toString(data);
 			cout << str << endl;
@@ -287,6 +288,8 @@ namespace itl2
 
 			testAssert(str == toString(data2), "ImageMetadata before and after saving");
 
+			// Test getters again after loading
+			testGetters(data2);
 		}
 	}
 	
