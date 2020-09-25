@@ -279,7 +279,8 @@ namespace itl2
 	{
 		using real_t = typename NumberUtils<out_t>::RealFloatType;
 		out.mustNotBe(in);
-		out.ensureSize(in);
+		if(out.dimensions().max <= 1)
+			out.ensureSize(in);
 
 		forAllPixels(out, [&](coord_t x, coord_t y, coord_t z)
 		{
