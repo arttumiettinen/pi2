@@ -189,9 +189,11 @@ namespace itl2
 	{
 		std::ostringstream str;
 
+		vector<vector<string>> def;
+
 		for(const string& key : meta.keys())
 		{
-			const vector<vector<string>> mat = meta.getMatrix<string>(key);
+			const vector<vector<string>> mat = meta.getMatrix<string>(key, def);
 			if (mat.size() == 1)
 			{
 				str << key << " = ";
@@ -244,7 +246,8 @@ namespace itl2
 			testAssert(data.get<int>("vec_list", -1, 2, 1) == 3, "list element");
 
 			// List as vector of Vec2f
-			vector<Vec2f> vlist = data.getList<Vec2f>("vec_list");
+			vector<Vec2f> def;
+			vector<Vec2f> vlist = data.getList<Vec2f>("vec_list", def);
 			testAssert(vlist[0] == Vec2f(0 + 0, 0 + 1), "element");
 			testAssert(vlist[1] == Vec2f(1 + 0, 1 + 1), "element");
 			testAssert(vlist[2] == Vec2f(2 + 0, 2 + 1), "element");

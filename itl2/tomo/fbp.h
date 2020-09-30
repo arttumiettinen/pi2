@@ -443,8 +443,8 @@ namespace itl2
 		s.shiftScaling = id.get("shift_scale", s.shiftScaling);
 		s.useShifts = id.get("use_shifts", s.useShifts);
 
-		s.angles = id.getList<float32_t>("angles");
-		s.objectShifts = id.getList<Vec2f>("sample_shifts");
+		s.angles = id.getList<float32_t>("angles", std::vector<float32_t>());
+		s.objectShifts = id.getList<Vec2f>("sample_shifts", std::vector<Vec2f>());
 
 		// If there are no shifts supplied, set all shifts to zero.
 		if (s.objectShifts.size() <= 0)

@@ -178,8 +178,11 @@ namespace itl2
 		/**
 		Gets item as list of double values.
 		*/
-		template<typename T> std::vector<T> getList(const std::string& key) const
+		template<typename T> std::vector<T> getList(const std::string& key, std::vector<T>& def) const
 		{
+			if (!contains(key))
+				return def;
+
 			auto& mat = getStringMatrix(key);
 
 			std::vector<T> lst;
@@ -205,8 +208,11 @@ namespace itl2
 		/**
 		Gets item as matrix.
 		*/
-		template<typename T> std::vector<std::vector<T>> getMatrix(const std::string& key) const
+		template<typename T> std::vector<std::vector<T>> getMatrix(const std::string& key, std::vector<std::vector<T>>& def) const
 		{
+			if (!contains(key))
+				return def;
+
 			auto& mat = getStringMatrix(key);
 
 			std::vector<std::vector<T>> cMat;
