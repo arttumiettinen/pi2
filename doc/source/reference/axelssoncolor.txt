@@ -58,4 +58,4 @@ Blue channel of the result will be stored into this image.
 See also
 --------
 
-:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`
+:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`, :ref:`orientationdifference`

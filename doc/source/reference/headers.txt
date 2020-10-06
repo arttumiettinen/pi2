@@ -18,9 +18,9 @@ analyzers [input]
 
 **Data type:** string
 
-List of names of analyzers that were used. Use the same value that was passed to analyzeparticles command. Separate the analyzer names with any non-alphanumeric character sequence.
+List of names of analyzers that were used. Use the same value that was passed to :ref:`analyzeparticles` command. Separate the analyzer names with any non-alphanumeric character sequence.
 
 See also
 --------
 
-:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`, :ref:`greedycoloring`, :ref:`csa`

@@ -25,7 +25,7 @@ results [output]
 
 **Data type:** float32 image
 
-Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command 'headers' to retrieve meanings of columns.
+Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command :ref:`headers` to retrieve meanings of columns.
 
 analyzers [input]
 ~~~~~~~~~~~~~~~~~
@@ -66,4 +66,4 @@ Set to true to use single-threaded processing. That might be faster for some cas
 See also
 --------
 
-:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`, :ref:`greedycoloring`, :ref:`csa`

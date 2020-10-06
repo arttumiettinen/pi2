@@ -29,3 +29,7 @@ connectivity [input]
 
 Connectivity of the regions. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
 
+See also
+--------
+
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`, :ref:`greedycoloring`, :ref:`csa`

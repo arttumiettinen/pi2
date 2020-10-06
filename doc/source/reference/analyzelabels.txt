@@ -39,4 +39,4 @@ List of names of analyzers to use. Use command :ref:`listanalyzers` to see all t
 See also
 --------
 
-:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`, :ref:`greedycoloring`, :ref:`csa`

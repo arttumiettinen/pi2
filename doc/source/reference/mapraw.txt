@@ -69,7 +69,7 @@ Set to true to do read-only mapping. This might be beneficial if the image file 
 See also
 --------
 
-:ref:`readrawblock`, :ref:`readraw`
+:ref:`readrawblock`, :ref:`readraw`, :ref:`getmapfile`
 
 :code:`mapraw(image name, filename, data type, dimensions, read only)`
 ======================================================================
@@ -125,4 +125,4 @@ Set to true to do read-only mapping. This might be beneficial if the image file 
 See also
 --------
 
-:ref:`readrawblock`, :ref:`readraw`
+:ref:`readrawblock`, :ref:`readraw`, :ref:`getmapfile`

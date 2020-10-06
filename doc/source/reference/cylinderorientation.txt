@@ -55,4 +55,4 @@ The structure tensor is smoothed by convolution with a Gaussian. This parameter 
 See also
 --------
 
-:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`
+:ref:`cylindricality`, :ref:`cylinderorientation`, :ref:`plateorientation`, :ref:`mainorientationcolor`, :ref:`axelssoncolor`, :ref:`orientationdifference`

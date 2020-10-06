@@ -25,11 +25,11 @@ The order of acquisition can be anything (snake, row-by-row, random, etc.) as lo
 Stitching
 ---------
 
-In order to stitch the tiles, one must first create a new folder that will contain stitch settings file, temporary files, and the
+In order to stitch the tiles, one must first create a new folder that will contain a stitch settings file, temporary files, and the
 final stitched image.
 
-The stitch settings file must be generated according to the `template <https://github.com/arttumiettinen/pi2/blob/master/example_config/stitch_settings_nongrid.txt>`_.
-The name of the settings file must be :file:`stitch_settings_nongrid.txt` and it must be saved into the output folder.
+The stitch settings file must be generated according to the `template <https://github.com/arttumiettinen/pi2/blob/master/example_config/stitch_settings.txt>`_.
+The name of the settings file must be :file:`stitch_settings.txt` and it must be saved into the output folder.
 Most of the settings can be initially left to their default values, but the :code:`[positions]` section must be modified
 so that it contains paths and file names of the tiles and their positions.
 The section contains one line for each tile.
@@ -57,14 +57,14 @@ This can be conveniently done using the parameter :code:`binning`. Specify value
 tiles by that amount before stitching.
 Usually binning 4 is a good starting point.
 
-When the parameter file is ready, the stitching process is started by running the Python file :file:`nr_stitcher_nongrid.py` in the output folder.
+When the parameter file is ready, the stitching process is started by running the Python file :file:`nr_stitcher.py` in the output folder.
 
 After the script is finished, the largest :file:`.raw` image in the output folder is the stitched image.
 Please note that if there are multiple non-connected sets of tiles in the output, multiple output images will be created.
 
 .. important:
 
-Before running :file:`nr_stitcher_nongrid.py` again (e.g. for parameter tuning), please remove all temporary files from the output
+Before running :file:`nr_stitcher.py` again (e.g. for parameter tuning), please remove all temporary files from the output
 folder by running :file:`rm-stitch-temp.sh` or :file:`rm-stitch-temp.cmd`.
 
 
@@ -89,13 +89,13 @@ Known problems
 
 	.. code-block:: bash
 
-		python /path_to_scripts/nr_stitcher_nongrid.py
+		python /path_to_scripts/nr_stitcher.py
 		
 	In some cases it is necessary to explicitly specify python3 so that the operating system does not decide to use python 2.x versions that are incompatible:
 	
 	.. code-block:: bash
 
-		python3 /path_to_scripts/nr_stitcher_nongrid.py
+		python3 /path_to_scripts/nr_stitcher.py
 		
 * The same cluster jobs are being submitted over and over again.
 	The cluster jobs fail for reason or another, and the NRStitcher is unable to catch the error.

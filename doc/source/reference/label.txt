@@ -4,7 +4,7 @@ label
 *****
 
 
-**Syntax:** :code:`label(image, region color)`
+**Syntax:** :code:`label(image, region color, connectivity)`
 
 Labels distinct regions in the image with individual colors. The regions do not need to be separated by background. Execution is terminated in an error if the pixel data type does not support large enough values to label all the particles.
 
@@ -29,7 +29,16 @@ region color [input]
 
 Current color of regions that should be labeled. Set to zero to label all non-zero regions.
 
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** Nearest
+
+Connectivity of the particles. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
 See also
 --------
 
-:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`
+:ref:`analyzeparticles`, :ref:`listanalyzers`, :ref:`headers`, :ref:`fillparticles`, :ref:`drawellipsoids`, :ref:`label`, :ref:`analyzelabels`, :ref:`regionremoval`, :ref:`greedycoloring`, :ref:`csa`

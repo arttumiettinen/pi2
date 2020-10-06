@@ -6,7 +6,7 @@ clear
 
 **Syntax:** :code:`clear(image name)`
 
-Dispose image from the system (and free memory that the image consumes).
+Dispose image or value from the system (and free memory that the object consumes).
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
@@ -20,7 +20,7 @@ image name [input]
 
 **Default value:** ""
 
-Name of image to erase. Specify empty name to clear everything.
+Name of image or value to erase. Specify empty name to clear everything.
 
 See also
 --------
