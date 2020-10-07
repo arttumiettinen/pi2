@@ -2,7 +2,7 @@ Articles where pi2 has been used
 --------------------------------
 
 This is an incomplete list of articles where this software or some of its previous versions has been used.
-If you want to add your paper here, please email arttu.miettinen@psi.ch.
+If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
 * Marina Eckermann, Jasper Frohn, Marius Reichardt, Markus Osterhoff, Michael Sprung, Fabian Westermeier, Alexandar Tzankov, Christopher Werlein, Mark Kühnel, Danny Jonigk, Tim Salditt. 3d virtual pathohistology of lung tissue from COVID-19 patients based on phase contrast x-ray tomography, eLife 2020;9:e60408, 2020.
 * Elena Borisova, Goran Lovric, Arttu Miettinen, Luca Fardin, Sam Bayat, Anders Larsson, Marco Stampanoni, Johannes C. Schittny, Christian M. Schlepütz. Micrometer-resolution X-ray tomographic full-volume reconstruction of an intact post mortem juvenile rat lung, Histochemistry and Cell Biology, 2020.

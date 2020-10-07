@@ -12,7 +12,7 @@ Pi2 is not intended to be a replacement for huge libraries like ITK and VTK. Ins
 
 ## Help
 
-The user-oriented help of pi2 can be read at [ReadTheDocs](https://pi2-docs.readthedocs.io/en/latest/).
+The user-oriented help of pi2, including examples, can be read at [ReadTheDocs](https://pi2-docs.readthedocs.io/en/latest/).
 
 
 ## Binaries
@@ -33,6 +33,8 @@ Pre-built binaries for Windows and CentOS Linux can be downloaded from the [rele
 
 
 ## Building
+
+When building from the source, consider using branch 'experimental'. The most recent, but possibly buggy, changes are there.
 
 ### Linux
 
