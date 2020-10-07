@@ -45,7 +45,7 @@ all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 	cp ./x64/$(CONFIG)/*.dll ./bin-linux64/$(CONFIG)/ | true
 	cp ./x64/$(CONFIG)/*.exe.config ./bin-linux64/$(CONFIG)/ | true
 	cp ./x64/$(CONFIG)/*.xml ./bin-linux64/$(CONFIG)/ | true
-	cp ./python_scripts/*/*.py ./bin-linux64/$(CONFIG)/
+	cp ./python_scripts/*.py ./bin-linux64/$(CONFIG)/
 	chmod +x ./bin-linux64/$(CONFIG)/*.py
 	cp ./example_config/*.txt ./bin-linux64/$(CONFIG)/
 	cp ./example_config/*.sh ./bin-linux64/$(CONFIG)/
