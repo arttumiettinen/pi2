@@ -63,7 +63,7 @@ def main():
             X = 0
             Y = 0
             Z = curr_pos
-            line = f"{image_prefix}s{n}.pcr = {X}, {Y}, {Z}"
+            line = f"{image_prefix}s{n+1}.pcr = {X}, {Y}, {Z}"
             positions += line + "\n"
 
             line = get_value(lines, f"{n}")
