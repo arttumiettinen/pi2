@@ -1,6 +1,6 @@
 
 
-def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, use_cluster=True):
+def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, use_cluster=True, normalize_while_stitching=False):
     """
     Writes new stitch settings file to stitch_settings.txt.
     sample_name - prefix of output files.
@@ -83,7 +83,7 @@ normalize_in_blockmatch = True
 # Set to true to make mean of the images in the overlapping regions the same before
 # assembly of the final mosaic. Enabling or disabling this option may cause global
 # or local gray-value gradients, respectively.
-normalize_while_stitching = False
+normalize_while_stitching = {normalize_while_stitching}
 
 
 # Threshold value for displacement filtering.
