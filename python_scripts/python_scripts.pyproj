@@ -5,9 +5,10 @@
     <ProjectGuid>ba94b144-c555-4822-8258-53a8861b7dc7</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>generic\pi2py2_tests.py</StartupFile>
+    <StartupFile>stitch_settings_from_phoenix_scans.py</StartupFile>
     <SearchPath>generic</SearchPath>
-    <WorkingDirectory>..\x64\Release no OpenCL</WorkingDirectory>
+    <WorkingDirectory>
+    </WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
     <RootNamespace>elastic_stitcher</RootNamespace>
@@ -20,7 +21,9 @@
     </PublishUrl>
     <Environment>
     </Environment>
-    <InterpreterId>MSBuild|spyder_test|$(MSBuildProjectFullPath)</InterpreterId>
+    <InterpreterId>
+    </InterpreterId>
+    <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,36 +44,27 @@
     <OutputPath>bin\Debug no OpenCL\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="generic\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="generic\base.py">
+    <Compile Include="base.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="generic\nr_stitcher.py">
+    <Compile Include="default_stitch_settings.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="generic\pi2py2.py" />
-    <Compile Include="generic\pi2py2_examples.py">
+    <Compile Include="logFileParser.py" />
+    <Compile Include="nr_stitcher.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="generic\pi2py2_tests.py">
+    <Compile Include="pi2py2.py" />
+    <Compile Include="pi2py2_examples.py">
       <SubType>Code</SubType>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <InterpreterReference Include="CondaEnv|CondaEnv|spyder_test" />
-  </ItemGroup>
-  <ItemGroup>
-    <Interpreter Include="spyder_test\">
-      <Id>spyder_test</Id>
-      <Version>3.7</Version>
-      <Description>spyder_test (Python 3.7 (64-bit))</Description>
-      <InterpreterPath>Scripts\python.exe</InterpreterPath>
-      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
-      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
-      <Architecture>X64</Architecture>
-    </Interpreter>
+    <Compile Include="pi2py2_tests.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="stitch_settings_from_phoenix_scans.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="stitch_settings_from_tomcat_scans.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

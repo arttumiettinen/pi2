@@ -48,7 +48,10 @@
     <ClInclude Include="getslice.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="imagemetadata.h" />
+    <ClInclude Include="io\ini.h" />
+    <ClInclude Include="io\inireader.h" />
     <ClInclude Include="io\nrrd.h" />
+    <ClInclude Include="io\pcr.h" />
     <ClInclude Include="iteration.h" />
     <ClInclude Include="marchingcubes.h" />
     <ClInclude Include="math\ludecomposition.h" />
@@ -135,8 +138,11 @@
     <ClCompile Include="fastbilateralfilter.cpp" />
     <ClCompile Include="fillskeleton.cpp" />
     <ClCompile Include="imagemetadata.cpp" />
+    <ClCompile Include="io\ini.cpp" />
+    <ClCompile Include="io\inireader.cpp" />
     <ClCompile Include="io\io.cpp" />
     <ClCompile Include="io\nrrd.cpp" />
+    <ClCompile Include="io\pcr.cpp" />
     <ClCompile Include="io\tiff.cpp" />
     <ClCompile Include="io\vol.cpp" />
     <ClCompile Include="math\matrix.cpp" />

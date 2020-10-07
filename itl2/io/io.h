@@ -6,6 +6,7 @@
 #include "io/raw.h"
 #include "io/vol.h"
 #include "io/nrrd.h"
+#include "io/pcr.h"
 
 namespace itl2
 {
@@ -13,14 +14,15 @@ namespace itl2
 	{
 		namespace internals
 		{
-			inline std::string combineReasons(const std::string& rawReason, const std::string& tiffReason, const std::string& sequenceReason, const std::string& volReason, const std::string& nrrdReason)
+			inline std::string combineReasons(const std::string& rawReason, const std::string& tiffReason, const std::string& sequenceReason, const std::string& volReason, const std::string& nrrdReason, const std::string& pcrReason)
 			{
 				return std::string() +
 					"raw: " + rawReason + "\n" +
 					"tiff: " + tiffReason + "\n" +
 					"sequence: " + sequenceReason + "\n" +
 					"vol: " + volReason + "\n" +
-					"nrrd: " + nrrdReason + "\n";
+					"nrrd: " + nrrdReason + "\n" +
+					"pcr: " + pcrReason;
 			}
 		}
 
@@ -33,7 +35,7 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dt;
 			
-			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason;
+			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason;
 			if (vol::getInfo(filename, dimensions, dt, volReason))
 			{
 				vol::read(img, filename);
@@ -50,6 +52,10 @@ namespace itl2
 			{
 				sequence::read(img, filename);
 			}
+			else if (pcr::getInfo(filename, dimensions, dt, pcrReason))
+			{
+				pcr::read(img, filename);
+			}
 			else if (raw::getInfo(filename, dimensions, dt, rawReason))
 			{
 				raw::read(img, filename);
@@ -57,7 +63,7 @@ namespace itl2
 			else
 			{
 				throw ITLException(std::string("Unsupported file type, file not found, or cannot be read: ") + filename + "\n" +
-					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason));
+					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason));
 			}
 		}
 
@@ -78,7 +84,7 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dt;
 
-			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason;
+			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason;
 			if (vol::getInfo(filename, dimensions, dt, volReason))
 			{
 				vol::readBlock(img, filename, blockStart, showProgressInfo);
@@ -95,6 +101,10 @@ namespace itl2
 			{
 				sequence::readBlock(img, filename, blockStart, showProgressInfo);
 			}
+			else if (pcr::getInfo(filename, dimensions, dt, pcrReason))
+			{
+				pcr::readBlock(img, filename, blockStart, showProgressInfo);
+			}
 			else if (raw::getInfo(filename, dimensions, dt, rawReason))
 			{
 				raw::readBlock(img, filename, blockStart, showProgressInfo);
@@ -102,7 +112,7 @@ namespace itl2
 			else
 			{
 				throw ITLException(std::string("Unsupported file type, file not found, or cannot be read: ") + filename + "\n" +
-					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason));
+					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason));
 			}
 		}
 

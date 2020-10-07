@@ -137,7 +137,7 @@
       </Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
+      <Command>copy "$(SolutionDir)python_scripts\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
@@ -181,7 +181,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       </Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
+      <Command>copy "$(SolutionDir)python_scripts\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
@@ -225,7 +225,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       </Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
+      <Command>copy "$(SolutionDir)python_scripts\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
@@ -267,7 +267,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
       </Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy "$(SolutionDir)python_scripts\generic\*.py" "$(OutDir)"
+      <Command>copy "$(SolutionDir)python_scripts\*.py" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.txt" "$(OutDir)"
 copy "$(SolutionDir)example_config\*.cmd" "$(OutDir)"
 copy "$(SolutionDir)fftw-3.3.5-dll64\libfftw3f-3.dll" "$(OutDir)"
@@ -302,8 +302,6 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="helpformat.h" />
     <ClInclude Include="histogramcommands.h" />
     <ClInclude Include="infocommand.h" />
-    <ClInclude Include="ini.h" />
-    <ClInclude Include="inireader.h" />
     <ClInclude Include="iocommands.h" />
     <ClInclude Include="jobtype.h" />
     <ClInclude Include="localdistributor.h" />
@@ -352,8 +350,6 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClCompile Include="generationcommands.cpp" />
     <ClCompile Include="histogramcommands.cpp" />
     <ClCompile Include="infocommand.cpp" />
-    <ClCompile Include="ini.cpp" />
-    <ClCompile Include="inireader.cpp" />
     <ClCompile Include="iocommands.cpp" />
     <ClCompile Include="localdistributor.cpp" />
     <ClCompile Include="maximacommands.cpp" />

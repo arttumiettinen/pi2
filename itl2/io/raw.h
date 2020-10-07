@@ -263,7 +263,7 @@ namespace itl2
 
 					if (in.bad())
 					{
-						throw ITLException(std::string("Read .raw failed, file size is incorrect: ") + filename);
+						throw ITLException(std::string("Read failed, file size might be incorrect: ") + filename);
 					}
 
 					read_start += read_size;

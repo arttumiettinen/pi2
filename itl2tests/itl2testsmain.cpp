@@ -9,6 +9,7 @@
 #include "io/io.h"
 #include "io/itltiff.h"
 #include "io/nrrd.h"
+#include "io/pcr.h"
 #include "sphere.h"
 #include "testutils.h"
 #include "io/itlpng.h"
@@ -82,6 +83,7 @@ int main()
 	//test(itl2::png::tests::png, "Png read and write");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
+	test(itl2::pcr::tests::read, "PCR read");
 
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
@@ -232,7 +234,7 @@ int main()
 	//test(itl2::tests::pathopening, "Path opening");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
-	test(itl2::tests::imagemetadata, "image metadata");
+	//test(itl2::tests::imagemetadata, "image metadata");
 
 	
 

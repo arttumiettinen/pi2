@@ -10,7 +10,7 @@ namespace itl2
 	
     	bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
-			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason;
+			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason;
 			if (vol::getInfo(filename, dimensions, dataType, volReason))
 			{
 				return true;
@@ -27,13 +27,17 @@ namespace itl2
 			{
 				return true;
 			}
+			else if (pcr::getInfo(filename, dimensions, dataType, pcrReason))
+			{
+				return true;
+			}
 			else if (raw::getInfo(filename, dimensions, dataType, rawReason))
 			{
 				return true;
 			}
 			else
 			{
-				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason);
+				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason);
 				return false;
 			}
 		}

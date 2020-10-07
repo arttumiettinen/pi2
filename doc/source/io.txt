@@ -18,6 +18,7 @@ Type                        Reading  Writing  Reading blocks  Writing blocks
 `.vol/.longvol`_            Yes      No       Yes             No
 `.tif`_ sequence            Yes      Yes      Yes             Yes
 `.png`_ sequence            Yes      Yes      Yes             Yes
+.pcr                        Yes      No       Yes             No
 ==========================  =======  =======  ==============  ==============
 
 .. _`.tif (2D & 3D)`: https://download.osgeo.org/libtiff/doc/TIFF6.pdf
@@ -26,8 +27,8 @@ Type                        Reading  Writing  Reading blocks  Writing blocks
 .. _`.vol/.longvol`: https://perso.liris.cnrs.fr/david.coeurjolly/Code/SimpleVol/
 .. _`.png`: http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html
 
-All the file formats can be read using the generic :ref:`read` command, or
-the file format specific :code:`readX` command, where :code:`X` is the file extension.
+All the file formats can be read using the generic :ref:`read` command.
+Some of the file formats can be read also using specific :code:`readX` command, where :code:`X` is the file extension.
 
 Files are written using the :code:`writeX` command, where :code:`X` is the file extension.
 Sequences can be written with the :ref:`writesequence` command.

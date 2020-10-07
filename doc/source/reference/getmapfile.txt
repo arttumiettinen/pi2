@@ -1,0 +1,33 @@
+.. _getmapfile:
+
+getmapfile
+**********
+
+
+**Syntax:** :code:`getmapfile(image, mapfile)`
+
+Get a path to the file where the argument image has been memory-mapped to. Returns empty string if no mapping has been made for the argument image.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+mapfile [output]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+The name and path to the memory-mapped file.
+
+See also
+--------
+
+:ref:`mapraw`

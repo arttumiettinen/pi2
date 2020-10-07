@@ -1,0 +1,44 @@
+.. _newvalue:
+
+newvalue
+********
+
+
+**Syntax:** :code:`newvalue(name, type, value)`
+
+Creates a new variable.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+name [input]
+~~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the variable in the system.
+
+type [input]
+~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** string
+
+Data type of the variable. Can be 'string'.
+
+value [input]
+~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+Initial value of the variable
+
+See also
+--------
+
+:ref:`set`, :ref:`clear`

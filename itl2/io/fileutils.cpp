@@ -43,7 +43,7 @@ namespace itl2
 	}
 
 	/**
-	Returns size of given file.
+	Returns size of given file in bytes.
 	*/
 	std::ifstream::pos_type fileSize(const string& filename)
 	{
@@ -108,6 +108,11 @@ namespace itl2
 		//std::ifstream infile(filename);
 		//return (bool)infile;
 		return fs::exists(filename);
+	}
+
+	bool fileExists(const fs::path& filename)
+	{
+		return fileExists(filename.string());
 	}
 
 	/**

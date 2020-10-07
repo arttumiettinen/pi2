@@ -1,0 +1,67 @@
+.. _getmeta:
+
+getmeta
+*******
+
+
+**Syntax:** :code:`getmeta(image, key, value, i, j, default)`
+
+Gets metadata item from an image.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+key [input]
+~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the metadata item.
+
+value [output]
+~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Value of the metadata item is placed into this string.
+
+i [input]
+~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Row index of the item to retrieve from the data matrix.
+
+j [input]
+~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Column index of the item to retrieve from the data matrix.
+
+default [input]
+~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** ""
+
+This value is returned if the key is not found
+
+See also
+--------
+
+:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`

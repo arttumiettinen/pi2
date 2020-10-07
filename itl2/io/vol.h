@@ -117,7 +117,13 @@ namespace itl2
 			else
 				dataType = ImageDataType::Unknown;
 
-			return dataType != ImageDataType::Unknown;
+			if (dataType == ImageDataType::Unknown)
+			{
+				reason = "Unknown image data type.";
+				return false;
+			}
+
+			return true;
 		}
 
 		/**

@@ -351,6 +351,15 @@
     <ClInclude Include="pathopening.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="io\pcr.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\ini.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\inireader.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
@@ -526,6 +535,15 @@
     </ClCompile>
     <ClCompile Include="csa.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\pcr.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\ini.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="io\inireader.cpp">
+      <Filter>Source Files\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

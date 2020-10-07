@@ -4,11 +4,12 @@
 #include <fstream>
 
 #include "math/vec3.h"
+#include "filesystem.h"
 
 namespace itl2
 {
 	/**
-	Returns size of given file.
+	Returns size of given file in bytes.
 	*/
 	std::ifstream::pos_type fileSize(const std::string& filename);
 
@@ -26,6 +27,7 @@ namespace itl2
 	Tests if a file exists.
 	*/
 	bool fileExists(const std::string& filename);
+	bool fileExists(const fs::path& filename);
 
 	/**
 	Deletes a file.

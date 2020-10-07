@@ -45,12 +45,6 @@
     <ClInclude Include="filtercommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ini.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inireader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="iocommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -189,12 +183,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="filtercommands.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ini.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="inireader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="iocommands.cpp">

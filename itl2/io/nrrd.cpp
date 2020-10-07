@@ -192,7 +192,19 @@ namespace itl2
 
 			headerSize = in.tellg();
 
-			return dimensionsFound && dataTypeFound;
+			if (!dimensionsFound)
+			{
+				failReason = "No dimensions found from the file.";
+				return false;
+			}
+
+			if (!dataTypeFound)
+			{
+				failReason = "No data type found from the file.";
+				return false;
+			}
+
+			return true;
 		}
 
 		namespace tests

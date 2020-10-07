@@ -3,7 +3,7 @@
 #include "argumentdatatype.h"
 #include "jobtype.h"
 #include "delayed.h"
-#include "inireader.h"
+#include "io/inireader.h"
 #include <string>
 #include <vector>
 #include <set>
