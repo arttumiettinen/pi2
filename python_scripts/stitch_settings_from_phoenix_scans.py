@@ -78,7 +78,7 @@ def main():
         print(positions)
 
         print("Writing output to stitch_settings.txt...")
-        write_stitch_settings(args.name, args.binning, positions, point_spacing=300, coarse_block_radius=200, coarse_binning=4)
+        write_stitch_settings(args.name, args.binning, positions, point_spacing=300, coarse_block_radius=200, coarse_binning=4, use_cluster=False)
 
         print('All done. Consider running nr_stitcher.py now.')
 

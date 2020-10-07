@@ -1,6 +1,6 @@
 
 
-def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4):
+def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, use_cluster=True):
     """
     Writes new stitch settings file to stitch_settings.txt.
     sample_name - prefix of output files.
@@ -8,7 +8,7 @@ def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coa
     positions - Lines that will be written under heading [positions]
     """
 
-    settings_text = """[stitch]
+    settings_text = f"""[stitch]
 
 # Output name
 sample_name = {sample_name}
@@ -101,7 +101,7 @@ redo = False
 
 
 # Indicates if the calculations should be performed on a cluster
-use_cluster = True
+use_cluster = {use_cluster}
 
 
 # Indicates if the script should wait until submitted cluster jobs are finished, and then continue.
@@ -140,7 +140,7 @@ cluster_job_init_commands = module load gcc/7.3.0
 {positions}
 """
 
-    settings_text = settings_text.format(binning=binning, sample_name=sample_name, positions=positions, coarse_binning=coarse_binning, coarse_block_radius=coarse_block_radius, point_spacing=point_spacing)
+    #settings_text = settings_text.format(binning=binning, sample_name=sample_name, positions=positions, coarse_binning=coarse_binning, coarse_block_radius=coarse_block_radius, point_spacing=point_spacing)
 
     with open("stitch_settings.txt", "w") as file:
         file.write(settings_text)
