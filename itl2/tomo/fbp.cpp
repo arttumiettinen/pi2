@@ -1012,6 +1012,7 @@ namespace itl2
 			cl::CommandQueue queue;
 			cl::Kernel kernel;
 			cl::Image3D output;
+			cl::Image3D temp;
 		};
 
 		/**
@@ -1022,6 +1023,7 @@ namespace itl2
 			// Create output image and fill it with zeroes
 			cl::ImageFormat format(CL_INTENSITY, CL_FLOAT);
 			env.output = cl::Image3D(env.context, CL_MEM_READ_WRITE, format, output.width(), output.height(), output.depth());
+			env.temp = cl::Image3D(env.context, CL_MEM_READ_WRITE, format, output.width(), output.height(), output.depth());
 			
 			cl_uint4 zero;
 			zero.s[0] = 0;
@@ -1034,7 +1036,7 @@ namespace itl2
 			outputSize[1] = output.height();
 			outputSize[2] = output.depth();
 
-			env.queue.enqueueFillImage(env.output, zero, cl::size_t<3>(), outputSize);
+			env.queue.enqueueFillImage(env.temp, zero, cl::size_t<3>(), outputSize);
 		}
 
 		/**
@@ -1063,6 +1065,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 						//read_only float dynMin, read_only float dynMax, read_only float scale,
 						read_only float2 projectionShift,
 						read_only float2 fullProjectionSize,
+						read_only image3d_t initialValue,
 						write_only image3d_t output)
 {
 
@@ -1089,13 +1092,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 	// Read initial value of the pixel as this kernel may be called multiple times with different set of projections if
 	// all of them do not fit into memory at once.
-	float sum = read_imagef(output, (int4)(pos.x, pos.y, pos.z, 0)).x;
+	float sum = read_imagef(initialValue, (int4)(pos.x, pos.y, pos.z, 0)).x;
 	//float sum = 0;
 
 	for (int anglei = 0; anglei < projSize.z; anglei++)
 	{
 		float3 rho = posf - center;
-
 		float3 xHat = xHatArray[anglei];
 		float3 nHat = nHatArray[anglei];
 
@@ -1125,7 +1127,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		sum += w * imgVal;
 	}
 
-
 	// This is done later as this kernel may be called multiple times with different set of projections if
 	// all the projections do not fit into device memory at once.
 	//sum *= normFactor;
@@ -1140,6 +1141,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	//sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
 	////output(x, y, zi) = pixelRound<out_t>(sum);
 	//output(x, y, z) = pixelRound<out_t>(sum);
+
 };
 )***";
 
@@ -1173,6 +1175,14 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				cout << "Maximum linear 2D image size " << max2DSize << endl;
 				Vec3c max3DSize(device.getInfo<CL_DEVICE_IMAGE3D_MAX_WIDTH>(), device.getInfo<CL_DEVICE_IMAGE3D_MAX_HEIGHT>(), device.getInfo<CL_DEVICE_IMAGE3D_MAX_DEPTH>());
 				cout << "Maximum linear 3D image size " << max3DSize << endl;
+
+				cout << "Maximum work group size " << device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << endl;
+				cout << "Maximum work item dimensions " << device.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>() << endl;
+				auto v = device.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
+				cout << "Maximum work item sizes ";
+				for (auto x : v)
+					cout << x << " ";
+				cout << endl;
 
 				cl::Program::Sources source(1, std::make_pair(backprojectProgram, strlen(backprojectProgram)));
 				cl::Program program = cl::Program(context, source);
@@ -1288,7 +1298,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				//clEnv.kernel.setArg(13, outputCL);
 				clEnv.kernel.setArg(10, projectionShift); // Shift that must be applied to projection coordinates
 				clEnv.kernel.setArg(11, fullProjectionSizeFloat); // Width and height of full projection images
-				clEnv.kernel.setArg(12, clEnv.output);
+				clEnv.kernel.setArg(12, clEnv.temp);
+				clEnv.kernel.setArg(13, clEnv.output);
 
 
 				cl::size_t<3> projSizeCL;
@@ -1296,6 +1307,14 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				projSizeCL[1] = transmissionProjections.height();
 				projSizeCL[2] = transmissionProjections.depth();
 				clEnv.queue.enqueueWriteImage(transmissionProjectionsCL, true, cl::size_t<3>(), projSizeCL, 0, 0, (void*)transmissionProjections.getData());
+				
+
+				cl::size_t<3> outSizeCL;
+				outSizeCL[0] = output.width();
+				outSizeCL[1] = output.height();
+				outSizeCL[2] = output.depth();
+				clEnv.queue.enqueueCopyImage(clEnv.output, clEnv.temp, cl::size_t<3>(), cl::size_t<3>(), outSizeCL);
+
 				clEnv.queue.finish();
 
 				// Enqueue in batches so that watchdog timer issues are avoided
