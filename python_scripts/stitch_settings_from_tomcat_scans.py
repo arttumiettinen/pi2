@@ -29,8 +29,8 @@ def main():
 
         if len(args.scan_folders) <= 0:
             args.scan_folders = ['./*']
-			
-		if args.recdir:
+
+        if args.recdir:
             print(f"Reconstruction directory override: {args.recdir}")
             if '%s' not in args.recdir:
                 print(f"Reconstruction directory override does not contain %s. Use %s to mark the location where the scan name is to be inserted.")

@@ -91,6 +91,78 @@ namespace pilib
 	};
 
 
+	template<typename pixel_t> class BlockMatchMultiCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		BlockMatchMultiCommand() : Command("blockmatch", "Calculates displacement field between two images with two-step multi-resolution approach, where coarse displacement is first calculated with larger block size (and binning) and the result is refined in second phase with smaller block size (and binning). NOTE: This command is currently implemented in very old format, and thus it forcibly saves the results to a file.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "reference image", "Reference image (non-moving image)."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "deformed image", "Deformed image (image to register to non-moving image)."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "x grid", "Calculation point grid definition in X-direction. The format is [start coordinate, end coordinate, step]."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "y grid", "Calculation point grid definition in Y-direction. The format is [start coordinate, end coordinate, step]."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "z grid", "Calculation point grid definition in Z-direction. The format is [start coordinate, end coordinate, step]."),
+				CommandArgument<Vec3d>(ParameterDirection::In, "initial shift", "Initial shift between the images."),
+				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "coarse comparison radius", "Radius of comparison region for coarse matching.", Vec3c(25, 25, 25)),
+				CommandArgument<size_t>(ParameterDirection::In, "coarse binning", "Amount of resolution reduction in coarse matching phase.", 2),
+				CommandArgument<Vec3c>(ParameterDirection::In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
+				CommandArgument<size_t>(ParameterDirection::In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 1),
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& ref = *pop<Image<pixel_t>* >(args);
+			Image<pixel_t>& def = *pop<Image<pixel_t>* >(args);
+			Vec3c xGrid = pop<Vec3c>(args);
+			Vec3c yGrid = pop<Vec3c>(args);
+			Vec3c zGrid = pop<Vec3c>(args);
+			Vec3d initialShift = pop<Vec3d>(args);
+			std::string fname = pop<std::string>(args);
+			Vec3c coarseCompRadius = pop<Vec3c>(args);
+			size_t coarseBinning = pop<size_t>(args);
+			Vec3c fineCompRadius = pop<Vec3c>(args);
+			size_t fineBinning = pop<size_t>(args);
+
+			coord_t xmin = xGrid.x;
+			coord_t xmax = xGrid.y;
+			coord_t xstep = xGrid.z;
+			coord_t ymin = yGrid.x;
+			coord_t ymax = yGrid.y;
+			coord_t ystep = yGrid.z;
+			coord_t zmin = zGrid.x;
+			coord_t zmax = zGrid.y;
+			coord_t zstep = zGrid.z;
+
+			PointGrid3D<coord_t> refPoints(PointGrid1D<coord_t>(xmin, xmax, xstep), PointGrid1D<coord_t>(ymin, ymax, ystep), PointGrid1D<coord_t>(zmin, zmax, zstep));
+			Image<Vec3d> defPoints(refPoints.pointCounts());
+			Image<float32_t> fitGoodness(defPoints.dimensions());
+
+			// Construct initial guess of the deformed points
+			for (coord_t zi = 0; zi < defPoints.depth(); zi++)
+			{
+				for (coord_t yi = 0; yi < defPoints.height(); yi++)
+				{
+					for (coord_t xi = 0; xi < defPoints.width(); xi++)
+					{
+						defPoints(xi, yi, zi) = Vec3d(refPoints(xi, yi, zi)) + initialShift;
+					}
+				}
+			}
+
+			blockMatchMulti(ref, def, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning);
+
+			// TODO: Instead of writing to disk, return the values in images.
+
+			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, 0, 1, 0);
+		}
+	};
+
+
 
 	class BlockMatchPartialLoadCommand : public Command
 	{

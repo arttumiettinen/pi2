@@ -273,6 +273,40 @@ namespace itl2
 		}
 	}
 
+
+	/*
+	Block matching for point grid and image output.
+	*/
+	template<typename ref_t, typename def_t> void blockMatchMulti(const Image<ref_t>& reference, const Image<def_t>& deformed, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
+		const Vec3c& coarseBlockRadius, size_t coarseBinning,
+		const Vec3c& fineBlockRadius, size_t fineBinning)
+	{
+		accuracy.ensureSize(refGrid.pointCounts());
+		defPoints.ensureSize(refGrid.pointCounts());
+
+		size_t counter = 0;
+#pragma omp parallel for if(!omp_in_parallel())
+		for (coord_t z = 0; z < defPoints.depth(); z++)
+		{
+			for (coord_t y = 0; y < defPoints.height(); y++)
+			{
+				for (coord_t x = 0; x < defPoints.width(); x++)
+				{
+					Vec3c refPoint = refGrid(x, y, z);
+					Vec3d defPoint = defPoints(x, y, z);
+					double gof;
+
+					internals::blockMatchOnePointMultires(reference, deformed, coarseBlockRadius, coarseBinning, fineBlockRadius, fineBinning, refPoint, defPoint, gof);
+
+					defPoints(x, y, z) = defPoint;
+					accuracy(x, y, z) = (float32_t)gof;
+				}
+
+				showThreadProgress(counter, defPoints.depth() * defPoints.height());
+			}
+		}
+	}
+
 	/*
 	Block matching for point grid and image output, loads images only partially.
 	*/
