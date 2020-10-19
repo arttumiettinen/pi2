@@ -560,7 +560,8 @@ class Pi2:
 
 
         def cleanup(ptr):
-            ptr.closepi()
+            if isinstance(ptr, Pi2):
+                ptr.closepi()
 
         atexit.register(cleanup, self)
         self.piobj = self.pilib.createPI()

@@ -5,10 +5,9 @@
     <ProjectGuid>ba94b144-c555-4822-8258-53a8861b7dc7</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>stitch_settings_from_phoenix_scans.py</StartupFile>
+    <StartupFile>pi2py2_tests.py</StartupFile>
     <SearchPath>generic</SearchPath>
-    <WorkingDirectory>
-    </WorkingDirectory>
+    <WorkingDirectory>..\x64\Release</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
     <RootNamespace>elastic_stitcher</RootNamespace>
