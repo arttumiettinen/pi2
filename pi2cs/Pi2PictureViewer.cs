@@ -134,10 +134,14 @@ namespace pi2cs
             }
             set
             {
-                PictureBox.PiImage = value;
+                SetImageNoUpdate(value);
                 PictureBox.UpdateImage();
-                //SetAutoContrast();
             }
+        }
+
+        public void SetImageNoUpdate(Pi2Image image)
+        {
+            PictureBox.PiImage = image;
         }
 
         
@@ -648,6 +652,11 @@ namespace pi2cs
                     newVal = scrollBarSlice.Maximum - scrollBarSlice.LargeChange + 1;
                 scrollBarSlice.Value = newVal;
             }
+        }
+
+        public void CancelUpdate()
+        {
+            PictureBox.CancelUpdate();
         }
 
         /// <summary>

@@ -761,6 +761,24 @@ namespace pi2cs
         private Task runningTask = null;
         private CancellationTokenSource canc;
 
+        public void CancelUpdate()
+        {
+            if (runningTask != null)
+            {
+                canc.Cancel();
+                try
+                {
+                    runningTask.Wait();
+                }
+                catch (AggregateException)
+                {
+                    // Expected, do nothing.
+                }
+                runningTask.Dispose();
+                runningTask = null;
+            }
+        }
+
         /// <summary>
         /// Updates the image in the picture box from the Pi system.
         /// Image must be available in the Pi system until it has been loaded.
@@ -768,20 +786,7 @@ namespace pi2cs
         public void UpdateImage()
         {
             // Cancel previous task if it is still running.
-            if(runningTask != null)
-            {
-                canc.Cancel();
-                try
-                {
-                    runningTask.Wait();
-                }
-                catch(AggregateException)
-                {
-                    // Expected, do nothing.
-                }
-                runningTask.Dispose();
-                runningTask = null;
-            }
+            CancelUpdate();
 
             // Start new image load task.
             canc = new CancellationTokenSource();
