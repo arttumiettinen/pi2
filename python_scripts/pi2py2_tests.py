@@ -933,6 +933,26 @@ def set_overloads():
     pi2.set(img2, img1)
 
 
+def big_tiff_write():
+    img = pi2.newimage(ImageDataType.UINT8, 5*1024, 1024, 1024)
+    pi2.ramp(img, 0)
+    pi2.writetif(img, output_file("big_tiff.tif"))
+    pi2.writeraw(img, output_file("big_raw"))
+
+def big_tiff():
+
+    big_tiff_write()
+
+    # Whoops: I don't have enough memory for this in my computer...
+    img1 = pi.read(output_file("big_tiff.tif"))
+    img2 = pi.read(output_file("big_raw"))
+    M = calc_difference(img1, img2)
+    check_result(M <= 0, f"ERROR: Images saved as .tif and .raw are not equal.")
+    
+
+
+
+
 # Enable or disable echoing of commands and timing info on screen
 pi2.echo(True, False)
 
@@ -1133,7 +1153,8 @@ pi2.echo(True, False)
 
 #named_variables()
 #metadata()
-set_overloads()
+#set_overloads()
+big_tiff()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

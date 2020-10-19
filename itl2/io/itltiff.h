@@ -291,9 +291,12 @@ namespace itl2
 			if (img.width() >= std::numeric_limits<uint32_t>::max() ||
 				img.height() >= std::numeric_limits<uint32_t>::max() ||
 				img.depth() >= std::numeric_limits<uint16_t>::max())
-				throw ITLException("The image is too large to be written to .tif file.");
+				throw ITLException("The image is too large to be written to a .tif file.");
 
-			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "w"), TIFFClose);
+			string mode = "w"; // Normal tif file
+			if (img.pixelCount() * img.pixelSize() > (size_t)4 * (size_t)1000 * (size_t)1000 * (size_t)1000)
+				mode = "w8"; // BigTIFF file
+			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), mode.c_str()), TIFFClose);
 			TIFF* tif = tifObj.get();
 
 			if (tif)
@@ -375,7 +378,10 @@ namespace itl2
 
 					// Write image data
 					void* ptr = (void*)&img(0, 0, z);
-					TIFFWriteEncodedStrip(tif, 0, ptr, img.width() * img.height() * sizeof(pixel_t));
+					if (TIFFWriteEncodedStrip(tif, 0, ptr, img.width() * img.height() * sizeof(pixel_t)) < 0)
+					{
+						throw ITLException(string("Unable to write data to .tif file ") + filename + ": " + internals::tiffLastError());
+					}
 
 
 					// Go to next directory if we are going to write more slices
