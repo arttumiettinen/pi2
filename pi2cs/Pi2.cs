@@ -45,6 +45,7 @@ namespace pi2cs
         /// </summary>
         /// <param name="pi"></param>
         /// <param name="name">Object name</param>
+        /// <param name="ownsHandle">Indicates whether this instance is responsible of deleting the underlying Pi2 object.</param>
         public Pi2Object(Pi2 pi, string name, bool ownsHandle)
         {
             Pi = pi;
@@ -79,7 +80,7 @@ namespace pi2cs
                 // Free any other managed objects here.
             }
 
-            if (Name != String.Empty)
+            if (!String.IsNullOrEmpty(Name))
             {
                 // Delete image from Pi ssytem
                 if(OwnsHandle)
@@ -989,6 +990,12 @@ namespace pi2cs
         private static string ToIntVec(Vec3 x)
         {
             return "[" + ((int)Math.Round(x.X)).ToString(CultureInfo.InvariantCulture) + ", " + ((int)Math.Round(x.Y)).ToString(CultureInfo.InvariantCulture) + ", " + ((int)Math.Round(x.Z)).ToString(CultureInfo.InvariantCulture) + "]";
+        }
+
+
+        public void List()
+        {
+            PiLib.RunAndCheck(Handle, "list()");
         }
 
         // TODO: Add pilib commands as methods here, translate from Pi2Images to image names etc.

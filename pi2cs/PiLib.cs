@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -80,14 +81,23 @@ namespace pi2cs
         [DllImport("pi", EntryPoint = "destroyPI")]
         public static extern void DestroyPI(IntPtr pi);
 
+        
+        [DllImport("pi", EntryPoint = "run")]
+        private static extern bool run(IntPtr pi, string commands);
+
         /**
         Run commands.
         @param pi Handle returned by create method.
         @param commands String containig one or more commands that should be executed.
         @return True if command execution was successful; false otherwise.
         */
-        [DllImport("pi", EntryPoint = "run")]
-        public static extern bool Run(IntPtr pi, string commands);
+        public static bool Run(IntPtr pi, string commands)
+        {
+//#if DEBUG
+//            Console.WriteLine("Running command: " + commands);
+//#endif
+            return run(pi, commands);
+        }
 
         /**
         Run commands, throw ArgumentException if error occurs.
