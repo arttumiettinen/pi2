@@ -1,6 +1,7 @@
 
 # NOTE: Use "make" or "make all" to do a normal build.
 #       Use "make NO_OPENCL=1" or "make all NO_OPENCL=1" to do a build without OpenCL support.
+#       use "make TESTS=1" to build also itl2tests project.
 
 CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -march=native
 LDFLAGS := -fopenmp
@@ -73,8 +74,13 @@ pilib: itl2
 pi2: pilib
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
+ifdef TESTS
 itl2tests: itl2
 	$(MAKE) -C $@ $(MAKECMDGOALS)
+	cp ./intermediate/$(CONFIG)/itl2tests/itl2testsmain ./bin-linux64/$(CONFIG)/
+else
+itl2tests: ;
+endif
 
 pi2cs: pilib
 	$(MAKE) -C $@ $(MAKECMDGOALS)
