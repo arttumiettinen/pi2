@@ -138,7 +138,7 @@ $(BUILD_ROOT)/em_targets.mk: $(em_all_objects)
 	@rm -f $@
 	@$(foreach f,$(em_entry_list),										\
 		echo 'all: $(call Em_src2target,$f)' >> $@;						\
-		echo '$(call Em_src2target,$f): $(call Em_objects,$f)' >> $@;	\
+		echo '$(call Em_src2target,$f): $(call Em_objects,$f) $(EXTRA_DEPS)' >> $@;	\
 		echo '	$(em_linker) $$^ $(LDFLAGS) -o $$@ $(LOADLIBES) $(LDLIBS)'	>> $@;	\
 	)
 

@@ -234,8 +234,8 @@ int main()
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
 
-	//test(itl2::tests::createPlates, "Input geometry generation");
-	//test(itl2::tests::createMoreProjections, "Large number of projections");
+	test(itl2::tests::createPlates, "Input geometry generation");
+	test(itl2::tests::createMoreProjections, "Large number of projections");
 	test(itl2::tests::fbp, "Filtered backprojection");
 	
 	

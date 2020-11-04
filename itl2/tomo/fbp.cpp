@@ -1099,10 +1099,10 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		float3 dVec = p - ps;
 		float denom = dot(dVec, wHat);
 
-		if(abs(denom) > 1e-6)
+		if(fabs(denom) > 1e-6)
 		{
 			float3 psmpd = ps - pd; // NOTE: In principle we could pre-calculate ps-pd as we don't need plain pd anywhere.
-			float d = (-psmpd.dot(wHat)) / denom;
+			float d = (-dot(psmpd, wHat)) / denom;
 
 			// (ps + d * dVec) is projection of source point through reconstruction point to the detector plane,
 			// and pd is detector position.
@@ -1116,12 +1116,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			// If uVec and vVec would be unit vectors, then we have to divide by M here.
 			//u /= M;
 			//v /= M;
-
+ 
 			u += projectionHalfWidth;
 			v += projectionHalfHeight;
 
 			// This weight is needed in the FDK algorithm.
-			float weight = settings.sourceToRA / (settings.sourceToRA + dot(p, wHat));
+			float weight = sourceToRA / (sourceToRA + dot(p, wHat));
 			weight *= weight;
 
 			float imgVal = read_imagef(transmissionProjections, sampler, (float4)(u + 0.5f, v + 0.5f, anglei + 0.5f, 0)).s0;
@@ -1278,7 +1278,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 				string extensions = device.getInfo<CL_DEVICE_EXTENSIONS>();
 				if (!contains(extensions, "cl_khr_3d_image_writes"))
-					throw ITLException(string("The OpenCL device ") + devName + string(" does not support cl_khr_3d_image_writes extension required by this program. List of all supported extensions: ") + extensions);
+                    cout << string("Warning: The OpenCL device ") + devName + string(" does not support cl_khr_3d_image_writes extension required by this program. On some devices the functionality is available even if the extension is not reported to be supported.") << endl;
+					
+                    //throw ITLException(string("The OpenCL device ") + devName + string(" does not support cl_khr_3d_image_writes extension required by this program. List of all supported extensions: ") + extensions);
 
 				cl::Program::Sources source(1, std::make_pair(newBackprojectProgram, strlen(newBackprojectProgram)));
 				cl::Program program = cl::Program(context, source);
