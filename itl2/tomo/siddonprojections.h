@@ -7,7 +7,7 @@
 #include "io/raw.h"
 #include "pointprocess.h"
 #include "raytrace.h"
-
+#include "generation.h"
 
 namespace itl2
 {
@@ -204,9 +204,27 @@ namespace itl2
 			raw::writed(projections, "siddon_consistency/difference");
 		}
 
+		inline void createPlates()
+		{
+			Image<float32_t> plates(100, 100, 100);
+			int r = 5;
+			int step = 3 * r;
+			int rxy = 30;
+			double alpha = 0;
+			for (int z = r + 3; z < plates.depth() - r - 3; z += step)
+			{
+				double c = cos(alpha / 180.0 * 3.1415);
+				double s = sin(alpha / 180.0 * 3.1415);
+				draw(plates, Box(Vec3d(plates.width() / 2.0, plates.height() / 2.0, z), Vec3d(rxy, rxy, r), Vec3d(c, s, 0), Vec3d(-s, c, 0)), 1.0f);
+				alpha += 45;
+			}
+
+			raw::writed(plates, "projections/plates");
+		}
+
 		inline void createProjection()
 		{
-			string filename = "input_data/plates";
+			string filename = "projections/plates";
 			Image<float32_t> img(100, 100, 100);
 			raw::read(img, filename);
 
@@ -222,7 +240,7 @@ namespace itl2
 
 		inline void createProjections()
 		{
-			string filename = "input_data/plates";
+			string filename = "projections/plates";
 			Vec2f angularRange(-180, 180);
 			Vec2f tiltRange(0, 0);
 			float32_t sourceDistance = 300;
@@ -242,7 +260,7 @@ namespace itl2
 
 		inline void create10Projections()
 		{
-			string filename = "input_data/plates";
+			string filename = "projections/plates";
 			Vec2f angularRange(-180, 180);
 			Vec2f tiltRange(0, 0);
 			float32_t sourceDistance = 300;
@@ -257,12 +275,12 @@ namespace itl2
 				angularRange / 180 * PIf,
 				tiltRange / 180 * PIf);
 
-			raw::writed(projections, "projections/projected");
+			raw::writed(projections, "projections/projected10");
 		}
 
-		inline void create36Projections()
+		inline void createMoreProjections()
 		{
-			string filename = "input_data/plates";
+			string filename = "projections/plates";
 			Vec2f angularRange(-180, 180);
 			Vec2f tiltRange(0, 0);
 			float32_t sourceDistance = 300;
@@ -270,14 +288,14 @@ namespace itl2
 			Image<float32_t> img(100, 100, 100);
 			raw::read(img, filename);
 
-			Image<float32_t> projections(100, 100, 36);
+			Image<float32_t> projections(100, 100, 120);
 			createForwardProjectionSiddon<float32_t, float32_t>(
 				img, projections,
 				sourceDistance,
 				angularRange / 180 * PIf,
 				tiltRange / 180 * PIf);
 
-			raw::writed(projections, "projections/projected");
+			raw::writed(projections, "projections/projected120");
 		}
 
 		inline void create36ProjectionsSheppLogan()
@@ -297,7 +315,7 @@ namespace itl2
 				angularRange / 180 * PIf,
 				tiltRange / 180 * PIf);
 
-			raw::writed(projections, "shepp-logan/projected");
+			raw::writed(projections, "shepp-logan/projected36sh");
 		}
 
 		inline void createBackprojection()

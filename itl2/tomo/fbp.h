@@ -270,17 +270,26 @@ namespace itl2
 
 
 		/**
-		Shift between shadow of rotation axis at camera and centerline of the camera.
+		Shift between shadow of rotation axis at the camera and centerline of the camera.
 		Center shift is assume to be shift in camera location (whereas xy-shifts are assumed to be shifts in sample location).
+		By convention, this is shift of image, not shift of camera.
 		Specify value in pixels.
 		*/
 		float32_t centerShift = 0.0f;
 
 		/**
 		Shift between optical axis and camera centerline in z-direction (up-down).
+		By convention, this is shift of image, not shift of camera.
 		Specify value in pixels.
 		*/
 		float32_t cameraZShift = 0.0f;
+
+		/**
+		Specify rotation angle of camera around its normal, in degrees.
+		Camera rotation is not accounted for in the filtering step of FDK algorithm, but it is accounted for in
+		the backprojection phase.
+		*/
+		float32_t cameraRotation = 0.0f;
 
 		/**
 		Rate of change of center shift as a function of angle from the image taken at central angle.
@@ -426,6 +435,7 @@ namespace itl2
 		s.removeDeadPixels = id.get("remove_dead_pixels", s.removeDeadPixels);
 		s.centerShift = id.get("center_shift", s.centerShift);
 		s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
+		s.cameraRotation = id.get("camera_rotation", s.cameraRotation);
 		s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
 		s.csZSlope = id.get("cs_z_slope", s.csZSlope);
 		s.padType = id.get("pad_type", s.padType);
@@ -496,7 +506,8 @@ namespace itl2
 			// 180 deg scan, calculate fraction of angles that form the 180 deg rotation.
 			float angleFraction = 180.0f / (itl2::max(settings.angles) - itl2::min(settings.angles));
 			float N = settings.angles.size() * angleFraction;
-			normFactor = 1.0f / N * PIf;
+			//normFactor = 1.0f / N * PIf;
+			normFactor = 1.0f / N * PIf / 2.0f; // NOTE: This seems to be the correct factor according to tests where 180 deg and 360 deg scans are compared to each other
 		}
 		else
 		{
@@ -622,6 +633,176 @@ namespace itl2
 			showThreadProgress(counter, settings.roiSize.z);
 		}
 	}
+
+	namespace internals
+	{
+		/**
+		Calculates backprojection geometry (source position, detector position, detector right, detector up, detector normal)
+		from reconstruction settings.
+		The output vector type is templated as OpenCL processing needs the output in Vec4f, but CPU processing is
+		fine with Vec3f.
+		*/
+		template<typename VEC> void determineBackprojectionGeometry(const RecSettings& settings, coord_t projectionWidth,
+			std::vector<VEC>& pss,		// Source positions
+			std::vector<VEC>& pds,		// Detector center point positions
+			std::vector<VEC>& us,			// Detector right vectors
+			std::vector<VEC>& vs,			// Detector up vectors
+			std::vector<VEC>& ws			// Detector normal vectors, w = u x w
+			)
+		{
+			pss.clear();
+			pds.clear();
+			us.clear();
+			vs.clear();
+			ws.clear();
+
+			pss.reserve(settings.angles.size());
+			pds.reserve(settings.angles.size());
+			us.reserve(settings.angles.size());
+			vs.reserve(settings.angles.size());
+			ws.reserve(settings.angles.size());
+
+			float32_t gammamax0 = internals::calculateGammaMax0((float32_t)projectionWidth, settings.sourceToRA);
+			float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
+
+			double rotMul = 1.0;
+			if (settings.rotationDirection == RotationDirection::Counterclockwise)
+				rotMul = -1.0;
+
+			float32_t M = 1 + settings.objectCameraDistance / settings.sourceToRA;
+			for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
+			{
+				double angle = rotMul * ((double)settings.angles[anglei] - 90 + (double)settings.rotation) / 180.0 * PI;
+
+				float32_t c = (float32_t)cos(angle);
+				float32_t s = (float32_t)sin(angle);
+
+				Vec3f u(-s, c, 0); // At 0 deg the camera right vector is +y
+				Vec3f v(0, 0, 1);
+				Vec3f w = u.cross(v);
+				Vec3f ps = Vec3f(0, 0, 0) - settings.sourceToRA * w; // TODO: Add source shift
+				Vec3f pd = Vec3f(0, 0, 0) + settings.objectCameraDistance * w;
+
+				// Add object shifts by shifting both source and camera to the inverse direction
+				// TODO: Is the unit camera pixel or image pixel?
+				float32_t sdx = M * settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
+				float32_t sdz = M * settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
+				Vec3f objShift = sdx * u + sdz * v;
+				ps -= objShift;
+				pd -= objShift;
+
+
+				// Add camera shift
+				// Camera shift in Z-direction and center shift (in optical plane) are given in image pixels, so they must
+				// be multiplied by magnification to get the correct effect on camera position.
+				float32_t csAnglePert = internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope);
+				pd += Vec3f(0, 0, -settings.cameraZShift * M) + u * (-settings.centerShift + -csAnglePert) * M;
+
+				// Add camera rotation around its normal
+				float32_t angleRad = settings.cameraRotation / 180.0f * PIf;
+				u = u.rotate(w, angleRad);
+				v = v.rotate(w, angleRad);
+
+
+				pss.push_back(VEC(ps));
+				pds.push_back(VEC(pd));
+				us.push_back(VEC(u / M)); // NOTE: We store u / M and v / M instead of plain u and v as this way we save two vector divisions in the inner backprojection loop.
+				vs.push_back(VEC(v / M));
+				ws.push_back(VEC(w));
+			}
+		}
+	}
+
+	template<typename out_t> void backproject_new(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
+	{
+		internals::sanityCheck(transmissionProjections, settings, true);
+		output.mustNotBe(transmissionProjections);
+
+		internals::applyBinningToParameters(settings);
+
+		output.ensureSize(settings.roiSize);
+
+		float32_t normFact = normFactor(settings);
+
+		// Pre-calculate direction and position vectors that define the backprojection geometry
+		// ------------------------------------------------------------------------------------
+		std::vector<Vec3f> pss;			// Source positions
+		std::vector<Vec3f> pds;			// Detector center point positions
+		std::vector<Vec3f> us;			// Detector right vectors
+		std::vector<Vec3f> vs;			// Detector up vectors
+		std::vector<Vec3f> ws;			// Detector normal vectors, w = u x w
+		internals::determineBackprojectionGeometry(settings, transmissionProjections.width(), pss, pds, us, vs, ws);
+
+		// Backproject
+		// -----------
+		float32_t projectionHalfWidth = (float32_t)transmissionProjections.width() / 2.0f;
+		float32_t projectionHalfHeight = (float32_t)transmissionProjections.height() / 2.0f;
+
+		LinearInterpolator<float32_t, float32_t> interpolator(BoundaryCondition::Zero);
+
+		size_t counter = 0;
+		forAllPixels(output, [&](coord_t x, coord_t y, coord_t z)
+			{
+				// NOTE: Adding 0.5 ensures that if x = 0, roiSize = 1, and roiCenter = 0,
+				// p.x = 0 - 1/2.0f + c + 0.5 = 0, as expected.
+				// NOTE: In this new version we use the more correct +0.5 in all coordinate directions. This is different from the old version
+				// where +0.5 was used only in the z direction
+				Vec3f p = Vec3f((float)x, (float)y, (float)z) - Vec3f(settings.roiSize) / 2.0f + Vec3f(settings.roiCenter)
+					//+ Vec3f(0, 0, 0.5); // Old version was like this
+					+ Vec3f(0.5, 0.5, 0.5);
+
+				// Sum contributions from all projections
+				float32_t sum = 0;
+				for (coord_t anglei = 0; anglei < transmissionProjections.depth(); anglei++)
+				{
+					Vec3f ps = pss[anglei];
+					Vec3f pd = pds[anglei];
+					Vec3f uVec = us[anglei];
+					Vec3f vVec = vs[anglei];
+					Vec3f wHat = ws[anglei];
+
+					Vec3f dVec = p - ps;
+					float32_t denom = dVec.dot(wHat);
+					if (!NumberUtils<float32_t>::equals(denom, 0))
+					{
+						Vec3f psmpd = ps - pd; // NOTE: In principle we could pre-calculate ps-pd as we don't need plain pd anywhere.
+						float32_t d = (-psmpd.dot(wHat)) / denom;
+
+						// (ps + d * dVec) is projection of source point through reconstruction point to the detector plane,
+						// and pd is detector position.
+						Vec3f pDot = psmpd + d * dVec;
+
+						// Convert to camera coordinates
+						float32_t u = pDot.dot(uVec);
+						float32_t v = pDot.dot(vVec);
+
+						// NOTE: We have pre-divided uVec and vVec by M, so division is not necessary here.
+						// If uVec and vVec would be unit vectors, then we have to divide by M here.
+						//u /= M;
+						//v /= M;
+
+						u += projectionHalfWidth;
+						v += projectionHalfHeight;
+
+						// This weight is needed in the FDK algorithm.
+						float32_t weight = settings.sourceToRA / (settings.sourceToRA + p.dot(wHat));
+						weight *= weight;
+
+						sum += weight * interpolator(transmissionProjections, u, v, (float32_t)anglei);
+					}
+				}
+
+				sum *= normFact;
+
+				// Scaling
+				sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
+				output(x, y, z) = pixelRound<out_t>(sum);
+			},
+			true);
+	}
+
+
+
 
 #if defined(USE_OPENCL)
 	void backprojectOpenCLProjectionOutputBlocks(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output, coord_t maxOutputBlockSizeZ = 8, coord_t maxProjectionBlockSizeZ = std::numeric_limits<coord_t>::max());

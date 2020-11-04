@@ -52,24 +52,23 @@ namespace itl2
 			/**
 			Constructor that makes it possible to cast/initialize vector from vector of another type.
 			*/
-			template<typename Tother> explicit Vec3(const Vec3<Tother>& other) :
-				x(pixelRound<T, Tother>(other.x)),
-				y(pixelRound<T, Tother>(other.y)),
-				z(pixelRound<T, Tother>(other.z))
-			{
-			}
+			//template<typename Tother> explicit Vec3(const Vec3<Tother>& other) :
+			//	x(pixelRound<T, Tother>(other.x)),
+			//	y(pixelRound<T, Tother>(other.y)),
+			//	z(pixelRound<T, Tother>(other.z))
+			//{
+			//}
 
 			/**
-			Constructs Vec3 from vector<T>. Throws exception if the vector does not contain 3 elements.
+			Constructs Vec3 from the first three elements of an array type. If there are not enough elements in the array, the remaining elements are set to zero.
 			*/
-			Vec3(const std::vector<T>& other)
+			template<typename VEC> explicit Vec3(const VEC& v)
 			{
-				if(other.size() != 3)
-					throw itl2::ITLException("Invalid vector in Vec3 constructor.");
-
-				x = other[0];
-				y = other[1];
-				z = other[2];
+				x = 0;
+				y = 0;
+				z = 0;
+				for (size_t n = 0; n < std::min<size_t>(3, v.size()); n++)
+					components[n] = pixelRound<T>(v[n]);
 			}
 
 			/**

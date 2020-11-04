@@ -52,18 +52,27 @@ namespace itl2
             }
 
 			/**
-			Constructs Vec4 from vector<T>. Throws exception if the vector does not contain 4 elements.
+			Constructs Vec4 from the first four elements of an array type. If there are not enough elements in the array, the remaining elements are set to zero.
 			*/
-			Vec4(const std::vector<T>& other)
-			{
-				if(other.size() != 4)
-					throw itl2::ITLException("Invalid vector in Vec3 constructor.");
+			//Vec4(const std::vector<T>& other)
+			//{
+			//	if(other.size() != 4)
+			//		throw itl2::ITLException("Invalid vector in Vec4 constructor.");
 
-				x = other[0];
-				y = other[1];
-				z = other[2];
-				w = other[3];
-			}
+			//	x = other[0];
+			//	y = other[1];
+			//	z = other[2];
+			//	w = other[3];
+			//}
+            template<typename VEC> explicit Vec4(const VEC& v)
+            {
+                x = 0;
+                y = 0;
+                z = 0;
+                w = 0;
+                for (size_t n = 0; n < std::min<size_t>(4, v.size()); n++)
+                    components[n] = pixelRound<T>(v[n]);
+            }
 
 			/**
 			Array access operator

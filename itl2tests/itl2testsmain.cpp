@@ -83,7 +83,7 @@ int main()
 	//test(itl2::png::tests::png, "Png read and write");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
-	test(itl2::pcr::tests::read, "PCR read");
+	//test(itl2::pcr::tests::read, "PCR read");
 
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
@@ -91,7 +91,6 @@ int main()
 	//test(itl2::sequence::tests::readWriteBlock, "Image sequence block");
 	//test(itl2::sequence::tests::readWriteBlockOptimization, "Image sequence block write optimization");
 	
-
 	//test(itl2::tests::siddonProject, "Siddon algorithm");
 	//test(itl2::tests::geometry, "Geometry");
 
@@ -204,12 +203,7 @@ int main()
 
 	//test(itl2::tests::recSettings, "Rec settings");
 	//test(itl2::tests::paganin, "Paganin method");
-	//// NOTE: Data for these tests is not publicly available (yet)
-	////test(itl2::tests::fbp, "Filtered backprojection");
-	////test(itl2::tests::openCLBackProjection, "OpenCL filtered backprojection");
-	////test(itl2::tests::openCLBackProjectionRealBin2, "OpenCL filtered backprojection, real dataset, binning 2");
-	////test(itl2::tests::openCLBackProjectionRealBin1, "OpenCL filtered backprojection, real dataset, binning 1"); 
-
+	
 	
 
 	//test(itl2::tests::thickmapsEquality, "equality of different thickness map implementations");	
@@ -240,12 +234,24 @@ int main()
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
 
+	//test(itl2::tests::createPlates, "Input geometry generation");
+	//test(itl2::tests::createMoreProjections, "Large number of projections");
+	test(itl2::tests::fbp, "Filtered backprojection");
+	
+	
+	
+	
+	//test(itl2::tests::openCLBackProjection, "OpenCL filtered backprojection");
+	//test(itl2::tests::openCLBackProjectionRealBin2, "OpenCL filtered backprojection, real dataset, binning 2");
+	//test(itl2::tests::openCLBackProjectionRealBin1, "OpenCL filtered backprojection, real dataset, binning 1"); 
+
+
 	//test(itl2::tests::createProjection, "Single projection");
 	//test(itl2::tests::createProjections, "Projections");
 	//test(itl2::tests::createBackprojection, "Back-projection");
 	//test(itl2::tests::projectionConsistency, "Consistency");
 	//test(itl2::tests::create10Projections, "10 projections");
-	//test(itl2::tests::create36Projections, "36 projections");
+	
 
 
 	//test(tomo::tests::cgneReconstruction1, "CGNE reconstruction");
