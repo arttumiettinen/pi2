@@ -5,6 +5,7 @@
 
 #include "image.h"
 #include "aabox.h"
+#include "progress.h"
 
 namespace itl2
 {
