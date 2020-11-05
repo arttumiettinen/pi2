@@ -1055,6 +1055,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 						global read_only float3* us,				// Detector right vectors
 						global read_only float3* vs,				// Detector up vectors
 						global read_only float3* ws,				// Detector normal vectors, w = u x w
+
+						read_only float2 projectionShift,
 						read_only float2 fullProjectionHalfSize,	// Projection size divided by 2
 
 						read_only float3 center,					// Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter) - Vec3f(0.5, 0.5, 0.5)
@@ -1119,6 +1121,10 @@ kernel void backproject(read_only image3d_t transmissionProjections,
  
 			u += projectionHalfWidth;
 			v += projectionHalfHeight;
+
+			// Apply projection shift (we load only part of projections)
+			ix -= projectionShift.x;
+			iy -= projectionShift.y;
 
 			// This weight is needed in the FDK algorithm.
 			float weight = sourceToRA / (sourceToRA + dot(p, wHat));
@@ -1353,11 +1359,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				clEnv.kernel.setArg(3, usCL);
 				clEnv.kernel.setArg(4, vsCL);
 				clEnv.kernel.setArg(5, wsCL);
-				clEnv.kernel.setArg(6, fullProjectionHalfSizeFloat);
-				clEnv.kernel.setArg(7, centerCL);
-				clEnv.kernel.setArg(8, sourceToRA);
-				clEnv.kernel.setArg(9, clEnv.temp);
-				clEnv.kernel.setArg(10, clEnv.output);
+				clEnv.kernel.setArg(6, projectionShift);
+				clEnv.kernel.setArg(7, fullProjectionHalfSizeFloat);
+				clEnv.kernel.setArg(8, centerCL);
+				clEnv.kernel.setArg(9, sourceToRA);
+				clEnv.kernel.setArg(10, clEnv.temp);
+				clEnv.kernel.setArg(11, clEnv.output);
 
 
 				cl::size_t<3> projSizeCL;
@@ -1653,7 +1660,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 					//+ Vec3f(0, 0, 0.5); // Old version was like this
 					+ Vec3f(0.5, 0.5, 0.5);
 
-				// Sum contributions from all projections
 				float32_t sum = 0;
 				for (coord_t anglei = 0; anglei < transmissionProjections.depth(); anglei++)
 				{
