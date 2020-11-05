@@ -1123,8 +1123,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			v += projectionHalfHeight;
 
 			// Apply projection shift (we load only part of projections)
-			ix -= projectionShift.x;
-			iy -= projectionShift.y;
+            u -= projectionShift.x;
+			v -= projectionShift.y;
 
 			// This weight is needed in the FDK algorithm.
 			float weight = sourceToRA / (sourceToRA + dot(p, wHat));
