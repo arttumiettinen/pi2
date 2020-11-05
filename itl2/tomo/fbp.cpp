@@ -11,7 +11,6 @@
 #include "math/vec4.h"
 #include "io/raw.h"
 #include "generation.h"
-#include "tomo/siddonprojections.h"
 
 #if defined(USE_OPENCL)
 #define __CL_ENABLE_EXCEPTIONS
