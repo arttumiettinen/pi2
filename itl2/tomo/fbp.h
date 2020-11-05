@@ -296,11 +296,6 @@ namespace itl2
 		*/
 		float32_t csAngleSlope = 0.0f;
 
-		/**
-		Rate of change of center shift as a function of z-directional distance from optical axis.
-		*/
-		float32_t csZSlope = 0.0f;
-
 
 
 
@@ -437,7 +432,6 @@ namespace itl2
 		s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
 		s.cameraRotation = id.get("camera_rotation", s.cameraRotation);
 		s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
-		s.csZSlope = id.get("cs_z_slope", s.csZSlope);
 		s.padType = id.get("pad_type", s.padType);
 		s.padFraction = id.get("pad_size", s.padFraction);
 		s.filterType = id.get("filter_type", s.filterType);
@@ -487,8 +481,6 @@ namespace itl2
 
 		float32_t csAnglePerturbation(size_t angleIndex, float32_t centralAngle, const std::vector<float32_t>& angles, float32_t csAngleSlope);
 
-		float32_t  csZPerturbation(float32_t z, float32_t roiCenterZ, float32_t roiSizeZ, float32_t projectionHeight, float32_t csZSlope);
-
 		/**
 		Adjusts reconstruction settings for binning.
 		*/
@@ -519,120 +511,120 @@ namespace itl2
 		return normFactor;
 	}
 
-	/**
-	Backprojection step of filtered backprojection algorithm.
-	*/
-	template<typename out_t> void backproject(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
-	{
-		internals::sanityCheck(transmissionProjections, settings, true);
-		output.mustNotBe(transmissionProjections);
-		
-		internals::applyBinningToParameters(settings);
+	///**
+	//Backprojection step of filtered backprojection algorithm.
+	//*/
+	//template<typename out_t> void backproject(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
+	//{
+	//	internals::sanityCheck(transmissionProjections, settings, true);
+	//	output.mustNotBe(transmissionProjections);
+	//	
+	//	internals::applyBinningToParameters(settings);
 
-		output.ensureSize(settings.roiSize);
+	//	output.ensureSize(settings.roiSize);
 
-		float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
-		float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
+	//	float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
+	//	float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
 
-		float32_t normFact = normFactor(settings);
-		
-
-
-		// Pre-calculate direction vectors.
-		std::vector<Vec3f> xHatArray;
-		std::vector<Vec3f> nHatArray;
-		xHatArray.reserve(settings.angles.size());
-		nHatArray.reserve(settings.angles.size());
-
-		double rotMul = 1.0;
-		if (settings.rotationDirection == RotationDirection::Counterclockwise)
-			rotMul = -1.0;
-
-		for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
-		{
-			double angle = rotMul * ((double)settings.angles[anglei] - 90 + (double)settings.rotation) / 180.0 * PI;
-
-			float32_t c = (float32_t)cos(angle);
-			float32_t s = (float32_t)sin(angle);
-			xHatArray.push_back(Vec3f(c, s, 0));
-			nHatArray.push_back(Vec3f(-s, c, 0));
-		}
-		Vec3f zHat(0, 0, 1);
-
-		// Pre-calculate center shift angle perturbations
-		std::vector<float32_t> csAnglePerturbations;
-		csAnglePerturbations.reserve(settings.angles.size());
-		for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
-		{
-			csAnglePerturbations.push_back(internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope));
-		}
-
-		// Backproject
-		float32_t projectionWidth = (float32_t)transmissionProjections.width();
-		float32_t projectionHeight = (float32_t)transmissionProjections.height();
-		float32_t d = settings.sourceToRA;
-
-		LinearInterpolator<float32_t, float32_t> interpolator(BoundaryCondition::Zero);
-
-		//output.ensureSize(settings.roiSize);
-
-		// NOTE: -0.5 ensures that if roiSize.z == 1, roiCenter.z = 1 / 2 - roiCenter.z - 0.5 = roiCenter.z
-		// TODO: Should subtraction be done for all the components?
-		Vec3f center = Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter) - Vec3f(0, 0, 0.5);
-
-		size_t counter = 0;
-		#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.z > 1)
-		for(coord_t z = 0; z < settings.roiSize.z; z++)
-		{
-			#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.y > 1)
-			for(coord_t y = 0; y < settings.roiSize.y; y++)
-			{
-				#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.x > 1)
-				for(coord_t x = 0; x < settings.roiSize.x; x++)
-				{
-					float32_t currentCS = settings.centerShift + internals::csZPerturbation((float32_t)z, (float32_t)settings.roiCenter.z, (float32_t)settings.roiSize.z, projectionHeight, settings.csZSlope);
-
-					// Sum contributions from all projections
-					float32_t sum = 0;
-					for (coord_t anglei = 0; anglei < transmissionProjections.depth(); anglei++)
-					{
-						Vec3f rho = Vec3f((float32_t)x, (float32_t)y, (float32_t)z) - center;
+	//	float32_t normFact = normFactor(settings);
+	//	
 
 
-						Vec3f xHat = xHatArray[anglei];
-						Vec3f nHat = nHatArray[anglei];
-						float32_t dprhox = d + rho.dot(xHat);
-						float32_t Y = (d * rho.dot(nHat)) / dprhox;
-						float32_t Z = (d * rho.dot(zHat)) / dprhox;
+	//	// Pre-calculate direction vectors.
+	//	std::vector<Vec3f> xHatArray;
+	//	std::vector<Vec3f> nHatArray;
+	//	xHatArray.reserve(settings.angles.size());
+	//	nHatArray.reserve(settings.angles.size());
 
-						float32_t w = (d * d) / (dprhox * dprhox);
+	//	double rotMul = 1.0;
+	//	if (settings.rotationDirection == RotationDirection::Counterclockwise)
+	//		rotMul = -1.0;
 
-						// Get data from ideal detector position (Y, Z)
-						// First account for detector shifts and rotation
-						// TODO: Actually we have object shifts so this is only approximation that is correct for parallel beam case.
-						float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-						float32_t sdz = settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-						float32_t angleCS = currentCS + csAnglePerturbations[anglei];
-						float32_t ix = Y + projectionWidth / 2.0f + angleCS -sdx;
-						float32_t iy = Z + projectionHeight / 2.0f + settings.cameraZShift -sdz;
+	//	for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
+	//	{
+	//		double angle = rotMul * ((double)settings.angles[anglei] - 90 + (double)settings.rotation) / 180.0 * PI;
 
-						// TODO: Handle camera rotation here
+	//		float32_t c = (float32_t)cos(angle);
+	//		float32_t s = (float32_t)sin(angle);
+	//		xHatArray.push_back(Vec3f(c, s, 0));
+	//		nHatArray.push_back(Vec3f(-s, c, 0));
+	//	}
+	//	Vec3f zHat(0, 0, 1);
 
-						sum += w * interpolator(transmissionProjections, ix, iy, (float32_t)anglei);
-					}
+	//	// Pre-calculate center shift angle perturbations
+	//	std::vector<float32_t> csAnglePerturbations;
+	//	csAnglePerturbations.reserve(settings.angles.size());
+	//	for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
+	//	{
+	//		csAnglePerturbations.push_back(internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope));
+	//	}
 
-					sum *= normFact;
+	//	// Backproject
+	//	float32_t projectionWidth = (float32_t)transmissionProjections.width();
+	//	float32_t projectionHeight = (float32_t)transmissionProjections.height();
+	//	float32_t d = settings.sourceToRA;
 
-					// Scaling
-					sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
-					//output(x, y, zi) = pixelRound<out_t>(sum);
-					output(x, y, z) = pixelRound<out_t>(sum);
-				}
-			}
+	//	LinearInterpolator<float32_t, float32_t> interpolator(BoundaryCondition::Zero);
 
-			showThreadProgress(counter, settings.roiSize.z);
-		}
-	}
+	//	//output.ensureSize(settings.roiSize);
+
+	//	// NOTE: -0.5 ensures that if roiSize.z == 1, roiCenter.z = 1 / 2 - roiCenter.z - 0.5 = roiCenter.z
+	//	// TODO: Should subtraction be done for all the components?
+	//	Vec3f center = Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter) - Vec3f(0, 0, 0.5);
+
+	//	size_t counter = 0;
+	//	#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.z > 1)
+	//	for(coord_t z = 0; z < settings.roiSize.z; z++)
+	//	{
+	//		#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.y > 1)
+	//		for(coord_t y = 0; y < settings.roiSize.y; y++)
+	//		{
+	//			#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.x > 1)
+	//			for(coord_t x = 0; x < settings.roiSize.x; x++)
+	//			{
+	//				float32_t currentCS = settings.centerShift;
+
+	//				// Sum contributions from all projections
+	//				float32_t sum = 0;
+	//				for (coord_t anglei = 0; anglei < transmissionProjections.depth(); anglei++)
+	//				{
+	//					Vec3f rho = Vec3f((float32_t)x, (float32_t)y, (float32_t)z) - center;
+
+
+	//					Vec3f xHat = xHatArray[anglei];
+	//					Vec3f nHat = nHatArray[anglei];
+	//					float32_t dprhox = d + rho.dot(xHat);
+	//					float32_t Y = (d * rho.dot(nHat)) / dprhox;
+	//					float32_t Z = (d * rho.dot(zHat)) / dprhox;
+
+	//					float32_t w = (d * d) / (dprhox * dprhox);
+
+	//					// Get data from ideal detector position (Y, Z)
+	//					// First account for detector shifts and rotation
+	//					// TODO: Actually we have object shifts so this is only approximation that is correct for parallel beam case.
+	//					float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
+	//					float32_t sdz = settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
+	//					float32_t angleCS = currentCS + csAnglePerturbations[anglei];
+	//					float32_t ix = Y + projectionWidth / 2.0f + angleCS -sdx;
+	//					float32_t iy = Z + projectionHeight / 2.0f + settings.cameraZShift -sdz;
+
+	//					// TODO: Handle camera rotation here
+
+	//					sum += w * interpolator(transmissionProjections, ix, iy, (float32_t)anglei);
+	//				}
+
+	//				sum *= normFact;
+
+	//				// Scaling
+	//				sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
+	//				//output(x, y, zi) = pixelRound<out_t>(sum);
+	//				output(x, y, z) = pixelRound<out_t>(sum);
+	//			}
+	//		}
+
+	//		showThreadProgress(counter, settings.roiSize.z);
+	//	}
+	//}
 
 	namespace internals
 	{
@@ -713,7 +705,7 @@ namespace itl2
 		}
 	}
 
-	template<typename out_t> void backproject_new(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
+	template<typename out_t> void backproject(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<out_t>& output)
 	{
 		internals::sanityCheck(transmissionProjections, settings, true);
 		output.mustNotBe(transmissionProjections);
@@ -805,7 +797,7 @@ namespace itl2
 
 
 #if defined(USE_OPENCL)
-	void backprojectOpenCLProjectionOutputBlocks(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output, coord_t maxOutputBlockSizeZ = 8, coord_t maxProjectionBlockSizeZ = std::numeric_limits<coord_t>::max());
+	void backprojectOpenCL(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output, coord_t maxOutputBlockSizeZ = 8, coord_t maxProjectionBlockSizeZ = std::numeric_limits<coord_t>::max());
 #endif
 
 

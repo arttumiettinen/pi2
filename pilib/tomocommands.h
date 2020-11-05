@@ -67,7 +67,7 @@ namespace pilib
 			if (useGPU)
 			{
 #if defined(USE_OPENCL)
-				backprojectOpenCLProjectionOutputBlocks(in, sets, out);
+				backprojectOpenCL(in, sets, out);
 #else
 				backproject(in, sets, out);
 #endif

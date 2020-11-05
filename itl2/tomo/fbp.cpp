@@ -46,7 +46,6 @@ namespace itl2
 		stream << "center_shift = " << s.centerShift << endl;
 		stream << "camera_z_shift = " << s.cameraZShift << endl;
 		stream << "cs_angle_slope = " << s.csAngleSlope << endl;
-		stream << "cs_z_slope = " << s.csZSlope << endl;
 		stream << endl;
 		stream << "pad_type = " << s.padType << endl;
 		stream << "pad_size = " << s.padFraction << endl;
@@ -291,13 +290,6 @@ namespace itl2
 			return (angles[angleIndex] - centralAngle) * csAngleSlope;
 		}
 
-		float32_t csZPerturbation(float32_t z, float32_t roiCenterZ, float32_t roiSizeZ, float32_t projectionHeight, float32_t csZSlope)
-		{
-			float32_t roiStartZ = roiCenterZ - roiSizeZ / 2.0f;
-			float32_t fullImageZ = roiStartZ + z;
-			return (fullImageZ - projectionHeight / 2) * csZSlope;
-		}
-
 		/**
 		Checks that projection images and settings correspond to each other.
 		Adjusts zero elements in roi size vector to full image dimension.
@@ -336,7 +328,7 @@ namespace itl2
 	/**
 	Applies cone-beam related weighting of -log data (after beam hardening correction, before filtering) for single projection image slice.
 	*/
-	void fbpWeightingSlice(Image<float32_t>& slice, coord_t angleIndex, bool reconstructAs180DegScan, const vector<float32_t>& angles, float32_t baseCenterShift, float32_t csAngleSlope, float32_t sourceToRA, float32_t cameraZShift, float32_t csZSlope, float32_t centralAngle, float32_t gammaMax0, float32_t heuristicSinogramWindowingParameter)
+	void fbpWeightingSlice(Image<float32_t>& slice, coord_t angleIndex, bool reconstructAs180DegScan, const vector<float32_t>& angles, float32_t baseCenterShift, float32_t csAngleSlope, float32_t sourceToRA, float32_t cameraZShift, float32_t centralAngle, float32_t gammaMax0, float32_t heuristicSinogramWindowingParameter)
 	{
 		// Disable these as now we have object shifts, not camera shifts.
 			//float32_t dx = settings.objectShifts[anglei].x;
@@ -371,7 +363,7 @@ namespace itl2
 			float Z = (float)z - (height / 2.0f - dz) - cameraZShift;
 			for (coord_t y = 0; y < width; y++)
 			{
-				float Y = (float)y - ((float)width / 2.0f - dx) - centerShift - internals::csZPerturbation((float)z, height / 2.0f, (float)height, (float)height, csZSlope);
+				float Y = (float)y - ((float)width / 2.0f - dx) - centerShift;
 
 				// Weight inherent in FDK algorithm
 				float w = d / sqrt(d * d + Y * Y + Z * Z);
@@ -434,14 +426,14 @@ namespace itl2
 	/**
 	Applies cone-beam related weighting of -log data (after beam hardening correction, before filtering).
 	*/
-	void fbpWeighting(Image<float32_t>& transmissionProjections, bool reconstructAs180DegScan, const vector<float32_t>& angles, float32_t centerShift, float32_t csAngleSlope, float32_t sourceToRA, float32_t cameraZShift, float32_t csZSlope, float32_t centralAngle, float32_t gammaMax0, float32_t heuristicSinogramWindowingParameter)
+	void fbpWeighting(Image<float32_t>& transmissionProjections, bool reconstructAs180DegScan, const vector<float32_t>& angles, float32_t centerShift, float32_t csAngleSlope, float32_t sourceToRA, float32_t cameraZShift, float32_t centralAngle, float32_t gammaMax0, float32_t heuristicSinogramWindowingParameter)
 	{
 		// Apply weighting
 		#pragma omp parallel for
 		for (int anglei = 0; anglei < transmissionProjections.depth(); anglei++)
 		{
 			Image<float32_t> slice(transmissionProjections, anglei, anglei);
-			fbpWeightingSlice(slice, anglei, reconstructAs180DegScan, angles, centerShift, csAngleSlope, sourceToRA, cameraZShift, csZSlope, centralAngle, gammaMax0, heuristicSinogramWindowingParameter);
+			fbpWeightingSlice(slice, anglei, reconstructAs180DegScan, angles, centerShift, csAngleSlope, sourceToRA, cameraZShift, centralAngle, gammaMax0, heuristicSinogramWindowingParameter);
 		}
 	}
 
@@ -832,7 +824,6 @@ namespace itl2
 				settings.centerShift /= b;
 				//settings.cropSize /= b;
 				settings.csAngleSlope /= b;
-				settings.csZSlope /= b; // TODO: Is this correct?
 				settings.objectCameraDistance /= b;
 				for (size_t n = 0; n < settings.objectShifts.size(); n++)
 					settings.objectShifts[n] /= b;
@@ -960,39 +951,13 @@ namespace itl2
 				if(!NumberUtils<float32_t>::equals(settings.bhc, 0))
 					beamHardeningCorrection(slice, settings.bhc);
 
-				fbpWeightingSlice(slice, z, settings.reconstructAs180degScan, settings.angles, settings.centerShift, settings.csAngleSlope, settings.sourceToRA, settings.cameraZShift, settings.csZSlope, centralAngle, gammamax0, settings.heuristicSinogramWindowingParameter);
+				fbpWeightingSlice(slice, z, settings.reconstructAs180degScan, settings.angles, settings.centerShift, settings.csAngleSlope, settings.sourceToRA, settings.cameraZShift, centralAngle, gammamax0, settings.heuristicSinogramWindowingParameter);
 				
 				filterSlice(slice, filterSettings, settings.padType);
 				
 				showThreadProgress(counter, preprocessedProjections.depth());
 			}
 		}
-
-		//setValue(preprocessedProjections, transmissionProjections);
-
-		//// Perform dead pixel correction
-		//if (settings.removeDeadPixels)
-		//{
-		//	cout << "Dead pixel removal..." << endl;
-		//	deadPixelRemoval(preprocessedProjections);
-		//}
-
-		//// Calculate -log or phase retrieval
-		//if (settings.phaseMode == PhaseMode::Absorption)
-		//	cout << "Negative logarithm..." << endl;
-		//else
-		//	cout << "Phase retrieval..." << endl;
-		//phaseRetrieval(preprocessedProjections, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.objectCameraDistance, settings.delta, settings.mu);
-
-		//cout << "Beam hardening correction..." << endl;
-		//beamHardeningCorrection(preprocessedProjections, settings.bhc);
-
-		//
-		//cout << "Weighting..." << endl;
-		//fbpWeighting(preprocessedProjections, settings.reconstructAs180degScan, settings.angles, settings.centerShift, settings.csAngleSlope, settings.sourceToRA, settings.cameraZShift, settings.csZSlope, centralAngle, gammamax0, settings.heuristicSinogramWindowingParameter);
-
-		//cout << "Filter..." << endl;
-		//filter(preprocessedProjections, settings.padType, settings.padFraction, settings.filterType);
 	}
 
 
@@ -1383,7 +1348,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				clEnv.queue.finish();
 
 				// Enqueue in batches so that watchdog timer issues are avoided
-				size_t blockSize = 1; // TODO: Optimize block size somehow.
+				size_t blockSize = 1;
 				coord_t zStart = 0;
 				do
 				{
@@ -1400,8 +1365,20 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 						cl::NullRange);
 
 					clEnv.queue.finish();
+					timer.stop();
 
 					zStart = zEnd;
+
+					// Auto-tune block size
+					if (timer.getSeconds() < 0.9)
+						blockSize++;
+					else if (timer.getSeconds() > 1.1)
+						blockSize--;
+
+					if (blockSize < 1)
+						blockSize = 1;
+
+
 				} while (zStart < output.depth());
 
 			}
@@ -1644,10 +1621,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				};
 
 
-
-//TODO: Rename backproject_new to backproject, and backprojectOpenCLProjectionOutputBlocks to backprojectCL
-//TODO: Auto-increase batch size in internals::backprojectOpenCL if runtime is small.
-
 			Vec2f projMinCoords(numeric_limits<float32_t>::infinity(), numeric_limits<float32_t>::infinity());
 			Vec2f projMaxCoords = -projMinCoords;
 
@@ -1849,7 +1822,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	/**
 	OpenCL backprojection that divides both projection and output data to blocks.
 	*/
-	void backprojectOpenCLProjectionOutputBlocks(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output, coord_t maxOutputBlockSizeZ, coord_t maxProjectionBlockSizeZ)
+	void backprojectOpenCL(const Image<float32_t>& transmissionProjections, RecSettings settings, Image<float32_t>& output, coord_t maxOutputBlockSizeZ, coord_t maxProjectionBlockSizeZ)
 	{
 		internals::sanityCheck(transmissionProjections, settings, true);
 		output.mustNotBe(transmissionProjections);
@@ -2010,17 +1983,17 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 #if defined(USE_OPENCL)
 			Image<float32_t> outputCL;
-			itl2::backprojectOpenCLProjectionOutputBlocks(preProcProjections, settings, outputCL);
+			itl2::backprojectOpenCL(preProcProjections, settings, outputCL);
 			raw::writed(outputCL, "./projections/reconstructed_cl");
 #endif
 
 			Image<float32_t> outputNew;
-			itl2::backproject_new(preProcProjections, settings, outputNew);
+			itl2::backproject(preProcProjections, settings, outputNew);
 			raw::writed(outputNew, "./projections/reconstructed_new");
 
-			Image<float32_t> output;
-			itl2::backproject(preProcProjections, settings, output);
-			raw::writed(output, "./projections/reconstructed");
+			//Image<float32_t> output;
+			//itl2::backproject(preProcProjections, settings, output);
+			//raw::writed(output, "./projections/reconstructed");
 
 
 
@@ -2081,7 +2054,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 			timer.start();
 			Image<float32_t> output3;
-			itl2::backprojectOpenCLProjectionOutputBlocks(preProcProjections, settings, output3, 100, 50);
+			itl2::backprojectOpenCL(preProcProjections, settings, output3, 100, 50);
 			timer.stop();
 			cout << "Backprojection took " << timer.getSeconds() << " s." << endl;
 
@@ -2120,7 +2093,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 			timer.start();
 			Image<float32_t> output;
-			itl2::backprojectOpenCLProjectionOutputBlocks(preProcessedProjections, settings, output, 8);
+			itl2::backprojectOpenCL(preProcessedProjections, settings, output, 8);
 			timer.stop();
 			cout << "Backprojection took " << timer.getSeconds() << " s." << endl;
 
@@ -2155,7 +2128,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			timer.start();
 			Image<float32_t> output("C:\\mytemp\\cfrp\\CRPE_big_rec", false, 1976, 1976, 1976);
 			//Image<float32_t> output;
-			itl2::backprojectOpenCLProjectionOutputBlocks(preProcessedProjections, settings, output, 8);
+			itl2::backprojectOpenCL(preProcessedProjections, settings, output, 8);
 			timer.stop();
 			cout << "Backprojection took " << timer.getSeconds() << " s." << endl;
 
