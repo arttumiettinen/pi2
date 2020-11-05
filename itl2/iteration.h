@@ -47,7 +47,11 @@ namespace itl2
 		coord_t h = block.height();
 		coord_t d = block.depth();
 
-		if (d <= 1)
+		if (d <= 0)
+		{
+			return;
+		}
+		else if (d <= 1)
 		{
 			// 2D image
 			ProgressIndicator progress(block.maxc.y - block.minc.y, showProgressIndicator);

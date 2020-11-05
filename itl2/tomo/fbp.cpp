@@ -11,6 +11,7 @@
 #include "math/vec4.h"
 #include "io/raw.h"
 #include "generation.h"
+#include "tomo/siddonprojections.h"
 
 #if defined(USE_OPENCL)
 #define __CL_ENABLE_EXCEPTIONS
@@ -73,8 +74,8 @@ namespace itl2
 
 		stream << endl;
 		stream << "sample_shifts" << endl;
-		for (size_t n = 0; n < s.objectShifts.size(); n++)
-			stream << fixed << s.objectShifts[n] << endl;
+		for (size_t n = 0; n < s.sampleShifts.size(); n++)
+			stream << fixed << s.sampleShifts[n] << endl;
 
 		return stream;
 	}
@@ -299,7 +300,7 @@ namespace itl2
 			if (transmissionProjections.depth() != settings.angles.size())
 				throw ITLException("Count of projection images and count of angles do not match.");
 
-			if (settings.objectShifts.size() != settings.angles.size())
+			if (settings.sampleShifts.size() != settings.angles.size())
 				throw ITLException("Count of object shifts and count of angles do not match.");
 
 			if (NumberUtils<float32_t>::lessThanOrEqual(settings.sourceToRA, 0))
@@ -825,8 +826,8 @@ namespace itl2
 				//settings.cropSize /= b;
 				settings.csAngleSlope /= b;
 				settings.objectCameraDistance /= b;
-				for (size_t n = 0; n < settings.objectShifts.size(); n++)
-					settings.objectShifts[n] /= b;
+				for (size_t n = 0; n < settings.sampleShifts.size(); n++)
+					settings.sampleShifts[n] /= b;
 				settings.roiCenter /= (coord_t)settings.binning;
 				settings.roiSize /= (coord_t)settings.binning;
 				
@@ -1898,8 +1899,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			RecSettings settings;
         
 			settings.angles.push_back(7);
-			settings.objectShifts.push_back(Vec2f(1, 2));
-			settings.objectShifts.push_back(Vec2f(3, 4));
+			settings.sampleShifts.push_back(Vec3f(1, 2, 3));
+			settings.sampleShifts.push_back(Vec3f(4, 5, 6));
 			
 			stringstream s;
 			s << settings;
@@ -1929,8 +1930,86 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 		void fbp()
 		{
-			Image<float32_t> projections;
-			raw::read(projections, "projections/projected120");
+			Image<float32_t> original;
+			raw::read(original, "projections/plates");
+
+			// Generate weirdly shifted projections
+
+			//raw::read(projections, "projections/projected120");
+			coord_t projectionCount = 120;
+			coord_t projWidth = 100;
+			coord_t projHeight = 100;
+			coord_t projPixelSize = 1;
+			Vec2f angularRange(-180, 180);
+			float32_t sourceDistance = 300;
+			float32_t cameraDistance = 100;
+			float32_t cameraPixelSize = 1 + cameraDistance / sourceDistance;
+
+			Vec3f rotAxis(0, 0, 1);
+
+			Image<float32_t> projections(projWidth, projHeight, projectionCount);
+			vector<float32_t> angles;
+			vector<Vec3f> sampleShifts;
+			vector<Vec3f> raShifts;
+			vector<Vec3f> sourceShifts;
+			vector<Vec3f> cameraShifts;
+			for (coord_t anglei = 0; anglei < projectionCount; anglei++)
+			{
+				float32_t rotationAngle = projectionCount > 1 ? angularRange.x + (angularRange.y - angularRange.x) / (projectionCount - 1) * anglei : angularRange.x;
+
+				Vec3f srcPos(-sourceDistance, 0, 0);
+				Vec3f cameraPos(cameraDistance, 0, 0);
+				Vec3f u(0, 1, 0);
+				Vec3f v(0, 0, 1);
+
+				// rotation axis alignment stage position (stage below rotation axis, moves rotation axis and sample)
+				float32_t tmp1 = 3 * PIf * (float32_t)anglei / projectionCount;
+				float32_t A1 = 6;
+				Vec3f raPos(A1 * sin(tmp1), A1 * sin(tmp1), A1 * sin(tmp1));
+				srcPos -= raPos;
+				cameraPos -= raPos;
+
+				// fine-alignment stage position (stage on top of rotation axis, moves sample after rotation)
+				float32_t tmp = 2 * PIf * (float32_t)anglei / projectionCount;
+				float32_t A = 5;
+				Vec3f sampleShift(A*cos(tmp), A*sin(tmp), A * cos(tmp));
+
+				// Camera shift
+				float32_t tmp3 = 5 * PIf * (float32_t)anglei / projectionCount;
+				float32_t A3 = 9;
+				Vec3f cameraShift(A3 * -sin(tmp3), A3 * cos(tmp3), A3 * -sin(tmp3));
+				cameraPos += cameraShift;
+
+				// Source shift
+				float32_t tmp4 = 6 * PIf * (float32_t)anglei / projectionCount;
+				float32_t A4 = 12;
+				Vec3f srcShift(10 * A4 * -cos(tmp4), A4 * cos(tmp4), A4 * -cos(tmp4));
+				srcPos += srcShift;
+
+
+
+				float32_t angleRad = rotationAngle / 180.0f * PIf;
+				itl2::rotate<float32_t>(srcPos, angleRad, 0.0f);
+				itl2::rotate<float32_t>(cameraPos, angleRad, 0.0f);
+				itl2::rotate<float32_t>(u, angleRad, 0.0f);
+				itl2::rotate<float32_t>(v, angleRad, 0.0f);
+				
+				u *= cameraPixelSize;
+				v *= cameraPixelSize;
+
+				Image<float32_t> proj(projWidth, projHeight);
+				itl2::siddonProject(original, srcPos, cameraPos, sampleShift, u, v, proj);
+				copyValues(projections, proj, Vec3c(0, 0, anglei));
+
+				angles.push_back(rotationAngle);
+				sampleShifts.push_back(sampleShift);
+				raShifts.push_back(raPos);
+				cameraShifts.push_back(cameraShift);
+				sourceShifts.push_back(srcShift);
+			}
+
+			raw::writed(projections, "fbp/projections");
+
 
 			// Here projections = integrals of mu where mu=1 for objects
 			// Convert it to I/I0, with mu = 0.01 for objects
@@ -1938,35 +2017,32 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			negate(projections);
 			exponentiate(projections);
 
-			// Rotate projections
-			float32_t cameraRotation = 2.0f;
+			// Rotate projections -> camera rotation
+			float32_t cameraRotation = 0.0f;
 			Image<float32_t> temp(projections.dimensions());
 			itl2::rotate(projections, temp, cameraRotation / 180.0 * 3.14, Vec3d(0, 0, 1), LinearInterpolator<float32_t, float32_t>(BoundaryCondition::Nearest));
 			itl2::setValue(projections, temp);
 
-			// Translate in z and x
-			float32_t centerShift = 10;
-			float32_t zShift = 15;
+			// Translate in z and x -> camera z shift and center shift
+			float32_t centerShift = 0;
+			float32_t zShift = 0;
 			itl2::translate(projections, temp, Vec3d(centerShift, zShift, 0), LinearInterpolator<float32_t, float32_t>(BoundaryCondition::Nearest));
 			itl2::setValue(projections, temp);
 
-			raw::writed(projections, "projections/transmission");
+			raw::writed(projections, "fbp/transmission");
 
 
-			coord_t projectionCount = projections.depth();
-			Vec2f angularRange(-180, 180);
+
 			RecSettings settings;
-			
-			for (coord_t i = 0; i < projectionCount; i++)
-			{
-				float32_t rotationAngle = projectionCount > 1 ? angularRange.x + (angularRange.y - angularRange.x) / (projectionCount - 1) * i : angularRange.x;
-				settings.angles.push_back(rotationAngle);
-				settings.objectShifts.push_back(Vec2f(0, 0));
-			}
-
+			settings.angles = angles;
+			settings.sampleShifts = sampleShifts;
+			settings.rotationAxisShifts = raShifts;
+			settings.cameraShifts = cameraShifts;
+			settings.sourceShifts = sourceShifts;
 			settings.rotationDirection = RotationDirection::Clockwise;
 			settings.filterType = FilterType::Ramp;
-			settings.sourceToRA = 300;
+			settings.sourceToRA = sourceDistance;
+			settings.objectCameraDistance = cameraDistance;
 			settings.reconstructAs180degScan = false;
 
 			// Above we shift the images, so that means the camera will shift to the inverse direction.
@@ -1984,27 +2060,27 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 #if defined(USE_OPENCL)
 			Image<float32_t> outputCL;
 			itl2::backprojectOpenCL(preProcProjections, settings, outputCL);
-			raw::writed(outputCL, "./projections/reconstructed_cl");
+			raw::writed(outputCL, "./fbp/reconstructed_cl");
 #endif
 
 			Image<float32_t> outputNew;
 			itl2::backproject(preProcProjections, settings, outputNew);
-			raw::writed(outputNew, "./projections/reconstructed_new");
+			raw::writed(outputNew, "./fbp/reconstructed_new");
 
 			//Image<float32_t> output;
 			//itl2::backproject(preProcProjections, settings, output);
-			//raw::writed(output, "./projections/reconstructed");
+			//raw::writed(output, "./fbp/reconstructed");
 
 
 
 
 			//Image<float32_t> output2;
 			//reslice(output, output2, ResliceDirection::Top);
-			//raw::writed(output2, "./projections/reconstructed_resliced");
+			//raw::writed(output2, "./fbp/reconstructed_resliced");
 
 			//Image<float32_t> output2New;
 			//reslice(outputNew, output2New, ResliceDirection::Top);
-			//raw::writed(output2New, "./projections/reconstructed_new_resliced");
+			//raw::writed(output2New, "./fbp/reconstructed_new_resliced");
 		}
 
 		void openCLBackProjection()

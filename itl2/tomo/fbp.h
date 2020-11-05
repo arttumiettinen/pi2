@@ -381,9 +381,39 @@ namespace itl2
 		std::vector<float32_t> angles = std::vector<float32_t>();
 
 		/**
-		Shift of object from its initial location for each projection image.
+		Shift of sample applied after rotation.
+		This shift is typically caused by stages installed on top of rotation axis.
+		When rotation angle is 0 deg,
+		X corresponds to the optical axis direction (from the source to the camera)
+		Y corresponds to camera right.
+		Z corresponds to camera up.
 		*/
-		std::vector<Vec2f> objectShifts = std::vector<Vec2f>();
+		std::vector<Vec3f> sampleShifts = std::vector<Vec3f>();
+
+		/**
+		Shifts of the rotation axis.
+		This shift is typically caused by stages installed below the rotation axis.
+		X corresponds to the direction from the source to the camera
+		Y corresponds to the camera right.
+		Z corresponds to the camera up.
+		*/
+		std::vector<Vec3f> rotationAxisShifts = std::vector<Vec3f>();
+
+		/**
+		Shifts applied to the camera.
+		X corresponds to the direction from the source to the camera.
+		Y corresponds to the camera right.
+		Z corresponds to the camera up.
+		*/
+		std::vector<Vec3f> cameraShifts = std::vector<Vec3f>();
+
+		/**
+		Shifts applied to the source.
+		X corresponds to the direction from the source to the camera.
+		Y corresponds to the camera right.
+		Z corresponds to the camera up.
+		*/
+		std::vector<Vec3f> sourceShifts = std::vector<Vec3f>();
 
 		/**
 		Scaling factor that will be applied to the object shift values during reconstruction.
@@ -451,13 +481,14 @@ namespace itl2
         std::vector<float32_t> emptyV1;
 		s.angles = id.getList<float32_t>("angles", emptyV1);
         std::vector<Vec2f> emptyV2;
-		s.objectShifts = id.getList<Vec2f>("sample_shifts", emptyV2);
+		std::vector<Vec3f> emptyV3;
+		s.sampleShifts = id.getList<Vec3f>("sample_shifts", emptyV3);
 
 		// If there are no shifts supplied, set all shifts to zero.
-		if (s.objectShifts.size() <= 0)
+		if (s.sampleShifts.size() <= 0)
 		{
-			while (s.objectShifts.size() < s.angles.size())
-				s.objectShifts.push_back(Vec2f(0, 0));
+			while (s.sampleShifts.size() < s.angles.size())
+				s.sampleShifts.push_back(Vec3f(0, 0, 0));
 		}
 
 		return s;
@@ -658,43 +689,65 @@ namespace itl2
 			float32_t gammamax0 = internals::calculateGammaMax0((float32_t)projectionWidth, settings.sourceToRA);
 			float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
 
-			double rotMul = 1.0;
+			float32_t rotMul = 1;
 			if (settings.rotationDirection == RotationDirection::Counterclockwise)
-				rotMul = -1.0;
+				rotMul = -1;
 
 			float32_t M = 1 + settings.objectCameraDistance / settings.sourceToRA;
 			for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
 			{
-				double angle = rotMul * ((double)settings.angles[anglei] - 90 + (double)settings.rotation) / 180.0 * PI;
+				//double angleRad = rotMul * ((double)settings.angles[anglei] - 90 + (double)settings.rotation) / 180.0 * PI;
 
-				float32_t c = (float32_t)cos(angle);
-				float32_t s = (float32_t)sin(angle);
+				//float32_t c = (float32_t)cos(angle);
+				//float32_t s = (float32_t)sin(angle);
 
-				Vec3f u(-s, c, 0); // At 0 deg the camera right vector is +y
-				Vec3f v(0, 0, 1);
+				//Vec3f u(-s, c, 0); // At 0 deg the camera right vector is +y
+				//Vec3f v(0, 0, 1);
+				//Vec3f w = u.cross(v);
+				//Vec3f ps = Vec3f(0, 0, 0) - settings.sourceToRA * w; // TODO: Add source shift
+				//Vec3f pd = Vec3f(0, 0, 0) + settings.objectCameraDistance * w;
+
+
+				Vec3f u(0, 1, 0);	// Camera right at 0 deg is +y
+				Vec3f v(0, 0, 1);	// Camera up at 0 deg is +z
+				Vec3f ps(-settings.sourceToRA, 0, 0);
+				Vec3f pd(settings.objectCameraDistance, 0, 0);
+
+				ps -= settings.rotationAxisShifts[anglei];
+				pd -= settings.rotationAxisShifts[anglei];
+
+				ps += settings.sourceShifts[anglei];
+				pd += settings.cameraShifts[anglei];
+				
+
+				float32_t angleRad = (rotMul * settings.angles[anglei] + settings.rotation) / 180.0f * PIf;
+				itl2::rotate<float32_t>(ps, angleRad, 0.0f);
+				itl2::rotate<float32_t>(pd, angleRad, 0.0f);
+				itl2::rotate<float32_t>(u, angleRad, 0.0f);
+				itl2::rotate<float32_t>(v, angleRad, 0.0f);
 				Vec3f w = u.cross(v);
-				Vec3f ps = Vec3f(0, 0, 0) - settings.sourceToRA * w; // TODO: Add source shift
-				Vec3f pd = Vec3f(0, 0, 0) + settings.objectCameraDistance * w;
 
-				// Add object shifts by shifting both source and camera to the inverse direction
-				// TODO: Is the unit camera pixel or image pixel?
-				float32_t sdx = M * settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-				float32_t sdz = M * settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-				Vec3f objShift = sdx * u + sdz * v;
-				ps -= objShift;
-				pd -= objShift;
+				//float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
+				//float32_t sdz = settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
+				//Vec3f objShift = sdx * u + sdz * v;
+				//ps -= objShift;
+				//pd -= objShift;
+
+				// Add sample fine alignment shifts by shifting both source and camera to the inverse direction
+				ps -= settings.sampleShifts[anglei];
+				pd -= settings.sampleShifts[anglei];
 
 
-				// Add camera shift
+				// Add camera calibration shifts
 				// Camera shift in Z-direction and center shift (in optical plane) are given in image pixels, so they must
 				// be multiplied by magnification to get the correct effect on camera position.
 				float32_t csAnglePert = internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope);
 				pd += Vec3f(0, 0, -settings.cameraZShift * M) + u * (-settings.centerShift + -csAnglePert) * M;
 
 				// Add camera rotation around its normal
-				float32_t angleRad = settings.cameraRotation / 180.0f * PIf;
-				u = u.rotate(w, angleRad);
-				v = v.rotate(w, angleRad);
+				float32_t cameraRotRad = settings.cameraRotation / 180.0f * PIf;
+				u = u.rotate(w, cameraRotRad);
+				v = v.rotate(w, cameraRotRad);
 
 
 				pss.push_back(VEC(ps));

@@ -12,6 +12,53 @@
 namespace itl2
 {
 	/**
+	Creates one cone-beam projection of img.
+	@param img Image to project.
+	@param ps Source position.
+	@param ds Detector position.
+	@param ss Position of the center of the original image.
+	@param u Detector right vector, ||u|| = horizontal pixel size
+	@param v Detector up vector, ||v|| = vertical pixel size
+	@param projection The calculated projection will be placed here. Please set the size of the projection to the desired value before calling this function.
+	*/
+	template<typename pixel_t, typename out_t> void siddonProject(const Image<pixel_t>& img,
+		const Vec3f& ps,	// Source position
+		const Vec3f& ds,	// Detector center position
+		const Vec3f& ss,	// Position of the center of the original image
+		const Vec3f& u,		// Detector right vector, ||u|| = horizontal pixel size
+		const Vec3f& v,		// Detector up vector, ||v|| = vertical pixel size
+		Image<out_t>& projection)
+	{
+		coord_t projectionWidth = projection.width();
+		coord_t projectionHeight = projection.height();
+
+		LineProjector<pixel_t, float32_t> projector(img);
+
+		for (coord_t y = 0; y < projectionHeight; y++)
+		{
+			for (coord_t x = 0; x < projectionWidth; x++)
+			{
+				// Determine start and end point for the ray.
+				Vec3f start = ps;
+				Vec3f end = ds + ((float32_t)x - projectionWidth / 2.0f) * u + ((float32_t)y - projectionHeight / 2.0f) * v;
+				
+				// siddonLineClip assumes the origin of the image is at the origin of the coordinate system.
+				// In projection we want the center of the image be in the origin -> shift ray start and end accordingly.
+				Vec3f shift = Vec3f(img.dimensions() + Vec3c(1, 1, 1)) / 2.0f - ss;
+				start += shift;
+				end += shift;
+
+				projector.reset();
+				siddonLineClip<float32_t>(start, end, projector, Vec3f(img.dimensions()));
+
+				projection(x, y) = projector.getValue();
+			}
+		}
+	}
+
+
+
+	/**
 	Rotates vector v given source rotation and tilt angles.
 	*/
 	template<typename real_t> void rotate(Vec3<real_t>& v, real_t rotationAngle, real_t tiltAngle)
@@ -25,13 +72,18 @@ namespace itl2
 		v = v.rotate(rotatedTiltAxis, tiltAngle);
 	}
 
+
+
+
+
+
 	/**
 	Calculates projections or backprojections as determined by operation argument.
 	Calls operation(projectionx, projectiony, projectionindex, startpoint, endpoint) for all lines
 	from source to center of every pixel on every projection.
 	*/
 	template<typename pixel_t, typename real_t, typename op>
-	void project(const Vec3<coord_t>& imgDimensions,
+	void createProjections(const Vec3<coord_t>& imgDimensions,
 		const Vec3<coord_t>& projectionDimensions,
 		const real_t sourceDistance,
 		const Vec2<real_t>& angularRange,
@@ -136,7 +188,7 @@ namespace itl2
 		const Vec2<real_t>& tiltRange)
 	{
 		ForwardProjectionSiddon<pixel_t, real_t> forwardProjection(img, projections);
-		project<pixel_t, real_t, ForwardProjectionSiddon<pixel_t, real_t> >(
+		createProjections<pixel_t, real_t, ForwardProjectionSiddon<pixel_t, real_t> >(
 			img.dimensions(),
 			projections.dimensions(),
 			sourceDistance,
@@ -157,7 +209,7 @@ namespace itl2
 		const Vec2<real_t>& tiltRange)
 	{
 		BackProjectionSiddon<real_t, real_t> backProjection(img, projections);
-		project<real_t, real_t, BackProjectionSiddon<real_t, real_t> >(
+		createProjections<real_t, real_t, BackProjectionSiddon<real_t, real_t> >(
 			img.dimensions(),
 			projections.dimensions(),
 			sourceDistance,
