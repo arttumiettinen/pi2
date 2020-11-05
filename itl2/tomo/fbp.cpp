@@ -31,6 +31,7 @@ namespace itl2
 
 	ostream& operator<<(ostream& stream, const RecSettings& s)
 	{
+		// TODO: Do this through ImageMetaData object
 		stream << "source_to_ra = " << s.sourceToRA << endl;
 		stream << "rotation_direction = " << s.rotationDirection << endl;
 		stream << "bhc = " << s.bhc << endl;
@@ -71,11 +72,27 @@ namespace itl2
 		stream.precision(17);
 		for (size_t n = 0; n < s.angles.size(); n++)
 			stream << fixed << s.angles[n] << endl;
-
 		stream << endl;
+
 		stream << "sample_shifts" << endl;
 		for (size_t n = 0; n < s.sampleShifts.size(); n++)
 			stream << fixed << s.sampleShifts[n] << endl;
+		stream << endl;
+
+		stream << "source_shifts" << endl;
+		for (size_t n = 0; n < s.sourceShifts.size(); n++)
+			stream << fixed << s.sourceShifts[n] << endl;
+		stream << endl;
+
+		stream << "camera_shifts" << endl;
+		for (size_t n = 0; n < s.cameraShifts.size(); n++)
+			stream << fixed << s.cameraShifts[n] << endl;
+		stream << endl;
+
+		stream << "rotation_axis_shifts" << endl;
+		for (size_t n = 0; n < s.rotationAxisShifts.size(); n++)
+			stream << fixed << s.rotationAxisShifts[n] << endl;
+		stream << endl;
 
 		return stream;
 	}
@@ -300,8 +317,19 @@ namespace itl2
 			if (transmissionProjections.depth() != settings.angles.size())
 				throw ITLException("Count of projection images and count of angles do not match.");
 
-			if (settings.sampleShifts.size() != settings.angles.size())
-				throw ITLException("Count of object shifts and count of angles do not match.");
+			size_t projCount = settings.angles.size();
+
+			if (settings.sampleShifts.size() > 0 && settings.sampleShifts.size() != projCount)
+				throw ITLException("Count of sample shifts and count of angles do not match.");
+
+			if (settings.rotationAxisShifts.size() > 0 && settings.rotationAxisShifts.size() != projCount)
+				throw ITLException("Count of rotation axis shifts and count of angles do not match.");
+
+			if (settings.cameraShifts.size() > 0 && settings.cameraShifts.size() != projCount)
+				throw ITLException("Count of camera shifts and count of angles do not match.");
+
+			if (settings.sourceShifts.size() > 0 && settings.sourceShifts.size() != projCount)
+				throw ITLException("Count of source shifts and count of angles do not match.");
 
 			if (NumberUtils<float32_t>::lessThanOrEqual(settings.sourceToRA, 0))
 				throw ITLException("Non-positive source to rotation axis distance.");

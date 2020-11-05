@@ -483,6 +483,9 @@ namespace itl2
         std::vector<Vec2f> emptyV2;
 		std::vector<Vec3f> emptyV3;
 		s.sampleShifts = id.getList<Vec3f>("sample_shifts", emptyV3);
+		s.sourceShifts = id.getList<Vec3f>("source_shifts", emptyV3);
+		s.cameraShifts = id.getList<Vec3f>("camera_shifts", emptyV3);
+		s.rotationAxisShifts= id.getList<Vec3f>("rotation_axis_shifts", emptyV3);
 
 		// If there are no shifts supplied, set all shifts to zero.
 		if (s.sampleShifts.size() <= 0)
@@ -660,13 +663,19 @@ namespace itl2
 
 	namespace internals
 	{
+		inline void fillTo(std::vector<Vec3f>& v, size_t count)
+		{
+			while (v.size() < count)
+				v.push_back(Vec3f());
+		}
+
 		/**
 		Calculates backprojection geometry (source position, detector position, detector right, detector up, detector normal)
 		from reconstruction settings.
 		The output vector type is templated as OpenCL processing needs the output in Vec4f, but CPU processing is
 		fine with Vec3f.
 		*/
-		template<typename VEC> void determineBackprojectionGeometry(const RecSettings& settings, coord_t projectionWidth,
+		template<typename VEC> void determineBackprojectionGeometry(RecSettings settings, coord_t projectionWidth,
 			std::vector<VEC>& pss,		// Source positions
 			std::vector<VEC>& pds,		// Detector center point positions
 			std::vector<VEC>& us,			// Detector right vectors
@@ -680,11 +689,19 @@ namespace itl2
 			vs.clear();
 			ws.clear();
 
-			pss.reserve(settings.angles.size());
-			pds.reserve(settings.angles.size());
-			us.reserve(settings.angles.size());
-			vs.reserve(settings.angles.size());
-			ws.reserve(settings.angles.size());
+			size_t projCount = settings.angles.size();
+			pss.reserve(projCount);
+			pds.reserve(projCount);
+			us.reserve(projCount);
+			vs.reserve(projCount);
+			ws.reserve(projCount);
+
+			// Ensure that we have all shifts available.
+			fillTo(settings.cameraShifts, projCount);
+			fillTo(settings.sourceShifts, projCount);
+			fillTo(settings.rotationAxisShifts, projCount);
+			fillTo(settings.sampleShifts, projCount);
+
 
 			float32_t gammamax0 = internals::calculateGammaMax0((float32_t)projectionWidth, settings.sourceToRA);
 			float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
@@ -692,6 +709,9 @@ namespace itl2
 			float32_t rotMul = 1;
 			if (settings.rotationDirection == RotationDirection::Counterclockwise)
 				rotMul = -1;
+
+			if (!settings.useShifts)
+				settings.shiftScaling = 0;
 
 			float32_t M = 1 + settings.objectCameraDistance / settings.sourceToRA;
 			for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
@@ -713,11 +733,11 @@ namespace itl2
 				Vec3f ps(-settings.sourceToRA, 0, 0);
 				Vec3f pd(settings.objectCameraDistance, 0, 0);
 
-				ps -= settings.rotationAxisShifts[anglei];
-				pd -= settings.rotationAxisShifts[anglei];
+				ps -= settings.rotationAxisShifts[anglei] * settings.shiftScaling;
+				pd -= settings.rotationAxisShifts[anglei] * settings.shiftScaling;
 
-				ps += settings.sourceShifts[anglei];
-				pd += settings.cameraShifts[anglei];
+				ps += settings.sourceShifts[anglei] * settings.shiftScaling;
+				pd += settings.cameraShifts[anglei] * settings.shiftScaling;
 				
 
 				float32_t angleRad = (rotMul * settings.angles[anglei] + settings.rotation) / 180.0f * PIf;
@@ -734,8 +754,8 @@ namespace itl2
 				//pd -= objShift;
 
 				// Add sample fine alignment shifts by shifting both source and camera to the inverse direction
-				ps -= settings.sampleShifts[anglei];
-				pd -= settings.sampleShifts[anglei];
+				ps -= settings.sampleShifts[anglei] * settings.shiftScaling;
+				pd -= settings.sampleShifts[anglei] * settings.shiftScaling;
 
 
 				// Add camera calibration shifts
