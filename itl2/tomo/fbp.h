@@ -17,6 +17,7 @@
 #include "interpolation.h"
 #include "math/vectoroperations.h"
 #include "imagemetadata.h"
+#include "tomo/siddonprojections.h"
 
 namespace itl2
 {
