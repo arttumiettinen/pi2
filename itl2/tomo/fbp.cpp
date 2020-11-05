@@ -2045,14 +2045,14 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			exponentiate(projections);
 
 			// Rotate projections -> camera rotation
-			float32_t cameraRotation = 0.0f;
+			float32_t cameraRotation = 1.0f;
 			Image<float32_t> temp(projections.dimensions());
 			itl2::rotate(projections, temp, cameraRotation / 180.0 * 3.14, Vec3d(0, 0, 1), LinearInterpolator<float32_t, float32_t>(BoundaryCondition::Nearest));
 			itl2::setValue(projections, temp);
 
 			// Translate in z and x -> camera z shift and center shift
-			float32_t centerShift = 0;
-			float32_t zShift = 0;
+			float32_t centerShift = 5;
+			float32_t zShift = 8;
 			itl2::translate(projections, temp, Vec3d(centerShift, zShift, 0), LinearInterpolator<float32_t, float32_t>(BoundaryCondition::Nearest));
 			itl2::setValue(projections, temp);
 
