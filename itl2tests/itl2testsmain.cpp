@@ -230,6 +230,7 @@ int main()
 
 	//test(itl2::tests::imagemetadata, "image metadata");
 
+	test(itl2::tests::pointsToDeformed, "points to deformed");
 	
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet

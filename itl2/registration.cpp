@@ -11,6 +11,7 @@
 #include "pointprocess.h"
 #include "filters.h"
 #include "inpaint.h"
+#include "generation.h"
 
 using namespace std;
 
@@ -541,6 +542,68 @@ namespace itl2
 			cout << "meas = " << shift << endl;
 
 			testAssert((shift - shiftGT).norm() < 1, "MIP shift");
+		}
+
+		void pointsToDeformed()
+		{
+			Image<uint8_t> img1(100, 100, 1);
+			setValue(img1, 1);
+			draw(img1, Sphere<double>(Vec3d(45.0, 50.0, 0.0), 10.0), (uint8_t)255);
+			raw::writed(img1, "./pointstodeformed/img1");
+
+			Image<uint8_t> img2(100, 100, 1);
+			setValue(img2, 1);
+			draw(img2, Sphere<double>(Vec3d(50.0, 50.0, 0.0), 10.0), (uint8_t)255);
+			raw::writed(img2, "./pointstodeformed/img2");
+
+
+			Vec3c step(50, 50, 50);
+			Vec3c compRadius(50, 50, 1);
+
+			Vec3c dims = img1.dimensions();
+
+			PointGrid3D<coord_t> refPoints(PointGrid1D<coord_t>(0, dims.x, step.x), PointGrid1D<coord_t>(0, dims.y, step.y), PointGrid1D<coord_t>(0, dims.z, step.z));
+			Vec3c pointCount = refPoints.pointCounts();
+			Image<Vec3d> defPoints(pointCount.x, pointCount.y, pointCount.z);
+			Image<float32_t> fitGoodness;
+
+			// Construct initial guess of the deformed points
+			for (coord_t zi = 0; zi < pointCount.z; zi++)
+			{
+				for (coord_t yi = 0; yi < pointCount.y; yi++)
+				{
+					for (coord_t xi = 0; xi < pointCount.x; xi++)
+					{
+						defPoints(xi, yi, zi) = Vec3d(refPoints(xi, yi, zi));
+					}
+				}
+			}
+
+			blockMatch(img1, img2, refPoints, defPoints, fitGoodness, compRadius);
+
+
+			for (coord_t z = 0; z < defPoints.depth(); z++)
+			{
+				for (coord_t y = 0; y < defPoints.height(); y++)
+				{
+					for (coord_t x = 0; x < defPoints.width(); x++)
+					{
+						Vec3d refPoint = Vec3d(refPoints(x, y, z));
+						Vec3d defPoint = defPoints(x, y, z);
+
+						cout << refPoint << " --> " << defPoint << endl;
+					}
+				}
+			}
+
+			std::vector<Vec3d> points;
+			Vec3d p1(45, 50, 0);
+			points.push_back(p1);
+
+			itl2::pointsToDeformed(points, refPoints, defPoints);
+
+			cout << "Reference point = " << p1 << endl;
+			cout << "Deformed point = " << points[0] << endl;
 		}
 	}
 }
