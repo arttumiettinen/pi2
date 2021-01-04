@@ -18,6 +18,7 @@ namespace itl2
 	{
 		/*
 		Block matcher.
+		NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 		@param reference Reference image.
 		@param deformed Deformed image.
 		@param blockRadius Radius of matching block. The value is also maximum change in defPoint that can be found.
@@ -68,6 +69,7 @@ namespace itl2
 
 		/*
 		Block matcher that first block matches with low resolution and then improves the result by block matching with full resolution.
+		NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 		@param reference Reference image.
 		@param deformed Deformed image.
 		@param coarseBlockRadius Radius of matching block in the coarse matching phase. The value is also maximum change in defPoint that can be found in this phase.
@@ -88,6 +90,7 @@ namespace itl2
 
 	/*
 	Phase correlation-based block matching.
+	NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 	@param reference Reference image. Zeros are considered empty values.
 	@param deformed Deformed image. Zeros are considered empty values.
 	@param refPoints Points in reference image whose locations in deformed image should be determined.
@@ -244,6 +247,7 @@ namespace itl2
 
 	/*
 	Block matching for point grid and image output.
+	NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 	*/
 	template<typename ref_t, typename def_t> void blockMatch(const Image<ref_t>& reference, const Image<def_t>& deformed, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy, const Vec3c& blockRadius)
 	{
@@ -276,6 +280,7 @@ namespace itl2
 
 	/*
 	Block matching for point grid and image output.
+	NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 	*/
 	template<typename ref_t, typename def_t> void blockMatchMulti(const Image<ref_t>& reference, const Image<def_t>& deformed, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
 		const Vec3c& coarseBlockRadius, size_t coarseBinning,
@@ -309,6 +314,7 @@ namespace itl2
 
 	/*
 	Block matching for point grid and image output, loads images only partially.
+	NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 	*/
 	template<typename ref_t, typename def_t> void blockMatchPartialLoad(const string& referenceFile, const string& deformedFile, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
 		const Vec3c& coarseBlockRadius, size_t coarseBinning,
@@ -424,6 +430,42 @@ namespace itl2
 
 			return interpolator(defPoints, fx, fy, fz);
 		}
+
+		/*
+		Converts refGrid+defPoints to refGrid+shifts.
+		*/
+		inline void pointsToShifts(Image<Vec3d>& shifts, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints)
+		{
+			shifts.ensureSize(defPoints.dimensions());
+			for (coord_t z = 0; z < defPoints.depth(); z += 1)
+			{
+				for (coord_t y = 0; y < defPoints.height(); y += 1)
+				{
+					for (coord_t x = 0; x < defPoints.width(); x += 1)
+					{
+						shifts(x, y, z) = defPoints(x, y, z) - Vec3d(refGrid(x, y, z));
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	Projects points in a list from reference coordinates to deformed coordinates.
+	*/
+	inline void pointsToDeformed(std::vector<Vec3d>& points, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints)
+	{
+		Image<Vec3d> shifts(defPoints.dimensions());
+		internals::pointsToShifts(shifts, refGrid, defPoints);
+		LinearInterpolator<Vec3d, Vec3d, double, Vec3d> shiftInterpolator(BoundaryCondition::Nearest);
+
+		for (size_t n = 0; n < points.size(); n++)
+		{
+			Vec3d xRef = points[n];
+			Vec3d shift = internals::projectPointToDeformed(xRef, refGrid, shifts, shiftInterpolator);
+			Vec3d xDef = xRef + shift;
+			points[n] = xDef;
+		}
 	}
 
 
@@ -454,16 +496,7 @@ namespace itl2
 		// TODO: determine region of pullback that must be processed
 
 		Image<Vec3d> shifts(defPoints.dimensions());
-		for (coord_t z = 0; z < defPoints.depth(); z += 1)
-		{
-			for (coord_t y = 0; y < defPoints.height(); y += 1)
-			{
-				for (coord_t x = 0; x < defPoints.width(); x += 1)
-				{
-					shifts(x, y, z) = defPoints(x, y, z) - Vec3d(refGrid(x, y, z));
-				}
-			}
-		}
+		internals::pointsToShifts(shifts, refGrid, defPoints);
 
 		LinearInterpolator<Vec3d, Vec3d, double, Vec3d> shiftInterpolator(BoundaryCondition::Nearest);
 
@@ -509,5 +542,6 @@ namespace itl2
 		void blockMatch2Match();
 		void blockMatch2Pullback();
 		void mipMatch();
+		void pointsToDeformed();
 	}
 }

@@ -8,6 +8,7 @@ namespace pilib
 	{
 		ADD_REAL(BlockMatchCommand);
 		ADD_REAL(BlockMatchMultiCommand);
+		CommandList::add<PointsToDeformedCommand>();
 		CommandList::add<BlockMatchPartialLoadCommand>(); // Only one as this command determines data type itself
 		CommandList::add<FilterDisplacementsCommand>(); // Only one no data type dependence
 		ADD_REAL(PullbackCommand);

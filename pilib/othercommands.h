@@ -23,6 +23,11 @@ using namespace itl2;
 namespace pilib
 {
 
+	inline std::string blockMatchSeeAlso()
+	{
+		return "blockmatch, blockmatchmemsave, pullback, pointstodeformed";
+	}
+
 
 	template<typename pixel_t> class BlockMatchCommand : public Command
 	{
@@ -45,7 +50,8 @@ namespace pilib
 				CommandArgument<Vec3d>(ParameterDirection::In, "initial shift", "Initial shift between the images."),
 				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
 				CommandArgument<Vec3c>(ParameterDirection::In, "comparison radius", "Radius of comparison region.", Vec3c(25, 25, 25))
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -109,7 +115,8 @@ namespace pilib
 				CommandArgument<size_t>(ParameterDirection::In, "coarse binning", "Amount of resolution reduction in coarse matching phase.", 2),
 				CommandArgument<Vec3c>(ParameterDirection::In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
 				CommandArgument<size_t>(ParameterDirection::In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 1),
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -189,7 +196,8 @@ namespace pilib
 				CommandArgument<Vec3c>(ParameterDirection::In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
 				CommandArgument<coord_t>(ParameterDirection::In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 2),
 				CommandArgument<bool>(ParameterDirection::In, "normalize", "Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.", true)
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -300,7 +308,8 @@ namespace pilib
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image that will be pulled back."),
 				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "pullback image", "Will store the result of the pullback operation."),
 				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "File name prefix (and path) passed to blockmatch command."),
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -323,6 +332,58 @@ namespace pilib
 		}
 	};
 
+
+
+
+	class PointsToDeformedCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		PointsToDeformedCommand() : Command("pointstodeformed", "Projects points from reference configuration to deformed configuration, using a transformation determined with the ´blockmatch´ command.",
+			{
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "points", "Image that contains the points that will be transformed. The size of the image must be 3xN where N is the number of points to transform."),
+				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "File name prefix (and path) passed to blockmatch command."),
+			},
+			blockMatchSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<float32_t>& points = *pop<Image<float32_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			PointGrid3D<coord_t> refPoints;
+			Image<Vec3d> defPoints;
+			Image<float32_t> fitGoodness;
+			double normFact, normFactStd, meanDef;
+			readBlockMatchResult(fname, refPoints, defPoints, fitGoodness, normFact, normFactStd, meanDef);
+
+			vector<Vec3d> pointsv;
+			pointsv.reserve(points.height());
+			for (coord_t n = 0; n < points.height(); n++)
+			{
+				Vec3d v(points(0, n), points(1, n), points(2, n));
+				pointsv.push_back(v);
+			}
+
+			pointsToDeformed(pointsv, refPoints, defPoints);
+
+			for (size_t n = 0; n < pointsv.size(); n++)
+			{
+				const auto& v = pointsv[n];
+				points(0, n) = (float32_t)v.x;
+				points(1, n) = (float32_t)v.y;
+				points(2, n) = (float32_t)v.z;
+			}
+		}
+	};
+
+
+
+
 	/**
 	This version of pullback command takes arguments as images.
 	*/
@@ -341,7 +402,8 @@ namespace pilib
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "x", "X-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "y", "Y-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "z", "Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.")
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -390,7 +452,8 @@ namespace pilib
 			{
 				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "Value passed as file name prefix argument to blockmatch."),
 				CommandArgument<double>(ParameterDirection::In, "threshold", "Threshold value for filtering. Displacements whose some component differs more than this value from median filtered displacements are considered to be bad.", 3.0)
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -494,7 +557,8 @@ namespace pilib
 				CommandArgument<Vec3c>(ParameterDirection::In, "image size", "Size of the source image."),
 				CommandArgument<std::string>(ParameterDirection::In, "world to local prefix", "Prefix for output files."),
 				CommandArgument<bool>(ParameterDirection::In, "allow local shifts", "Set to true to allow non-rigid local deformations. Set to false to see the result without local deformations.")
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -533,7 +597,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
 				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 
@@ -582,7 +647,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
 				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
-			})
+			},
+			blockMatchSeeAlso())
 		{
 		}
 

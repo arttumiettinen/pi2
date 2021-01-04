@@ -83,7 +83,7 @@ int main()
 	//test(itl2::png::tests::png, "Png read and write");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
-	test(itl2::pcr::tests::read, "PCR read");
+	//test(itl2::pcr::tests::read, "PCR read");
 
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
@@ -236,6 +236,7 @@ int main()
 
 	//test(itl2::tests::imagemetadata, "image metadata");
 
+	test(itl2::tests::pointsToDeformed, "points to deformed");
 	
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
