@@ -149,3 +149,7 @@ normalize [input]
 
 Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.
 
+See also
+--------
+
+:ref:`blockmatch`, :ref:`blockmatchmemsave`, :ref:`pullback`, :ref:`pointstodeformed`

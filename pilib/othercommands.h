@@ -340,7 +340,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		PointsToDeformedCommand() : Command("pointstodeformed", "Projects points from reference configuration to deformed configuration, using a transformation determined with the ´blockmatch´ command.",
+		PointsToDeformedCommand() : Command("pointstodeformed", "Projects points from reference configuration to deformed configuration, using a transformation determined with the `blockmatch` command.",
 			{
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "points", "Image that contains the points that will be transformed. The size of the image must be 3xN where N is the number of points to transform."),
 				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "File name prefix (and path) passed to blockmatch command."),
