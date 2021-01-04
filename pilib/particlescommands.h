@@ -683,7 +683,8 @@ namespace pilib
 		RegionRemovalCommand() : OneImageInPlaceCommand<pixel_t>("regionremoval", "Removes nonzero foreground regions smaller than given threshold. This command supports only binary images (where regions are separated by backround).",
 			{
 				CommandArgument<size_t>(ParameterDirection::In, "volume threshold", "All nonzero regions consisting of less than this many pixels are removed.", 600),
-				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours)
+				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours),
+				//CommandArgument<size_t>(ParameterDirection::In, "thread count", "Count of threads to use in the process. Set to zero to determine count of threads automatically. Set to one to use single-threaded processing.", 0),
 			},
 			"openingfilter, closingfilter, analyzeparticles")
 		{
@@ -694,6 +695,7 @@ namespace pilib
 		{
 			size_t volumeLimit = pop<size_t>(args);
 			Connectivity connectivity = pop<Connectivity>(args);
+			//coord_t threadCount = (coord_t)pop<size_t>(args);
 
 			// TODO: Add preserveEdges if that is required
 			regionRemoval(in, volumeLimit, false, connectivity);
@@ -704,6 +706,7 @@ namespace pilib
 			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>* >(args);
 			size_t volumeLimit = pop<size_t>(args);
 			Connectivity connectivity = pop<Connectivity>(args);
+			//coord_t threadCount = (coord_t)pop<size_t>(args);
 
 			// TODO: Add preserveEdges if that is required
 

@@ -517,7 +517,7 @@ class Pi2:
         # Create pilib instance
         if os.name == 'nt':
             # Windows
-            #os.environ['PATH'] = os.path.dirname(__file__) + ';' + os.environ['PATH']
+            os.environ['PATH'] = os.path.dirname(__file__) + ';' + os.environ['PATH']
             self.pilib = WinDLL(f"{os.path.dirname(__file__)}\\pi.dll")
         else:
             # Linux

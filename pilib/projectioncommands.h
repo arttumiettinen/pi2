@@ -153,6 +153,11 @@ namespace pilib
 				writeSize = Vec3c(1, 1, 1);																	\
 			}																								\
 		}																									\
+																											\
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override					\
+		{																									\
+			return JobType::Fast;																			\
+		}																									\
 	};																										\
 																											\
 	template<typename in_t> class classname##ProjectCommand : public TwoImageInputOutputCommand<in_t, result_type>, public Distributable	\
@@ -230,6 +235,11 @@ namespace pilib
 					readStart = Vec3c(0, readStart.y, readStart.x);											\
 				}																							\
 			}																								\
+		}																									\
+																											\
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override					\
+		{																									\
+			return JobType::Fast;																			\
 		}																									\
 	};
 
