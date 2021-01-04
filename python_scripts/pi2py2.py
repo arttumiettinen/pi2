@@ -518,7 +518,7 @@ class Pi2:
         if os.name == 'nt':
             # Windows
             os.environ['PATH'] = os.path.dirname(__file__) + ';' + os.environ['PATH']
-            self.pilib = WinDLL("pi.dll")
+            self.pilib = WinDLL(f"{os.path.dirname(__file__)}\\pi.dll")
         else:
             # Linux
             #os.environ['PATH'] = os.path.dirname(__file__) + ':' + os.environ['PATH']

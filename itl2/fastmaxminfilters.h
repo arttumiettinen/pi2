@@ -396,6 +396,8 @@ namespace itl2
 	{
 		internals::DecomposedSphere elem = internals::optimizeStructuringElementCached(r);
 
+		std::cout << "Using " << elem.dirs.size() << " linear elements to approximate a sphere." << std::endl;
+
 		internals::maxFilterSphereApprox(img, elem, bc);
 	}
 
@@ -407,6 +409,8 @@ namespace itl2
 	template<typename pixel_t> void minFilterSphereApprox(Image<pixel_t>& img, coord_t r, BoundaryCondition bc)
 	{
 		internals::DecomposedSphere elem = internals::optimizeStructuringElementCached(r);
+
+		std::cout << "Using " << elem.dirs.size() << " linear elements to approximate a sphere." << std::endl;
 
 		internals::minFilterSphereApprox(img, elem, bc);
 	}
