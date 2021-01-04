@@ -1,0 +1,33 @@
+.. _pointstodeformed:
+
+pointstodeformed
+****************
+
+
+**Syntax:** :code:`pointstodeformed(points, file name prefix)`
+
+Projects points from reference configuration to deformed configuration, using a transformation determined with the :ref:`blockmatch` command.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+points [input]
+~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image that contains the points that will be transformed. The size of the image must be 3xN where N is the number of points to transform.
+
+file name prefix [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+File name prefix (and path) passed to blockmatch command.
+
+See also
+--------
+
+:ref:`blockmatch`, :ref:`blockmatchmemsave`, :ref:`pullback`, :ref:`pointstodeformed`
