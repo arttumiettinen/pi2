@@ -64,4 +64,4 @@ This value is returned if the key is not found
 See also
 --------
 
-:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`
+:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`
