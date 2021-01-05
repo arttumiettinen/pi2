@@ -526,32 +526,38 @@ namespace itl2
 			points.clear();
 
 			// Collect initial list of points
-			Image<pixel_t> nbPrivate(3, 3, 3);
-			for (coord_t z = 0; z < img.depth(); z++)
+			#pragma omp parallel
 			{
-				for (coord_t y = 0; y < img.height(); y++)
-				{
-					for (coord_t x = 0; x < img.width(); x++)
-					{
-						pixel_t c = img(x, y, z);
-						if (c != (pixel_t)0)
-						{
-							if (internals::isBorderPoint(direction, img, x, y, z))
-							{
-								getNeighbourhood(img, Vec3c(x, y, z), Vec3c(1, 1, 1), nbPrivate, BoundaryCondition::Zero);
+				Image<pixel_t> nbPrivate(3, 3, 3);
 
-								// Note: This uses the same isEndPoint than hybridSkeleton!
-								if (!internals::isEndPoint(nbPrivate) &&
-									internals::isSimplePointLine(nbPrivate))
+				#pragma omp for
+				for (coord_t z = 0; z < img.depth(); z++)
+				{
+					for (coord_t y = 0; y < img.height(); y++)
+					{
+						for (coord_t x = 0; x < img.width(); x++)
+						{
+							pixel_t c = img(x, y, z);
+							if (c != (pixel_t)0)
+							{
+								if (internals::isBorderPoint(direction, img, x, y, z))
 								{
-									points.push_back(Vec3c(x, y, z));
+									getNeighbourhood(img, Vec3c(x, y, z), Vec3c(1, 1, 1), nbPrivate, BoundaryCondition::Zero);
+
+									// Note: This uses the same isEndPoint than hybridSkeleton!
+									if (!internals::isEndPoint(nbPrivate) &&
+										internals::isSimplePointLine(nbPrivate))
+									{
+										#pragma omp critical(linethin_insert)
+											points.push_back(Vec3c(x, y, z));
+									}
 								}
 							}
 						}
 					}
-				}
 
-				showThreadProgress(counter, 6 * img.depth());
+					showThreadProgress(counter, 6 * img.depth());
+				}
 			}
 
 			// This is required to make the result exactly the same than in Fiji (non-threaded version)
