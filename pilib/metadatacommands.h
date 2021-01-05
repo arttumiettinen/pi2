@@ -7,8 +7,28 @@ namespace pilib
 {
 	inline std::string metaSeeAlso()
 	{
-		return "setmeta, getmeta, writemeta, readmeta, clearmeta, listmeta";
+		return "setmeta, getmeta, writemeta, readmeta, clearmeta, listmeta, copymeta";
 	}
+
+	template<typename input_t, typename output_t> class CopyMetadataCommand : public TwoImageInputOutputCommand<input_t, output_t>
+	{
+	protected:
+		friend class CommandList;
+
+		CopyMetadataCommand() : TwoImageInputOutputCommand<input_t, output_t>("copymeta", "Copies metadata from one image to another.",
+			{
+			},
+			metaSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(Image<input_t>& in, Image<output_t>& out, std::vector<ParamVariant>& args) const override
+		{
+			out.metadata = in.metadata;
+		}
+	};
+
 
 	template<typename input_t> class SetMetadataCommand : public OneImageInPlaceCommand<input_t>
 	{

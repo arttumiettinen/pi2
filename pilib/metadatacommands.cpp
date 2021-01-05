@@ -13,5 +13,6 @@ namespace pilib
 		ADD_ALL(ReadMetadataCommand);
 		ADD_ALL(ClearMetadataCommand);
 		ADD_ALL(ListMetadataCommand);
+		ADD_ALL2(CopyMetadataCommand);
 	}
 }
