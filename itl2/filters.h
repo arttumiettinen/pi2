@@ -209,7 +209,7 @@ namespace itl2
 							}
 
 							// Process end of line
-							for (coord_t y = img.height() - r - 1; y < img.height(); y++)
+							for (coord_t y = std::max((coord_t)0, img.height() - r - 1); y < img.height(); y++)
 							{
 								img(x, y, z) = pixelRound<pixel_t>(processNeighbourhood(buffer, mask, param));
 
@@ -259,7 +259,7 @@ namespace itl2
 							}
 
 							// Process end of line
-							for (coord_t z = img.depth() - r - 1; z < img.depth(); z++)
+							for (coord_t z = std::max((coord_t)0, img.depth() - r - 1); z < img.depth(); z++)
 							{
 								img(x, y, z) = pixelRound<pixel_t>(processNeighbourhood(buffer, mask, param));
 
