@@ -1,31 +1,31 @@
-.. _readmeta:
+.. _copymeta:
 
-readmeta
+copymeta
 ********
 
 
-**Syntax:** :code:`readmeta(image, filename)`
+**Syntax:** :code:`copymeta(input image, output image)`
 
-Reads image metadata from disk.
+Copies metadata from one image to another.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------
 
-image [input & output]
-~~~~~~~~~~~~~~~~~~~~~~
+input image [input]
+~~~~~~~~~~~~~~~~~~~
 
 **Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
 
-Image to process.
+Input image.
 
-filename [input]
-~~~~~~~~~~~~~~~~
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
 
-**Data type:** string
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image, complex32 image
 
-Name and path of file to read from.
+Output image.
 
 See also
 --------

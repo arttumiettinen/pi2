@@ -30,4 +30,4 @@ Name and path of file to write. The file will be replaced.
 See also
 --------
 
-:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`
+:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`
