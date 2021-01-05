@@ -242,10 +242,10 @@ class Pi2Value(Pi2Object):
         Raises error if the value is not a string.
         """
 
-        val = self.pi2.pilib.getString(self.pi2.piobj, self.name.encode('ASCII'))
+        val = self.pi2.pilib.getString(self.pi2.piobj, self.name.encode('UTF-8'))
         if val is None:
             self.pi2.raise_last_error()
-        return val.decode('ASCII')
+        return val.decode('UTF-8')
         
 
 
@@ -267,7 +267,7 @@ class Pi2Image(Pi2Object):
         h = c_longlong(0)
         d = c_longlong(0)
         dt = c_int(0)
-        ptr = self.pi2.pilib.getImage(self.pi2.piobj, self.name.encode('ASCII'), byref(w), byref(h), byref(d), byref(dt))
+        ptr = self.pi2.pilib.getImage(self.pi2.piobj, self.name.encode('UTF-8'), byref(w), byref(h), byref(d), byref(dt))
 
         w = w.value
         h = h.value
@@ -288,7 +288,7 @@ class Pi2Image(Pi2Object):
         h = c_longlong(0)
         d = c_longlong(0)
         dt = c_int(0)
-        self.pi2.pilib.getImageInfo(self.pi2.piobj, self.name.encode('ASCII'), byref(w), byref(h), byref(d), byref(dt))
+        self.pi2.pilib.getImageInfo(self.pi2.piobj, self.name.encode('UTF-8'), byref(w), byref(h), byref(d), byref(dt))
 
         w = w.value
         h = h.value
@@ -353,7 +353,7 @@ class Pi2Image(Pi2Object):
         Local changes can be made through objects returned by get_data_pointer method.
         """
 
-        if not self.pi2.pilib.finishUpdate(self.pi2.piobj, self.name.encode('ASCII')):
+        if not self.pi2.pilib.finishUpdate(self.pi2.piobj, self.name.encode('UTF-8')):
             self.pi2.raise_last_error()
 
 
@@ -501,7 +501,7 @@ class Pi2:
             # This means that there is a specialized implementation for this functionality.
             return
 
-        doc = self.pilib.help(self.piobj, f"{cmd_name}".encode('ASCII')).decode('ASCII')
+        doc = self.pilib.help(self.piobj, f"{cmd_name}".encode('UTF-8')).decode('UTF-8')
 
         func = lambda *args: self.run_command(cmd_name, args)
         func.__doc__ = doc
@@ -567,7 +567,7 @@ class Pi2:
         self.piobj = self.pilib.createPI()
 
         # Get list of all commands
-        commands = self.pilib.commandList(self.piobj).decode('ASCII')
+        commands = self.pilib.commandList(self.piobj).decode('UTF-8')
         commands = commands.splitlines()
 
         # For each command, create corresponding method to this class
@@ -597,7 +597,7 @@ class Pi2:
         Raises an RuntimeError with message corresponding to the last error in the pi2 system.
         """
 
-        err = self.pilib.lastErrorMessage(self.piobj).decode('ASCII')
+        err = self.pilib.lastErrorMessage(self.piobj).decode('UTF-8')
         raise RuntimeError(err)
 
 
@@ -607,7 +607,7 @@ class Pi2:
         Runs any pi2 script given as string.
         """
 
-        if not self.pilib.run(self.piobj, script.encode('ASCII')):
+        if not self.pilib.run(self.piobj, script.encode('UTF-8')):
             self.raise_last_error()
 
 
