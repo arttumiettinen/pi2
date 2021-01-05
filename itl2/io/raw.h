@@ -121,7 +121,10 @@ namespace itl2
 			*/
 			inline bool parseDimensions(const ::std::string& filename, Vec3c& dimensions)
 			{
-				::std::string::size_type startpos = filename.find_last_of('_');
+				::std::string::size_type temppos = filename.find_last_of('.');
+				if (temppos != ::std::string::npos)
+					temppos = temppos - 1;
+				::std::string::size_type startpos = filename.find_last_not_of("0123456789x", temppos);
 				if (startpos == ::std::string::npos)
 					return false;
 
@@ -628,6 +631,7 @@ namespace itl2
 
 		namespace tests
 		{
+			void parseDimensions();
 			void raw();
 			void writeBlock();
 			void writeBlockFast();

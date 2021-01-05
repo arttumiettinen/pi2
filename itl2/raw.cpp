@@ -51,6 +51,26 @@ namespace itl2
 
 		namespace tests
 		{
+			void parseDimensions()
+			{
+				Vec3c dims;
+				testAssert(raw::internals::parseDimensions("test_image_111x222x333.raw", dims) == true, "parseDimensions return");
+				testAssert(dims == Vec3c(111, 222, 333), "dimensions");
+				
+				testAssert(raw::internals::parseDimensions("test_image-111x222x333.raw", dims) == true, "parseDimensions return");
+				testAssert(dims == Vec3c(111, 222, 333), "dimensions");
+
+				testAssert(raw::internals::parseDimensions("test_image_111x222x333.hoo", dims) == true, "parseDimensions return");
+				testAssert(dims == Vec3c(111, 222, 333), "dimensions");
+
+				// NOTE: Currently we don't support suffix-less formats.
+				//testAssert(raw::internals::parseDimensions("test_image_111x222x333", dims) == true, "parseDimensions return");
+				//testAssert(dims == Vec3c(111, 222, 333), "dimensions");
+
+				testAssert(raw::internals::parseDimensions("test_77_image@111x222x333.raw", dims) == true, "parseDimensions return");
+				testAssert(dims == Vec3c(111, 222, 333), "dimensions");
+			}
+
 			void raw()
 			{
 				Vec3c dim;
