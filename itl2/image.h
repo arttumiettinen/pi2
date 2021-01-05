@@ -35,14 +35,13 @@ namespace itl2
 	*/
 	inline size_t getDimensionality(const Vec3c& dims)
 	{
-		if (dims.x <= 1 && dims.y <= 1 && dims.z <= 1)
-			return 0;
-		if (dims.x > 1 && dims.y <= 1 && dims.z <= 1)
-			return 1;
-		if (dims.x > 1 && dims.y > 1 && dims.z <= 1)
+		if (dims.z > 1)
+			return 3;
+		if (dims.y > 1)
 			return 2;
-
-		return 3;
+		if (dims.x > 1)
+			return 1;
+		return 0;
 	}
 
 	/**
