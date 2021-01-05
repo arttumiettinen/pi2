@@ -73,7 +73,7 @@ int main()
 	//test(itl2::tests::cgne, "CGNE");
 	//test(itl2::tests::image, "Image");
 
-	
+	test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
 	//test(raw::tests::expandFilename, "Raw filename expansion");
 	//test(raw::tests::raw, "Raw reader");
 	//test(io::tests::readWrite, "IO read");
@@ -236,7 +236,7 @@ int main()
 
 	//test(itl2::tests::imagemetadata, "image metadata");
 
-	test(itl2::tests::pointsToDeformed, "points to deformed");
+	//test(itl2::tests::pointsToDeformed, "points to deformed");
 	
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
