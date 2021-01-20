@@ -34,6 +34,9 @@
     <Filter Include="Source Files\io">
       <UniqueIdentifier>{69206810-3fa0-42b6-a3a3-fed176cb14d7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\exprtk">
+      <UniqueIdentifier>{43e4336c-d592-424b-bf49-10c699d9a33a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datatypes.h">
@@ -360,6 +363,12 @@
     <ClInclude Include="io\inireader.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
+    <ClInclude Include="exprtk\exprtk.hpp">
+      <Filter>Header Files\exprtk</Filter>
+    </ClInclude>
+    <ClInclude Include="eval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
@@ -544,6 +553,9 @@
     </ClCompile>
     <ClCompile Include="io\inireader.cpp">
       <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="eval.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
