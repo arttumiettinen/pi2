@@ -131,6 +131,7 @@ def test_difference_normal_distributed(opname, args, resultname='result', infile
     print('-' * (len(opname) + 8 + 3))
 
     argstr = '_'.join(str(e) for e in args)
+    argstr = argstr.replace('*', '_') # Remove non-filename characters
     outfile_normal = output_file(f"head_{opname}_{argstr}_normal")
     outfile_distributed = output_file(f"head_{opname}_{argstr}_distributed")
 
@@ -1137,7 +1138,9 @@ pi2.echo(True, False)
 ###test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MINIMUM], 'img', maxmem=5)
 
 #test_difference_normal_distributed('localthreshold', ['img', 'result', [2, 2, 2], AutoThresholdMethod.OTSU], 'result', maxmem=5)
-
+#test_difference_normal_distributed('eval', ['77', 'img'], 'img', maxmem=5)
+#test_difference_normal_distributed('eval', ['x0+x1', 'result', 'img'], 'result', maxmem=5)
+test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'], 'result', maxmem=5)
 
 
 #infile = input_file()
@@ -1154,7 +1157,7 @@ pi2.echo(True, False)
 #named_variables()
 #metadata()
 #set_overloads()
-big_tiff()
+#big_tiff()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

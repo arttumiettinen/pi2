@@ -37,6 +37,8 @@
     <ClInclude Include="diskmappedbuffer.h" />
     <ClInclude Include="dmap.h" />
     <ClInclude Include="ellipsoid.h" />
+    <ClInclude Include="eval.h" />
+    <ClInclude Include="exprtk\exprtk.hpp" />
     <ClInclude Include="fastbilateralfilter.h" />
     <ClInclude Include="fastmaxminfilters.h" />
     <ClInclude Include="fft.h" />
@@ -134,6 +136,7 @@
     <ClCompile Include="csa.cpp" />
     <ClCompile Include="danielsson.cpp" />
     <ClCompile Include="diskmappedbuffer.cpp" />
+    <ClCompile Include="eval.cpp" />
     <ClCompile Include="generation.cpp" />
     <ClCompile Include="fastbilateralfilter.cpp" />
     <ClCompile Include="fillskeleton.cpp" />
@@ -276,6 +279,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -297,6 +301,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -319,6 +324,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -343,6 +349,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

@@ -459,7 +459,8 @@ namespace itl2
 		internals::pointsToShifts(shifts, refGrid, defPoints);
 		LinearInterpolator<Vec3d, Vec3d, double, Vec3d> shiftInterpolator(BoundaryCondition::Nearest);
 
-		for (size_t n = 0; n < points.size(); n++)
+		#pragma omp parallel for if(points.size() > PARALLELIZATION_THRESHOLD)
+		for (coord_t n = 0; n < (coord_t)points.size(); n++)
 		{
 			Vec3d xRef = points[n];
 			Vec3d shift = internals::projectPointToDeformed(xRef, refGrid, shifts, shiftInterpolator);
