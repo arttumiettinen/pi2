@@ -804,6 +804,44 @@ namespace pilib
 	};
 
 
+	namespace internals
+	{
+		template<typename pixel_t> AnalyzerSet<Vec3sc, pixel_t> csaAnalyzers()
+		{
+			return createCrossSectionAnalyzers<pixel_t>("coordinates2d, volume, pca2d, convexhull2d, bounds2d");
+		}
+	}
+
+
+	class CSAHeaders : public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		CSAHeaders() : Command("csaheaders", "Retrieves information on the meaning of the columns in the result image of `csa` command.", {}, "csa")
+		{
+
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			auto analyzers = internals::csaAnalyzers<uint8_t>();
+			std::cout << analyzers.headers();
+
+			// Additional columns that do not come from the analyzers.
+			std::cout << ", X3 [pixel], Y3 [pixel], Z3 [pixel]";
+			std::cout << ", CX3 [pixel], CY3 [pixel], CZ3 [pixel]";
+			std::cout << ", length min, length max, length mean, length mode";
+
+			std::cout << std::endl;
+
+			std::cout << "The (X3, Y3, Z3) columns give the position of the center of the slice image in the coordinates of the original image." << std::endl;
+			std::cout << "The (CX3, CY3, CZ3) columns give the position of the centroid of the cross-section in the coordinates of the original image. These columns are available only if CX and CY columns are available." << std::endl;
+			std::cout << "The length columns are available only if length input image is given to the csa command." << std::endl;
+		}
+	};
+
 
 	template<typename pixel_t> class CSACommand : public Command
 	{
@@ -816,8 +854,8 @@ namespace pilib
 				CommandArgument<Image<float32_t>>(ParameterDirection::In, "energy", "Image corresponding to the energy output image of cylinderorientation command. Non-zero energy signifies that local orientation is available at that location."),
 				CommandArgument<Image<float32_t>>(ParameterDirection::In, "phi", R"(The azimuthal angle of the local fibre orientation direction. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
 				CommandArgument<Image<float32_t>>(ParameterDirection::In, "theta", R"(The polar angle of the local fibre orientation direction. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.)"),
-				CommandArgument<Image<float32_t>>(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each fibre cross-section analyzed. Use command `headers` to retrieve meanings of columns."),
-				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers to use. Use command `listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.", "coordinates2d, volume, pca2d, convexhull2d, bounds2d"),
+				CommandArgument<Image<float32_t>>(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each fibre cross-section analyzed. Use command `csaheaders` to retrieve meanings of columns."),
+				//CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers to use. Use command `listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.", "coordinates2d, volume, pca2d, convexhull2d, bounds2d"),
 				CommandArgument<size_t>(ParameterDirection::In, "slice radius", "Half width of one cross-sectional slice", 40),
 				CommandArgument<size_t>(ParameterDirection::In, "slice count", "Count of cross-sectional slices to analyze", 1000),
 				CommandArgument<size_t>(ParameterDirection::In, "random seed", "Seed for random number generator.", 123),
@@ -838,7 +876,7 @@ namespace pilib
 			Image<float32_t>& phi = *pop<Image<float32_t>*>(args);
 			Image<float32_t>& theta = *pop<Image<float32_t>*>(args);
 			Image<float32_t>& out = *pop<Image<float32_t>*>(args);
-			string analyzerNames = pop<string>(args);
+			//string analyzerNames = pop<string>(args);
 			size_t sliceRadius = pop<size_t>(args);
 			size_t sliceCount = pop<size_t>(args);
 			size_t randSeed = pop<size_t>(args);
@@ -848,11 +886,60 @@ namespace pilib
 			Image<float32_t>& length = *pop<Image<float32_t>*>(args);
 			Image<float32_t>& lengthSlices = *pop<Image<float32_t>*>(args);
 
-			auto analyzers = createCrossSectionAnalyzers<pixel_t>(analyzerNames);
+			auto analyzers = internals::csaAnalyzers<pixel_t>();
 
 			Results results;
 			
 			csa<pixel_t>(in, energy, phi, theta, &length, analyzers, results, sliceRadius, sliceCount, randSeed, &slices, &lengthSlices, &vis);
+
+			results.toImage(out);
+		}
+	};
+
+	template<typename pixel_t> class CSA2Command : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		CSA2Command() : Command("csa", "Analyzes cross-sections of cylindrical, tubular, or fibre-like objects. Use to e.g. measure cross-sectional area of fibres. Requires that the local orientation of the fibres has been determined using, e.g., `cylinderorientation` command.",
+			{
+				CommandArgument<Image<pixel_t>>(ParameterDirection::In, "original", "Binary image containing the fibres as foreground."),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "energy", "Image corresponding to the energy output image of cylinderorientation command. Non-zero energy signifies that local orientation is available at that location."),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "phi", R"(The azimuthal angle of the local fibre orientation direction. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
+				CommandArgument<Image<float32_t>>(ParameterDirection::In, "theta", R"(The polar angle of the local fibre orientation direction. The angle is given in radians and measured from positive $z$-axis towards $xy$-plane. The values are in range $[0, \pi]$.)"),
+				CommandArgument<Image<float32_t>>(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each fibre cross-section analyzed. Use command `csaheaders` to retrieve meanings of columns."),
+				//CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers to use. Use command `listanalyzers` to see all the names that can be specified. Separate the analyzer names with any non-alphanumeric character sequence.", "coordinates2d, volume, pca2d, convexhull2d, bounds2d"),
+				CommandArgument<size_t>(ParameterDirection::In, "slice radius", "Half width of one cross-sectional slice", 40),
+				CommandArgument<size_t>(ParameterDirection::In, "slice count", "Count of cross-sectional slices to analyze", 1000),
+				CommandArgument<size_t>(ParameterDirection::In, "random seed", "Seed for random number generator.", 123),
+				CommandArgument<Image<pixel_t>>(ParameterDirection::Out, "slices", "The extracted slices are placed into this image."),
+				CommandArgument<Image<pixel_t>>(ParameterDirection::Out, "visualization", "The locations where the slices are extracted from are drawn into this image"),
+			},
+			particleSeeAlso() + ", cylinderorientation")
+		{
+
+		}
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>*>(args);
+			Image<float32_t>& energy = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& phi = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& theta = *pop<Image<float32_t>*>(args);
+			Image<float32_t>& out = *pop<Image<float32_t>*>(args);
+			//string analyzerNames = pop<string>(args);
+			size_t sliceRadius = pop<size_t>(args);
+			size_t sliceCount = pop<size_t>(args);
+			size_t randSeed = pop<size_t>(args);
+
+			Image<pixel_t>& slices = *pop<Image<pixel_t>*>(args);
+			Image<pixel_t>& vis = *pop<Image<pixel_t>*>(args);
+
+			auto analyzers = internals::csaAnalyzers<pixel_t>();
+
+			Results results;
+
+			csa<pixel_t>(in, energy, phi, theta, nullptr, analyzers, results, sliceRadius, sliceCount, randSeed, &slices, nullptr, &vis);
 
 			results.toImage(out);
 		}

@@ -83,6 +83,7 @@ namespace itl2
 	{
 		size_t cols = headers().size();
 		img.ensureSize(cols, size());
+		img.metadata.set("column headers", headers().str());
 
 		for (size_t rowi = 0; rowi < size(); rowi++)
 		{
@@ -96,6 +97,8 @@ namespace itl2
 
 	void Results::fromImage(const Headers& headers, const Image<float32_t>& img)
 	{
+		// TODO: Make a version of this function that reads headers from image metadata, if available.
+
 		if (this->size() > 0)
 		{
 			// Check that the new data is compatible with the old data.

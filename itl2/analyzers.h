@@ -595,7 +595,7 @@ namespace itl2
 				titles.push_back("d1 [pixel]");     // Maximum diameter in direction of first principal component.
 				titles.push_back("d2 [pixel]");     // Maximum diameter in direction of second principal component.
 				titles.push_back("d3 [pixel]");     // Maximum diameter in direction of third principal component.
-				titles.push_back("bounding scale");
+				titles.push_back("bounding scale [1]");
 				return titles;
 			}
 
@@ -752,7 +752,7 @@ namespace itl2
 				titles.push_back("rmax [pixel]");	// Overall maximum radius from center point
 				titles.push_back("d1 [pixel]");     // Maximum diameter in direction of first principal component.
 				titles.push_back("d2 [pixel]");     // Maximum diameter in direction of second principal component.
-				titles.push_back("bounding scale");
+				titles.push_back("bounding scale [1]");
 				return titles;
 			}
 
