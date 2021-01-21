@@ -1247,7 +1247,7 @@ namespace itl2
 
 		size_t boundingScalei = 0;
 		if(type == EllipsoidType::BoundingEllipsoid)
-			boundingScalei = results.getColumnIndex("bounding scale");
+			boundingScalei = results.getColumnIndex("bounding scale [1]");
 
 		size_t volumei = 0;
 		if(type == EllipsoidType::CorrectVolume)

@@ -1063,10 +1063,10 @@ def sample_orientations_from_vonmises_fisher(main_az, main_pol, kappa, n):
 
 
 
-def generate_orientation_image(main_az=np.pi/4, main_pol=np.pi/2, kappa=3, n=150):
+def generate_orientation_image(main_az=np.pi/4, main_pol=np.pi/2, kappa=3, n=150, size=300, lumen=False):
     """
     Generates test image for orientation analysis demonstrations.
-    By default, plots 100 capsules whose orientations are taken from from von Mises-
+    By default, plots 150 capsules whose orientations are taken from from von Mises-
     Fisher distribution (main direction = x + 45 deg towards y, kappa = 3)
 
     Returns the resulting pi2 image and direction vectors.
@@ -1074,7 +1074,7 @@ def generate_orientation_image(main_az=np.pi/4, main_pol=np.pi/2, kappa=3, n=150
 
     directions = sample_orientations_from_vonmises_fisher(main_az, main_pol, kappa, n)
 
-    size = 300
+    
     img = pi.newimage(ImageDataType.UINT8, [size, size, size])
     for dir in directions:
 
@@ -1083,6 +1083,8 @@ def generate_orientation_image(main_az=np.pi/4, main_pol=np.pi/2, kappa=3, n=150
         pos = np.random.rand(1, 3) * size;
 
         pi.capsule(img, pos - L * dir, pos + L * dir, r, 255)
+        if lumen:
+            pi.capsule(img, pos - L * dir, pos + L * dir, np.floor(r/2), 0)
 
     return img, directions
 
@@ -1238,29 +1240,83 @@ def skeleton_types():
 
 
 
+def fibre_properties():
+    """
+    Demonstrates how to use the csa command to analyze properties of fibres.
+    """
 
-create_and_access_images()
-read_and_write_image()
-help()
-math()
-convert_format()
-filtering()
-thickmap()
-watershed()
-skeleton_vtk()
-big_endian_and_little_endian()
-greedy_coloring()
-linefilters()
-binning_scaling()
-rotations()
-analyze_particles()
-fill_particles()
-histogram()
-bivariate_histogram()
-particle_segmentation()
-levelset_fill_cavity()
-find_surface()
-orientation_analysis()
-montage()
-skeleton_types()
+    # First generate some random cylindrical fibres
+    orig, directions = generate_orientation_image(lumen=True, n=50)
+    pi.writetif(orig, output_file('csa_original'))
 
+    # Calculate orientation of the cylinders. More information about orientation
+    # determination can be found in the orientation_analysis() example.
+    # Note that we need to convert the input image to float32
+    # format as it is used as an output image, too.
+    # Additionally we need images to store the azimuthal and polar
+    # orientation angles.
+    energy = pi.newlike(orig)
+    pi.copy(orig, energy)
+    pi.convert(energy, ImageDataType.FLOAT32)
+    azimuthal = pi.newimage(ImageDataType.FLOAT32)
+    polar = pi.newimage(ImageDataType.FLOAT32)
+    pi.cylinderorientation(energy, azimuthal, polar, 1, 1)
+
+    # Perform fibre cross-section analysis using the csa command
+    # This image will hold the results table that contains one row for each cross-section
+    results = pi.newimage(ImageDataType.FLOAT32)
+    # This image will contain all the extracted cross-sections
+    slices = pi.newimage()
+    # The locations of the extracted cross-sections will be drawn into this image
+    visualization = pi.newlike(orig)
+    pi.copy(orig, visualization)
+
+    # Radius of cross-sectional slices
+    sliceradius = 20
+    # Count of slices to extract
+    slicecount = 200
+    # Seed for random number generation
+    randomseed = 12345
+
+    pi.csa(orig, energy, azimuthal, polar, results, sliceradius, slicecount, randomseed, slices, visualization)
+
+    # This command shows information about columns in the results table.
+    pi.csaheaders()
+
+    # Write output images to disk
+    pi.writetif(results, output_file("csa_results"))
+    pi.writemeta(results, output_file("csa_results_headers.txt"))
+    pi.writetif(slices, output_file("csa_slices"))
+    pi.writetif(visualization, output_file("csa_visualization"))
+
+    # TODO: Calculate fibre length, too
+    # TODO: Plot fibre properties
+
+
+
+# Please uncomment the examples you wish to run:
+#create_and_access_images()
+#read_and_write_image()
+#help()
+#math()
+#convert_format()
+#filtering()
+#thickmap()
+#watershed()
+#skeleton_vtk()
+#big_endian_and_little_endian()
+#greedy_coloring()
+#linefilters()
+#binning_scaling()
+#rotations()
+#analyze_particles()
+#fill_particles()
+#histogram()
+#bivariate_histogram()
+#particle_segmentation()
+#levelset_fill_cavity()
+#find_surface()
+#orientation_analysis()
+#montage()
+#skeleton_types()
+#fibre_properties()

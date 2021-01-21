@@ -19,5 +19,7 @@ namespace pilib
 		ADD_REAL(GreedyColoringCommand);
 
 		ADD_REAL(CSACommand);
+		ADD_REAL(CSA2Command);
+		CommandList::add<CSAHeaders>();
 	}
 }
