@@ -31,10 +31,11 @@ def main():
             args.scan_folders = ['./*']
 
         if args.recdir:
-            print(f"Reconstruction directory override: {args.recdir}")
             if '%s' not in args.recdir:
-                print(f"Reconstruction directory override does not contain %s. Use %s to mark the location where the scan name is to be inserted.")
-                return 1
+                args.recdir = args.recdir + '%s'
+                #print(f"Reconstruction directory override does not contain %s. Use %s to mark the location where the scan name is to be inserted.")
+                #return 1
+            print(f"Reconstruction directory override: {args.recdir}")
 
         logs = []
         for folder in args.scan_folders:
@@ -44,7 +45,12 @@ def main():
                 if len(files) > 0:
                     logs.extend(files)
                 else:
-                    print(f"Warning: No log files found from {folder}")
+                    logglob = f"{folder}/*.log"
+                    files = glob.glob(logglob)
+                    if len(files) > 0:
+                        logs.extend(files)
+                    else:
+                        print(f"Warning: No log files found from {folder}")
             else:
                 # folder is actually file name. We assume that it is name of log file to be stitched.
                 # Skip non-supported log files (like .h5 files that often get into the folder list)
