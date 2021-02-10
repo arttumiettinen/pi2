@@ -81,6 +81,7 @@ def main():
             xx = parser.logDict['Sample coordinates XX-coordinate']
             zz = parser.logDict['Sample coordinates ZZ-coordinate']
             y = parser.logDict['Sample coordinates Y-coordinate']
+			gigafrost = parser.logDict['Detector Settings Camera'] == 'GigaFRoST'
             
             rec_dir = ""
             if args.recdir:
@@ -107,6 +108,11 @@ def main():
                 X = zz / pixel_size
                 Y = -xx / pixel_size
                 Z = y / pixel_size
+				
+				# GigaFRoST images use different coordinate system -> fix that here
+				if gigafrost:
+					X *= -1
+					Y *= -1
 
                 # Subtract coordinates of the first image so that it is always at (0, 0, 0).
                 # This is not needed for stitching but in case of problems it is easier to
