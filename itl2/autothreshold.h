@@ -597,11 +597,13 @@ namespace itl2
 			static inline Vec2d range()
 			{
 				pixel_t::ThresholdDefaults_undefined;
+				return Vec2d();
 			}
 
 			static inline size_t binCount()
 			{
 				pixel_t::ThresholdDefaults_undefined;
+				return 0;
 			}
 		};
 
