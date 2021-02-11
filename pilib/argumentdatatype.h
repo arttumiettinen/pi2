@@ -64,6 +64,7 @@ namespace pilib
 	template<typename T> ArgumentDataType parameterType()
 	{
 		T::error_unimplemented_parameter_data_type;
+		return ArgumentDataType::Int;
 	}
 
 	template<> inline ArgumentDataType parameterType<string>()
