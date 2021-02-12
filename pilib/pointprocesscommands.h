@@ -249,7 +249,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ThresholdRangeCommand() :InPlacePointProcess<pixel_t>("thresholdrange", "Threshols a range from the image. Sets to one all pixels whose value is in ]min, max].",
+		ThresholdRangeCommand() :InPlacePointProcess<pixel_t>("thresholdrange", "Threshols a range from the image. Sets to one all pixels whose value is in ]min, max], and sets all other pixels to zero.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "min", "Minimum of the threshold range."),
 				CommandArgument<double>(ParameterDirection::In, "max", "Maximum of the threshold range.")
@@ -272,7 +272,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		DoubleThresholdCommand() : InPlacePointProcess<pixel_t>("doublethreshold", "Sets pixel to 0 if its value is less than the first threshold. Sets pixel to 1 if pixel its is larger than or equal to the first threshold and less than the second threshold (if any). Sets pixel to 2 if pixel its is larger than or equal to the second threshold.",
+		DoubleThresholdCommand() : InPlacePointProcess<pixel_t>("doublethreshold", "Sets pixel to 0 if its value is less than the first threshold. Sets pixel to 1 if pixel its value is larger than or equal to the first threshold and less than the second threshold (if any). Sets pixel to 2 if pixel its value is larger than or equal to the second threshold.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "first threshold", "Pixels whose value is larger than or equal to this threshold and less than the second threshold are set to 1."),
 				CommandArgument<double>(ParameterDirection::In, "second threshold", "Pixels whose value is larger than or equal to this threshold are set to 2.")
@@ -296,7 +296,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ThresholdPeriodicCommand() : InPlacePointProcess<pixel_t>("thresholdperiodic", "Threshols a range from the image where pixel values are from periodic range (e.g. angle). Sets to one all pixels whose value is in ]min, max] mod period. If threshold range is larger than period, sets all pixels to 1. If threshold range start is larger than or equal to threshold range end, sets all pixels to 0.",
+		ThresholdPeriodicCommand() : InPlacePointProcess<pixel_t>("thresholdperiodic", "Threshols a range from the image where pixel values are from periodic range (e.g. angle). Sets to one all pixels whose value is in ]min, max] mod period, and sets all other pixels to zero. If threshold range is larger than period, sets all pixels to 1. If threshold range start is larger than or equal to threshold range end, sets all pixels to 0.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "period start", "Minimum of the period of pixel values."),
 				CommandArgument<double>(ParameterDirection::In, "period end", "Maximum of the period of pixel values."),
@@ -327,7 +327,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		LinearMapCommand() : InPlacePointProcess<pixel_t>("linmap", "Maps pixel values linearly from one range to another. Maps position a in range [input min, input max] linearly to position in range [output min, output max]. E.g. if a = 0.5 and [input min, input max] = [0, 1] and [output min, output max] = [3, 4], result will be 3 + (0.5 - 0) / (1 - 0) * (4 - 3) = 3.5.",
+		LinearMapCommand() : InPlacePointProcess<pixel_t>("linmap", "Maps pixel values linearly from one range to another. Maps a value x in range [input min, input max] linearly to a value in range [output min, output max]. E.g. if x = 0.5 and [input min, input max] = [0, 1] and [output min, output max] = [3, 4], result will be 3 + (0.5 - 0) / (1 - 0) * (4 - 3) = 3.5.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "input min", "Minimum of the input range."),
 				CommandArgument<double>(ParameterDirection::In, "input max", "Maximum of the input range."),
@@ -354,7 +354,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ReplaceCommand() :InPlacePointProcess<pixel_t>("replace", "Replaces pixel values a by value b.",
+		ReplaceCommand() :InPlacePointProcess<pixel_t>("replace", "Finds pixels that have value a and sets their values to b.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "a", "Value to be replaced by b."),
 				CommandArgument<double>(ParameterDirection::In, "b", "Value that replaces a.")
