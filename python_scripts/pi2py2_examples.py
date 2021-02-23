@@ -367,7 +367,7 @@ def skeleton_vtk():
 
     # Trace the skeleton
     # The last 1 gives count of threads. For images with small number of branches
-	# (like here) single-threaded processing is faster.
+    # (like here) single-threaded processing is faster.
     pi.tracelineskeleton(geometry, vertices, edges, measurements, points, True, 1)
 
     # Convert the traced skeleton into points and lines format, as the .vtk files
@@ -798,7 +798,7 @@ def particle_segmentation():
     pi.cleanmaxima(dmap, maxima)
 
     # Create image with labeled maxima only.
-	# First set all pixels to zero, then label maxima.
+    # First set all pixels to zero, then label maxima.
     pi.set(img, 0)
     pi.labelmaxima(img, maxima)
 
@@ -850,7 +850,7 @@ def levelset_fill_cavity():
 
 
         # First term: the force is positive inside the object and negative everywhere else.
-		# This makes the surface take the shape of the object.
+        # This makes the surface take the shape of the object.
         pi.copy(geom, F)
         pi.divide(F, 128)
         pi.subtract(F, 0.5)
@@ -1239,6 +1239,183 @@ def skeleton_types():
     pi.writeraw(line_skele, output_file('T_line_skele'))
 
 
+def fill(img, x, y, z):
+    """
+    Helper function that flood fills starting from (x, y, z) only if
+    pixel value at (x, y, z) is zero.
+    """
+
+    if img.get_data_pointer()[y, x, z] == 0:
+        pi.floodfill(img, [x, y, z], 128, Connectivity.NEAREST)
+
+def vessel_tracing():
+
+    # Make binary image where vessels are foreground
+    img = pi.read(input_file('orig_basal_ganglia_217'))
+    pi.threshold(img, 18000) # The threshold value should be chosen using e.g. Otsu method
+    pi.closingfilter(img, 1, True, NeighbourhoodType.BOX) # This closes small holes in the vessels
+    pi.convert(img, ImageDataType.UINT8)
+    pi.multiply(img, 255)
+    
+    # In order to fill cavities in the vessels, fill the background by a temporary color.
+    # Here we perform the background fill by a flood fill starting from non-vessel points
+    # in the image edge. Here we try to fill from all corners of the image.
+    # Note that it is possible that all corners are occupied by vessels and in this case
+    # this filling method does not work, but in practice that situation is very rare.
+    fill(img, 0, 0, 0)
+    fill(img, img.get_width() - 1, 0, 0)
+    fill(img, 0, img.get_height() - 1, 0)
+    fill(img, img.get_width() - 1, img.get_height() - 1, 0)
+    fill(img, 0, 0, img.get_depth() - 1)
+    fill(img, img.get_width() - 1, 0, img.get_depth() - 1)
+    fill(img, 0, img.get_height() - 1, img.get_depth() - 1)
+    fill(img, img.get_width() - 1, img.get_height() - 1, img.get_depth() - 1)
+    # Here the vessels, cavities and background have colors 255, 0, and 128, respectively.
+    # Set cavities and vessels to 255 and background to 0.
+    pi.replace(img, 255, 0)
+    pi.replace(img, 0, 255)
+    pi.replace(img, 128, 0)
+    
+    pi.writeraw(img, output_file('vessel_bin'))
+    
+    # Now calculate skeleton. We use the surfaceskeleton function and specify False as second
+    # argument to indicate that we want a line skeleton. In many cases this method makes
+    # more stable skeletons than the lineskeleton function.
+    pi.surfaceskeleton(img, False)
+    pi.writeraw(img, output_file('vessel_skele'))
+    
+    # Below we will need the distance map of vessel phase, so we calculate it here.
+    img = pi.read(output_file('vessel_bin'))
+    dmap = pi.newimage(ImageDataType.FLOAT32)
+    pi.dmap(img, dmap)
+    pi.writeraw(dmap, output_file('vessel_dmap'))
+    dmap_data = dmap.get_data()
+    
+    
+    # Trace skeleton
+    skeleton = pi.read(output_file('vessel_skele'))
+    smoothing_sigma = 2
+    max_displacement = 2
+    vertices = pi.newimage(ImageDataType.FLOAT32)
+    edges = pi.newimage(ImageDataType.UINT64)
+    measurements = pi.newimage(ImageDataType.FLOAT32)
+    points = pi.newimage(ImageDataType.INT32)
+    pi.tracelineskeleton(skeleton, vertices, edges, measurements, points, True, 1, smoothing_sigma, max_displacement)
+    
+    
+    # Next, we will remove all edges that has at least one free and and whose
+    # L/r < 2.
+    # First, get edges, vertices, and branch length as NumPy arrays.
+    old_edges = edges.get_data()
+    vert_coords = vertices.get_data()
+    
+    # The tracelineskeleton measures branch length by anchored convolution and returns it in the
+    # measurements image.
+    meas_data = measurements.get_data()
+    length_data = meas_data[:, 1]
+    
+    
+    # Calculate degree of each vertex
+    deg = {}
+    for i in range(0, vert_coords.shape[0]):
+        deg[i] = 0
+    
+    for i in range(0, old_edges.shape[0]):
+        deg[old_edges[i, 0]] += 1
+        deg[old_edges[i, 1]] += 1
+        
+    # Determine which edges should be removed
+    remove_flags = []
+    for i in range(0, old_edges.shape[0]):
+        n1 = old_edges[i, 0]
+        n2 = old_edges[i, 1]
+        
+        # Remove edge if it has at least one free end point, and if L/r < 2, where
+        # r = max(r_1, r_2) and r_1 and r_2 are radii at the end points or the edge.
+        should_remove = False
+        if deg[n1] == 1 or deg[n2] == 1:
+            
+            p1 = vert_coords[n1, :]
+            p2 = vert_coords[n2, :]
+            
+            r1 = dmap_data[int(p1[1]), int(p1[0]), int(p1[2])]
+            r2 = dmap_data[int(p2[1]), int(p2[0]), int(p2[2])]
+            
+            r = max(r1, r2)
+            L = length_data[i]
+            
+            if L < 2 * r:
+                should_remove = True
+        
+        # Remove very short isolated branches, too.
+        if deg[n1] == 1 and deg[n2] == 1:
+            L = length_data[i]
+            if L < 5 / 0.75: # (5 um) / (0.75 um/pixel)
+                should_remove = True
+        
+        remove_flags.append(should_remove)
+    
+    remove_flags = np.array(remove_flags).astype(np.uint8)
+    print(f"Before dynamic pruning: {old_edges.shape[0]} edges")
+    print(f"Removing {np.sum(remove_flags)} edges")
+    
+    # This call adjusts the vertices, edges, and measurements images such that
+    # the edges for which remove_flags entry is True are removed from the graph.
+    pi.removeedges(vertices, edges, measurements, points, remove_flags, True, True)
+    
+    
+    
+    # Convert to vtk format in order to get radius for each point and line
+    vtkpoints = pi.newimage()
+    vtklines = pi.newimage()
+    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
+    
+    # Get radius for each point
+    points_data = vtkpoints.get_data()
+    radius_points = np.zeros([points_data.shape[0]])
+    for i in range(0, points_data.shape[0]):
+        p = points_data[i, :]
+        r = dmap_data[int(p[1]), int(p[0]), int(p[2])]
+        radius_points[i] = r
+        
+        
+    # Get average radius for each branch
+    # Notice that the vtklines image has a special format that is detailed in
+    # the documentation of getpointsandlines function.
+    lines_data = vtklines.get_data()
+    radius_lines = []
+    i = 0
+    edge_count = lines_data[i]
+    i += 1
+    for k in range(0, edge_count):
+        count = lines_data[i]
+        i += 1
+        
+        R = 0
+        for n in range(0, count):
+            index = lines_data[i]
+            i += 1
+            p = points_data[index, :]
+            R += dmap_data[int(p[1]), int(p[0]), int(p[2])]
+        R /= count
+        
+        radius_lines.append(R)
+    
+    radius_lines = np.array(radius_lines)
+    
+        
+    # Convert to vtk format again, now with smoothing the point coordinates to get non-jagged branches.
+    vtkpoints = pi.newimage()
+    vtklines = pi.newimage()
+    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines, smoothing_sigma, max_displacement);
+    
+
+    # Write to file
+    pi.writevtk(vtkpoints, vtklines, output_file('vessels'), "radius", radius_points, "radius", radius_lines)
+    
+    
+
+
 
 def fibre_properties():
     """
@@ -1320,3 +1497,4 @@ def fibre_properties():
 #montage()
 #skeleton_types()
 #fibre_properties()
+vessel_tracing()

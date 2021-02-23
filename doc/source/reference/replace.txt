@@ -6,7 +6,7 @@ replace
 
 **Syntax:** :code:`replace(image, a, b)`
 
-Replaces pixel values a by value b.
+Finds pixels that have value a and sets their values to b.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

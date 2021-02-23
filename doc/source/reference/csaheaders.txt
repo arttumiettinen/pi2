@@ -1,0 +1,16 @@
+.. _csaheaders:
+
+csaheaders
+**********
+
+
+**Syntax:** :code:`csaheaders()`
+
+Retrieves information on the meaning of the columns in the result image of :ref:`csa` command.
+
+This command can be used in the distributed processing mode, but it does not participate in distributed processing.
+
+See also
+--------
+
+:ref:`csa`
