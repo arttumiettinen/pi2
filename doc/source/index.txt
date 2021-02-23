@@ -7,7 +7,7 @@ Documentation of pi2
 ====================
 
 This is documentation for pi2/itl2, an image analysis program/library designed for processing and analysis of
-terapixel-scale volume images :ref:`locally or on a computer cluster <cluster_config>`.
+terapixel-scale volume images :ref:`locally or on a computer cluster <cluster_config>`. Some typical uses of this program are, e.g., :ref:`tracing blood vessels in tomographic images <vessel_graph_example>`, :ref:`analysis of fibre orientation in composite materials <orientation_example>`, or :ref:`stitching of volumetric mosaic images <nr_stitcher>`.
 
 The pi2 environment can be used from e.g.
 :ref:`Python <usage_python>`,
@@ -21,7 +21,7 @@ Some of the capabilities of pi2 include
 * :ref:`Fast non-rigid stitching <nr_stitcher>`
 * :ref:`Filtering <filtering_example>` for noise reduction: :ref:`bilateral <bilateralfilter>`, :ref:`approximate bilateral <bilateralfilterapprox>`, :ref:`variance weighted mean <vawefilter>`, :ref:`median <medianfilter>`, :ref:`Gaussian <gaussfilter>`, :ref:`high-pass <highpassfilter>`, ...
 * Post-processing of segmented images: :ref:`small region removal <regionremoval>` (volume opening), :ref:`minimum <minfilter>` and :ref:`maximum <maxfilter>` filtering (optionally with fast approximate spherical structuring element), :ref:`opening <openingfilter>` and :ref:`closing <closingfilter>`, ...
-* :ref:`Skeletonization <skeleton_example>` (:ref:`line <lineskeleton>` and :ref:`plate+line <surfaceskeleton>` skeletons), skeleton :ref:`tracing <tracelineskeleton>` with measurements (branch length, cross-sectional area...), skeleton :ref:`visualization <fillskeleton>`, :ref:`pruning <pruneskeleton>`,...
+* :ref:`Skeletonization <skeleton_example>` (:ref:`line <lineskeleton>` and :ref:`plate+line <surfaceskeleton>` skeletons), skeleton :ref:`tracing <vessel_graph_example>` with measurements (branch length, cross-sectional area...).
 * :ref:`Detection of interfaces <carpet_example>` using an Edwards-Wilkinson surface model
 * :ref:`Orientation analysis <orientation_example>` using the structure tensor approach
 * Fast separable :ref:`distance map <dmap>` and :ref:`local thickness map <local_thickness_example>`

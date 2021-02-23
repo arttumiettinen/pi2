@@ -6,7 +6,7 @@ thresholdrange
 
 **Syntax:** :code:`thresholdrange(image, min, max)`
 
-Threshols a range from the image. Sets to one all pixels whose value is in ]min, max].
+Threshols a range from the image. Sets to one all pixels whose value is in ]min, max], and sets all other pixels to zero.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

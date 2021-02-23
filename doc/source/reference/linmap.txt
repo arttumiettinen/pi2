@@ -6,7 +6,7 @@ linmap
 
 **Syntax:** :code:`linmap(image, input min, input max, output min, output max)`
 
-Maps pixel values linearly from one range to another. Maps position a in range [input min, input max] linearly to position in range [output min, output max]. E.g. if a = 0.5 and [input min, input max] = [0, 1] and [output min, output max] = [3, 4], result will be 3 + (0.5 - 0) / (1 - 0) * (4 - 3) = 3.5.
+Maps pixel values linearly from one range to another. Maps a value x in range [input min, input max] linearly to a value in range [output min, output max]. E.g. if x = 0.5 and [input min, input max] = [0, 1] and [output min, output max] = [3, 4], result will be 3 + (0.5 - 0) / (1 - 0) * (4 - 3) = 3.5.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

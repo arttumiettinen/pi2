@@ -1,0 +1,102 @@
+.. _eval:
+
+eval
+****
+
+There are 3 forms of this command.
+
+:code:`eval(expression, image)`
+===============================
+
+Evaluates a mathematical expression on each pixel of one or more images. The expression is given as a string.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+expression [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+The expression to evaluate on each pixel.
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process. The result will be assigned to this image. This image can be referenced by name x0 in the expression.
+
+
+:code:`eval(expression, image, argument image)`
+===============================================
+
+Evaluates a mathematical expression on each pixel of one or more images. The expression is given as a string.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+expression [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+The expression to evaluate on each pixel.
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process. The result will be assigned to this image. Pixel of this image can be referenced by name x0 in the expression.
+
+argument image [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
+
+Argument image. Pixel of this image can be referenced by name x1 in the expression.
+
+
+:code:`eval(expression, image, argument image, argument image 2)`
+=================================================================
+
+Evaluates a mathematical expression on each pixel of one or more images. The expression is given as a string.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+expression [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+The expression to evaluate on each pixel.
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image
+
+Image to process. The result will be assigned to this image. Pixel of this image can be referenced by name x0 in the expression.
+
+argument image [input]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image
+
+Argument image. Pixel of this image can be referenced by name x1 in the expression.
+
+argument image 2 [input]
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image
+
+Argument image. Pixel of this image can be referenced by name x2 in the expression.
+
