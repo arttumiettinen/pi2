@@ -20,7 +20,7 @@ After initalization, all the functionality of Pi2 can be accessed through the Pi
 	pi.writetif(img, './noise')
 
 For reference on the available functionality, use either iPython help or the :ref:`command_reference` page.
-There are many Python examples available here: https://github.com/arttumiettinen/pi2/tree/master/python_scripts/generic/pi2py2_examples.py
+There are many Python examples available here: https://github.com/arttumiettinen/pi2/tree/master/python_scripts
 
 The Python bindings in the pi2py.py file are self-generating so they are always up-to-date.
 
