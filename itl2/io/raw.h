@@ -93,21 +93,33 @@ namespace itl2
 						filename = candidates[0];
 					else
 					{
-						// Try with more restricting template, but first make sure that the file name does not end with "_"
-						// as that is part of template we add to it.
-						::std::string reducedFilename = filename;
-						if (endsWith(reducedFilename, "_"))
-							reducedFilename = reducedFilename.substr(0, reducedFilename.length() - 1);
-
-						candidates = sequence::internals::buildFileList(reducedFilename + "_@x@x@.raw");
-
-						if (candidates.size() == 0)
-							throw ITLException(string("No file found matching to templates ") + filename + "*.raw or " + reducedFilename + "_@x@x@.raw.");
+						// Try with more restricting templates.
+						
+						// First, try with the template as-is.
+						candidates = sequence::internals::buildFileList(filename + "_@x@x@.raw");
 
 						if (candidates.size() == 1)
 							filename = candidates[0];
 						else
-							throw ITLException(string("Multiple .raw files match the templates ") + filename + "*.raw and " + reducedFilename + "_@x@x@.raw.");
+						{
+							// None or multiple candidates.
+
+							// Try removing "_" from the end of the template, as the user might have added that already.
+							::std::string reducedFilename = filename;
+							if (endsWith(reducedFilename, "_"))
+							{
+								reducedFilename = reducedFilename.substr(0, reducedFilename.length() - 1);
+								candidates = sequence::internals::buildFileList(reducedFilename + "_@x@x@.raw");
+							}
+
+							if (candidates.size() == 0)
+								throw ITLException(string("Multiple .raw files match template ") + filename + "*.raw but no files match template " + reducedFilename + "_@x@x@.raw with one or more underscores.");
+
+							if (candidates.size() == 1)
+								filename = candidates[0];
+							else
+								throw ITLException(string("Multiple .raw files match the templates ") + filename + "*.raw and " + reducedFilename + "_@x@x@.raw with one or more underscores.");
+						}
 					}
 				}
 			}
