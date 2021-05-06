@@ -23,7 +23,7 @@ namespace itl2
 	template<typename T> class NumberUtils
 	{
 	public:
-		static inline const T tolerance()
+		static inline T tolerance()
 		{
 			T::NumberUtils_undefined;
 		}
@@ -188,7 +188,7 @@ namespace itl2
 	template<> class NumberUtils<float32_t>
 	{
 	public:
-		static inline const float32_t tolerance()
+		static inline float32_t tolerance()
 		{
 			return 1e-10f;
 		}
@@ -257,7 +257,7 @@ namespace itl2
 	template<> class NumberUtils<uint8_t>
 	{
 	public:
-		static inline const uint8_t tolerance()
+		static inline uint8_t tolerance()
 		{
 			return 0;
 		}
@@ -337,7 +337,7 @@ namespace itl2
 	template<> class NumberUtils<uint16_t>
 	{
 	public:
-		static inline const uint16_t tolerance()
+		static inline uint16_t tolerance()
 		{
 			return 0;
 		}
@@ -417,7 +417,7 @@ namespace itl2
 	template<> class NumberUtils<uint32_t>
 	{
 	public:
-		static inline const uint32_t tolerance()
+		static inline uint32_t tolerance()
 		{
 			return 0;
 		}
@@ -497,7 +497,7 @@ namespace itl2
 	template<> class NumberUtils<uint64_t>
 	{
 	public:
-		static inline const uint64_t tolerance()
+		static inline uint64_t tolerance()
 		{
 			return 0;
 		}
@@ -589,7 +589,7 @@ namespace itl2
 	template<> class NumberUtils<int8_t>
 	{
 	public:
-		static inline const int8_t tolerance()
+		static inline int8_t tolerance()
 		{
 			return 0;
 		}
@@ -698,7 +698,7 @@ namespace itl2
 	template<> class NumberUtils<int16_t>
 	{
 	public:
-		static inline const int16_t tolerance()
+		static inline int16_t tolerance()
 		{
 			return 0;
 		}
@@ -806,7 +806,7 @@ namespace itl2
 	template<> class NumberUtils<int32_t>
 	{
 	public:
-		static inline const int32_t tolerance()
+		static inline int32_t tolerance()
 		{
 			return 0;
 		}
@@ -913,7 +913,7 @@ namespace itl2
 	template<> class NumberUtils<int64_t>
 	{
 	public:
-		static inline const int64_t tolerance()
+		static inline int64_t tolerance()
 		{
 			return 0;
 		}
@@ -1033,7 +1033,7 @@ namespace itl2
 	template<> class NumberUtils<complex32_t>
 	{
 	public:
-		static inline const complex32_t tolerance()
+		static inline complex32_t tolerance()
 		{
 			return 0;
 		}
