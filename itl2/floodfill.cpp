@@ -366,7 +366,7 @@ namespace itl2
 		/**
 		Returns priority of the item on the top of the priority queue.
 		*/
-		const priority_t topPriority() const
+		priority_t topPriority() const
 		{
 			return queues[topQueueIndex].top().priority;
 		}
@@ -374,7 +374,7 @@ namespace itl2
 		/**
 		Returns birthday of the item on the top of the priority queue.
 		*/
-		const size_t topBirthday() const
+		size_t topBirthday() const
 		{
 			return queues[topQueueIndex].top().birthday;
 		}

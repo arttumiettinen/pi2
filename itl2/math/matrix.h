@@ -265,7 +265,7 @@ namespace itl2
 		/**
 		Tests if this matrix equals the given matrix up to the given tolerance.
 		*/
-		const bool equals(const Matrix<real_t>& r, real_t tolerance = NumberUtils<real_t>::tolerance()) const
+		bool equals(const Matrix<real_t>& r, real_t tolerance = NumberUtils<real_t>::tolerance()) const
 		{
 			if (!isSameSize(r))
 				return false;
@@ -278,12 +278,12 @@ namespace itl2
 			return true;
 		}
 
-		const bool operator==(const Matrix<real_t>& r) const
+		bool operator==(const Matrix<real_t>& r) const
 		{
 			return equals(r);
 		}
 
-		const bool operator!=(const Matrix<real_t>& r) const
+		bool operator!=(const Matrix<real_t>& r) const
 		{
 			return !(*this == r);
 		}
