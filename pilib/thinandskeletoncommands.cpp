@@ -19,6 +19,7 @@ namespace pilib
 		ADD_REAL(TraceLineSkeleton2Command);
 		ADD_REAL(TraceLineSkeletonBlockCommand);
 		ADD_REAL(TraceLineSkeletonBlock2Command);
+		CommandList::add<CombineTracedBlocksCommand>();
 		CommandList::add<CleanSkeletonCommand>();
 		CommandList::add<PruneSkeletonCommand>();
 		CommandList::add<GetPointsAndLinesCommand>();

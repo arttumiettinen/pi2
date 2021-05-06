@@ -363,6 +363,96 @@ namespace pilib
 	};
 
 
+
+	class CombineTracedBlocksCommand : public Command//, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		CombineTracedBlocksCommand() : Command("combinetracedblocks", "This is an internal command used by the tracelineskeleton command. It combines results of tracelineskeletonblock commands.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "temp file prefix", ""),
+				CommandArgument<size_t>(ParameterDirection::In, "temp file count", ""),
+				CommandArgument<Vec3c>(ParameterDirection::In, "original dimensions", ""),
+				CommandArgument<bool>(ParameterDirection::In, "store all edge points", ""),
+				CommandArgument<double>(ParameterDirection::In, "smoothing sigma", ""),
+				CommandArgument<double>(ParameterDirection::In, "max displacement", ""),
+				CommandArgument<string>(ParameterDirection::In, "vertices filename", ""),
+				CommandArgument<string>(ParameterDirection::In, "edges filename", ""),
+				CommandArgument<string>(ParameterDirection::In, "measurements filename", ""),
+				CommandArgument<string>(ParameterDirection::In, "points filename", ""),
+			},
+			"tracelineskeleton")
+		{
+		}
+
+	public:
+		virtual bool isInternal() const override
+		{
+			return true;
+		}
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			string tempFilename = pop<string>(args);	// tempFileName, prefix of {prefix}_{n}.dat files that contain the subnets
+			size_t outputCount = pop<size_t>(args);			// output.size(), subnet count
+			Vec3c inDimensions = pop<Vec3c>(args);
+			bool storeAllEdgePoints = pop<bool>(args);
+			double smoothingSigma = pop<double>(args);
+			double maxDisplacement = pop<double>(args);
+			string verticesFilename = pop<string>(args);
+			string edgesFilename = pop<string>(args);
+			string measurementsFilename = pop<string>(args);
+			string pointsFilename = pop<string>(args);
+
+			std::cout << "Loading data..." << std::endl;
+
+			// Load the data files and combine all the graphs
+			vector<Network> nets;
+			for (size_t n = 0; n < outputCount; n++)
+			{
+				vector<Network> subnets;
+				string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
+
+				std::cout << "Reading " << fname << std::endl;
+				Network::read(fname, subnets);
+				//std::cout << "Read " << subnets.size() << " subgraphs." << std::endl;
+				nets.insert(nets.end(), subnets.begin(), subnets.end());
+			}
+
+			std::cout << "Reading done." << std::endl;
+
+			Network fullnet;
+			// NOTE: We use uint8_t specialization as we don't have any image.
+			itl2::internals::combineTracedBlocks<uint8_t>(nets, fullnet, inDimensions, true, nullptr, true, storeAllEdgePoints, smoothingSigma, maxDisplacement);
+			itl2::internals::finalize(fullnet);
+
+			// Now fullnet contains the whole network (and nets contains empty networks)
+			// Convert it to images locally and set it to the outputs.
+			Image<float32_t> verticesLocal;
+			Image<uint64_t> edgesLocal;
+			Image<float32_t> measurementsLocal;
+			Image<int32_t> pointsLocal;
+			fullnet.toImage(verticesLocal, edgesLocal, &measurementsLocal, &pointsLocal);
+
+			raw::writed(verticesLocal, verticesFilename);
+			raw::writed(edgesLocal, edgesFilename);
+			raw::writed(measurementsLocal, measurementsFilename);
+			raw::writed(pointsLocal, pointsFilename);
+		}
+
+		//using Distributable::runDistributed;
+
+		//virtual vector<string> runDistributed(Distributor & distributor, vector<ParamVariant> & args) const override
+		//{
+		//	
+
+		//	return vector<string>();
+		//}
+	};
+
+
+
 	template<typename pixel_t> class TraceLineSkeletonCommand : public Command, public Distributable
 	{
 	protected:
@@ -439,46 +529,148 @@ namespace pilib
 				auto& cmd = CommandList::get<TraceLineSkeletonBlock2Command<pixel_t>>();
 				output = cmd.runDistributed(distributor, { &in, tempFilename, storeAllEdgePoints, threadCount, smoothingSigma, maxDisplacement, Distributor::BLOCK_INDEX_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() });
 			}
-            
-            std::cout << "Loading data..." << std::endl;
-			// Load the data files and combine all the graphs
-			vector<Network> nets;
+
+
+			combineBlocks(distributor, 
+				tempFilename, output.size(), in.dimensions(),
+				storeAllEdgePoints, smoothingSigma, maxDisplacement,
+				vertices, edges, measurements, points);
+
+			std::cout << "Deleting temporary files..." << std::endl;
 			for (size_t n = 0; n < output.size(); n++)
 			{
-				vector<Network> subnets;
 				string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
-				
-				std::cout << "Reading " << fname << std::endl;
-				Network::read(fname, subnets);
-				//std::cout << "Read " << subnets.size() << " subgraphs." << std::endl;
-				nets.insert(nets.end(), subnets.begin(), subnets.end());
 				fs::remove(fname);
 			}
-			
-			//std::cout << "Reading done." << std::endl;
 
-			Network fullnet;
-			itl2::internals::combineTracedBlocks<pixel_t>(nets, fullnet, in.dimensions(), true, nullptr, true, storeAllEdgePoints, smoothingSigma, maxDisplacement);
-			itl2::internals::finalize(fullnet);
+			///////////////////
+   //         
+   //         std::cout << "Loading data..." << std::endl;
+			//// Load the data files and combine all the graphs
+			//vector<Network> nets;
+			//for (size_t n = 0; n < output.size(); n++)
+			//{
+			//	vector<Network> subnets;
+			//	string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
+			//	
+			//	std::cout << "Reading " << fname << std::endl;
+			//	Network::read(fname, subnets);
+			//	//std::cout << "Read " << subnets.size() << " subgraphs." << std::endl;
+			//	nets.insert(nets.end(), subnets.begin(), subnets.end());
+			//	fs::remove(fname);
+			//}
+			//
+			////std::cout << "Reading done." << std::endl;
 
-			// Now fullnet contains the whole network (and nets contains empty networks)
-			// Convert it to images locally and set it to the outputs.
-			Image<float32_t> verticesLocal;
-			Image<uint64_t> edgesLocal;
-			Image<float32_t> measurementsLocal;
-			Image<int32_t> pointsLocal;
-			vertices.readTo(verticesLocal);
-			edges.readTo(edgesLocal);
-			measurements.readTo(measurementsLocal);
+			//Network fullnet;
+			//itl2::internals::combineTracedBlocks<pixel_t>(nets, fullnet, in.dimensions(), true, nullptr, true, storeAllEdgePoints, smoothingSigma, maxDisplacement);
+			//itl2::internals::finalize(fullnet);
 
-			fullnet.toImage(verticesLocal, edgesLocal, &measurementsLocal, &pointsLocal);
+			//// Now fullnet contains the whole network (and nets contains empty networks)
+			//// Convert it to images locally and set it to the outputs.
+			//Image<float32_t> verticesLocal;
+			//Image<uint64_t> edgesLocal;
+			//Image<float32_t> measurementsLocal;
+			//Image<int32_t> pointsLocal;
+			//vertices.readTo(verticesLocal);
+			//edges.readTo(edgesLocal);
+			//measurements.readTo(measurementsLocal);
 
-			vertices.setData(verticesLocal);
-			edges.setData(edgesLocal);
-			measurements.setData(measurementsLocal);
-			points.setData(pointsLocal);
+
+			//fullnet.toImage(verticesLocal, edgesLocal, &measurementsLocal, &pointsLocal);
+
+			//vertices.setData(verticesLocal);
+			//edges.setData(edgesLocal);
+			//measurements.setData(measurementsLocal);
+			//points.setData(pointsLocal);
+
+			///////////////////////////
 
 			return vector<string>();
+		}
+
+	private:
+
+		void combineBlocks(Distributor& distributor,
+			const string& tempFilename, size_t outputCount, const Vec3c& inDimensions,
+			bool storeAllEdgePoints, double smoothingSigma, double maxDisplacement,
+			DistributedImage<float32_t>& vertices,
+			DistributedImage<uint64_t>& edges,
+			DistributedImage<float32_t>& measurements,
+			DistributedImage<int32_t>& points) const
+		{
+			// TODO: This could be automated in distributor such that all non-distributable commands can be run as jobs,
+			// and reading and writing of the required images would be automatic.
+
+			// Generate temp file prefixes
+			string verticesFilename = createTempFilename("temp_vertices");
+			string edgesFilename = createTempFilename("temp_edges");
+			string measurementsFilename = createTempFilename("temp_measurements");
+			string pointsFilename = createTempFilename("temp_points");
+
+			// Build pi2 script. We make the script manually as we don't know the size of the output images yet.
+			std::stringstream script;
+
+			// Init so that we always print something (required at least in SLURM distributor)
+			script << "echo(true, false);" << std::endl;
+
+			// Save network to temp images
+			script << "combinetracedblocks(" << tempFilename << ", "
+											<< outputCount << ", "
+											<< inDimensions << ", "
+											<< storeAllEdgePoints << ", "
+											<< smoothingSigma << ", "
+											<< maxDisplacement << ", "
+											<< verticesFilename << ", "
+											<< edgesFilename << ", "
+											<< measurementsFilename << ", "
+											<< pointsFilename << ")" << std::endl;
+
+			// Run the job
+			distributor.submitJob(script.str(), JobType::Normal);
+			distributor.waitForJobs();
+
+			// Get sizes of temp images
+			Vec3c verticesDims, edgesDims, measurementsDims, pointsDims;
+			ImageDataType dummy;
+			string dummyString;
+			raw::getInfo(verticesFilename, verticesDims, dummy, dummyString);
+			raw::getInfo(edgesFilename, edgesDims, dummy, dummyString);
+			raw::getInfo(measurementsFilename, measurementsDims, dummy, dummyString);
+			raw::getInfo(pointsFilename, pointsDims, dummy, dummyString);
+
+			// Set sizes of output DistributedImages
+			vertices.ensureSize(verticesDims);
+			edges.ensureSize(edgesDims);
+			measurements.ensureSize(measurementsDims);
+			points.ensureSize(pointsDims);
+
+			// File system move temp images to CurrentReadSource of DistributedImages
+			// => No temp images are in RAM + no temp images need to be read (file rename is enough)
+
+			raw::internals::expandRawFilename(verticesFilename);
+			raw::internals::expandRawFilename(edgesFilename);
+			raw::internals::expandRawFilename(measurementsFilename);
+			raw::internals::expandRawFilename(pointsFilename);
+
+			std::cout << "Removing " << vertices.currentWriteTarget() << std::endl;
+			
+			fs::remove(vertices.currentWriteTarget());
+			fs::remove(edges.currentWriteTarget());
+			fs::remove(measurements.currentWriteTarget());
+			fs::remove(points.currentWriteTarget());
+			
+			std::cout << "Renaming " << verticesFilename << " to " << vertices.currentWriteTarget() << std::endl;
+
+			fs::rename(verticesFilename, vertices.currentWriteTarget());
+			fs::rename(edgesFilename, edges.currentWriteTarget());
+			fs::rename(measurementsFilename, measurements.currentWriteTarget());
+			fs::rename(pointsFilename, points.currentWriteTarget());
+
+			vertices.writeComplete();
+			edges.writeComplete();
+			measurements.writeComplete();
+			points.writeComplete();
 		}
 	};
 
