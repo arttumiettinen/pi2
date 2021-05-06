@@ -842,10 +842,10 @@ namespace itl2
 					double memSum = 0;
 					double sum = 0;
 
-					for (coord_t n = 0; n < ri.pixelCount(); n++)
+					for (coord_t nn = 0; nn < ri.pixelCount(); nn++)
 					{
-						memSum += ri(n).memSize();
-						sum += ri(n).size();
+						memSum += ri(nn).memSize();
+						sum += ri(nn).size();
 					}
 
 					if (memSum > totalRiMem)
