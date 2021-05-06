@@ -119,7 +119,7 @@ namespace itl2
 	template<> class NumberUtils<double>
 	{
 	public:
-		static inline const double tolerance()
+		static inline double tolerance()
 		{
 			return 1e-15;
 		}
