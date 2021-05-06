@@ -227,6 +227,65 @@ def create_particle_labels_test():
 
 
 
+
+def trace_skeleton_test():
+    """
+    Tests skeleton tracing in normal and distributed mode.
+    """
+
+    # Normal mode
+    skele = pi2.read(input_file("real_skele_200x200x200.raw"))
+    vertices = pi2.newimage()
+    edges = pi2.newimage()
+    measurements = pi2.newimage()
+    points = pi2.newimage()
+    pi2.tracelineskeleton(skele, vertices, edges, measurements, points)
+
+    pi2.writeraw(vertices, output_file('vertices'))
+    pi2.writeraw(edges, output_file('edges'))
+    pi2.writeraw(measurements, output_file('measurements'))
+    pi2.writeraw(points, output_file('points'))
+
+    skele = pi2.read(input_file("real_skele_200x200x200.raw"))
+    pi2.fillskeleton(skele, vertices, edges, measurements, points, 1)
+    pi2.writeraw(skele, output_file('filled_skeleton'))
+    pi2.clear()
+
+
+
+
+    # Distributed mode
+    pi2.distribute(Distributor.LOCAL)
+    pi2.maxmemory(5)
+
+    skele = pi2.read(input_file("real_skele_200x200x200.raw"))
+    vertices = pi2.newimage()
+    edges = pi2.newimage()
+    measurements = pi2.newimage()
+    points = pi2.newimage()
+    pi2.tracelineskeleton(skele, vertices, edges, measurements, points)
+
+    pi2.writeraw(vertices, output_file('vertices_distributed'))
+    pi2.writeraw(edges, output_file('edges_distributed'))
+    pi2.writeraw(measurements, output_file('measurements_distributed'))
+    pi2.writeraw(points, output_file('points_distributed'))
+
+    skele = pi2.read(input_file("real_skele_200x200x200.raw"))
+    pi2.fillskeleton(skele, vertices, edges, measurements, points, 1)
+    pi2.writeraw(skele, output_file('filled_skeleton_distributed'))
+    pi2.clear()
+
+    pi2.distribute(Distributor.NONE)
+
+    check_distribution_test_result(output_file('vertices'), output_file('vertices_distributed'), "tracelineskeleton", "vertices")
+    # NOTE: Only vertices can be compared; the edge order might be different and probably the edges might be a bit different, too,
+    # although bot are valid representations of the skeleton.
+    #check_distribution_test_result(output_file('edges'), output_file('edges_distributed'), "tracelineskeleton", "edges")
+    #check_distribution_test_result(output_file('measurements'), output_file('measurements_distributed'), "tracelineskeleton", "measurements")
+    #check_distribution_test_result(output_file('points'), output_file('points_distributed'), "tracelineskeleton", "points", data_type='int32')
+    # Skeleton filling should give the same result
+    check_distribution_test_result(output_file('filled_skeleton'), output_file('filled_skeleton_distributed'), "tracelineskeleton", "filled skeleton")
+
 def fill_skeleton_test():
     """
     Tests distributed and normal skeleton filling.
@@ -1140,7 +1199,7 @@ pi2.echo(True, False)
 #test_difference_normal_distributed('localthreshold', ['img', 'result', [2, 2, 2], AutoThresholdMethod.OTSU], 'result', maxmem=5)
 #test_difference_normal_distributed('eval', ['77', 'img'], 'img', maxmem=5)
 #test_difference_normal_distributed('eval', ['x0+x1', 'result', 'img'], 'result', maxmem=5)
-test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'], 'result', maxmem=5)
+#test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'], 'result', maxmem=5)
 
 
 #infile = input_file()
@@ -1158,6 +1217,9 @@ test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'],
 #metadata()
 #set_overloads()
 #big_tiff()
+
+
+trace_skeleton_test()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")
