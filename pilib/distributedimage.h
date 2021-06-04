@@ -10,6 +10,7 @@
 #include "io/io.h"
 
 
+using itl2::Vec3;
 using itl2::Vec3c;
 using itl2::toString;
 using itl2::imageDataType;
@@ -178,6 +179,22 @@ namespace pilib
 		}
 
 		/**
+		Test whether the given coordinates are inside this image.
+		*/
+		template<typename val_t> bool isInImage(val_t x, val_t y = 0, val_t z = 0) const
+		{
+			return x >= 0 && y >= 0 && z >= 0 && (coord_t)x < width() && (coord_t)y < height() && (coord_t)z < depth();
+		}
+
+		/**
+		Test whether the given position is inside this image.
+		*/
+		template<typename val_t> bool isInImage(const Vec3<val_t>& pos) const
+		{
+			return isInImage(pos.x, pos.y, pos.z);
+		}
+
+		/**
 		Gets pixel size in bytes.
 		*/
 		virtual size_t pixelSize() const = 0;
@@ -191,7 +208,7 @@ namespace pilib
 		/**
 		Gets piece of pi2 code to write a block of this image.
 		*/
-		std::string emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize);
+		std::string emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize) const;
 
 		/**
 		Call when all blocks of this image have been written.
@@ -399,15 +416,42 @@ namespace pilib
 		}
 
 		/**
-		Gets value of the first pixel in this image.
-		Causes the image to be read to RAM.
+		Gets the value of the first pixel in this image.
 		*/
 		pixel_t getValue() const
 		{
-			Image<pixel_t> img(dimensions());
-			readTo(img);
-			return img(0);
+			return getPixel(Vec3c(0, 0, 0));
 		}
+
+		/**
+		Get a pixel at specified location.
+		No bounds checking is performed.
+		The whole image is not read into RAM.
+		*/
+		const pixel_t getPixel(coord_t x, coord_t y = 0, coord_t z = 0) const
+		{
+			return getPixel(Vec3c(x, y, z));
+		}
+
+		/**
+		Get a pixel at specified location.
+		No bounds checking is performed.
+		The whole image is not read into RAM.
+		*/
+		const pixel_t getPixel(const Vec3c& p) const
+		{
+			if (!isSavedToDisk())
+				return (pixel_t)0;
+
+			std::string infile = currentReadSource();
+
+			Image<pixel_t> tmp(1, 1, 1);
+			io::readBlock(tmp, infile, p, false);
+			return tmp(0);
+		}
+
+		// TODO: setPixel could be added here along the same lines than getPixel functions above.
+
 
 		virtual void setData(const ImageBase* pImage) override
 		{

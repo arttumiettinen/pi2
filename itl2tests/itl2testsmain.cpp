@@ -147,6 +147,7 @@ int main()
 	//test(itl2::tests::floodfill, "Flood fill");
 	//test(itl2::tests::floodfillSanityChecks, "sanity checks of flood fill implementations");
 	//test(itl2::tests::floodfillLeaks, "Flood fill leak tests");
+	//test(itl2::tests::floodfillThreading, "Flood fill multithreading");
 
 	//test(itl2::tests::mipMatch, "MIP Match");
 
@@ -234,7 +235,7 @@ int main()
 	//test(itl2::tests::pointsToDeformed, "points to deformed");
 	
 
-	test(itl2::tests::eval, "evaluation of string expressions");
+	//test(itl2::tests::eval, "evaluation of string expressions");
 
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet

@@ -52,6 +52,7 @@ namespace pilib
 		}
 	};
 
+	// TODO: This can be made much faster than using generationdistributable!
 	template<typename pixel_t> class SetPixelCommand : public GenerationDistributable<pixel_t>
 	{
 	protected:

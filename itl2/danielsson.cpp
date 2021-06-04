@@ -9,6 +9,7 @@
 #include "testutils.h"
 #include "math/mathutils.h"
 #include "math/vectoroperations.h"
+#include "io/vectorio.h"
 
 #include "thickmap.h"
 
@@ -590,18 +591,27 @@ namespace itl2
 		*/
 		void readTable(vector<coord_t>& table, const string& filename)
 		{
-			std::ifstream in(filename, ios_base::in | ios_base::binary);
-			if (!in.is_open())
-				return;
-
-			while (in.good())
+			try
 			{
-				coord_t value;
-				in.read((char*)&value, sizeof(coord_t));
-				if (in.eof())
-					break;
-				table.push_back(value);
+				readListFile(filename, table);
 			}
+			catch (const ITLException&)
+			{
+				// The file does not exist - just return without loading the table
+				return;
+			}
+			//std::ifstream in(filename, ios_base::in | ios_base::binary);
+			//if (!in.is_open())
+			//	return;
+
+			//while (in.good())
+			//{
+			//	coord_t value;
+			//	in.read((char*)&value, sizeof(coord_t));
+			//	if (in.eof())
+			//		break;
+			//	table.push_back(value);
+			//}
 		}
 
 		/**
@@ -609,13 +619,14 @@ namespace itl2
 		*/
 		void writeTable(vector<coord_t>& table, const string& filename)
 		{
-			createFoldersFor(filename);
-			std::ofstream out(filename, ios_base::out | ios_base::trunc | ios_base::binary);
-			if (!out.is_open())
-				return;
+			writeListFile(filename, table);
+			//createFoldersFor(filename);
+			//std::ofstream out(filename, ios_base::out | ios_base::trunc | ios_base::binary);
+			//if (!out.is_open())
+			//	return;
 
-			for (size_t n = 0; n < table.size(); n++)
-				out.write((char*)&table[n], sizeof(coord_t));
+			//for (size_t n = 0; n < table.size(); n++)
+			//	out.write((char*)&table[n], sizeof(coord_t));
 		}
 
 		/**
@@ -646,8 +657,8 @@ namespace itl2
 	{
 		void danielssonTableSpeedTest()
 		{
-			//coord_t R2max = 150 * 150;
-			coord_t R2max = 300 * 300;
+			coord_t R2max = 150 * 150;
+			//coord_t R2max = 300 * 300;
 
 			// Get tables from disk. This assumes they have been saved before.
 			vector<coord_t> table1GT, table2GT, table3GT;
@@ -655,6 +666,7 @@ namespace itl2
 
 			// Measure how long it takes to calculate the tables
 			vector<coord_t> table1, table2, table3;
+			
 			Timer timer;
 			timer.start();
 			internals::expandDanielssonTables(table1, table2, table3, R2max);

@@ -114,4 +114,9 @@ namespace pilib
 	{
 		return distributable->getJobType(args);
 	}
+
+	bool Delayed::needsToRun(const Vec3c& readStart, const Vec3c& readSize, const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize, size_t blockIndex) const
+	{
+		return distributable->needsToRunBlock(args, readStart, readSize, writeFilePos, writeImPos, writeSize, blockIndex);
+	}
 }

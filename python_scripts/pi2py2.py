@@ -194,13 +194,6 @@ class Pi2Object:
     Base class for objects (values and images) stored in the Pi2 system.
     """
 
-    # Name of the object in the Pi2 system.
-    name = ""
-
-    # Pi2 object that owns this object.
-    pi2 = 0
-
-
     def __init__(self, pi2, name):
         """
         Do not use the constructor directly, instead use Pi2.newimage etc.
@@ -481,13 +474,6 @@ class Pi2:
     Wraps Pi2 library.
     Use help() and info() methods to get further usage instructions.
     """
-
-    # Dynamic library object
-    pilib = 0
-
-    # Handle that is used to access pilib
-    piobj = 0
-
 
 
     def add_method(self, cmd_name):

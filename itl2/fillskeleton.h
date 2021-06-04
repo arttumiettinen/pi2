@@ -52,7 +52,7 @@ namespace itl2
 					// Thus this test is requried not to fill background if startPoint happens to
 					// be located in the block edge.
 					if (skeleton(startPoint) != 0)
-						floodfill(skeleton, Vec3c(startPoint), fillColor, fillColor, Connectivity::AllNeighbours);
+						floodfillSingleThreaded(skeleton, Vec3c(startPoint), fillColor, fillColor, Connectivity::AllNeighbours);
 				}
 			}
 

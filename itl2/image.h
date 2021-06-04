@@ -14,6 +14,7 @@
 #include "diskmappedbuffer.h"
 #include "io/imagedatatype.h"
 #include "imagemetadata.h"
+#include "aabox.h"
 
 namespace itl2
 {
@@ -133,6 +134,15 @@ namespace itl2
 		}
 
 		/**
+		Returns bounds of the image as an AABox.
+		The box spans from (0, 0, 0) to dimensions().
+		*/
+		AABox<coord_t> bounds() const
+		{
+			return AABox<coord_t>(Vec3c(), dimensions());
+		}
+
+		/**
 		Gets pixel size in bytes.
 		*/
 		virtual size_t pixelSize() const = 0;
@@ -170,11 +180,31 @@ namespace itl2
 		}
 
 		/**
-		Gets count of pixels in the image.
+		Gets the count of pixels in the image.
 		*/
 		coord_t pixelCount() const
 		{
 			return width() * height() * depth();
+		}
+
+		/**
+		Gets the count of edge pixels in the image.
+		*/
+		coord_t edgePixelCount() const
+		{
+			coord_t count = 0;
+			if (depth() > 1)
+				count += 2 * width() * height();
+
+			if (height() > 1)
+				count += 2 * width() * std::max(depth() - 2, (coord_t)1);
+
+			if (width() > 1)
+				count += 2 * std::max(height() - 2, (coord_t)1) * std::max(depth() - 2, (coord_t)1);
+
+			return count;
+			// Note: In the 3D case, the above reduces to this:
+			//return 2 * width() * height() + 2 * width() * (depth() - 2) + 2 * (height() - 2) * (depth() - 2);
 		}
 
 		///**

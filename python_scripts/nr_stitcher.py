@@ -18,22 +18,24 @@ class NonGridStitchSettings:
     Stores values of all the stitching settings.
     Values are read from input file or set to default values.
     """
-    sample_name = ''
-    binning = 1
-    dimensions = np.array([0, 0, 0])
-    point_spacing = 0
-    coarse_block_radius = ['', '', '']
-    coarse_binning = [0, 0, 0]
-    fine_block_radius = ['', '', '']
-    fine_binning = [0, 0, 0]
-    normalize_in_blockmatch = 0
-    normalize_while_stitching = 0
-    filter_threshold = '0'
-    global_optimization = True
-    allow_rotation = True
-    allow_local_shifts = True
-    allow_local_deformations = True
-    force_redo = False
+
+    def __init__(self):
+        sample_name = ''
+        binning = 1
+        dimensions = np.array([0, 0, 0])
+        point_spacing = 0
+        coarse_block_radius = ['', '', '']
+        coarse_binning = [0, 0, 0]
+        fine_block_radius = ['', '', '']
+        fine_binning = [0, 0, 0]
+        normalize_in_blockmatch = 0
+        normalize_while_stitching = 0
+        filter_threshold = '0'
+        global_optimization = True
+        allow_rotation = True
+        allow_local_shifts = True
+        allow_local_deformations = True
+        force_redo = False
 
 
 
