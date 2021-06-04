@@ -479,7 +479,7 @@ namespace itl2
 			newSeeds.clear();
 		} while (totalResult == true && prevSeeds.size() > 0);
 
-
+		return totalResult;
 	}
 
 	/**

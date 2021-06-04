@@ -446,7 +446,7 @@ namespace pilib
 			std::string infile = currentReadSource();
 
 			Image<pixel_t> tmp(1, 1, 1);
-			io::readBlock(tmp, infile, p, false);
+			itl2::io::readBlock(tmp, infile, p, false);
 			return tmp(0);
 		}
 
