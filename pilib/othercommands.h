@@ -993,6 +993,11 @@ namespace pilib
 
 			return vector<string>();
 		}
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
 	};
 
 
