@@ -54,6 +54,7 @@
     <ClInclude Include="io\inireader.h" />
     <ClInclude Include="io\nrrd.h" />
     <ClInclude Include="io\pcr.h" />
+    <ClInclude Include="io\vectorio.h" />
     <ClInclude Include="iteration.h" />
     <ClInclude Include="marchingcubes.h" />
     <ClInclude Include="math\ludecomposition.h" />

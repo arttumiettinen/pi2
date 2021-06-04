@@ -98,7 +98,7 @@ namespace itl2
 						if (nb(x, y, z) != (pixel_t)0)
 						{
 							pixel_t fillColor = (pixel_t)(count + 2);
-							floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::AllNeighbours);
+							slowFloodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::AllNeighbours);
 							count++;
 						}
 					}
@@ -193,7 +193,7 @@ namespace itl2
 						if (nb(x, y, z) == 0)
 						{
 							pixel_t fillColor = (pixel_t)(count + 2);
-							floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::NearestNeighbours);
+							slowFloodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::NearestNeighbours);
 							count++;
 						}
 					}
@@ -244,7 +244,7 @@ namespace itl2
 			if (nb(x, y, z) == 0)
 			{
 				pixel_t fillColor = (pixel_t)(count + 2);
-				floodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::NearestNeighbours);
+				slowFloodfill(nb, Vec3c(x, y, z), fillColor, fillColor, Connectivity::NearestNeighbours);
 				return count + 1;
 			}
 
@@ -408,7 +408,7 @@ namespace itl2
 
 			// Find all points in the intersection region
 			std::vector<Vec3sc> filledPoints;
-			floodfill<pixel_t>(img, Vec3c(pos), 0, 0, Connectivity::AllNeighbours, nullptr, &filledPoints);
+			floodfillSingleThreaded<pixel_t>(img, Vec3c(pos), 0, 0, Connectivity::AllNeighbours, nullptr, &filledPoints);
 
 			if (filledPoints.size() <= 0)
 				throw ITLException("Invalid position passed to intersection tracer. There is no intersection at that location.");
@@ -603,7 +603,7 @@ namespace itl2
 					//raw::writed(slice, "./skeleton/tracing/slice_th");
 
 					std::vector<Vec3sc> filledPoints;
-					floodfill<orig_t>(slice, slice.dimensions() / 2, (orig_t)0, (orig_t)0, Connectivity::AllNeighbours, nullptr, &filledPoints);
+					floodfillSingleThreaded<orig_t>(slice, slice.dimensions() / 2, (orig_t)0, (orig_t)0, Connectivity::AllNeighbours, nullptr, &filledPoints);
 
 					//raw::writed(slice, "./skeleton/tracing/slice_fill");
 

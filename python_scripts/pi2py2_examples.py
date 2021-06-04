@@ -32,7 +32,6 @@ def output_file(name):
 
 
 
-
 def create_and_access_images():
     """
     Demonstrates creation of image and accessing its data.
@@ -76,6 +75,39 @@ def create_and_access_images():
     # does not seem to be wise...
     pi.writetif(data, output_file("numpy_array_tif"))
 
+
+
+
+def pi2_numpy_dimensions():
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.get_data().shape}")
+
+    pi.set(img1, [2, 4, 6], 255)
+    print(img1.get_data()[4, 2, 6])
+
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.get_data().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 1, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.get_data().shape}")
+
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 20, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.get_data().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 1, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.get_data().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 1, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.get_data().shape}")
 
 
 
@@ -1472,6 +1504,7 @@ def fibre_properties():
 
 
 # Please uncomment the examples you wish to run:
+pi2_numpy_dimensions()
 #create_and_access_images()
 #read_and_write_image()
 #help()
@@ -1497,4 +1530,4 @@ def fibre_properties():
 #montage()
 #skeleton_types()
 #fibre_properties()
-vessel_tracing()
+#vessel_tracing()

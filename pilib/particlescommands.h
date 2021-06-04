@@ -16,6 +16,7 @@
 #include "commandlist.h"
 
 #include "pilibutilities.h"
+#include "io/vectorio.h"
 
 #include "standardhelp.h"
 
@@ -134,56 +135,61 @@ namespace pilib
 	{
 	private:
 
-		static void writeList(const string& filename, const vector<coord_t>& v)
-		{
-			std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-			if (!out)
-				throw ITLException(string("Unable to write to: ") + filename);
+		//static void writeList(const string& filename, const vector<coord_t>& v)
+		//{
+		//	std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+		//	if (!out)
+		//		throw ITLException(string("Unable to write to: ") + filename);
 
-			size_t s = v.size();
-			out.write((const char*)&s, sizeof(size_t));
+		//	size_t s = v.size();
+		//	out.write((const char*)&s, sizeof(size_t));
 
-			for (size_t n = 0; n < v.size(); n++)
-			{
-				out.write((char*)&v[n], sizeof(coord_t));
-			}
-		}
+		//	for (size_t n = 0; n < v.size(); n++)
+		//	{
+		//		out.write((char*)&v[n], sizeof(coord_t));
+		//	}
+		//}
 
-		static void writeList(std::ofstream& out, const vector<Vec3sc>& v)
-		{
-			size_t s = v.size();
-			out.write((const char*)&s, sizeof(size_t));
+		//static void writeList(std::ofstream& out, const vector<Vec3sc>& v)
+		//{
+		//	size_t s = v.size();
+		//	out.write((const char*)&s, sizeof(size_t));
 
-			for (size_t n = 0; n < v.size(); n++)
-			{
-				out.write((char*)&v[n].x, sizeof(int32_t));
-				out.write((char*)&v[n].y, sizeof(int32_t));
-				out.write((char*)&v[n].z, sizeof(int32_t));
-			}
-		}
+		//	for (size_t n = 0; n < v.size(); n++)
+		//	{
+		//		out.write((char*)&v[n].x, sizeof(int32_t));
+		//		out.write((char*)&v[n].y, sizeof(int32_t));
+		//		out.write((char*)&v[n].z, sizeof(int32_t));
+		//	}
+		//}
 
-		static void writeList(const string& filename, const vector<Vec3sc>& v)
-		{
-			std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-			if (!out)
-				throw ITLException(string("Unable to write to: ") + filename);
+		//static void writeList(const string& filename, const vector<Vec3sc>& v)
+		//{
+		//	std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+		//	if (!out)
+		//		throw ITLException(string("Unable to write to: ") + filename);
 
-			writeList(out, v);
-		}
+		//	writeList(out, v);
+		//}
+
+		//static void writeList(const string& filename, const vector<vector<Vec3sc> >& v)
+		//{
+		//	std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+		//	if (!out)
+		//		throw ITLException(string("Unable to write to: ") + filename);
+
+		//	size_t s = v.size();
+		//	out.write((const char*)&s, sizeof(size_t));
+
+		//	for (size_t n = 0; n < v.size(); n++)
+		//	{
+		//		writeList(out, v[n]);
+		//	}
+		//}
 
 		static void writeList(const string& filename, const vector<vector<Vec3sc> >& v)
 		{
-			std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-			if (!out)
-				throw ITLException(string("Unable to write to: ") + filename);
-
-			size_t s = v.size();
-			out.write((const char*)&s, sizeof(size_t));
-
-			for (size_t n = 0; n < v.size(); n++)
-			{
-				writeList(out, v[n]);
-			}
+			itl2::writeListFile(filename, v, [=](std::ofstream& out, const std::vector<Vec3sc>& v) { itl2::writeList<Vec3sc>(out, v); });
 		}
 		
 	protected:
@@ -242,7 +248,7 @@ namespace pilib
 			writeText(filename + "_results.txt", results.str());
 			writeList(filename + "_incomplete_particles.dat", incompleteParticles);
 			writeList(filename + "_large_edge_points.dat", largeEdgePoints);
-			writeList(filename + "_edge_z.dat", edgeZ);
+			itl2::writeListFile(filename + "_edge_z.dat", edgeZ);
 		}
 
 		using Distributable::runDistributed;
@@ -293,69 +299,74 @@ namespace pilib
 	{
 	private:
 
-		static void readList(const string& filename, vector<coord_t>& v)
-		{
-			std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-			if (!in)
-				throw ITLException(string("Unable to open file: ") + filename);
+		//static void readList(const string& filename, vector<coord_t>& v)
+		//{
+		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
+		//	if (!in)
+		//		throw ITLException(string("Unable to open file: ") + filename);
 
-			size_t s = 0;
-			in.read((char*)&s, sizeof(size_t));
+		//	size_t s = 0;
+		//	in.read((char*)&s, sizeof(size_t));
 
-			v.reserve(v.size() + s);
+		//	v.reserve(v.size() + s);
 
-			for (size_t n = 0; n < s; n++)
-			{
-				coord_t val;
-				in.read((char*)&val, sizeof(coord_t));
-				v.push_back(val);
-			}
-		}
+		//	for (size_t n = 0; n < s; n++)
+		//	{
+		//		coord_t val;
+		//		in.read((char*)&val, sizeof(coord_t));
+		//		v.push_back(val);
+		//	}
+		//}
 
-		static void readList(std::ifstream& in, vector<Vec3sc>& v)
-		{
-			size_t s = 0;
-			in.read((char*)&s, sizeof(size_t));
+		//static void readList(std::ifstream& in, vector<Vec3sc>& v)
+		//{
+		//	size_t s = 0;
+		//	in.read((char*)&s, sizeof(size_t));
 
-			v.reserve(v.size() + s);
+		//	v.reserve(v.size() + s);
 
-			for (size_t n = 0; n < s; n++)
-			{
-				Vec3sc val;
-				in.read((char*)&val.x, sizeof(uint32_t));
-				in.read((char*)&val.y, sizeof(uint32_t));
-				in.read((char*)&val.z, sizeof(uint32_t));
-				v.push_back(val);
-			}
-		}
+		//	for (size_t n = 0; n < s; n++)
+		//	{
+		//		Vec3sc val;
+		//		in.read((char*)&val.x, sizeof(uint32_t));
+		//		in.read((char*)&val.y, sizeof(uint32_t));
+		//		in.read((char*)&val.z, sizeof(uint32_t));
+		//		v.push_back(val);
+		//	}
+		//}
 
-		static void readList(const string& filename, vector<Vec3sc>& v)
-		{
-			std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-			if (!in)
-				throw ITLException(string("Unable to open file: ") + filename);
+		//static void readList(const string& filename, vector<Vec3sc>& v)
+		//{
+		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
+		//	if (!in)
+		//		throw ITLException(string("Unable to open file: ") + filename);
 
-			readList(in, v);
-		}
+		//	readList(in, v);
+		//}
+
+		//static void readList(const string& filename, vector<vector<Vec3sc> >& v)
+		//{
+		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
+		//	if (!in)
+		//		throw ITLException(string("Unable to open file: ") + filename);
+
+		//	size_t s = 0;
+		//	in.read((char*)&s, sizeof(size_t));
+
+		//	v.reserve(v.size() + s);
+
+		//	vector<Vec3sc> val;
+		//	for (size_t n = 0; n < s; n++)
+		//	{
+		//		val.clear();
+		//		readList(in, val);
+		//		v.push_back(val);
+		//	}
+		//}
 
 		static void readList(const string& filename, vector<vector<Vec3sc> >& v)
 		{
-			std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-			if (!in)
-				throw ITLException(string("Unable to open file: ") + filename);
-
-			size_t s = 0;
-			in.read((char*)&s, sizeof(size_t));
-
-			v.reserve(v.size() + s);
-
-			vector<Vec3sc> val;
-			for (size_t n = 0; n < s; n++)
-			{
-				val.clear();
-				readList(in, val);
-				v.push_back(val);
-			}
+			itl2::readListFile(filename, v, [=](std::ifstream& in, std::vector<Vec3sc>& v) { itl2::readList<Vec3sc>(in, v); });
 		}
 
 	protected:
@@ -446,7 +457,7 @@ namespace pilib
 				results.readText(resultsName);
 				readList(incompleteName, incompleteParticles);
 				readList(largeName, largeEdgePoints);
-				readList(edgezName, edgeZ);
+				itl2::readListFile(edgezName, edgeZ);
 
 				itl2::internals::combineParticleAnalysisResults(analyzers, results, largeEdgePoints, incompleteParticles, volumeLimit, connectivity, edgeZ, n < output.size() - 1);
 			}

@@ -627,6 +627,7 @@ namespace pilib
 											<< pointsFilename << ")" << std::endl;
 
 			// Run the job
+			distributor.flush();
 			distributor.submitJob(script.str(), JobType::Normal);
 			distributor.waitForJobs();
 

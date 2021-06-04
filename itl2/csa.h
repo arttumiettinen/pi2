@@ -159,7 +159,7 @@ namespace itl2
 						{
 
 							filledPoints.clear();
-							itl2::floodfill(slice, Vec3c(sliceRadius, sliceRadius, 0), fillColor, fillColor, Connectivity::AllNeighbours, nullptr, &filledPoints);
+							itl2::floodfillSingleThreaded(slice, Vec3c(sliceRadius, sliceRadius, 0), fillColor, fillColor, Connectivity::AllNeighbours, nullptr, &filledPoints);
 
 							if (filledPoints.size() > 3)
 							{

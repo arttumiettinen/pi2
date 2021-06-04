@@ -128,9 +128,12 @@ namespace itl2
 				{
 					for (auto & p : fs::directory_iterator(dir))
 					{
-						string filename = p.path().filename().string();
-						if (matches(filename, fileTemplate))
-							filenames.push_back(p.path().string());
+						if (p.is_regular_file())
+						{
+							string filename = p.path().filename().string();
+							if (matches(filename, fileTemplate))
+								filenames.push_back(p.path().string());
+						}
 					}
 
 					// Sort to natural order
@@ -157,6 +160,8 @@ namespace itl2
 					fs::path ext = p.extension();
 					string exts = ext.string();
 					toLower(exts);
+
+					// TODO: Add other formats here.
 					if(ext != ".tif" && ext != ".tiff" && ext != ".png")
 					{
 						results.erase(results.begin() + n);

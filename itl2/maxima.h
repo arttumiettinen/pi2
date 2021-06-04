@@ -44,7 +44,7 @@ namespace itl2
 						neighbourValues.clear();
 
 						// Find all points in the current region
-						floodfill(orig, p, tempColor, tempColor, connectivity, nullptr, &filledPoints, 0, &neighbourValues);
+						floodfillSingleThreaded(orig, p, tempColor, tempColor, connectivity, nullptr, &filledPoints, 0, &neighbourValues);
 
 						// Put the correct value back
 						draw(orig, filledPoints, v);
