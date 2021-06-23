@@ -222,7 +222,7 @@ int main()
 	//test(itl2::tests::localThreshold, "local thresholding");
 	//test(itl2::tests::localMaxima, "local maxima search");
 
-	//test(itl2::tests::carpet, "surface finding");
+	test(itl2::tests::carpet, "surface finding");
 	//test(itl2::tests::ellipsoid, "drawing ellipsoids");
 
 	//test(itl2::tests::montage, "2D montage of 3D stack");
