@@ -114,8 +114,7 @@ namespace itl2
 
 		for (size_t n = 0; n < iterations; n++)
 		{
-			gaussFilter(heightMap, surfaceTension, BoundaryCondition::Nearest);
-
+			// Move
 			for (coord_t y = 0; y < heightMap.height(); y++)
 			{
 				for (coord_t x = 0; x < heightMap.width(); x++)
@@ -133,6 +132,9 @@ namespace itl2
 					heightMap(x, y) = newDepth;
 				}
 			}
+
+			// Apply surface tension
+			gaussFilter(heightMap, surfaceTension, BoundaryCondition::Nearest);
 
 			internals::visualizeLayer(geometry, heightMap, pVisualization, visualizeY, visColor, (coord_t)n);
 
