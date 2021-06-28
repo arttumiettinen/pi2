@@ -27,7 +27,7 @@ height map [input & output]
 
 **Data type:** float32 image
 
-Height map that defines the initial position of the surface, or an empty image. The height map gives :math:`z`-position of the surface for each :math:`(x,y)`-position of the geometry image. The final position of the surface is also saved into this height map. The size of the height map must be :math:`w \times h` where :math:`w` and :math:`h` are the width and the height of the geometry image.
+Height map that defines the initial position of the surface, or an empty image. The height map gives :math:`z`-position of the surface for each :math:`(x,y)`-position of the geometry image. The final position of the surface is also saved into this height map. If used as an input, the size of the height map must be :math:`w \times h` where :math:`w` and :math:`h` are the width and the height of the geometry image. If the size is not correct, the height map will be zeroed and set to the correct size.
 
 stopping gray value [input]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
