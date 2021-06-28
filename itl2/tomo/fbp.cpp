@@ -291,13 +291,6 @@ namespace itl2
 			return (angles[angleIndex] - centralAngle) * csAngleSlope;
 		}
 
-		float32_t csZPerturbation(float32_t z, float32_t roiCenterZ, float32_t roiSizeZ, float32_t projectionHeight, float32_t csZSlope)
-		{
-			float32_t roiStartZ = roiCenterZ - roiSizeZ / 2.0f;
-			float32_t fullImageZ = roiStartZ + z;
-			return (fullImageZ - projectionHeight / 2) * csZSlope;
-		}
-
 		/**
 		Checks that projection images and settings correspond to each other.
 		Adjusts zero elements in roi size vector to full image dimension.
@@ -371,7 +364,7 @@ namespace itl2
 			float Z = (float)z - (height / 2.0f - dz) - cameraZShift;
 			for (coord_t y = 0; y < width; y++)
 			{
-				float Y = (float)y - ((float)width / 2.0f - dx) - centerShift - internals::csZPerturbation((float)z, height / 2.0f, (float)height, (float)height, csZSlope);
+				float Y = (float)y - ((float)width / 2.0f - dx) - centerShift - internals::csZPerturbation((float)z, (float)height, csZSlope);
 
 				// Weight inherent in FDK algorithm
 				float w = d / sqrt(d * d + Y * Y + Z * Z);
@@ -1048,17 +1041,9 @@ namespace itl2
 
 #pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable
 
-//float csZPerturbation(float z, float projectionHeight, float csZSlope)
-//{
-//	return (z - projectionHeight / 2) * csZSlope;
-//}
-
-float csZPerturbation(float z, float centerZ, float projectionHeight, float csZSlope)
+float csZPerturbation(float projectionZ, float projectionHeight, float csZSlope)
 {
-	//float roiStartZ = roiCenterZ - roiSizeZ / 2.0f;
-	float roiStartZ = -centerZ; // = roiCenterZ + Vec3f(0, 0, 0.5) - roiSizeZ / 2.0f
-	float fullImageZ = roiStartZ + z;
-	return (fullImageZ - projectionHeight / 2) * csZSlope;
+	return (projectionZ - projectionHeight / 2) * csZSlope;
 }
 
 kernel void backproject(read_only image3d_t transmissionProjections,
@@ -1096,7 +1081,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 	const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 
-	float currentCS = centerShift + csZPerturbation(posf.z, center.z, projectionHeight, csZSlope);
 
 	// Read initial value of the pixel as this kernel may be called multiple times with different set of projections if
 	// all of them do not fit into memory at once.
@@ -1120,9 +1104,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		// TODO: Actually we have object shifts so this is only approximation that is correct for parallel beam case.
 		float sdx = objectShifts[anglei].x;
 		float sdz = objectShifts[anglei].y;
-		float angleCS = currentCS + csAnglePerturbations[anglei];
-		float ix = Y + projectionWidth / 2.0f + angleCS - sdx;
+		
 		float iy = Z + projectionHeight / 2.0f + cameraZShift - sdz;
+
+		float angleCS = centerShift + csZPerturbation(iy, projectionHeight, csZSlope) + csAnglePerturbations[anglei];
+
+		float ix = Y + projectionWidth / 2.0f + angleCS - sdx;
 
 		// TODO: Handle camera rotation here
 
@@ -1455,8 +1442,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				{
 					Vec3f xyz = corners[m];
 
-					float32_t currentCS = settings.centerShift + internals::csZPerturbation(xyz.z, (float32_t)settings.roiCenter.z, (float32_t)settings.roiSize.z, projectionHeight, settings.csZSlope);
-
 					Vec3f rho = xyz - center;
 
 					float32_t dprhox = d + rho.dot(xHat);
@@ -1465,9 +1450,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 					float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
 					float32_t sdz = settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-					float32_t angleCS = currentCS + internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope);
-					float32_t ix = Y + projectionWidth / 2.0f + angleCS - sdx;
+					
 					float32_t iy = Z + projectionHeight / 2.0f + settings.cameraZShift - sdz;
+
+					float32_t angleCS = settings.centerShift + internals::csZPerturbation(iy, projectionHeight, settings.csZSlope) + internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope);
+
+					float32_t ix = Y + projectionWidth / 2.0f + angleCS - sdx;
 
 					projMinCoords = min(projMinCoords, Vec2f(ix, iy));
 					projMaxCoords = max(projMaxCoords, Vec2f(ix, iy));
