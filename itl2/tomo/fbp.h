@@ -477,7 +477,13 @@ namespace itl2
 
 		float32_t csAnglePerturbation(size_t angleIndex, float32_t centralAngle, const std::vector<float32_t>& angles, float32_t csAngleSlope);
 
-		float32_t  csZPerturbation(float32_t z, float32_t roiCenterZ, float32_t roiSizeZ, float32_t projectionHeight, float32_t csZSlope);
+		/**
+		Calculates perturbation to be applied to CS values, given projection height and z-coordinate in the projection in range [0, projectionHeight - 1[.
+		*/
+		inline float32_t csZPerturbation(float32_t projectionZ, float32_t projectionHeight, float32_t csZSlope)
+		{
+			return (projectionZ - projectionHeight / 2) * csZSlope;
+		}
 
 		/**
 		Adjusts reconstruction settings for binning.
@@ -579,8 +585,6 @@ namespace itl2
 				#pragma omp parallel for if(!omp_in_parallel() && settings.roiSize.x > 1)
 				for(coord_t x = 0; x < settings.roiSize.x; x++)
 				{
-					float32_t currentCS = settings.centerShift + internals::csZPerturbation((float32_t)z, (float32_t)settings.roiCenter.z, (float32_t)settings.roiSize.z, projectionHeight, settings.csZSlope);
-
 					// Sum contributions from all projections
 					float32_t sum = 0;
 					for (coord_t anglei = 0; anglei < transmissionProjections.depth(); anglei++)
@@ -601,9 +605,12 @@ namespace itl2
 						// TODO: Actually we have object shifts so this is only approximation that is correct for parallel beam case.
 						float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
 						float32_t sdz = settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-						float32_t angleCS = currentCS + csAnglePerturbations[anglei];
-						float32_t ix = Y + projectionWidth / 2.0f + angleCS -sdx;
+						
 						float32_t iy = Z + projectionHeight / 2.0f + settings.cameraZShift -sdz;
+
+						float32_t angleCS = settings.centerShift + internals::csZPerturbation(iy, projectionHeight, settings.csZSlope) + sAnglePerturbations[anglei];
+
+						float32_t ix = Y + projectionWidth / 2.0f + angleCS - sdx;
 
 						// TODO: Handle camera rotation here
 
