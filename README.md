@@ -39,7 +39,7 @@ When building from the source, consider using branch 'experimental'. The most re
 ### Linux
 
 The overall build process is as follows:
-* Make sure that gcc 7.3 or newer is installed. Often you also need to install build-essential or corresponding package.
+* Make sure that gcc 8.4.0 or newer is installed. Often you also need to install build-essential or corresponding package.
 * Make sure that FFTW 3 library and its development packages are installed, or place its source to fftw-3.3.7-src folder and run build_again.sh.
 * Make sure that libpng and libtiff libraries and their development packages are installed.
 * For Python support make sure that Python 3 is installed.
@@ -57,7 +57,7 @@ make NO_OPENCL=1
 You can install the executable and libraries to any standard location, but often it is better to just copy the files along with your project. This guarantees that you know which version of the program you used to generate the results.
 
 NOTE: The default makefile compiles the programs for the processor type of the computer where the compilation is done. E.g. in heterogeneous clusters not all nodes might support the same instruction set.
-In those cases you will get an 'Illegal instruction'-error. To fix the problem, please determine suitable value for gcc march parameter (https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#x86-Options) and enter that into the CXXFLAGS in the main makefile.
+In those cases you will get an 'Illegal instruction'-runtime error. To fix the problem, please determine suitable value for gcc march parameter (https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#x86-Options) and enter that into the CXXFLAGS in the main makefile.
 
 
 ### Windows
