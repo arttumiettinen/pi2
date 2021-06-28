@@ -241,7 +241,7 @@ namespace itl2
 							if (volumeLimit <= 0)
 							{
 								// No volume limit, use simple fill
-								isOk = floodfill(image, Vec3c(x, y, z), fillColor, fillColor, connectivity, 0, &particlePoints);
+								isOk = floodfillSingleThreaded(image, Vec3c(x, y, z), fillColor, fillColor, connectivity, 0, &particlePoints);
 							}
 							else
 							{
@@ -249,7 +249,7 @@ namespace itl2
 								// Capture neighbourColors so that large particles are not collected as 1-pixel regions but larger ones
 								// (good for combineParticleAnalysisResults).
 								std::set<pixel_t> neighbourColors;
-								isOk = floodfill(image, Vec3c(x, y, z), fillColor, fillColor, connectivity, 0, &particlePoints, volumeLimit, &neighbourColors);
+								isOk = floodfillSingleThreaded(image, Vec3c(x, y, z), fillColor, fillColor, connectivity, 0, &particlePoints, volumeLimit, &neighbourColors);
 								if (isOk) // Check if the region touches region with large color
 									isOk = neighbourColors.count(largeColor) <= 0;
 							}
@@ -1155,7 +1155,7 @@ namespace itl2
 			pos.y = round(results[n][yi]);
 			pos.z = round(results[n][zi]);
 
-			floodfill<pixel_t>(image, pos + shift, fillColor, fillColor, conn);
+			floodfillSingleThreaded<pixel_t>(image, pos + shift, fillColor, fillColor, conn);
 
 			showThreadProgress(counter, results.size());
 		}

@@ -196,6 +196,15 @@ namespace itl2
 		}
 
 		/**
+		Calculates area of the box.
+		Assumes the box represents a 3D shape irrespective of its dimensions.
+		*/
+		T area() const
+		{
+			return 2 * width() * height() + 2 * width() * depth() + 2 * height() * depth();
+		}
+
+		/**
 		Calculates the size of the box.
 		*/
 		Vec3<T> size() const

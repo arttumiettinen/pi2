@@ -465,7 +465,6 @@ namespace pilib
 			args2.push_back(p);
 			auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
 			return cmd.runDistributed(distributor, args2);
-			//return distributor.distribute(cmd, args2);
 		}
 	};
 

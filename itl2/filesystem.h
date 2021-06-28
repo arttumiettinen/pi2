@@ -2,8 +2,8 @@
 
 #if defined(__linux__)
 
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #elif defined(_WIN32)
 

@@ -6,6 +6,7 @@
 #include "transform.h"
 #include "generation.h"
 #include "dmap.h"
+#include "iteration.h"
 
 #include "testutils.h"
 
@@ -16,6 +17,8 @@ using namespace std;
 
 namespace itl2
 {
+	
+
 	namespace internals
 	{
 		template<typename weight_t> class SimpleSeed
@@ -835,7 +838,7 @@ namespace itl2
 
 			timer.start();
 			size_t count1;
-			itl2::floodfill(filled1, start, (uint8_t)128, (uint8_t)128, conn, &count1, &filledPoints1, numeric_limits<size_t>::max(), &neighbours1);
+			itl2::floodfillSingleThreaded(filled1, start, (uint8_t)128, (uint8_t)128, conn, &count1, &filledPoints1, numeric_limits<size_t>::max(), &neighbours1);
 			timer.stop();
 			cout << "Fast version: " << timer.getTime() << " ms" << endl;
 
@@ -928,9 +931,68 @@ namespace itl2
 			Image<uint8_t> head;
 			raw::read(head, "input_data/t1-head_bin_256x256x129.raw");
 
-			itl2::floodfill(head, Vec3c(110, 110, 25), (uint8_t)128, (uint8_t)128);
+			Timer t;
+			t.start();
+			itl2::floodfillSingleThreaded(head, Vec3c(110, 110, 25), (uint8_t)128, (uint8_t)128);
+			t.stop();
+			cout << "Flood fill (single-threaded) took " << t.getTime() << " ms" << endl;
 
 			raw::writed(head, "./floodfill/filled");
+		}
+
+		void floodfillThreading()
+		{
+			string infile = "input_data/t1-head_bin_256x256x129.raw";
+			Vec3c startPoint(110, 110, 25);
+
+			//string infile = "input_data/test_piece_bin_512x512x512.raw";
+			//Vec3c startPoint(150, 150, 0);
+
+			//{
+			//	Image<uint8_t> orig(750, 750, 750);
+			//	raw::writed(orig, "./floodfill/geometry");
+			//}
+			//string infile = "./floodfill/geometry";
+			//Vec3c startPoint(500, 500, 500);
+			
+			// Multi-threaded
+			Image<uint8_t> head;
+			raw::read(head, infile);
+
+			size_t filledPointCountMT;
+			vector<Vec3sc> filledPointsMT;
+			set<uint8_t> nbColorsMT;
+
+			Timer t;
+			t.start();
+			// We use very small minimum block size to test multithreading
+			floodfillBlocks(head, startPoint, (uint8_t)128, (uint8_t)128, Connectivity::AllNeighbours, &filledPointCountMT, &filledPointsMT, 0, &nbColorsMT, true, 20);
+			t.stop();
+			cout << "Flood fill (multi-threaded) took " << t.getTime() << " ms" << endl;
+			raw::writed(head, "./floodfill/filled_multithreaded");
+
+
+			// Single-threaded
+			Image<uint8_t> headTrue;
+			raw::read(headTrue, infile);
+
+			size_t filledPointCountST;
+			vector<Vec3sc> filledPointsST;
+			set<uint8_t> nbColorsST;
+
+			t.start();
+			itl2::floodfillSingleThreaded(headTrue, startPoint, (uint8_t)128, (uint8_t)128, Connectivity::AllNeighbours, &filledPointCountST, &filledPointsST, 0, &nbColorsST);
+			t.stop();
+			cout << "Flood fill (single-threaded) took " << t.getTime() << " ms" << endl;
+			raw::writed(headTrue, "./floodfill/filled_singlethreaded");
+
+
+			checkDifference(head, headTrue, "flood fill vs multithreaded flood fill");
+			testAssert(filledPointCountMT == filledPointCountST, "filled point count");
+			std::sort(filledPointsMT.begin(), filledPointsMT.end(), vecComparer<int32_t>);
+			std::sort(filledPointsST.begin(), filledPointsST.end(), vecComparer<int32_t>);
+			testAssert(filledPointsMT == filledPointsST, "filled points");
+			testAssert(nbColorsMT == nbColorsST, "neighbouring colors");
 		}
 
 
@@ -1079,9 +1141,13 @@ namespace itl2
 			t.start();
 			growHHeap(labelsHH, weights);
 			t.stop();
-			cout << "CV type algorithm + hheap took " << t.getSeconds() << " s." << endl;
+			cout << "CV type algorithm + custom heap took " << t.getSeconds() << " s." << endl;
 			raw::writed(labelsHH, "./grow_comparison/watershed_hh");
 
+
+			checkDifference(labelsMeyer, labelsOpt, "meyer -> CV type");
+			checkDifference(labelsMeyer, labelsHH, "meyer -> CV type + custom heap");
+			checkDifference(labelsOpt, labelsHH, "CV type -> CV type + custom heap");
 		}
 	}
 }

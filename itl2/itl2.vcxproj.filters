@@ -369,6 +369,9 @@
     <ClInclude Include="eval.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="io\vectorio.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">

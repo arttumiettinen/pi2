@@ -1,6 +1,9 @@
 
 This file contains notes about compiling and running pi2 in various cluster environments.
 
+NOTE: Typically the modules mentioned below must be loaded when compiling AND
+when running the compiled code!
+
 
 
 PSI Ra cluster
@@ -10,12 +13,20 @@ The required module load commands are:
 module load gcc/7.3.0
 module load Python/3.6.3
 
-Please compile without Python module as there seems to be some incompatibility between some gcc and Python modules.
+Please do not load Python module when compiling as there seems to be
+some incompatibilities between some gcc and Python modules.
+
+Compile using command
+make -j8 NO_OPENCL=1
+
 
 
 CSC Puhti cluster
 -----------------
 
 The required module load commands are:
-module load gcc/7.3.0
-module load fftw
+module load gcc/9.1.0
+module load fftw/3.3.8-omp
+
+Compile using command
+make -j8 NO_OPENCL=1
