@@ -860,12 +860,23 @@ namespace itl2
 	/**
 	Replaces NaN values by zeroes.
 	*/
-	void replaceNaNs(Image<float32_t>& img)
+	void replaceBadValues(Image<float32_t>& img)
 	{
-		replace(img, Vec2<float32_t>(numeric_limits<float32_t>::signaling_NaN(), (float32_t)1));
-		replace(img, Vec2<float32_t>(numeric_limits<float32_t>::quiet_NaN(), (float32_t)1));
+		//replace(img, Vec2<float32_t>(numeric_limits<float32_t>::signaling_NaN(), (float32_t)1));
+		//replace(img, Vec2<float32_t>(numeric_limits<float32_t>::quiet_NaN(), (float32_t)1));
+		float32_t eps = 0.00001;
+		for(coord_t n = 0; n < img.pixelCount(); n++)
+		{
+			float32_t& p = img(n);
+			if(NumberUtils<float32_t>::isnan(p))
+				p = 1 - eps;
+			else if(p < eps)
+				p = eps;
+			else if(p > 1 - eps)
+				p = 1 - eps;
+		}
 	}
-
+	
 	void fbpPreprocess(const Image<float32_t>& transmissionProjections, Image<float32_t>& preprocessedProjections, RecSettings settings)
 	{
 		internals::sanityCheck(transmissionProjections, settings, false);
@@ -949,8 +960,8 @@ namespace itl2
 					// No binning, no cropping
 					setValue(slice, origSlice);
 				}
-
-				replaceNaNs(slice);
+				
+				replaceBadValues(slice);
 				
 				if(settings.removeDeadPixels)
 					deadPixelRemovalSlice(slice, med, tmp);
