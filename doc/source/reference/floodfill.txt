@@ -8,7 +8,7 @@ floodfill
 
 Performs flood fill. Fills start point and all its neighbours and their neighbours etc. recursively as long as the color of the pixel to be filled equals color of the start point.
 
-This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
 ---------

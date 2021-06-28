@@ -6,6 +6,9 @@ Using pi2 from Python
 Pi2 can be used from Python scripts and from iPython console.
 In order to initialize Pi2, the package pi2py must be imported and a Pi2 object created::
 	
+	import sys
+	sys.path.append('path/to/pi2/folder')
+	
 	from pi2py2 import *
 	pi = Pi2()
 	
