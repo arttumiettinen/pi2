@@ -608,7 +608,7 @@ namespace itl2
 						
 						float32_t iy = Z + projectionHeight / 2.0f + settings.cameraZShift -sdz;
 
-						float32_t angleCS = settings.centerShift + internals::csZPerturbation(iy, projectionHeight, settings.csZSlope) + sAnglePerturbations[anglei];
+						float32_t angleCS = settings.centerShift + internals::csZPerturbation(iy, projectionHeight, settings.csZSlope) + csAnglePerturbations[anglei];
 
 						float32_t ix = Y + projectionWidth / 2.0f + angleCS - sdx;
 
