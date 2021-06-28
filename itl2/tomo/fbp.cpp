@@ -1048,9 +1048,17 @@ namespace itl2
 
 #pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable
 
-float csZPerturbation(float z, float projectionHeight, float csZSlope)
+//float csZPerturbation(float z, float projectionHeight, float csZSlope)
+//{
+//	return (z - projectionHeight / 2) * csZSlope;
+//}
+
+float csZPerturbation(float z, float centerZ, float projectionHeight, float csZSlope)
 {
-	return (z - projectionHeight / 2) * csZSlope;
+	//float roiStartZ = roiCenterZ - roiSizeZ / 2.0f;
+	float roiStartZ = -centerZ; // = roiCenterZ + Vec3f(0, 0, 0.5) - roiSizeZ / 2.0f
+	float fullImageZ = roiStartZ + z;
+	return (fullImageZ - projectionHeight / 2) * csZSlope;
 }
 
 kernel void backproject(read_only image3d_t transmissionProjections,
@@ -1088,7 +1096,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 	const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 
-	float currentCS = centerShift + csZPerturbation(posf.z, projectionHeight, csZSlope);
+	float currentCS = centerShift + csZPerturbation(posf.z, center.z, projectionHeight, csZSlope);
 
 	// Read initial value of the pixel as this kernel may be called multiple times with different set of projections if
 	// all of them do not fit into memory at once.
