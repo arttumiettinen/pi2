@@ -6,6 +6,7 @@
 #include "io/imagedatatype.h"
 #include "image.h"
 #include "math/mathutils.h"
+#include "transform.h"
 
 #include <string>
 #include <memory>
@@ -29,21 +30,99 @@ namespace itl2
 			*/
 			std::string tiffLastError();
 
+            template<typename pixel_t> void readDirectories(Image<pixel_t>& img, TIFF* tif, size_t z, const Vec3c& dimensions)
+            {
+                if (z >= (size_t)img.depth())
+					throw ITLException("Invalid target z coordinate.");
 
+				// Read all directories
+				do
+				{
+
+					bool isTiled = TIFFIsTiled(tif) != 0;
+					if (isTiled)
+					{
+						// Read tiles
+						// TODO: This is not very well tested.
+
+						uint32_t tileWidth = 0;
+						uint32_t tileHeight = 0;
+						uint32_t tileDepth = 0;
+
+						TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tileWidth);
+						TIFFGetField(tif, TIFFTAG_TILELENGTH, &tileHeight);
+						TIFFGetField(tif, TIFFTAG_TILEDEPTH, &tileDepth);
+
+						if (tileDepth < 1)
+							tileDepth = 1;
+
+						tmsize_t tiffTileSize = TIFFTileSize(tif);
+						auto buf = std::unique_ptr<pixel_t, decltype(_TIFFfree)*>( (pixel_t*)_TIFFmalloc(tiffTileSize), _TIFFfree );
+
+						for (coord_t z0 = z; z0 < dimensions.z; z0 += tileDepth)
+						{
+							for (coord_t y0 = 0; y0 < dimensions.y; y0 += tileHeight)
+							{
+								for (coord_t x0 = 0; x0 < dimensions.x; x0 += tileWidth)
+								{
+									TIFFReadTile(tif, buf.get(), (uint32_t)x0, (uint32_t)y0, (uint32_t)z0, 0);
+
+									// Plot tile to image
+									size_t n = 0;
+									for (coord_t zz = z0; zz < std::min(z0 + tileDepth, img.depth()); zz++)
+									{
+										for (coord_t yy = y0; yy < std::min(y0 + tileHeight, img.height()); yy++)
+										{
+											for (coord_t xx = x0; xx < std::min(x0 + tileWidth, img.width()); xx++)
+											{
+												img(xx, yy, zz) = buf.get()[n];
+												n++;
+											}
+										}
+									}
+								}
+							}
+						}
+
+					}
+					else
+					{
+						// Read strips
+
+						tmsize_t stripSize = TIFFStripSize(tif);
+						tstrip_t stripCount = TIFFNumberOfStrips(tif);
+
+						uint32_t rowsPerStrip = 0;
+						TIFFGetFieldDefaulted(tif, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
+
+						size_t imgPos = img.getLinearIndex(0, 0, z);
+						for (tstrip_t strip = 0; strip < stripCount; strip++)
+						{
+							if (TIFFReadEncodedStrip(tif, strip, &(img.getData()[imgPos]), (tsize_t)-1) < 0)
+								throw ITLException(string("TIFF read error: ") + internals::tiffLastError());
+
+							imgPos += rowsPerStrip * img.width();
+						}
+					}
+
+					z++;
+				} while (TIFFReadDirectory(tif) == 1);
+
+			}
 
 			/*
 			Read a .tif file.
 			@param z Z-coordinate where the read data will be placed.
 			*/
-			template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& filename, size_t z, bool is2D)
-			{
+			template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& filename, size_t z, bool is2D, bool allowResize)
+			{		
 				internals::initTIFF();
 
 				auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 				TIFF* tif = tifObj.get();
 
 				if (tif)
-				{
+				{	
 					Vec3c dimensions;
 					ImageDataType dataType;
 					size_t pixelSizeBytes;
@@ -56,98 +135,63 @@ namespace itl2
 						if (is2D)
 						{
 							if (dimensions.z > 1)
-								throw ITLException(string("Trying to read 3D tiff as 2D tiff: ") + filename);
+								throw ITLException(string("Trying to read a 3D tiff as a 2D tiff: ") + filename);
 							dimensions.z = 1;
+							
+							if(allowResize)
+    							    img.ensureSize(dimensions.x, dimensions.y, img.depth());
 
-							img.ensureSize(dimensions.x, dimensions.y, img.depth());
+                            if(img.dimensions() == Vec3c(dimensions.x, dimensions.y, img.depth()))
+                            {
+    							internals::readDirectories(img, tif, z, dimensions);
+    						}
+    						else
+    						{
+    						    //if(img.dimensions() != Vec3c(dimensions.x, dimensions.y, img.depth()))
+							    //    throw ITLException(string("Dimensions of the data in the 2D .tif file ") + filename + string(" do not match to the dimensions of the image."));
+
+                                Image<pixel_t> tempImage(dimensions.x, dimensions.y, 1);
+                                internals::readDirectories(tempImage, tif, 0, dimensions);
+							    
+       						    // Calculate shift such that the on-disk image becomes centered in the space available.
+    						    Vec3c target = (img.dimensions() - Vec3c(dimensions.x, dimensions.y, img.depth())) / 2;
+    						    target.z = z;
+    						    
+    						    // Copy pixel values to final image.
+    						    copyValues(img, tempImage, target);
+    						}
 						}
 						else
 						{
-							img.ensureSize(dimensions);
+						    if(allowResize)
+							    img.ensureSize(dimensions);
+							    
+							if(img.dimensions() == Vec3c(dimensions.x, dimensions.y, img.depth()))
+                            {
+    							internals::readDirectories(img, tif, 0, dimensions);
+    						}
+    						else
+    						{
+    						    //if(img.dimensions() != Vec3c(dimensions.x, dimensions.y, img.depth()))
+							    //    throw ITLException(string("Dimensions of the data in the .tif file ") + filename + string(" do not match to the dimensions of the image."));
+
+                                Image<pixel_t> tempImage(dimensions);
+                                internals::readDirectories(tempImage, tif, 0, dimensions);
+							    
+       						    // Calculate shift such that the on-disk image becomes centered in the space available.
+    						    Vec3c target = (img.dimensions() - dimensions) / 2;
+    						    
+    						    // Copy pixel values to final image.
+    						    copyValues(img, tempImage, target);
+    						}
 						}
-
-						if (z >= (size_t)img.depth())
-							throw ITLException("Invalid target z coordinate.");
-
-						// Read all directories
-						do
-						{
-
-							bool isTiled = TIFFIsTiled(tif) != 0;
-							if (isTiled)
-							{
-								// Read tiles
-								// TODO: This is not very well tested.
-
-								uint32_t tileWidth = 0;
-								uint32_t tileHeight = 0;
-								uint32_t tileDepth = 0;
-
-								TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tileWidth);
-								TIFFGetField(tif, TIFFTAG_TILELENGTH, &tileHeight);
-								TIFFGetField(tif, TIFFTAG_TILEDEPTH, &tileDepth);
-
-								if (tileDepth < 1)
-									tileDepth = 1;
-
-								tmsize_t tiffTileSize = TIFFTileSize(tif);
-								auto buf = std::unique_ptr<pixel_t, decltype(_TIFFfree)*>( (pixel_t*)_TIFFmalloc(tiffTileSize), _TIFFfree );
-
-								for (coord_t z0 = z; z0 < dimensions.z; z0 += tileDepth)
-								{
-									for (coord_t y0 = 0; y0 < dimensions.y; y0 += tileHeight)
-									{
-										for (coord_t x0 = 0; x0 < dimensions.x; x0 += tileWidth)
-										{
-											TIFFReadTile(tif, buf.get(), (uint32_t)x0, (uint32_t)y0, (uint32_t)z0, 0);
-
-											// Plot tile to image
-											size_t n = 0;
-											for (coord_t zz = z0; zz < std::min(z0 + tileDepth, img.depth()); zz++)
-											{
-												for (coord_t yy = y0; yy < std::min(y0 + tileHeight, img.height()); yy++)
-												{
-													for (coord_t xx = x0; xx < std::min(x0 + tileWidth, img.width()); xx++)
-													{
-														img(xx, yy, zz) = buf.get()[n];
-														n++;
-													}
-												}
-											}
-										}
-									}
-								}
-
-							}
-							else
-							{
-								// Read strips
-
-								tmsize_t stripSize = TIFFStripSize(tif);
-								tstrip_t stripCount = TIFFNumberOfStrips(tif);
-
-								uint32_t rowsPerStrip = 0;
-								TIFFGetFieldDefaulted(tif, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
-
-								size_t imgPos = img.getLinearIndex(0, 0, z);
-								for (tstrip_t strip = 0; strip < stripCount; strip++)
-								{
-									if (TIFFReadEncodedStrip(tif, strip, &(img.getData()[imgPos]), (tsize_t)-1) < 0)
-										throw ITLException(string("TIFF read error: ") + internals::tiffLastError());
-
-									imgPos += rowsPerStrip * img.width();
-								}
-							}
-
-							z++;
-						} while (TIFFReadDirectory(tif) == 1);
-
+						
 						return;
 					}
-					else
-					{
-						throw ITLException(reason);
-					}
+				    else
+				    {
+					    throw ITLException(reason);
+				    }
 				}
 
 				throw ITLException(string("Error while reading .tif image: ") + internals::tiffLastError());
@@ -162,9 +206,9 @@ namespace itl2
 		*/
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason);
 		
-		template<typename pixel_t> void read2D(Image<pixel_t>& img, const std::string& filename, coord_t z)
+		template<typename pixel_t> void read2D(Image<pixel_t>& img, const std::string& filename, coord_t z, bool allowResize)
 		{
-			internals::read(img, filename, z, true);
+			internals::read(img, filename, z, true, allowResize);
 		}
 
 		/*
@@ -172,7 +216,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& filename)
 		{
-			internals::read(img, filename, 0, false);
+			internals::read(img, filename, 0, false, true);
 		}
 
 

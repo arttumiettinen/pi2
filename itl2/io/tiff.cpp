@@ -14,22 +14,28 @@ namespace itl2
 
 			void tiffErrorHandler(const char *module, const char *fmt, va_list ap)
 			{
-				const int BUF_SIZE = 1024;
-				char buf[BUF_SIZE];
-				vsnprintf(buf, BUF_SIZE, fmt, ap);
-				lastTiffErrorMessage = buf;
+			    #pragma omp critical(tiff_error)
+			        {
+				    const int BUF_SIZE = 1024;
+				    char buf[BUF_SIZE];
+				    vsnprintf(buf, BUF_SIZE, fmt, ap);
+				    lastTiffErrorMessage = buf;
+				}
 			}
 
 			void initTIFF()
 			{
-				lastTiffErrorMessage = "";
-				TIFFSetErrorHandler(&tiffErrorHandler);
-				TIFFSetWarningHandler(&tiffErrorHandler);
+			    #pragma omp critical(tiff_error)
+			    {
+				    lastTiffErrorMessage = "";
+				    TIFFSetErrorHandler(&tiffErrorHandler);
+				    TIFFSetWarningHandler(&tiffErrorHandler);
+				}
 			}
 
 			std::string tiffLastError()
 			{
-				return lastTiffErrorMessage;
+    			return lastTiffErrorMessage;
 			}
 
 			bool getCurrentDirectoryInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason)
