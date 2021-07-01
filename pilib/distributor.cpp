@@ -711,8 +711,47 @@ namespace pilib
 		}
 
 
+		
+		
+		//// No skipping jobs if there are InOut images for which
+		//// currentReadSource() and currentWriteTarget() data types are different, as in that case
+		//// we need to copy data from read source to write target with file type conversion.
+		bool jobSkippingAllowed = true;
+		for (DistributedImageBase* img : inputImages)
+		{
+			if (outputImages.find(img) != outputImages.end())
+			{
+				// This is InOut image; test input and output data types.
+
+				if (!img->isSavedToDisk())
+				{
+					cout << "Job skipping is not allowed as there are in-place processed images that are not saved to the disk yet." << endl;
+					jobSkippingAllowed = false;
+					break;
+				}
+
+				if (img->currentReadSource() != img->currentWriteTarget())
+				{
+					cout << "Job skipping is not allowed as there are in-place processed images that need to be copied from input file to output file." << endl;
+					jobSkippingAllowed = false;
+					break;
+
+							// This is commented as I don't want to support copying (without file type conversion) here.
+							// I don't know if it would be good to do it without submitting copy jobs, anyway?
+					//if (img->isRaw() != img->isOutputRaw())
+					//{
+					//	cout << "Job skipping is not allowed as there are in-place processed images that require file type conversion." << endl;
+					//	jobSkippingAllowed = false;
+					//	break;
+					//}
+				}
+			}
+		}
+
 		size_t jobCount = blocksPerImage.begin()->second.size();
 		cout << "Submitting " << jobCount << " jobs, each estimated to require at most " << bytesToString((double)memoryReq) << " of RAM..." << endl;
+		vector<size_t> skippedJobs;
+		vector<tuple<string, JobType>> jobsToSubmit;
 		for (size_t i = 0; i < jobCount; i++)
 		{
 			// Build job script:
@@ -733,7 +772,7 @@ namespace pilib
 
 			stringstream script;
 
-			// Init so that we always print something (required at least in SLURM distributor)
+			// Init so that we always print something (required at least in the SLURM distributor)
 			script << "echo(true, false);" << endl;
 
 			// Image read commands
@@ -743,6 +782,7 @@ namespace pilib
 				Vec3c readSize = get<1>(blocksPerImage[img][i]);
 				script << img->emitReadBlock(readStart, readSize, true);
 			}
+
 			// Output image creation commands
 			for (DistributedImageBase* img : outputImages)
 			{
@@ -755,36 +795,44 @@ namespace pilib
 			}
 
 			// Processing commands
+			bool hasCommandsToRun = false;
 			for (size_t cmdi = 0; cmdi < delayedCommands.size(); cmdi++)
 			{
 				const Command* command = delayedCommands[cmdi].getCommand();
 				vector<ParamVariant>& args = delayedCommands[cmdi].getArgs();
 				size_t refIndex = delayedCommands[cmdi].getRefIndex();
 
-				script << command->name() << "(";
-				for (size_t n = 0; n < args.size(); n++)
+				DistributedImageBase* refImage = getDistributedImage(args[refIndex]);
+				Vec3c readStart = get<0>(blocksPerImage[refImage][i]);
+				Vec3c readSize = get<1>(blocksPerImage[refImage][i]);
+				Vec3c writeFilePos = get<2>(blocksPerImage[refImage][i]);
+				Vec3c writeImPos = get<3>(blocksPerImage[refImage][i]);
+				Vec3c writeSize = get<4>(blocksPerImage[refImage][i]);
+				if (delayedCommands[cmdi].needsToRun(readStart, readSize, writeFilePos, writeImPos, writeSize, i))
 				{
-					// Value of argument whose type is Vec3c and name is "block origin" is replaced by the origin of current calculation block.
-					// This functionality is needed at least in skeleton tracing command.
-					const CommandArgumentBase& argDef = command->args()[n];
-					ParamVariant argVal = args[n];
-					if (argDef.dataType() == parameterType<BLOCK_ORIGIN_ARG_TYPE>() && argDef.name() == BLOCK_ORIGIN_ARG_NAME)
+					hasCommandsToRun = true;
+					script << command->name() << "(";
+					for (size_t n = 0; n < args.size(); n++)
 					{
-						DistributedImageBase* refImage = getDistributedImage(args[refIndex]);
-						Vec3c readStart = get<0>(blocksPerImage[refImage][i]);
+						// Value of argument whose type is Vec3c and name is "block origin" is replaced by the origin of current calculation block.
+						// This functionality is needed at least in skeleton tracing command.
+						const CommandArgumentBase& argDef = command->args()[n];
+						ParamVariant argVal = args[n];
+						if (argDef.dataType() == parameterType<BLOCK_ORIGIN_ARG_TYPE>() && argDef.name() == BLOCK_ORIGIN_ARG_NAME)
+						{
+							argVal = readStart;
+						}
+						else if (argDef.dataType() == parameterType<BLOCK_INDEX_ARG_TYPE>() && argDef.name() == BLOCK_INDEX_ARG_NAME)
+						{
+							argVal = (coord_t)i;
+						}
 
-						argVal = readStart;
+						script << "\"" << argumentToString(argDef, argVal) << "\"";
+						if (n < args.size() - 1)
+							script << ", ";
 					}
-					else if (argDef.dataType() == parameterType<BLOCK_INDEX_ARG_TYPE>() && argDef.name() == BLOCK_INDEX_ARG_NAME)
-					{
-						argVal = (coord_t)i;
-					}
-
-					script << "\"" << argumentToString(argDef, argVal) << "\"";
-					if (n < args.size() - 1)
-						script << ", ";
+					script << ");" << endl;
 				}
-				script << ");" << endl;
 			}
 
 			// Image write commands
@@ -803,15 +851,89 @@ namespace pilib
 				}
 			}
 
+			if (hasCommandsToRun || !jobSkippingAllowed)
+			{
+				jobsToSubmit.push_back(make_tuple(script.str(), jobType));
+			}
+			else
+			{
+				skippedJobs.push_back(i);
+			}
+		}
+
+		if (skippedJobs.size() > 0)
+		{
+			if (skippedJobs.size() == 1)
+			{
+				cout << "Job " << skippedJobs[0] << " is skipped as it was determined that the job will do nothing." << endl;
+			}
+			else
+			{
+				cout << "Jobs ";
+				for (size_t n = 0; n < skippedJobs.size(); n++)
+				{
+					if (n > 0)
+						cout << ", ";
+					cout << skippedJobs[n];
+				}
+				cout << " were skipped as it was determined that the jobs will do nothing." << endl;
+			}
+
+					// This is commented as I don't want to support copying (without file type conversion) here.
+					// I don't know if it would be good to do it without submitting copy jobs, anyway?
+			// Copy data of InOut images from input file to output file before submitting jobs, if
+			// img->currentReadSource() != img->currentWriteTarget().
+			// This is required only if some jobs are skipped - otherwise the copying is made automatically
+			// in the jobs by reading and writing the image data.
+			// Copying required if skipping and there are InOut images. Simple copying is
+			// possible only if currentReadSource() and currentWriteTarget() data types are the same.
+			//if (jobSkippingAllowed)
+			//{
+			//	for (DistributedImageBase* img : inputImages)
+			//	{
+			//		if (outputImages.find(img) != outputImages.end())
+			//		{
+			//			// This is InOut image
+			//			if (img->currentReadSource() != img->currentWriteTarget())
+			//			{
+			//				// Read source and write target are different so we need to copy.
+			//				if (img->isRaw())
+			//				{
+			//					if (!img->isOutputRaw())
+			//						throw ITLException("Skipping jobs although in-place processed image file type conversion is required. This is a bug.");
+
+			//					copyFile(img->currentReadSource(), img->currentWriteTarget(), true);
+			//				}
+			//				else if (img->isSequence())
+			//				{
+			//					if(img->isOutputRaw())
+			//						throw ITLException("Skipping jobs although in-place processed image file type conversion is required. This is a bug.");
+
+			//					sequence::copySequence(img->currentReadSource(), img->currentWriteTarget());
+			//				}
+			//				else
+			//					throw ITLException("Distributed image is not raw nor sequence. This is a bug.");
+			//			}
+			//		}
+			//	}
+			//}
+		}
+
+		for (auto& tup : jobsToSubmit)
+		{
+			string& script = get<0>(tup);
+			JobType type = get<1>(tup);
+
 			if (showSubmittedScripts)
 			{
 				cout << "Submitting pi2 script:" << endl;
-				cout << script.str() << endl;
+				cout << script << endl;
 			}
 
-			submitJob(script.str(), jobType);
+			submitJob(script, type);
 		}
 
+		
 		// Run jobs first and set writeComplete() only after the jobs have finished to make sure that
 		// the output image exists before writeComplete() is called.
 		// Additionally, this order ensures that if jobs fail, the input images still point to the correct files.

@@ -159,7 +159,7 @@ namespace itl2
 						{
 
 							filledPoints.clear();
-							itl2::floodfill(slice, Vec3c(sliceRadius, sliceRadius, 0), fillColor, fillColor, Connectivity::AllNeighbours, nullptr, &filledPoints);
+							itl2::floodfillSingleThreaded(slice, Vec3c(sliceRadius, sliceRadius, 0), fillColor, fillColor, Connectivity::AllNeighbours, nullptr, &filledPoints);
 
 							if (filledPoints.size() > 3)
 							{
@@ -208,9 +208,9 @@ namespace itl2
 										getSlice(*pLength, lengthPos, dir, lengthSlice);
 
 										lSamples.clear();
-										for (size_t n = 0; n < filledPoints.size(); n++)
+										for (size_t nn = 0; nn < filledPoints.size(); nn++)
 										{
-											Vec3c p = round(Vec3d(filledPoints[n]) * lengthScale);
+											Vec3c p = round(Vec3d(filledPoints[nn]) * lengthScale);
 											if (lengthSlice.isInImage(p))
 												lSamples.push_back((float32_t)(lengthSlice(p) / lengthScale));
 										}

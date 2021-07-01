@@ -736,8 +736,9 @@ namespace itl2
 				totalCount += pointCount;
 			}
 
-			if (pEdgePoints->pixelCount() != edges.size() + 3 * totalCount)
-				throw ITLException("Edge points image does not contain enough values.");
+			size_t trueSize = edges.size() + 3 * totalCount;
+			if (pEdgePoints->pixelCount() != trueSize)
+				throw ITLException(string("Edge points image does not contain correct number of pixels. Required pixel count is ") + itl2::toString(trueSize) + ", but the image contains " + itl2::toString(pEdgePoints->pixelCount()) + " pixels.");
 
 			// Read points
 			coord_t pos = edges.size();

@@ -143,7 +143,7 @@ namespace pilib
 		return s.str();
 	}
 
-	string DistributedImageBase::emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize)
+	string DistributedImageBase::emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize) const
 	{
 		stringstream s;
 		if(isOutputRaw())

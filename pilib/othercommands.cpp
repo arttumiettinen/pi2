@@ -18,6 +18,7 @@ namespace pilib
 		ADD_REAL(StitchVer3Command);
 		CommandList::add<DetermineWorldToLocalCommand>();
 
+		ADD_REAL(FloodFillBlockCommand);
 		ADD_REAL(FloodFillCommand);
 
 		ADD_REAL(NormalizeZCommand);

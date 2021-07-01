@@ -109,26 +109,32 @@ namespace itl2
 				visColor = NumberUtils<pixel_t>::saturatingAdd(max(geometry), 1);
 		}
 
+		// Linear interpolation may make the carpet a bit more stable, Zero boundary condition reduces bulging out of image.
+		LinearInterpolator<float32_t, pixel_t> interp(BoundaryCondition::Zero);
+
 		for (size_t n = 0; n < iterations; n++)
 		{
-			gaussFilter(heightMap, surfaceTension, BoundaryCondition::Nearest);
-
+			// Move
 			for (coord_t y = 0; y < heightMap.height(); y++)
 			{
 				for (coord_t x = 0; x < heightMap.width(); x++)
 				{
-					coord_t depth = itl2::round(heightMap(x, y));
-					if (depth < 0)
-						depth = 0;
+					float32_t imgValue = interp(geometry, (float32_t)x, (float32_t)y, heightMap(x, y));
 
-					if (depth >= geometry.depth())
-						depth = geometry.depth() - 1;
+					float32_t newDepth = heightMap(x, y) + downForce + upForceFactor * imgValue;
 
-					float32_t newDepth = heightMap(x, y) + downForce + upForceFactor * (float32_t)geometry(x, y, depth);
+					// Ensure that the carpet does not bulge out of the image.
+					if (newDepth < 0)
+						newDepth = 0;
+					else if (newDepth > geometry.depth() - 1)
+						newDepth = (float32_t)geometry.depth() - 1;
 					
 					heightMap(x, y) = newDepth;
 				}
 			}
+
+			// Apply surface tension
+			gaussFilter(heightMap, surfaceTension, BoundaryCondition::Nearest);
 
 			internals::visualizeLayer(geometry, heightMap, pVisualization, visualizeY, visColor, (coord_t)n);
 
