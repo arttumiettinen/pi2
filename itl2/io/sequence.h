@@ -52,10 +52,12 @@ namespace itl2
 				ImageDataType dataType;
 				std::string reason;
 
-				if (png::getInfo(filename, width, height, dataType, reason))
+				//if (png::getInfo(filename, width, height, dataType, reason))
+				if (endsWithIgnoreCase(filename, ".png"))
 					png::read(image, filename, z);
-				else if (tiff::getInfo(filename, dimensions, dataType, reason))
-					tiff::read2D(image, filename, z);
+				//else if (tiff::getInfo(filename, dimensions, dataType, reason))
+				else if (endsWithIgnoreCase(filename, ".tif") || endsWithIgnoreCase(filename, ".tiff"))
+					tiff::read2D(image, filename, z, false);
 				else
 					throw ITLException(std::string("Unsupported sequence input file format (") + filename + ").");
 			}
@@ -149,7 +151,7 @@ namespace itl2
 				{
 					try
 					{
-						internals::read2D(img, files[z], z - firstSlice);
+					    internals::read2D(img, files[z], z - firstSlice);
 					}
 					catch (const ITLException& ex)
 					{
