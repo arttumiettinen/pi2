@@ -238,7 +238,7 @@ namespace itl2
 	}
 
 	/**
-	Perform flood fill using multi-threaded algorithm.
+	Perform flood fill using a multi-threaded algorithm.
 	@param image Image containing the geometry to be filled.
 	@param seeds Initial seed points.
 	@param origColor The color to fill.
@@ -483,7 +483,7 @@ namespace itl2
 	}
 
 	/**
-	Perform flood fill using multi-threaded algorithm.
+	Perform flood fill using a multi-threaded algorithm.
 	@param image Image containing the geometry to be filled.
 	@param start Starting position.
 	@param fillColor Fill color. The filled pixels will be colored with this color.

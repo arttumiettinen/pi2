@@ -49,6 +49,7 @@
 #include "csa.h"
 #include "pathopening.h"
 #include "eval.h"
+#include "sdmap.h"
 
 
 using namespace itl2;
@@ -228,7 +229,7 @@ int main()
 	//test(itl2::tests::localThreshold, "local thresholding");
 	//test(itl2::tests::localMaxima, "local maxima search");
 
-	test(itl2::tests::carpet, "surface finding");
+	//test(itl2::tests::carpet, "surface finding");
 	//test(itl2::tests::ellipsoid, "drawing ellipsoids");
 
 	//test(itl2::tests::montage, "2D montage of 3D stack");
@@ -242,6 +243,8 @@ int main()
 	
 
 	//test(itl2::tests::eval, "evaluation of string expressions");
+
+	test(itl2::tests::seededDMap, "seeded distance map");
 
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
