@@ -4,8 +4,9 @@ Articles where pi2 has been used
 This is an incomplete list of articles where this software or some of its previous versions has been used.
 If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
+* Alp Karakoç, Arttu Miettinen, Jussi Virkajӓrvi, Roberts Joffe. Effective elastic properties of biocomposites using 3D computational homogenization and X-ray microcomputed tomography, Composite Structures 273, 2021.
 * Marina Eckermann, Jasper Frohn, Marius Reichardt, Markus Osterhoff, Michael Sprung, Fabian Westermeier, Alexandar Tzankov, Christopher Werlein, Mark Kühnel, Danny Jonigk, Tim Salditt. 3d virtual pathohistology of lung tissue from COVID-19 patients based on phase contrast x-ray tomography, eLife 2020;9:e60408, 2020.
-* Elena Borisova, Goran Lovric, Arttu Miettinen, Luca Fardin, Sam Bayat, Anders Larsson, Marco Stampanoni, Johannes C. Schittny, Christian M. Schlepütz. Micrometer-resolution X-ray tomographic full-volume reconstruction of an intact post mortem juvenile rat lung, Histochemistry and Cell Biology, 2020.
+* Elena Borisova, Goran Lovric, Arttu Miettinen, Luca Fardin, Sam Bayat, Anders Larsson, Marco Stampanoni, Johannes C. Schittny, Christian M. Schlepütz. Micrometer-resolution X-ray tomographic full-volume reconstruction of an intact post mortem juvenile rat lung, Histochemistry and Cell Biology, 2020.
 * Lukas Anschuetz, Marco Demattè, Alessia Pica, Wilhelm Wimmer, Marco Caversaccio, Anne Bonnin. Synchrotron radiation imaging revealing the sub-micron structure of the auditory ossicles, Hearing Research 383, 2019.
 * Arttu Miettinen, Ioannis Vogiatzis Oikonomidis, Anne Bonnin, Marco Stampanoni. NRStitcher: Non-rigid stitching of terapixel-scale volumetric images, Bioinformatics 35(24), 2019.
 * Jairan Nafar Dastgerdi, Behnam Anbarlooie, Arttu Miettinen, Hossein Hosseini-Toudeshky, Heikki Remes. Effects of particle clustering on the plastic deformation and damage initiation of particulate reinforced composite utilizing X-ray CT data and finite element modeling, Composites Part B 153(15), 2018.
