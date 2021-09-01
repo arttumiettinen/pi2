@@ -1507,7 +1507,7 @@ def fibre_properties():
 
 def seeded_distance_map():
     """
-    Demonstrates calculation of seeded distance map.
+    Demonstrates calculation of a seeded distance map.
     """
 
     # Create geometry
