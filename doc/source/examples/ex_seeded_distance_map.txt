@@ -33,7 +33,7 @@ distance map using an arbitrary point inside the top-left sphere as a seed point
 		
 		
 .. figure:: figures/sdmap.png
-   :scale: 100 %
+   :scale: 75 %
    :alt: Seeded distance map
 
    The geometry (left) and seed points (middle) given as input to the seeded distance map algorithm. The resulting output distance map (right). Only the central slice of each volume image is shown.

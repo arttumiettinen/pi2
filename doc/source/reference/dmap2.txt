@@ -39,4 +39,4 @@ Pixels belonging to the background are marked with this value in the input image
 See also
 --------
 
-:ref:`dmap`, :ref:`dmap2`, :ref:`tmap`
+:ref:`dmap`, :ref:`dmap2`, :ref:`tmap`, :ref:`sdmap`
