@@ -883,7 +883,7 @@ namespace itl2
 	{
 		//replace(img, Vec2<float32_t>(numeric_limits<float32_t>::signaling_NaN(), (float32_t)1));
 		//replace(img, Vec2<float32_t>(numeric_limits<float32_t>::quiet_NaN(), (float32_t)1));
-		float32_t eps = 0.00001;
+		float32_t eps = 0.00001f;
 		for(coord_t n = 0; n < img.pixelCount(); n++)
 		{
 			float32_t& p = img(n);
