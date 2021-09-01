@@ -64,6 +64,7 @@
     <ClInclude Include="montage.h" />
     <ClInclude Include="pathopening.h" />
     <ClInclude Include="progress.h" />
+    <ClInclude Include="sdmap.h" />
     <ClInclude Include="surfaceskeleton2.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="indexforest.h" />
@@ -137,6 +138,7 @@
     <ClCompile Include="csa.cpp" />
     <ClCompile Include="danielsson.cpp" />
     <ClCompile Include="diskmappedbuffer.cpp" />
+    <ClCompile Include="sdmap.cpp" />
     <ClCompile Include="eval.cpp" />
     <ClCompile Include="generation.cpp" />
     <ClCompile Include="fastbilateralfilter.cpp" />
