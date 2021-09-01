@@ -71,12 +71,12 @@ namespace itl2
 	/**
 	Calculates seeded distance map.
 	@param seeds Seed image containing the set where the distance is zero. The set is marked with nonzero values, i.e. the distance map will propagate to pixels that have zero value in this image. This image is not modified.
-	@param regions Image containing the geometry. The distance transform will only proceed to pixels whose color in this image matches the color of the seed region (in this image). This image is not modified.
+	@param geometry Image containing the geometry. The distance transform will only proceed to pixels whose color in this image matches the color of the seed point (in this image). This image is not modified.
 	@param distance Will contain distance to the nearest seed region.
 	*/
-	template<typename Tseed, typename Tregion> void seededDistanceMap(const Image<Tseed>& seeds, const Image<Tregion>& regions, Image<float32_t>& distance, Connectivity connectivity = Connectivity::AllNeighbours)
+	template<typename Tseed, typename Tregion> void seededDistanceMap(const Image<Tseed>& seeds, const Image<Tregion>& geometry, Image<float32_t>& distance, Connectivity connectivity = Connectivity::AllNeighbours)
 	{
-		seeds.checkSize(regions);
+		seeds.checkSize(geometry);
 		
 		distance.ensureSize(seeds);
 
@@ -92,7 +92,7 @@ namespace itl2
 				if (seeds(p) != 0) // if seed != 0
 				{
 					// The color of the seed region
-					Tregion region = regions(p);
+					Tregion region = geometry(p);
 
 					/*
 					// This is ok for connectivity == Nearest
@@ -104,19 +104,19 @@ namespace itl2
 							vector<coord_t> np = p;
 							np[n]--;
 
-							Tregion lbl = regions.getPixel(np);
+							Tregion lbl = geometry.getPixel(np);
 							if(lbl == region && seeds.getPixel(np) == 0)
 							{
 								points.push(internal::DMapCompare<Tregion>(np, region, 1));
 							}
 						}
 
-						if((size_t)p[n] < regions.getDimension(n) - 1)
+						if((size_t)p[n] < geometry.getDimension(n) - 1)
 						{
 							vector<coord_t> np = p;
 							np[n]++;
 
-							Tregion lbl = regions.getPixel(np);
+							Tregion lbl = geometry.getPixel(np);
 							if(lbl == region && seeds.getPixel(np) == 0)
 							{
 								points.push(internal::DMapCompare<Tregion>(np, region, 1));
@@ -136,7 +136,7 @@ namespace itl2
 								Vec3sc np = p;
 								np[n]--;
 
-								Tregion lbl = regions(np);
+								Tregion lbl = geometry(np);
 								if (lbl == region && seeds(np) == 0)
 								{
 									points.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
@@ -148,7 +148,7 @@ namespace itl2
 								Vec3sc np = p;
 								np[n]++;
 
-								Tregion lbl = regions(np);
+								Tregion lbl = geometry(np);
 								if (lbl == region && seeds(np) == 0)
 								{
 									points.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
@@ -167,7 +167,7 @@ namespace itl2
 							Vec3sc np = p + currentRelativePosition;
 							if(seeds.isInImage(np))
 							{
-								Tregion lbl = regions(np);
+								Tregion lbl = geometry(np);
 								if (lbl == region && seeds(np) == 0)
 								{
 									points.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
@@ -251,19 +251,19 @@ namespace itl2
 						vector<coord_t> np = p;
 						np[n]--;
 
-						Tregion lbl = regions.getPixel(np);
+						Tregion lbl = geometry.getPixel(np);
 						if(lbl == region && newDistance < distance.getPixel(np))
 						{
 							points.push(internal::DMapCompare<Tregion>(np, region, newDistance));
 						}
 					}
 
-					if((size_t)p[n] < regions.getDimension(n) - 1)
+					if((size_t)p[n] < geometry.getDimension(n) - 1)
 					{
 						vector<coord_t> np = p;
 						np[n]++;
 
-						Tregion lbl = regions.getPixel(np);
+						Tregion lbl = geometry.getPixel(np);
 						if(lbl == region && newDistance < distance.getPixel(np))
 						{
 							points.push(internal::DMapCompare<Tregion>(np, region, newDistance));
@@ -283,7 +283,7 @@ namespace itl2
 							Vec3sc np = p;
 							np[n]--;
 
-							Tregion lbl = regions(np);
+							Tregion lbl = geometry(np);
 							float32_t newDistance = currDistance + (p - np).norm<float32_t>();
 							if (lbl == region && newDistance < distance(np))
 							{
@@ -296,7 +296,7 @@ namespace itl2
 							Vec3sc np = p;
 							np[n]++;
 
-							Tregion lbl = regions(np);
+							Tregion lbl = geometry(np);
 							float32_t newDistance = currDistance + (p - np).norm();
 							if (lbl == region && newDistance < distance(np))
 							{
@@ -318,7 +318,7 @@ namespace itl2
 						Vec3sc np = p + currentRelativePosition;
 						if (seeds.isInImage(np))
 						{
-							Tregion lbl = regions(np);
+							Tregion lbl = geometry(np);
 							float32_t newDistance = currDistance + (p - np).norm();
 							if (lbl == region && newDistance < distance(np))
 							{
