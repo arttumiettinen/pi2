@@ -38,8 +38,8 @@ Some of the capabilities of pi2 include
 Installation
 ------------
 
-Versions for Windows and CentOS Linux can be downloaded from the `GitHub Releases page <https://github.com/arttumiettinen/pi2/releases>`_.
-For Windows users no specific installation steps are necessary.
+Versions for Windows and some Linuxes can be downloaded from the `GitHub Releases page <https://github.com/arttumiettinen/pi2/releases>`_.
+For Windows users no specific installation steps are necessary. Just unpack the .zip archive to a suitable folder.
 Linux users must ensure that fftw3, libpng, libtiff, zlib, and a recent version of glibc are installed.
 
 For other platforms, refer to prerequisites and build instructions at `GitHub <https://github.com/arttumiettinen/pi2>`_.
