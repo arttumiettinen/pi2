@@ -238,7 +238,9 @@ int main()
 
 	//test(itl2::tests::eval, "evaluation of string expressions");
 
-	test(itl2::tests::seededDMap, "seeded distance map");
+	//test(itl2::tests::seededDMap, "seeded distance map");
+
+	test(itl2::tests::stddevuint16, "standard deviation, uint16");
 
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet

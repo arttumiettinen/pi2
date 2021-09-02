@@ -630,6 +630,14 @@ namespace itl2
 			return var;
 		}
 
+		/*
+		Specific std dev operation avoids rounding to pixel data type before square root.
+		*/
+		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType stddevOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask)
+		{
+			return std::sqrt(varianceOp(nb, mask));
+		}
+
 		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType medianOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask)
 		{
 			std::vector<pixel_t> values;
@@ -1594,8 +1602,7 @@ template<typename pixel_t, typename out_t> void name##Filter(const Image<pixel_t
 	*/
 	template<typename pixel_t, typename out_t> void stddevFilter(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		filter<pixel_t, out_t, internals::varianceOp<pixel_t> >(in, out, nbRadius, nbType, bc);
-		squareRoot(out);
+		filter<pixel_t, out_t, internals::stddevOp<pixel_t> >(in, out, nbRadius, nbType, bc);
 	}
 
 	/**
@@ -1710,6 +1717,7 @@ template<typename pixel_t, typename out_t> void name##Filter(const Image<pixel_t
 	namespace tests
 	{
 		void filters();
+		void stddevuint16();
 		void separableOptimization();
 		void gaussFilters();
 		void bilateral();
