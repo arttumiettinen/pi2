@@ -55,6 +55,12 @@ namespace pilib
 			// We use output so no delaying is allowed.
 			return false;
 		}
+
+		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const override
+		{
+			// This is just an arbitrary constant. The memory requirement comes from a list of points to remove.
+			return 0.5;
+		}
 	};
 
 	template<typename pixel_t> class LineThinCommand : public OverlapDistributable<OneImageInPlaceCommand<pixel_t> >
@@ -84,6 +90,12 @@ namespace pilib
 		{
 			// We use output so no delaying is allowed.
 			return false;
+		}
+
+		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const override
+		{
+			// This is just an arbitrary constant. The memory requirement comes from a list of points to remove.
+			return 0.5;
 		}
 	};
 

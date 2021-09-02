@@ -3,6 +3,7 @@
 #include "io/raw.h"
 #include "conversions.h"
 #include "projections.h"
+#include "generation.h"
 
 namespace itl2
 {
@@ -90,6 +91,17 @@ namespace itl2
 			subtract(ad, filtered2);
 			abs(ad);
 			testAssert(max(ad) <= 0.5, "separable optimization (mean filter)");
+		}
+
+		void stddevuint16()
+		{
+			Image<uint16_t> img(100, 100);
+			ramp(img, 0);
+			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (uint16_t)10000);
+			raw::writed(img, "./filters/stddev_orig");	
+			Image<uint16_t> filtered(img.dimensions());
+			stddevFilter(img, filtered, 5);
+			raw::writed(filtered, "./filters/stddev_filtered");
 		}
 
 		void filters()

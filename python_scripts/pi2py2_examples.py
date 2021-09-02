@@ -79,6 +79,9 @@ def create_and_access_images():
 
 
 def pi2_numpy_dimensions():
+    """
+    Demonstrates how image dimensions are converted between pi2 and NumPy.
+    """
 
     img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 30)
     print(f"pi2 dimensions: {img1}")
@@ -1502,9 +1505,34 @@ def fibre_properties():
     # TODO: Plot fibre properties
 
 
+def seeded_distance_map():
+    """
+    Demonstrates calculation of a seeded distance map.
+    """
+
+    # Create geometry
+    geometry = pi.newimage(ImageDataType.UINT8, 50, 50, 50)
+    pi.sphere(geometry, [15, 15, 25], 10, 255)
+    pi.sphere(geometry, [15, 15 + 18, 25], 10.0, 255)
+    pi.sphere(geometry, [15 + 18, 15 + 18, 25], 10.0, 255)
+    pi.sphere(geometry, [15 + 22, 15, 25], 10.0, 255)
+    pi.writetif(geometry, output_file("sdmap_geometry"))
+    
+    # Create seeds
+    seeds = pi.newlike(geometry)
+    pi.set(seeds, [24, 19, 25], 255)
+    pi.writetif(seeds, output_file("sdmap_seeds"))
+
+    # Calculate seeded distance map
+    sdmap = pi.newlike(geometry, ImageDataType.FLOAT32)
+    pi.sdmap(seeds, geometry, sdmap)
+    pi.writetif(sdmap, output_file("sdmap_result"))
+
+
+
 
 # Please uncomment the examples you wish to run:
-pi2_numpy_dimensions()
+#pi2_numpy_dimensions()
 #create_and_access_images()
 #read_and_write_image()
 #help()
@@ -1531,3 +1559,4 @@ pi2_numpy_dimensions()
 #skeleton_types()
 #fibre_properties()
 #vessel_tracing()
+seeded_distance_map()
