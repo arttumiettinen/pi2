@@ -642,13 +642,19 @@ namespace itl2
 
 		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType varianceOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask)
 		{
+			/*
+			// This algorithm works, but is not as stable as Welford's algorithm below.
 			typename NumberUtils<pixel_t>::RealFloatType count = 0;
 			typename NumberUtils<pixel_t>::FloatType total = 0;
 			typename NumberUtils<pixel_t>::FloatType total2 = 0;
 
+			// Use one value in nb as an estimate of mean to improve numerical stability.
+			// See https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+			typename NumberUtils<pixel_t>::FloatType K =  nb(nb.pixelCount() / 2);
+
 			for (coord_t n = 0; n < nb.pixelCount(); n++)
 			{
-				typename NumberUtils<pixel_t>::FloatType val = (typename NumberUtils<pixel_t>::FloatType)nb(n);
+				typename NumberUtils<pixel_t>::FloatType val = (typename NumberUtils<pixel_t>::FloatType)nb(n) - K;
 				typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)mask(n);
 				count += w; // Note: w is either 0 or 1
 				val *= w;
@@ -657,6 +663,30 @@ namespace itl2
 			}
 
 			typename NumberUtils<pixel_t>::FloatType var = (typename NumberUtils<pixel_t>::FloatType)((total2 - (total * total / count)) / (count - 1));
+
+			return var;
+			*/
+
+			// Welford's algorithm
+			typename NumberUtils<pixel_t>::RealFloatType count = 0;
+			typename NumberUtils<pixel_t>::FloatType mean = 0;
+			typename NumberUtils<pixel_t>::FloatType M2 = 0;
+
+			for (coord_t n = 0; n < nb.pixelCount(); n++)
+			{
+				typename NumberUtils<pixel_t>::FloatType x = (typename NumberUtils<pixel_t>::FloatType)nb(n);
+				typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)mask(n);
+				if (w > 0)
+				{
+					count += 1;
+					typename NumberUtils<pixel_t>::FloatType delta = x - mean;
+					mean += delta / count;
+					typename NumberUtils<pixel_t>::FloatType delta2 = x - mean;
+					M2 += delta * delta2;
+				}
+			}
+
+			typename NumberUtils<pixel_t>::FloatType var = M2 / (count - 1);
 
 			return var;
 		}
