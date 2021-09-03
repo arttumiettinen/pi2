@@ -47,10 +47,10 @@ namespace itl2
 			{
 				// TODO: Add other formats here.
 
-				Vec3c dimensions;
-				coord_t width, height;
-				ImageDataType dataType;
-				std::string reason;
+				//Vec3c dimensions;
+				//coord_t width, height;
+				//ImageDataType dataType;
+				//std::string reason;
 
 				//if (png::getInfo(filename, width, height, dataType, reason))
 				if (endsWithIgnoreCase(filename, ".png"))
