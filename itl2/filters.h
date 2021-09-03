@@ -44,20 +44,36 @@ namespace itl2
 			
 			Image<pixel_t> nb(mask.dimensions());
 
-			#pragma omp for
-			for (coord_t z = 0; z < img.depth(); z++)
+			if (img.dimensionality() >= 3)
 			{
+				#pragma omp for
+				for (coord_t z = 0; z < img.depth(); z++)
+				{
+					for (coord_t y = 0; y < img.height(); y++)
+					{
+						for (coord_t x = 0; x < img.width(); x++)
+						{
+							getNeighbourhood(img, Vec3c(x, y, z), nbRadius, nb, bc);
+
+							out(x, y, z) = pixelRound<out_t>(processNeighbourhood(nb, mask));
+						}
+					}
+
+					showThreadProgress(totalProcessed, img.depth());
+				}
+			}
+			else
+			{
+				#pragma omp for
 				for (coord_t y = 0; y < img.height(); y++)
 				{
 					for (coord_t x = 0; x < img.width(); x++)
 					{
-						getNeighbourhood(img, Vec3c(x, y, z), nbRadius, nb, bc);
+						getNeighbourhood(img, Vec3c(x, y, 0), nbRadius, nb, bc);
 
-						out(x, y, z) = pixelRound<out_t>(processNeighbourhood(nb, mask));
+						out(x, y, 0) = pixelRound<out_t>(processNeighbourhood(nb, mask));
 					}
 				}
-
-				showThreadProgress(totalProcessed, img.depth());
 			}
 		}
 	}
@@ -93,19 +109,34 @@ namespace itl2
 
 			Image<pixel_t> nb(mask.dimensions());
 
-			#pragma omp for
-			for (coord_t z = 0; z < img.depth(); z++)
+			if (img.dimensionality() >= 3)
 			{
+				#pragma omp for
+				for (coord_t z = 0; z < img.depth(); z++)
+				{
+					for (coord_t y = 0; y < img.height(); y++)
+					{
+						for (coord_t x = 0; x < img.width(); x++)
+						{
+							getNeighbourhood(img, Vec3c(x, y, z), nbRadius, nb, bc);
+							out(x, y, z) = pixelRound<out_t>(processNeighbourhood(nb, mask, parameter));
+						}
+					}
+
+					showThreadProgress(totalProcessed, img.depth());
+				}
+			}
+			else
+			{
+				#pragma omp for
 				for (coord_t y = 0; y < img.height(); y++)
 				{
 					for (coord_t x = 0; x < img.width(); x++)
 					{
-						getNeighbourhood(img, Vec3c(x, y, z), nbRadius, nb, bc);
-						out(x, y, z) = pixelRound<out_t>(processNeighbourhood(nb, mask, parameter));
+						getNeighbourhood(img, Vec3c(x, y, 0), nbRadius, nb, bc);
+						out(x, y, 0) = pixelRound<out_t>(processNeighbourhood(nb, mask, parameter));
 					}
 				}
-
-				showThreadProgress(totalProcessed, img.depth());
 			}
 		}
 	}

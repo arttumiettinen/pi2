@@ -95,11 +95,15 @@ namespace itl2
 
 		void stddevuint16()
 		{
-			Image<uint16_t> img(100, 100);
+			// NOTE: This test shows numerical inaccuracy in the right half of the 1000 pixel wide image.
+			// There, the true result is 2.5, but for pixel values near 1000, the calculations might result in
+			// 2.49, 2.51 etc. that will be rounded to 2 and 3 --> stripes in the integer image.
+			using DT = uint16_t;
+			Image<DT> img(1000, 1000);
 			ramp(img, 0);
-			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (uint16_t)10000);
+			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (DT)10000);
 			raw::writed(img, "./filters/stddev_orig");	
-			Image<uint16_t> filtered(img.dimensions());
+			Image<DT> filtered(img.dimensions());
 			stddevFilter(img, filtered, 5);
 			raw::writed(filtered, "./filters/stddev_filtered");
 		}
