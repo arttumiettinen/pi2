@@ -28,7 +28,7 @@ namespace itl2
 	inline std::string rawFilenameFormatHelp()
 	{
 		return "Dimensions of the .raw file do not need to be specified if the file name is in format name_WxHxD.raw, where [W, H, D] are the dimensions of the image. "
-			"The system tries to guess the pixel data type, too, based on the physical size and dimensions of the file as follows. "
+			"The system tries to guess the pixel data type, too, based on the file size and dimensions of the image as follows. "
 			"If pixel size in bytes is 1, the system sets the pixel type to uint8. If pixel size in bytes is 2, the system sets the pixel type to uint16. "
 			"If pixel size in bytes is 4, float32 pixel data is assumed (instead of e.g. int32 or uint32). "
 			"If pixel size in bytes is 8, pixels are assumed to be of type uint64 (instead of e.g. int64 or complex32). "
