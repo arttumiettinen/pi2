@@ -89,7 +89,7 @@ namespace itl2
 	@param visualizeY If pVisualization is not nullptr, this value indicates the y-coordinate of the xz-slice that will be visualized.
 	@param visColor Color of the surface in the visualization. If set to zero, the color will be set to one above the maximum in geometry image.
 	*/
-	template<typename pixel_t> void findSurface(const Image<pixel_t>& geometry, Image<float32_t>& heightMap, double stoppingValue, Direction direction = Direction::Down, double surfaceTension = 1.0, size_t iterations = 150, Image<pixel_t>* pVisualization = nullptr, coord_t visualizeY = 0, pixel_t visColor = 0)
+	template<typename pixel_t> void findSurface(const Image<pixel_t>& geometry, Image<float32_t>& heightMap, double stoppingValue, Direction direction = Direction::Down, double surfaceTension = 1.0, size_t iterations = 150, Image<pixel_t>* pVisualization = nullptr, coord_t visualizeY = 0, pixel_t visColor = 0, float32_t maxMove = 1.0)
 	{
 		float32_t upForceFactor = (float32_t)(-1.0 / stoppingValue);
 		float32_t downForce = 1.0;
@@ -122,6 +122,12 @@ namespace itl2
 					float32_t imgValue = interp(geometry, (float32_t)x, (float32_t)y, heightMap(x, y));
 
 					float32_t newDepth = heightMap(x, y) + downForce + upForceFactor * imgValue;
+
+					// Constraint amount of movement in either direction.
+					if (newDepth > heightMap(x, y) + maxMove)
+						newDepth = heightMap(x, y) + maxMove;
+					else if(newDepth < heightMap(x, y) - maxMove)
+						newDepth = heightMap(x, y) - maxMove;
 
 					// Ensure that the carpet does not bulge out of the image.
 					if (newDepth < 0)
