@@ -66,7 +66,21 @@ namespace itl2
 			}
 
 		};
+
+		/**
+		Merge two priority queues.
+		*/
+		template<typename T> void merge_pq(std::priority_queue<T>& dest, std::priority_queue<T>& src) {
+			if (dest.size() < src.size()) {
+				std::swap(dest, src);
+			}
+			while (!src.empty()) {
+				dest.push(src.top());
+				src.pop();
+			}
+		}
 	}
+
 
 	/**
 	Calculates seeded distance map.
@@ -85,124 +99,108 @@ namespace itl2
 		Vec3sc currentRelativePosition;
 
 		// Add neighbours of seed points to the priority queue
+		#pragma omp parallel if(seeds.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
-			forAllPixels(seeds, [&](coord_t x, coord_t y, coord_t z)
+			std::priority_queue<internals::DMapSeed<Tregion> > pointsLocal;
+			
+			#pragma omp for
+			for (coord_t z = 0; z < seeds.depth(); z++)
 			{
-				Vec3sc p((int32_t)x, (int32_t)y, (int32_t)z);
-				if (seeds(p) != 0) // if seed != 0
+				for (coord_t y = 0; y < seeds.height(); y++)
 				{
-					// The color of the seed region
-					Tregion region = geometry(p);
-
-					/*
-					// This is ok for connectivity == Nearest
-					for(size_t n = 0; n < p.size(); n++)
+					for (coord_t x = 0; x < seeds.width(); x++)
 					{
-
-						if(p[n] > 0)
+						Vec3sc p((int32_t)x, (int32_t)y, (int32_t)z);
+						if (seeds(p) != 0) // if seed != 0
 						{
-							vector<coord_t> np = p;
-							np[n]--;
+							// The color of the seed region
+							Tregion region = geometry(p);
 
-							Tregion lbl = geometry.getPixel(np);
-							if(lbl == region && seeds.getPixel(np) == 0)
+							if (connectivity == Connectivity::NearestNeighbours)
 							{
-								points.push(internal::DMapCompare<Tregion>(np, region, 1));
-							}
-						}
+								// Only nearest neighbours
 
-						if((size_t)p[n] < geometry.getDimension(n) - 1)
-						{
-							vector<coord_t> np = p;
-							np[n]++;
-
-							Tregion lbl = geometry.getPixel(np);
-							if(lbl == region && seeds.getPixel(np) == 0)
-							{
-								points.push(internal::DMapCompare<Tregion>(np, region, 1));
-							}
-						}
-					}
-					*/
-
-					if (connectivity == Connectivity::NearestNeighbours)
-					{
-						// Only nearest neighbours
-
-						for (size_t n = 0; n < seeds.dimensionality(); n++)
-						{
-							if (p[n] > 0)
-							{
-								Vec3sc np = p;
-								np[n]--;
-
-								Tregion lbl = geometry(np);
-								if (lbl == region && seeds(np) == 0)
+								for (size_t n = 0; n < seeds.dimensionality(); n++)
 								{
-									points.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
+									if (p[n] > 0)
+									{
+										Vec3sc np = p;
+										np[n]--;
+
+										Tregion lbl = geometry(np);
+										if (lbl == region && seeds(np) == 0)
+										{
+											pointsLocal.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
+										}
+									}
+
+									if (p[n] < seeds.dimension(n) - 1)
+									{
+										Vec3sc np = p;
+										np[n]++;
+
+										Tregion lbl = geometry(np);
+										if (lbl == region && seeds(np) == 0)
+										{
+											pointsLocal.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
+										}
+									}
 								}
 							}
-
-							if (p[n] < seeds.dimension(n) - 1)
+							else
 							{
-								Vec3sc np = p;
-								np[n]++;
-
-								Tregion lbl = geometry(np);
-								if (lbl == region && seeds(np) == 0)
-								{
-									points.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
-								}
-							}
-						}
-					}
-					else
-					{
-						// All neighbours
-						for (size_t n = 0; n < seeds.dimensionality(); n++)
-							currentRelativePosition[n] = -1;
-
-						do
-						{
-							Vec3sc np = p + currentRelativePosition;
-							if(seeds.isInImage(np))
-							{
-								Tregion lbl = geometry(np);
-								if (lbl == region && seeds(np) == 0)
-								{
-									points.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
-								}
-							}
-
-							// Proceed in first dimension
-							currentRelativePosition[0]++;
-
-							// If first dimension is out of bounds, proceed one pixel in second dimension.
-							// Cascade updates to upper dimensions, if required.
-							for (size_t n = 0; n < currentRelativePosition.size() - 1; n++)
-							{
-								if (currentRelativePosition[n] > 1)
-								{
+								// All neighbours
+								for (size_t n = 0; n < seeds.dimensionality(); n++)
 									currentRelativePosition[n] = -1;
-									currentRelativePosition[n + 1]++;
-								}
-								else
+
+								do
 								{
-									break;
-								}
+									Vec3sc np = p + currentRelativePosition;
+									if (seeds.isInImage(np))
+									{
+										Tregion lbl = geometry(np);
+										if (lbl == region && seeds(np) == 0)
+										{
+											pointsLocal.push(internals::DMapSeed<Tregion>(np, region, (p - np).norm<float32_t>()));
+										}
+									}
+
+									// Proceed in first dimension
+									currentRelativePosition[0]++;
+
+									// If first dimension is out of bounds, proceed one pixel in second dimension.
+									// Cascade updates to upper dimensions, if required.
+									for (size_t n = 0; n < currentRelativePosition.size() - 1; n++)
+									{
+										if (currentRelativePosition[n] > 1)
+										{
+											currentRelativePosition[n] = -1;
+											currentRelativePosition[n + 1]++;
+										}
+										else
+										{
+											break;
+										}
+									}
+								} while (currentRelativePosition[currentRelativePosition.size() - 1] <= 1);
+
 							}
-						} while (currentRelativePosition[currentRelativePosition.size() - 1] <= 1);
 
+
+							distance(p) = 0;
+						}
+						else
+						{
+							distance(p) = std::numeric_limits<float32_t>::infinity();
+						}
 					}
-
-
-					distance(p) = 0;
 				}
-				else
-				{
-					distance(p) = std::numeric_limits<float32_t>::infinity();
-				}
-			});
+			}
+
+			#pragma omp critical(sdmap_init)
+			{
+				internals::merge_pq(points, pointsLocal);
+			}
 		}
 
 		/*
@@ -237,40 +235,6 @@ namespace itl2
 			if (currDistance < distance(p))
 			{
 				distance(p) = currDistance;
-
-				/*
-				// This is ok for connectivity == Nearest
-
-				uint16_t newDistance = currDistance + 1;
-
-				// Insert neighbours into the priority queue.
-				for(size_t n = 0; n < p.size(); n++)
-				{
-					if(p[n] > 0)
-					{
-						vector<coord_t> np = p;
-						np[n]--;
-
-						Tregion lbl = geometry.getPixel(np);
-						if(lbl == region && newDistance < distance.getPixel(np))
-						{
-							points.push(internal::DMapCompare<Tregion>(np, region, newDistance));
-						}
-					}
-
-					if((size_t)p[n] < geometry.getDimension(n) - 1)
-					{
-						vector<coord_t> np = p;
-						np[n]++;
-
-						Tregion lbl = geometry.getPixel(np);
-						if(lbl == region && newDistance < distance.getPixel(np))
-						{
-							points.push(internal::DMapCompare<Tregion>(np, region, newDistance));
-						}
-					}
-				}
-				*/
 
 				if (connectivity == Connectivity::NearestNeighbours)
 				{
