@@ -321,7 +321,7 @@ def auto_binning(relations, binning):
 
                 params = (f"echo;"
                           f"read(img, {orig_file});"
-                          f"bin(img, binned, {binning});"
+                          f"maskedbin(img, binned, {binning}, 0, 0);"
                           f"writeraw(binned, {binned_file});"
                          )
 
