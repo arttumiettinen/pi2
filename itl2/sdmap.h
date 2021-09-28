@@ -111,7 +111,7 @@ namespace itl2
 					for (coord_t x = 0; x < seeds.width(); x++)
 					{
 						Vec3sc p((int32_t)x, (int32_t)y, (int32_t)z);
-						if (seeds(p) != 0) // if seed != 0
+						if (seeds(p) != 0)
 						{
 							// The color of the seed region
 							Tregion region = geometry(p);

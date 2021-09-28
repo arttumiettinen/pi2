@@ -896,8 +896,8 @@ namespace itl2
 		{
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
-			//const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
-			const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
+			const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
+			//const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
 			const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
 
