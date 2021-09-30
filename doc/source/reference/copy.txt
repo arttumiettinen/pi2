@@ -64,4 +64,4 @@ Location where the target image is placed in the source image.
 See also
 --------
 
-:ref:`scale`, :ref:`bin`, :ref:`scalelabels`
+:ref:`scale`, :ref:`bin`, :ref:`maskedbin`, :ref:`scalelabels`

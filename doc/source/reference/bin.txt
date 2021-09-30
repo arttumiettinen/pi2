@@ -46,4 +46,4 @@ Name of binning type to be performed. Currently 'mean', 'min' and 'max' are supp
 See also
 --------
 
-:ref:`scale`, :ref:`bin`, :ref:`scalelabels`
+:ref:`scale`, :ref:`bin`, :ref:`maskedbin`, :ref:`scalelabels`
