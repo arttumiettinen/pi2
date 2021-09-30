@@ -6,7 +6,7 @@ minfilter
 
 **Syntax:** :code:`minfilter(input image, output image, radius, allow optimization, neighbourhood type, boundary condition)`
 
-Minimum filter. Replaces pixel by minimum of pixels in its neighbourhood.
+Minimum filter. Replaces pixel by minimum of pixels in its neighbourhood. For binary images this equals erosion of foreground (non-zero) pixels.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

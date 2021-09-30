@@ -1,0 +1,58 @@
+.. _maskedbin:
+
+maskedbin
+*********
+
+
+**Syntax:** :code:`maskedbin(input image, output image, factor, bad value, undefined value)`
+
+Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image. Supports treating one value in the input image as 'bad' such that pixels having that value do not contribute to the output at all.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+factor [input]
+~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+Binning factor in each coordinate direction. Value 2 makes the output image dimension half of the input image dimension, 3 makes them one third etc.
+
+bad value [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Value that should not be considered in the averaging calculations.
+
+undefined value [input]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+ Value that is placed to those pixels of the output image that do not correspond to any valid pixels in the input image.
+
+See also
+--------
+
+:ref:`scale`, :ref:`bin`, :ref:`maskedbin`, :ref:`scalelabels`

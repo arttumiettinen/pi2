@@ -75,4 +75,4 @@ Specifies origin of current calculation block. This parameter is used internally
 See also
 --------
 
-:ref:`scale`, :ref:`bin`, :ref:`scalelabels`
+:ref:`scale`, :ref:`bin`, :ref:`maskedbin`, :ref:`scalelabels`

@@ -206,7 +206,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		MinFilterCommand() : NeighbourhoodFilterCommand<pixel_t>("minfilter", "Minimum filter. Replaces pixel by minimum of pixels in its neighbourhood.",
+		MinFilterCommand() : NeighbourhoodFilterCommand<pixel_t>("minfilter", "Minimum filter. Replaces pixel by minimum of pixels in its neighbourhood. For binary images this equals erosion of foreground (non-zero) pixels.",
 			{
 				CommandArgument<bool>(ParameterDirection::In, "allow optimization", periodicLinesHelp(), true)
 			})
@@ -246,7 +246,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		MaxFilterCommand() : NeighbourhoodFilterCommand<pixel_t>("maxfilter", "Maximum filter. Replaces pixel by maximum of pixels in its neighbourhood.",
+		MaxFilterCommand() : NeighbourhoodFilterCommand<pixel_t>("maxfilter", "Maximum filter. Replaces pixel by maximum of pixels in its neighbourhood. For binary images, this equals dilation of foreground (non-zero) pixels.",
 			{
 				CommandArgument<bool>(ParameterDirection::In, "allow optimization", periodicLinesHelp(), true)
 			})

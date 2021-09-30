@@ -5,8 +5,8 @@ findsurface
 
 There are 2 forms of this command.
 
-:code:`findsurface(geometry, height map, stopping gray value, direction, surface tension, iterations, visualization, visualization y, visualization color)`
-===========================================================================================================================================================
+:code:`findsurface(geometry, height map, stopping gray value, direction, surface tension, iterations, max step, visualization, visualization y, visualization color)`
+=====================================================================================================================================================================
 
 Surface recognition algorithm 'Carpet' according to Turpeinen - Interface Detection Using a Quenched-Noise Version of the Edwards-Wilkinson Equation. The algorithm places a surface above (alternatively below) the image, and moves it towards larger (alternatively smaller) :math:`z` values while controlling its dynamics according to the Edwards-Wilkinson equation. The movement of the surface stops when it encounters enough pixels with value above specific stopping gray level. The surface does not move through small holes in the object as it has controllable amount of surface tension. 
 
@@ -63,6 +63,15 @@ iterations [input]
 
 Count of iterations to perform.
 
+max step [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Maximum amount of movement allowed in one time step.
+
 visualization [input]
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -89,8 +98,8 @@ See also
 
 :ref:`findsurface`, :ref:`drawheightmap`, :ref:`setbeforeheightmap`, :ref:`setafterheightmap`, :ref:`shiftz`
 
-:code:`findsurface(geometry, height map, stopping gray value, direction, surface tension, iterations)`
-======================================================================================================
+:code:`findsurface(geometry, height map, stopping gray value, direction, surface tension, iterations, max step)`
+================================================================================================================
 
 Surface recognition algorithm 'Carpet' according to Turpeinen - Interface Detection Using a Quenched-Noise Version of the Edwards-Wilkinson Equation. The algorithm places a surface above (alternatively below) the image, and moves it towards larger (alternatively smaller) :math:`z` values while controlling its dynamics according to the Edwards-Wilkinson equation. The movement of the surface stops when it encounters enough pixels with value above specific stopping gray level. The surface does not move through small holes in the object as it has controllable amount of surface tension. 
 
@@ -146,6 +155,15 @@ iterations [input]
 **Default value:** 150
 
 Count of iterations to perform.
+
+max step [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 1
+
+Maximum amount of movement allowed in one time step.
 
 See also
 --------

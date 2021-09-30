@@ -48,4 +48,4 @@ Size of output image. Specify zeroes or nothing to crop to the current size of t
 See also
 --------
 
-:ref:`scale`, :ref:`bin`, :ref:`scalelabels`
+:ref:`scale`, :ref:`bin`, :ref:`maskedbin`, :ref:`scalelabels`
