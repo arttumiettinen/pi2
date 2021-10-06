@@ -224,7 +224,7 @@ def main():
 
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file)
+    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.force_redo)
 
 
     if is_use_cluster() and is_wait_for_jobs():

@@ -1513,7 +1513,16 @@ def find_roots(tree):
     return roots
 
 
-def calculate_world_to_local(tree, allow_local_deformations):
+def is_world_to_local_ok(prefix):
+    """
+    Tests if world to local transformation has been calculated.
+    """
+    
+    filename = f"{prefix}_refpoints.txt"
+    return os.path.isfile(filename)
+        
+
+def calculate_world_to_local(tree, allow_local_deformations, force_redo):
     """
     Calculates world to local transformations for all nodes in the given tree, starting from the root nodes that have no incoming connections.
     """
@@ -1541,15 +1550,40 @@ def calculate_world_to_local(tree, allow_local_deformations):
                     script = (f"echo;"
                               f"determine_world_to_local({scan.transformation_file}, [{scan.dimensions[0]}, {scan.dimensions[1]}, {scan.dimensions[2]}], {scan.world_to_local_prefix}, {allow_local_deformations});"
                              )
-                    run_pi2(script, scan.world_to_local_prefix)
+                             
+                    if force_redo or (not is_world_to_local_ok(scan.world_to_local_prefix)):     
+                        run_pi2(script, scan.world_to_local_prefix)
 
         #print("--")
         wait_for_cluster_jobs()
 
 
 
+def is_stitch_job_ok(out_template):
+    """
+    Tests if a cluster stitch job has succeeded.
+    """
+    
+    if not use_cluster:
+        return True
+    
+    filename = f"{out_template}-out.txt"
+    if not os.path.isfile(filename):
+        return False
+        
+    with open(filename, "r") as f:
+        text = f.read()
+        
+    # TODO: This is not 100 % sure condition.
+    if "writerawblock" in text:
+        return True
+        
+    return False
+        
+    
 
-def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
+
+def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo):
     """
     Prepares and runs pi2 stitching process for connected component 'comp' of scan relations tree 'tree'.
     - determines final world to image transformations
@@ -1588,7 +1622,7 @@ def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotat
 
     # Calculate world to local grid transformations
     print("Calculating world to local transformation for each image...")
-    calculate_world_to_local(comp, allow_local_deformations)
+    calculate_world_to_local(comp, allow_local_deformations, force_redo)
 
 
     print("Stitching...")
@@ -1652,13 +1686,17 @@ def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotat
                              f"writerawblock(goodnessimg, {out_goodness_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
                             )
 
-                run_pi2(pi_script, f"{out_template}_{jobs_started}")
+                log_template = f"{out_template}_{jobs_started}"
+                if force_redo or (not is_stitch_job_ok(log_template)):
+                    run_pi2(pi_script, log_template)
+                    
+                # jobs_started must be increased even if no job started due to result of is_stitch_job_ok.
                 jobs_started = jobs_started + 1
 
     return jobs_started
 
 
-def run_stitching_for_all_connected_components(relations, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
+def run_stitching_for_all_connected_components(relations, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo):
     """
     Calls run_stitching for each connected component in relations network.
     """
@@ -1666,7 +1704,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
-        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file)
+        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo)
 
     if (jobs_started > 0) and use_cluster:
         return False
