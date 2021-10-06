@@ -452,9 +452,38 @@ namespace pilib
 
 	inline std::string scaleSeeAlso()
 	{
-		return "scale, bin, scalelabels";
+		return "scale, bin, maskedbin, scalelabels";
 	}
 
+
+	template<typename pixel_t> class MaskedBinCommand : public TwoImageInputOutputCommand<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		MaskedBinCommand() : TwoImageInputOutputCommand<pixel_t>("maskedbin", "Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image. Supports treating one value in the input image as 'bad' such that pixels having that value do not contribute to the output at all.",
+			{
+				CommandArgument<size_t>(ParameterDirection::In, "factor", "Binning factor in each coordinate direction. Value 2 makes the output image dimension half of the input image dimension, 3 makes them one third etc."),
+				CommandArgument<double>(ParameterDirection::In, "bad value", "Value that should not be considered in the averaging calculations.", 0.0),
+				CommandArgument<double>(ParameterDirection::In, "undefined value", " Value that is placed to those pixels of the output image that do not correspond to any valid pixels in the input image.", 0.0),
+			},
+			scaleSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, vector<ParamVariant>& args) const override
+		{
+			size_t binSize = pop<size_t>(args);
+			pixel_t badValue = pixelRound<pixel_t>(pop<double>(args));
+			pixel_t undefinedValue = pixelRound<pixel_t>(pop<double>(args));
+
+			if (binSize <= 0)
+				throw ITLException("Bins size must be positive.");
+
+			maskedBinning<pixel_t>(in, out, binSize, badValue, undefinedValue);
+		}
+	};
 
 	template<typename pixel_t> class BinCommand : public TwoImageInputOutputCommand<pixel_t>, public Distributable
 	{

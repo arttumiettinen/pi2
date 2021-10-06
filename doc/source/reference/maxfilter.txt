@@ -6,7 +6,7 @@ maxfilter
 
 **Syntax:** :code:`maxfilter(input image, output image, radius, allow optimization, neighbourhood type, boundary condition)`
 
-Maximum filter. Replaces pixel by maximum of pixels in its neighbourhood.
+Maximum filter. Replaces pixel by maximum of pixels in its neighbourhood. For binary images, this equals dilation of foreground (non-zero) pixels.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

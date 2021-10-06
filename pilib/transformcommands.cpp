@@ -13,6 +13,7 @@ namespace pilib
 		ADD_ALL(Rotate2Command);
 		ADD_ALL(ResliceCommand);
 		ADD_REAL(BinCommand);
+		ADD_REAL(MaskedBinCommand);
 		ADD_ALL(CropCommand);
 		ADD_ALL(ScaleCommand);
 		ADD_REAL(ScaleLabelsCommand);

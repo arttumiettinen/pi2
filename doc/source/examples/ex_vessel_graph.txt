@@ -227,6 +227,6 @@ For running this example code, a demonstration image package available at the `G
 References
 ----------
 
-[1] Wälchli T., Bisschop J., Miettinen A. et al. Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Preprint available at https://doi.org/10.1101/2020.10.19.344903
+[1] Wälchli T., Bisschop J., Miettinen A. et al. Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Nature Protocols, 2021.
 
 

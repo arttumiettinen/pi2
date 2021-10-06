@@ -31,6 +31,7 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "direction", "Direction where the surface moves. 'Down' corresponds to direction towards larger $z$ values, and 'Up' corresponds to direction towards smaller $z$ values.", "Down"),
 				CommandArgument<double>(ParameterDirection::In, "surface tension", "Value that indicates how smooth the surface will be. Larger value results in smoother surface.", 1.0),
 				CommandArgument<size_t>(ParameterDirection::In, "iterations", "Count of iterations to perform.", 150),
+				CommandArgument<double>(ParameterDirection::In, "max step", "Maximum amount of movement allowed in one time step.", 1.0),
 
 				CommandArgument<Image<pixel_t>>(ParameterDirection::In, "visualization", R"(An image where a visualization of the evolution of the surface will be saved. The dimensions of the visualization will be set to $w \times d \times N$, where $w$ and $d$ are width and depth of the geometry image, and $N$ is the count of iterations to perform.)"),
 				CommandArgument<size_t>(ParameterDirection::In, "visualization y", "Indicates the $y$-coordinate of the $xz$-slice that will be visualized."),
@@ -49,6 +50,7 @@ namespace pilib
 			string directions = pop<string>(args);
 			double surfaceTension = pop<double>(args);
 			size_t iterations = pop<size_t>(args);
+			double maxStep = pop<double>(args);
 
 			Image<pixel_t>* visualization = pop<Image<pixel_t>*>(args);
 			size_t visY = pop<size_t>(args);
@@ -56,7 +58,7 @@ namespace pilib
 			
 			Direction dir = fromString<Direction>(directions);
 
-			findSurface(geometry, hmap, stoppingValue, dir, surfaceTension, iterations, visualization, visY, pixelRound<pixel_t>(visColor));
+			findSurface<pixel_t>(geometry, hmap, stoppingValue, dir, surfaceTension, iterations, visualization, visY, pixelRound<pixel_t>(visColor), (float32_t)maxStep);
 		}
 	};
 
@@ -78,6 +80,7 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "direction", "Direction where the surface moves. 'Down' corresponds to direction towards larger $z$ values, and 'Up' corresponds to direction towards smaller $z$ values.", "Down"),
 				CommandArgument<double>(ParameterDirection::In, "surface tension", "Value that indicates how smooth the surface will be. Larger value results in smoother surface.", 1.0),
 				CommandArgument<size_t>(ParameterDirection::In, "iterations", "Count of iterations to perform.", 150),
+				CommandArgument<double>(ParameterDirection::In, "max step", "Maximum amount of movement allowed in one time step.", 1.0),
 			},
 			surfaceSeeAlso())
 		{
@@ -92,10 +95,11 @@ namespace pilib
 			string directions = pop<string>(args);
 			double surfaceTension = pop<double>(args);
 			size_t iterations = pop<size_t>(args);
+			double maxStep = pop<double>(args);
 
 			Direction dir = fromString<Direction>(directions);
 
-			findSurface(geometry, hmap, stoppingValue, dir, surfaceTension, iterations);
+			findSurface<pixel_t>(geometry, hmap, stoppingValue, dir, surfaceTension, iterations, nullptr, (coord_t)0, (pixel_t)0, (float32_t)maxStep);
 		}
 	};
 

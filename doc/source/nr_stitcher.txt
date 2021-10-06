@@ -16,10 +16,19 @@ Acquisition of the tile images
 ------------------------------
 
 In order to generate input data for the NRStitcher program, one typically uses some kind of a microscope to acquire a number of overlapping
-images. Large-ish overlaps are easier to stitch with the NRStitcher. For microtomographic images overlaps of 10 % - 30 % are typically used.
+images. Large-ish overlaps are easier to stitch with the NRStitcher. For microtomographic images overlaps of 10 % - 30 % are typically used: the well-reconstructed region in the images is cylindrical, so approximately 30 % overlap between neighbouring cylinders is required in the radial direction. In the axial direction 10 % overlap seems to be fine in most cases.
+
 The images must be saved in a format supported by the pi2 system, e.g. :file:`.raw`, :file:`.tif`, :file:`.nrrd`, or sequence of :file:`.tif` or :file:`.png` slices.
 
-The order of acquisition can be anything (snake, row-by-row, random, etc.) as long as the locations of the tiles are known.
+The order of acquisition can be anything (snake, row-by-row, random, etc.) as long as approximate locations of the tiles are known.
+
+
+Masking
+-------
+
+Sometimes the tile images contain bad areas that must not be used in the stitching process. In order to facilitate this, pixel value 0 is handled specially in the stitching process. It is used to denote pixels with "no usable data" and can therefore be used to mask some regions of the tile image out of the final result. For example, in the case of tomographic images, pixel value 0 could be used to get rid of the badly reconstructed region near the edges of the image. In many cases this seems to be unnecessary, though.
+
+In the case your valid pixel data contains zeroes, consider mapping the pixel values e.g. to range [1, max], where max denotes the maximal representable number in the pixel data type. After stitching, you may re-map back to the original range. The :ref:`linmap` command can be used for this purpose.
 
 
 Stitching
