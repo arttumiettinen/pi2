@@ -1,0 +1,3 @@
+
+$(info Using Skylake arch)
+CXXFLAGS += -march=skylake

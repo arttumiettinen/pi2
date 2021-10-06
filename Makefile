@@ -3,11 +3,19 @@
 #       Use "make NO_OPENCL=1" or "make all NO_OPENCL=1" to do a build without OpenCL support.
 #       use "make TESTS=1" to build also itl2tests project.
 
-CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -march=native
+CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
 LDFLAGS := -fopenmp
 
 OPENCL_LIB := -lOpenCL
 CONFIG := release
+
+# Include Makefile.local and if it does not exist, build with native arch.
+sinclude Makefile.local
+ifeq ("$(wildcard Makefile.local)","")
+    $(info No Makefile.local found, using native arch.)
+    CXXFLAGS += -march=native
+endif
+    
 
 ifdef NO_OPENCL
     CXXFLAGS += -DNO_OPENCL
