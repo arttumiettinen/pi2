@@ -3,6 +3,7 @@
 #include "image.h"
 #include "connectivity.h"
 #include "iteration.h"
+#include "raytrace.h"
 
 #include <vector>
 #include <queue>
@@ -203,25 +204,10 @@ namespace itl2
 			}
 		}
 
-		/*
-		// Plot start points
-		while(!points.empty())
-		{
-			const internal::DMapCompare<Tregion>& obj = points.top();
-			const vector<coord_t> p = obj.Position();
-			Tregion region = obj.Region();
-			points.pop();
-
-			distance.setPixel(p, 1);
-		}
-		return;
-		*/
 
 		long filledCount = 0;
 		size_t dispStep = 30000;
 		size_t k = 0;
-		//long round = 0;
-		//long savecounter = 0;
 
 		// Grow from the point p to all directions if they are not filled yet.
 		while (!points.empty())
@@ -318,27 +304,160 @@ namespace itl2
 			{
 				k = 0;
 				std::cout << "Queue size: " << points.size() << "                       \r" << std::flush;
-
-				// This saves a movie of progress.
-				//round++;
-				//if(round > 10)
-				//{
-				//	round = 0;
-				//	savecounter++;
-
-				//	stringstream name;
-				//	name << "movie/labels" << savecounter;
-				//	raw::write(labels, raw::concatDimensions(name.str(), labels.dimensions()));
-
-				//}
 			}
 		}
 
+	}
 
-		//savecounter++;
-		//stringstream name;
-		//name << "movie/labels" << savecounter;
-		//raw::write(labels, raw::concatDimensions(name.str(), labels.dimensions()));
+
+	namespace internals
+	{
+		template<typename pixel_t, typename real_t> struct LineChecker
+		{
+		private:
+			const Image<pixel_t>& img;
+			pixel_t color;
+			bool result;
+
+		public:
+			bool getResult() const
+			{
+				return result;
+			}
+
+			LineChecker(const Image<pixel_t>& img, pixel_t color) : img(img), color(color)
+			{
+				result = true;
+			}
+
+			void operator()(const Vec3c& pos, const real_t length, const real_t totalLength)
+			{
+				if (img.isInImage(pos))
+					if (img(pos) != color)
+						result = false;
+			}
+		};
+
+		template<typename pixel_t> bool checkLine(const Image<pixel_t>& img, const Vec3sc& p0, const Vec3sc& p1, pixel_t region)
+		{
+			using real_t = float32_t;
+			Vec3<real_t> start((real_t)p0.x, (real_t)p0.y, (real_t)p0.z);
+			Vec3<real_t> end((real_t)p1.x, (real_t)p1.y, (real_t)p1.z);
+			LineChecker<pixel_t, real_t> checker(img, region);
+			siddonLineClip(start, end, checker, Vec3<real_t>(img.dimensions()));
+			return checker.getResult();
+		}
+	}
+
+	/**
+	Calculates seeded distance map, but instead of finding paths that take single pixel steps to neighbouring pixels, allows steps that are at most maxSegmentLength pixels long.
+	Does not change the results much in practice, but perhaps this implementation could be used to make the seededDistanceMap function simpler.
+	This functionality is not even nearly fully tested.
+	*/
+	template<typename Tseed, typename Tregion> void seededDistanceMapPolyline(const Image<Tseed>& seeds, const Image<Tregion>& geometry, Image<float32_t>& distance, float32_t maxSegmentLength)
+	{
+		seeds.checkSize(geometry);
+
+		distance.ensureSize(seeds);
+
+		std::priority_queue<itl2::internals::DMapSeed<Tregion> > points;
+
+		Vec3sc currentRelativePosition;
+
+		// Add seed points to the priority queue
+#pragma omp parallel if(seeds.pixelCount() > PARALLELIZATION_THRESHOLD)
+		{
+			std::priority_queue<itl2::internals::DMapSeed<Tregion> > pointsLocal;
+
+#pragma omp for
+			for (coord_t z = 0; z < seeds.depth(); z++)
+			{
+				for (coord_t y = 0; y < seeds.height(); y++)
+				{
+					for (coord_t x = 0; x < seeds.width(); x++)
+					{
+						Vec3sc p((int32_t)x, (int32_t)y, (int32_t)z);
+						if (seeds(p) != 0)
+						{
+							// The color of the seed region
+							Tregion region = geometry(p);
+							pointsLocal.push(itl2::internals::DMapSeed<Tregion>(p, region, 0));
+
+							distance(p) = 0;
+						}
+						else
+						{
+							distance(p) = std::numeric_limits<float32_t>::infinity();
+						}
+					}
+				}
+			}
+
+#pragma omp critical(sdmap_init)
+			{
+				itl2::internals::merge_pq(points, pointsLocal);
+			}
+		}
+
+		long filledCount = 0;
+		size_t dispStep = 30000;
+		size_t k = 0;
+
+		// Grow from the point p to all directions if they are not filled yet.
+		while (!points.empty())
+		{
+			const itl2::internals::DMapSeed<Tregion>& obj = points.top();
+			const Vec3sc p = obj.position();
+			Tregion region = obj.region();
+			float32_t currDistance = obj.distance();
+			points.pop();
+
+			if (currDistance <= distance(p)) // Do not process neighbours of p if current route to p is longer than a possible existing route.
+			{
+
+				int32_t r = (int32_t)itl2::ceil(maxSegmentLength);
+
+				for (int32_t z = -r; z <= r; z++)
+				{
+					for (int32_t y = -r; y <= r; y++)
+					{
+						for (int32_t x = -r; x <= r; x++)
+						{
+							if (x != 0 || y != 0 || z != 0) // Do not process the point p again
+							{
+								Vec3sc currentRelativePosition(x, y, z);
+								Vec3sc np = p + currentRelativePosition;
+								if (geometry.isInImage(np)) // Do not allow end points outside of the image
+								{
+									float32_t deltaDistance = (p - np).norm();
+									if (deltaDistance <= maxSegmentLength) // Do not allow steps longer than maxSegmentLength
+									{
+										Tregion lbl = geometry(np);
+										float32_t newDistance = currDistance + deltaDistance;
+										if (lbl == region && newDistance < distance(np)) // If new point is in the same region and distance to it is smaller than previously determined
+										{
+											if (internals::checkLine(geometry, p, np, region)) // If line between previous point and new point is completely in the same region
+											{
+												distance(np) = newDistance;
+												points.push(itl2::internals::DMapSeed<Tregion>(np, region, newDistance));
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+
+			k++;
+			if (k > dispStep)
+			{
+				k = 0;
+				std::cout << "Queue size: " << points.size() << "                       \r" << std::flush;
+			}
+		}
 
 	}
 

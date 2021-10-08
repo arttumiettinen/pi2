@@ -11,5 +11,6 @@ namespace pilib
 		ADD_REAL2(PrepareDistanceMapCommand);
 		ADD_REAL(DistanceMapProcessDimensionCommand);
 		ADD_REAL(SeededDistanceMapCommand);
+		ADD_REAL(PolySeededDistanceMapCommand);
 	}
 }
