@@ -733,10 +733,10 @@ namespace itl2
 	@param med, tmp Temporary images.
 	@return Count of bad pixels in the slice.
 	*/
-	size_t deadPixelRemovalSlice(Image<float32_t>& slice, Image<float32_t>& med, Image<float32_t>& tmp, coord_t medianRadius = 1, float32_t stdDevCount = 30)
+	size_t deadPixelRemovalSlice(Image<float32_t>& slice, Image<float32_t>& med, Image<float32_t>& tmp, coord_t medianRadius = 2, float32_t stdDevCount = 30)
 	{
 		// Calculate median filtering of slice
-		medianFilter(slice, med, medianRadius, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
+		nanMedianFilter(slice, med, medianRadius, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
 
 		// Calculate abs(slice - median)
 		setValue(tmp, slice);
@@ -758,7 +758,7 @@ namespace itl2
 				float32_t p = slice(x, y);
 				float32_t m = med(x, y);
 
-				if (abs(m - p) > stdDevCount * stddifference)
+				if (NumberUtils<float32_t>::isnan(p) || abs(m - p) > stdDevCount * stddifference)
 				{
 					slice(x, y) = m;
 					badPixelCount++;
@@ -851,19 +851,15 @@ namespace itl2
 	}
 
 	/**
-	Replaces NaN values by zeroes.
+	Caps values to range ]0, 1[.
 	*/
 	void replaceBadValues(Image<float32_t>& img)
 	{
-		//replace(img, Vec2<float32_t>(numeric_limits<float32_t>::signaling_NaN(), (float32_t)1));
-		//replace(img, Vec2<float32_t>(numeric_limits<float32_t>::quiet_NaN(), (float32_t)1));
 		float32_t eps = 0.00001f;
 		for(coord_t n = 0; n < img.pixelCount(); n++)
 		{
 			float32_t& p = img(n);
-			if(NumberUtils<float32_t>::isnan(p))
-				p = 1 - eps;
-			else if(p < eps)
+			if(p < eps)
 				p = eps;
 			else if(p > 1 - eps)
 				p = 1 - eps;
@@ -955,9 +951,11 @@ namespace itl2
 				}
 				
 				replaceBadValues(slice);
-				
+
 				if(settings.removeDeadPixels)
+				{
 					deadPixelRemovalSlice(slice, med, tmp);
+				}
 
 				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
 				

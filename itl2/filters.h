@@ -713,6 +713,20 @@ namespace itl2
 			return calcMedian(values);
 		}
 
+		inline float32_t nanMedianOp(const Image<float32_t>& nb, const Image<float32_t>& mask)
+		{
+			std::vector<float32_t> values;
+			values.reserve(nb.pixelCount());
+
+			for (coord_t n = 0; n < nb.pixelCount(); n++)
+			{
+				if (mask(n) != 0 && !NumberUtils<float32_t>::isnan(nb(n)))
+					values.push_back(nb(n));
+			}
+
+			return calcMedian(values);
+		}
+
 		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType maskedMedianOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask, pixel_t badValue)
 		{
 			std::vector<pixel_t> values;
@@ -1354,6 +1368,33 @@ namespace itl2
 		{
 			invsubtractAdd(out, in, shift);
 		}
+	}
+
+
+	/**
+	Median filter that does not consider nan values.
+	@param in Input image.
+	@param out Output image.
+	@param nbRadius Radius of filtering neighbourhood.
+	@param nbType Neighbourhood type.
+	@param bc Boundary condition.
+	*/
+	inline void nanMedianFilter(const Image<float32_t> & in, Image<float32_t> & out, const Vec3c & nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
+	{
+		filter<float32_t, float32_t, internals::nanMedianOp >(in, out, nbRadius, nbType, bc);
+	}
+	
+	/**
+	Median filter that does not consider nan values.
+	@param in Input image.
+	@param out Output image.
+	@param nbRadius Radius of filtering neighbourhood.
+	@param nbType Neighbourhood type.
+	@param bc Boundary condition.
+	*/
+	inline void nanMedianFilter(const Image<float32_t>& in, Image<float32_t>& out, coord_t nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
+	{
+		nanMedianFilter(in, out, Vec3c(nbRadius, nbRadius, nbRadius), nbType, bc);
 	}
 
 
