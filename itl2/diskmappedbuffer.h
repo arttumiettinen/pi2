@@ -76,6 +76,8 @@ namespace itl2
 			pDummy = 0;
 
 			pUserBuffer = 0;
+
+			// TODO: Set modification and access times.
 		}
 
 		/**
@@ -209,6 +211,11 @@ namespace itl2
 		int* pDummy;
 
 		/**
+		Indicates if the file mapping is read-only.
+		*/
+		bool readOnly;
+
+		/**
 		Closes all handles.
 		*/
 		void close()
@@ -229,6 +236,19 @@ namespace itl2
 
 			if(fileHandle != INVALID_HANDLE_VALUE)
 			{
+				FILETIME now;
+				SYSTEMTIME st;
+				GetSystemTime(&st);
+				SystemTimeToFileTime(&st, &now);
+
+				// Set access time
+				SetFileTime(fileHandle, NULL, &now, NULL);
+				if (!readOnly)
+				{
+					// Set modification time
+					SetFileTime(fileHandle, NULL, NULL, &now);
+				}
+
 				CloseHandle(fileHandle);
 				fileHandle = INVALID_HANDLE_VALUE;
 			}
@@ -255,7 +275,8 @@ namespace itl2
 			pUserBuffer(0),
 			fileHandle(INVALID_HANDLE_VALUE),
 			fileMappingHandle(INVALID_HANDLE_VALUE),
-			pDummy(0)
+			pDummy(0),
+			readOnly(readOnly)
 		{
 			try
 			{
@@ -270,7 +291,7 @@ namespace itl2
 					//std::copy(filename.begin(), filename.end(), wfilename.begin());
 
 					fileHandle = CreateFileA(filename.c_str(),					// filename
-						GENERIC_READ | GENERIC_WRITE,		// access mode
+						GENERIC_READ | GENERIC_WRITE | FILE_WRITE_ATTRIBUTES,	// access mode
 						FILE_SHARE_READ | FILE_SHARE_WRITE,	// share mode
 						NULL,								// security attributes
 						OPEN_ALWAYS,						// creation/opening mode
