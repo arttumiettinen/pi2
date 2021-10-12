@@ -73,8 +73,8 @@ Please note that if there are multiple non-connected sets of tiles in the output
 
 .. important:
 
-Before running :file:`nr_stitcher.py` again (e.g. for parameter tuning), please remove all temporary files from the output
-folder by running :file:`rm-stitch-temp.sh` or :file:`rm-stitch-temp.cmd`.
+Before running :file:`nr_stitcher.py` again with different parameters, please remove all temporary files from the output
+folder by running :file:`rm-stitch-temp.sh` or :file:`rm-stitch-temp.cmd`, or specify redo=True in the configuration file.
 
 
 
@@ -124,6 +124,9 @@ Known problems
 	
 	In any case, you might want to try again with smaller :code:`max_block_size` parameter and larger
 	job run time (using e.g. :code:`cluster_extra_params = --time=48:00:00` in the stitch settings file)
+	
+	In some cases the problems are intermittent and you will get away by simply re-running :file:`nr_stitcher.py`.
+	It tries its best not to re-calculate the good regions.
 	
 	
 	

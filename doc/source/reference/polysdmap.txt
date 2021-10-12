@@ -1,0 +1,47 @@
+.. _polysdmap:
+
+polysdmap
+*********
+
+
+**Syntax:** :code:`polysdmap(seeds, geometry, output, max segment length)`
+
+Calculates seeded distance map of a binary image. For each pixel in the image, finds the shortest segmented polygonal path to nearest seed region such that the path does not pass through regions that are marked as obstacles, and ensuring that each segment that makes up the path is shorter than specified in 'max segment length' argument. This command is highly experimental.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+seeds [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Seed image that contains the set of pixels where the distance is zero. The set is marked with nonzero values, i.e. the distance map will propagate to pixels that have zero value in this image. This image is not modified.
+
+geometry [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image containing the geometry in which to calculate the distances. Regions marked with zero pixel value are 'unpassable obstacles'. The distance transform will only proceed to pixels whose color in this image matches the color of the seed point (in this image). This image is not modified.
+
+output [output]
+~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Output image that will contain the distance to the nearest seed region, not passing through zero regions in the geometry image.
+
+max segment length [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Maximum length of segments that make up the path to the nearest seed point.
+
+See also
+--------
+
+:ref:`dmap`, :ref:`dmap2`, :ref:`tmap`, :ref:`sdmap`
