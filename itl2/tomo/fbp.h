@@ -580,7 +580,7 @@ namespace itl2
 		{
 
 			Image<pixel_t> med(img.width(), img.height());
-			using intermediate_t = math_intermediate_type<pixel_t, pixel_t>::type;
+			using intermediate_t = typename math_intermediate_type<pixel_t, pixel_t>::type;
 			Image<intermediate_t> tmp(img.width(), img.height());
 
 #pragma omp for
