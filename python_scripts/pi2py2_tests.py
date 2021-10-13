@@ -1011,6 +1011,16 @@ def big_tiff():
     
 
 
+def dead_pixels():
+
+    img = pi2.newimage(ImageDataType.FLOAT32, 100, 100)
+    x = [20, 20, 0]
+    pi2.set(img, x, float('nan'))
+    pi2.deadpixelremoval(img)
+    val = img.get_data()[x[0], x[1]]
+    check_result(val == 0, "dead pixel not removed")
+
+
 
 
 # Enable or disable echoing of commands and timing info on screen
@@ -1117,8 +1127,8 @@ pi2.echo(True, False)
 #multimax_test(0)
 #multimax_test(1)
 #multimax_test(2)
-generate_particles()
-analyze_particles()
+#generate_particles()
+#analyze_particles()
 #analyze_labels()
 #dimension_broadcast()
 #rotate()
@@ -1221,6 +1231,8 @@ analyze_particles()
 #trace_skeleton_test()
 
 #test_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 100], 'img', input_file_bin(), maxmem=5)
+
+dead_pixels()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")
