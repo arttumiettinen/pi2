@@ -7,7 +7,6 @@
 #include "interpolation.h"
 #include "transform.h"
 #include "filters.h"
-#include "projections.h"
 #include "math/vec4.h"
 #include "io/raw.h"
 #include "generation.h"
@@ -712,7 +711,7 @@ namespace itl2
 	/**
 	Performs sinogram filtering.
 	*/
-	void filter(Image<float32_t>& transmissionProjections, PadType padType, float32_t padFraction, FilterType filterType, float32_t cutoff)
+	void fbpFilter(Image<float32_t>& transmissionProjections, PadType padType, float32_t padFraction, FilterType filterType, float32_t cutoff)
 	{
 		initFFTW();
 
@@ -729,91 +728,7 @@ namespace itl2
 		}
 	}
 
-	/**
-	Remove bad pixels from one slice of projection data.
-	@param slice View of the slice.
-	@param med, tmp Temporary images.
-	@return Count of bad pixels in the slice.
-	*/
-	size_t deadPixelRemovalSlice(Image<float32_t>& slice, Image<float32_t>& med, Image<float32_t>& tmp, coord_t medianRadius = 2, float32_t stdDevCount = 30)
-	{
-		// Calculate median filtering of slice
-		nanMedianFilter(slice, med, medianRadius, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
-
-		// Calculate abs(slice - median)
-		setValue(tmp, slice);
-		subtract(tmp, med);
-		abs(tmp);
-
-		// Calculate its mean and standard deviation
-		Vec2d v = meanAndStdDev(tmp);
-		float32_t meandifference = (float32_t)v.x;
-		float32_t stddifference = (float32_t)v.y;
-
-
-		// Perform filtering
-		size_t badPixelCount = 0;
-		for (coord_t y = 0; y < slice.height(); y++)
-		{
-			for (coord_t x = 0; x < slice.width(); x++)
-			{
-				float32_t p = slice(x, y);
-				float32_t m = med(x, y);
-
-				if (NumberUtils<float32_t>::isnan(p) || abs(m - p) > stdDevCount * stddifference)
-				{
-					slice(x, y) = m;
-					badPixelCount++;
-				}
-			}
-		}
-
-		return badPixelCount;
-	}
-
-	/**
-	Removes dead pixels from each slice of the input image.
-	*/
-	void deadPixelRemoval(Image<float32_t>& img, coord_t medianRadius = 1, float32_t stdDevCount = 30)
-	{
-		if (medianRadius <= 0)
-			throw ITLException("Invalid median radius.");
-		if (stdDevCount <= 0)
-			throw ITLException("Invalid standard deviation count.");
-
-		float32_t averageBadPixels = 0;
-		size_t maxBadPixels = 0;
-
-		size_t counter = 0;
-		#pragma omp parallel
-		{
-
-			Image<float32_t> med(img.width(), img.height());
-			Image<float32_t> tmp(img.width(), img.height());
-			
-			#pragma omp for
-			for (coord_t n = 0; n < img.depth(); n++)
-			{
-				Image<float32_t> slice(img, n, n);
-
-				size_t badPixelCount = deadPixelRemovalSlice(img, med, tmp, medianRadius, stdDevCount);
-
-				#pragma omp critical(badpixels)
-				{
-					averageBadPixels += badPixelCount;
-					maxBadPixels = std::max(maxBadPixels, badPixelCount);
-				}
-
-				showThreadProgress(counter, img.depth());
-			}
-		}
-
-		cout << "Average number of bad pixels per slice: " << averageBadPixels / (float)img.depth() << endl;
-		cout << "Maximum number of bad pixels in slice: " << maxBadPixels << endl;
-
-		if (maxBadPixels > 100)
-			cout << "WARNING: Maximum number of bad pixels is high: " << maxBadPixels << ". Consider changing settings for bad pixel removal." << endl;
-	}
+	
 
 	namespace internals
 	{

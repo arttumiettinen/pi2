@@ -16,6 +16,7 @@
 #include "interpolation.h"
 #include "math/vectoroperations.h"
 #include "imagemetadata.h"
+#include "projections.h"
 
 namespace itl2
 {
@@ -478,6 +479,95 @@ namespace itl2
 	Call this before calling backproject method.
 	*/
 	void fbpPreprocess(const Image<float32_t>& transmissionProjections, Image<float32_t>& preprocessedProjections, RecSettings settings);
+
+
+	/**
+	Remove bad pixels from one slice of projection data.
+	@param slice View of the slice.
+	@param med, tmp Temporary images.
+	@return Count of bad pixels in the slice.
+	*/
+	template<typename pixel_t, typename intermediate_t = typename math_intermediate_type<pixel_t, pixel_t>::type > size_t deadPixelRemovalSlice(Image<pixel_t>& slice, Image<pixel_t>& med, Image<intermediate_t>& tmp, coord_t medianRadius = 2, float32_t stdDevCount = 30)
+	{
+		// Calculate median filtering of the slice
+		nanMedianFilter(slice, med, medianRadius, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
+
+		// Calculate abs(slice - median)
+		setValue(tmp, slice);
+		subtract(tmp, med);
+		abs(tmp);
+
+		// Calculate its mean and standard deviation
+		Vec2d v = meanAndStdDev(tmp);
+		float32_t meandifference = (float32_t)v.x;
+		float32_t stddifference = (float32_t)v.y;
+
+
+		// Perform filtering
+		size_t badPixelCount = 0;
+		for (coord_t y = 0; y < slice.height(); y++)
+		{
+			for (coord_t x = 0; x < slice.width(); x++)
+			{
+				pixel_t p = slice(x, y);
+				pixel_t m = med(x, y);
+
+				if (NumberUtils<pixel_t>::isnan(p) || abs((float32_t)m - (float32_t)p) > stdDevCount * stddifference)
+				{
+					slice(x, y) = m;
+					badPixelCount++;
+				}
+			}
+		}
+
+		return badPixelCount;
+	}
+
+	/**
+	Removes dead pixels from each slice of the input image.
+	*/
+	template<typename pixel_t> void deadPixelRemoval(Image<pixel_t>& img, coord_t medianRadius, float32_t stdDevCount)
+	{
+		if (medianRadius <= 0)
+			throw ITLException("Invalid median radius.");
+		if (stdDevCount <= 0)
+			throw ITLException("Invalid standard deviation count.");
+
+		float32_t averageBadPixels = 0;
+		size_t maxBadPixels = 0;
+
+		size_t counter = 0;
+#pragma omp parallel
+		{
+
+			Image<pixel_t> med(img.width(), img.height());
+			using intermediate_t = math_intermediate_type<pixel_t, pixel_t>::type;
+			Image<intermediate_t> tmp(img.width(), img.height());
+
+#pragma omp for
+			for (coord_t n = 0; n < img.depth(); n++)
+			{
+				Image<pixel_t> slice(img, n, n);
+
+				size_t badPixelCount = deadPixelRemovalSlice(img, med, tmp, medianRadius, stdDevCount);
+
+#pragma omp critical(badpixels)
+				{
+					averageBadPixels += badPixelCount;
+					maxBadPixels = std::max(maxBadPixels, badPixelCount);
+				}
+
+				showThreadProgress(counter, img.depth());
+			}
+		}
+
+		std::cout << "Average number of bad pixels per slice: " << averageBadPixels / (float)img.depth() << std::endl;
+		std::cout << "Maximum number of bad pixels in slice: " << maxBadPixels << std::endl;
+
+		if (maxBadPixels > 100)
+			std::cout << "WARNING: Maximum number of bad pixels is high: " << maxBadPixels << ". Consider changing settings for bad pixel removal." << std::endl;
+	}
+
 
 	namespace internals
 	{

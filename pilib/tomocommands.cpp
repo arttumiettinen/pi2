@@ -9,6 +9,7 @@ namespace pilib
 		CommandList::add<FBPPreprocessCommand>();
 		CommandList::add<FBPCommand>();
 		CommandList::add<CreateFBPFilterCommand>();
+		ADD_REAL(DeadPixelRemovalCommand);
 	}
 
 }
