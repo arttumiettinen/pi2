@@ -45,16 +45,16 @@ namespace pilib
 "Determines whether dead pixel removal algorithm should be applied to the projection images. "
 "In the algorithm, each flat-field corrected projection $I$ is processed separately. Pixel at "
 "position $x$ is classified as dead if its value $I(x)$ is $NaN$ or it satisfies "
-"$|I(x) - m(x)| > M * \\std(|I - m|)$, "
+"$|I(x) - m(x)| > M * std(|I - m|)$, "
 "where "
 "$m$ is a median filtering of $I$ with user-specified radius, "
 "$M$ is a magnitude parameter, and "
-"$\\std$ is standard deviation of whole image. "
+"$std$ is standard deviation of whole image. "
 "If a pixel is dead, its value is replaced by $m(x)$, otherwise the value is left unchanged."
 			,
 			{
-				CommandArgument<size_t>(ParameterDirection::In, "radius", "Radius parameter", 1),
-				CommandArgument<double>(ParameterDirection::In, "magnitude", "Magnitude parameter.", 10.0)
+				CommandArgument<size_t>(ParameterDirection::In, "radius", "Median filtering radius.", 1),
+				CommandArgument<double>(ParameterDirection::In, "magnitude", "Magnitude parameter $M$.", 10.0)
 			},
 			"fbppreprocess, fbp")
 		{
