@@ -268,6 +268,16 @@ namespace itl2
 		*/
 		bool removeDeadPixels = false;
 
+		/**
+		Filtering radius (defect radius) parameter for dead pixel removal.
+		*/
+		coord_t deadPixelMedianRadius = 1;
+
+		/**
+		Standard deviation (defect intensity magnitude) parameter for dead pixel removal.
+		*/
+		float32_t deadPixelStdDevCount = 20.0f;
+
 
 		/**
 		Shift between shadow of rotation axis at camera and centerline of the camera.
@@ -424,6 +434,8 @@ namespace itl2
 		s.cropSize = id.get("crop_size", s.cropSize);
 		s.binning = id.get("binning", s.binning);
 		s.removeDeadPixels = id.get("remove_dead_pixels", s.removeDeadPixels);
+		s.deadPixelMedianRadius = id.get("dead_pixel_median_radius", s.deadPixelMedianRadius);
+		s.deadPixelStdDevCount = id.get("dead_pixel_std_dev_count", s.deadPixelStdDevCount);
 		s.centerShift = id.get("center_shift", s.centerShift);
 		s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
 		s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);

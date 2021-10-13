@@ -42,6 +42,8 @@ namespace itl2
 		stream << "crop_size = " << s.cropSize << endl;
 		stream << "binning = " << s.binning << endl;
 		stream << "remove_dead_pixels = " << s.removeDeadPixels << endl;
+		stream << "dead_pixel_median_radius = " << s.deadPixelMedianRadius << endl;
+		stream << "dead_pixel_std_dev_count = " << s.deadPixelStdDevCount << endl;
 		stream << endl;
 		stream << "center_shift = " << s.centerShift << endl;
 		stream << "camera_z_shift = " << s.cameraZShift << endl;
@@ -846,6 +848,8 @@ namespace itl2
 
 				settings.delta *= b;
 				settings.mu *= b;
+
+				settings.deadPixelMedianRadius = std::max((coord_t)1, (coord_t)round(settings.deadPixelMedianRadius / b));
 			}
 		}
 	}
@@ -954,7 +958,7 @@ namespace itl2
 
 				if(settings.removeDeadPixels)
 				{
-					deadPixelRemovalSlice(slice, med, tmp);
+					deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
 				}
 
 				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
