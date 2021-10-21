@@ -86,8 +86,18 @@ namespace itl2
 	
 	enum class PhaseMode
 	{
+		/**
+		Input data is in I/I0 format and absorption reconstruction should be made.
+		*/
 		Absorption = 0,
-		Paganin
+		/**
+		Input data is in I/I0 format and phase reconstruction should me made using Paganin method.
+		*/
+		Paganin,
+		/**
+		Input data is in -ln(I/I0) format and no negative logarithm or phase extraction is made before reconstruction.
+		*/
+		Direct
 	};
 
 	inline std::ostream& operator<<(std::ostream& stream, const PhaseMode& x)
@@ -96,6 +106,7 @@ namespace itl2
 		{
 		case PhaseMode::Absorption: stream << "Absorption"; return stream;
 		case PhaseMode::Paganin: stream << "Paganin"; return stream;
+		case PhaseMode::Direct: stream << "Direct"; return stream;
 		}
 		throw ITLException("Invalid phase mode.");
 	}
@@ -109,6 +120,8 @@ namespace itl2
 			return PhaseMode::Absorption;
 		if (str == "paganin")
 			return PhaseMode::Paganin;
+		if (str == "direct")
+			return PhaseMode::Direct;
 
 		throw ITLException("Invalid phase mode: " + str0);
 	}
@@ -338,7 +351,7 @@ namespace itl2
 
 
 		/**
-		Type of phase retrieval used.
+		Type of reconstruction to make.
 		*/
 		PhaseMode phaseMode = PhaseMode::Absorption;
 
