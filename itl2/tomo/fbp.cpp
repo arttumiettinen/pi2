@@ -218,6 +218,9 @@ namespace itl2
 		case PhaseMode::Paganin:
 			paganinSlice(slice, padType, padFraction, objectSourceDistance, objectCameraDistance, delta, mu);
 			break;
+		case PhaseMode::Direct:
+			// The data is already in -ln(I/I0) format or equivalent, so do not do anything.
+			break;
 		default:
 			throw ITLException("Unsupported phase retrieval mode.");
 		}
@@ -235,6 +238,9 @@ namespace itl2
 			break;
 		case PhaseMode::Paganin:
 			paganin(transmissionProjections, padType, padFraction, objectSourceDistance, objectCameraDistance, delta, mu);
+			break;
+		case PhaseMode::Direct:
+			// The data is already in -ln(I/I0) format or equivalent, so do not do anything.
 			break;
 		default:
 			throw ITLException("Unsupported phase retrieval mode.");
