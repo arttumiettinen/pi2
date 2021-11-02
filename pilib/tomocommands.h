@@ -36,6 +36,40 @@ namespace pilib
 	};
 
 
+	template<typename pixel_t> class DeadPixelRemovalCommand : public OneImageInPlaceCommand<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		DeadPixelRemovalCommand() : OneImageInPlaceCommand<pixel_t>("deadpixelremoval", "Removes dead pixels from projection dataset."
+"Determines whether dead pixel removal algorithm should be applied to the projection images. "
+"In the algorithm, each flat-field corrected projection $I$ is processed separately. Pixel at "
+"position $x$ is classified as dead if its value $I(x)$ is $NaN$ or it satisfies "
+"$|I(x) - m(x)| > M * std(|I - m|)$, "
+"where "
+"$m$ is a median filtering of $I$ with user-specified radius, "
+"$M$ is a magnitude parameter, and "
+"$std$ is standard deviation of whole image. "
+"If a pixel is dead, its value is replaced by $m(x)$, otherwise the value is left unchanged."
+			,
+			{
+				CommandArgument<size_t>(ParameterDirection::In, "radius", "Median filtering radius.", 1),
+				CommandArgument<double>(ParameterDirection::In, "magnitude", "Magnitude parameter $M$.", 10.0)
+			},
+			"fbppreprocess, fbp")
+		{
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& img, std::vector<ParamVariant>& args) const override
+		{
+			size_t r = pop<size_t>(args);
+			float32_t M = (float32_t)pop<double>(args);
+			deadPixelRemoval(img, r, M);
+		}
+	};
+	
+
 	class FBPCommand : public TwoImageInputOutputCommand<float32_t>
 	{
 	protected:

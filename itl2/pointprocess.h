@@ -692,8 +692,6 @@ namespace itl2
 	}
 
 
-
-
 	/**
 	Subtracts second image from the first image and places the result to the first image (first image = first image - second image).
 	@param l First image.

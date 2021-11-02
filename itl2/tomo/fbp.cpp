@@ -7,7 +7,6 @@
 #include "interpolation.h"
 #include "transform.h"
 #include "filters.h"
-#include "projections.h"
 #include "math/vec4.h"
 #include "io/raw.h"
 #include "generation.h"
@@ -219,6 +218,9 @@ namespace itl2
 		case PhaseMode::Paganin:
 			paganinSlice(slice, padType, padFraction, objectSourceDistance, objectCameraDistance, delta, mu);
 			break;
+		case PhaseMode::Direct:
+			// The data is already in -ln(I/I0) format or equivalent, so do not do anything.
+			break;
 		default:
 			throw ITLException("Unsupported phase retrieval mode.");
 		}
@@ -236,6 +238,9 @@ namespace itl2
 			break;
 		case PhaseMode::Paganin:
 			paganin(transmissionProjections, padType, padFraction, objectSourceDistance, objectCameraDistance, delta, mu);
+			break;
+		case PhaseMode::Direct:
+			// The data is already in -ln(I/I0) format or equivalent, so do not do anything.
 			break;
 		default:
 			throw ITLException("Unsupported phase retrieval mode.");
@@ -712,7 +717,7 @@ namespace itl2
 	/**
 	Performs sinogram filtering.
 	*/
-	void filter(Image<float32_t>& transmissionProjections, PadType padType, float32_t padFraction, FilterType filterType, float32_t cutoff)
+	void fbpFilter(Image<float32_t>& transmissionProjections, PadType padType, float32_t padFraction, FilterType filterType, float32_t cutoff)
 	{
 		initFFTW();
 

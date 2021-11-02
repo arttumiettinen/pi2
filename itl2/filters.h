@@ -713,14 +713,14 @@ namespace itl2
 			return calcMedian(values);
 		}
 
-		inline float32_t nanMedianOp(const Image<float32_t>& nb, const Image<float32_t>& mask)
+		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType nanMedianOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask)
 		{
-			std::vector<float32_t> values;
+			std::vector<pixel_t> values;
 			values.reserve(nb.pixelCount());
 
 			for (coord_t n = 0; n < nb.pixelCount(); n++)
 			{
-				if (mask(n) != 0 && !NumberUtils<float32_t>::isnan(nb(n)))
+				if (mask(n) != 0 && !NumberUtils<pixel_t>::isnan(nb(n)))
 					values.push_back(nb(n));
 			}
 
@@ -1379,9 +1379,9 @@ namespace itl2
 	@param nbType Neighbourhood type.
 	@param bc Boundary condition.
 	*/
-	inline void nanMedianFilter(const Image<float32_t> & in, Image<float32_t> & out, const Vec3c & nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
+	template<typename pixel_t> void nanMedianFilter(const Image<pixel_t> & in, Image<pixel_t> & out, const Vec3c & nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		filter<float32_t, float32_t, internals::nanMedianOp >(in, out, nbRadius, nbType, bc);
+		filter<pixel_t, pixel_t, internals::nanMedianOp<pixel_t> >(in, out, nbRadius, nbType, bc);
 	}
 	
 	/**
@@ -1392,9 +1392,9 @@ namespace itl2
 	@param nbType Neighbourhood type.
 	@param bc Boundary condition.
 	*/
-	inline void nanMedianFilter(const Image<float32_t>& in, Image<float32_t>& out, coord_t nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
+	template<typename pixel_t> void nanMedianFilter(const Image<pixel_t>& in, Image<pixel_t>& out, coord_t nbRadius, NeighbourhoodType nbType = NeighbourhoodType::Ellipsoidal, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		nanMedianFilter(in, out, Vec3c(nbRadius, nbRadius, nbRadius), nbType, bc);
+		nanMedianFilter<pixel_t>(in, out, Vec3c(nbRadius, nbRadius, nbRadius), nbType, bc);
 	}
 
 
