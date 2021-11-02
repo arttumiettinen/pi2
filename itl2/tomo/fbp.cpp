@@ -746,8 +746,8 @@ namespace itl2
 		abs(tmp);
 
 		// Calculate its mean and standard deviation
-		Vec2d v = meanAndStdDev(tmp);
-		float32_t meandifference = (float32_t)v.x;
+		Vec2d v = maskedMeanAndStdDev(tmp, numeric_limits<float32_t>::signaling_NaN());
+		//float32_t meandifference = (float32_t)v.x;
 		float32_t stddifference = (float32_t)v.y;
 
 
@@ -769,6 +769,15 @@ namespace itl2
 		}
 
 		return badPixelCount;
+	}
+
+	void printBadPixelInfo(float averageBadPixels, size_t maxBadPixels)
+	{
+		cout << "Average number of bad pixels per slice: " << averageBadPixels << endl;
+		cout << "Maximum number of bad pixels in slice: " << maxBadPixels << endl;
+
+		if (maxBadPixels > 100)
+			cout << "WARNING: Maximum number of bad pixels is high: " << maxBadPixels << ". Consider changing settings for bad pixel removal." << endl;
 	}
 
 	/**
@@ -808,12 +817,10 @@ namespace itl2
 			}
 		}
 
-		cout << "Average number of bad pixels per slice: " << averageBadPixels / (float)img.depth() << endl;
-		cout << "Maximum number of bad pixels in slice: " << maxBadPixels << endl;
-
-		if (maxBadPixels > 100)
-			cout << "WARNING: Maximum number of bad pixels is high: " << maxBadPixels << ". Consider changing settings for bad pixel removal." << endl;
+		printBadPixelInfo(averageBadPixels / (float)img.depth(), maxBadPixels);
 	}
+
+	
 
 	namespace internals
 	{
@@ -915,6 +922,8 @@ namespace itl2
 		cout << "Preprocessing..." << endl;
 
 		// Process slice by slice to reduce disk I/O when the transmission projection image is memory-mapped.
+		float32_t averageBadPixels = 0;
+		size_t maxBadPixels = 0;
 		size_t counter = 0;
 		#pragma omp parallel
 		{
@@ -958,7 +967,12 @@ namespace itl2
 
 				if(settings.removeDeadPixels)
 				{
-					deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
+					size_t badPixelCount = deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
+#pragma omp critical(badpixelsslice)
+					{
+						averageBadPixels += badPixelCount;
+						maxBadPixels = std::max(maxBadPixels, badPixelCount);
+					}
 				}
 
 				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
@@ -973,6 +987,10 @@ namespace itl2
 				showThreadProgress(counter, preprocessedProjections.depth());
 			}
 		}
+
+		if (settings.removeDeadPixels)
+			printBadPixelInfo(averageBadPixels / (float)preprocessedProjections.depth(), maxBadPixels);
+
 
 		//setValue(preprocessedProjections, transmissionProjections);
 
