@@ -229,7 +229,7 @@ int main()
 	//test(itl2::tests::montage, "2D montage of 3D stack");
 
 	//test(itl2::tests::pathopening, "Path opening");
-	test(itl2::tests::pathopening2d, "Path opening 2D");
+	//test(itl2::tests::pathopening2d, "Path opening 2D");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
 	//test(itl2::tests::imagemetadata, "image metadata");
@@ -246,7 +246,7 @@ int main()
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
 
-	//test(itl2::tests::createPlates, "Input geometry generation");
+	test(itl2::tests::createPlates, "Input geometry generation");
 	//test(itl2::tests::createMoreProjections, "Large number of projections");
 	test(itl2::tests::fbp, "Filtered backprojection");
 	
