@@ -761,6 +761,97 @@ namespace itl2
 		}
 	}
 
+	/**
+	Remove bad pixels from one slice of projection data.
+	@param slice View of the slice.
+	@param med, tmp Temporary images.
+	@return Count of bad pixels in the slice.
+	*/
+	size_t deadPixelRemovalSlice(Image<float32_t>& slice, Image<float32_t>& med, Image<float32_t>& tmp, coord_t medianRadius = 2, float32_t stdDevCount = 30)
+	{
+		// Calculate median filtering of slice
+		nanMedianFilter(slice, med, medianRadius, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
+
+		// Calculate abs(slice - median)
+		setValue(tmp, slice);
+		subtract(tmp, med);
+		abs(tmp);
+
+		// Calculate its mean and standard deviation
+		Vec2d v = maskedMeanAndStdDev(tmp, numeric_limits<float32_t>::signaling_NaN());
+		//float32_t meandifference = (float32_t)v.x;
+		float32_t stddifference = (float32_t)v.y;
+
+
+		// Perform filtering
+		size_t badPixelCount = 0;
+		for (coord_t y = 0; y < slice.height(); y++)
+		{
+			for (coord_t x = 0; x < slice.width(); x++)
+			{
+				float32_t p = slice(x, y);
+				float32_t m = med(x, y);
+
+				if (NumberUtils<float32_t>::isnan(p) || abs(m - p) > stdDevCount * stddifference)
+				{
+					slice(x, y) = m;
+					badPixelCount++;
+				}
+			}
+		}
+
+		return badPixelCount;
+	}
+
+	void printBadPixelInfo(float averageBadPixels, size_t maxBadPixels)
+	{
+		cout << "Average number of bad pixels per slice: " << averageBadPixels << endl;
+		cout << "Maximum number of bad pixels in slice: " << maxBadPixels << endl;
+
+		if (maxBadPixels > 100)
+			cout << "WARNING: Maximum number of bad pixels is high: " << maxBadPixels << ". Consider changing settings for bad pixel removal." << endl;
+	}
+
+	/**
+	Removes dead pixels from each slice of the input image.
+	*/
+	void deadPixelRemoval(Image<float32_t>& img, coord_t medianRadius = 1, float32_t stdDevCount = 30)
+	{
+		if (medianRadius <= 0)
+			throw ITLException("Invalid median radius.");
+		if (stdDevCount <= 0)
+			throw ITLException("Invalid standard deviation count.");
+
+		float32_t averageBadPixels = 0;
+		size_t maxBadPixels = 0;
+
+		size_t counter = 0;
+		#pragma omp parallel
+		{
+
+			Image<float32_t> med(img.width(), img.height());
+			Image<float32_t> tmp(img.width(), img.height());
+			
+			#pragma omp for
+			for (coord_t n = 0; n < img.depth(); n++)
+			{
+				Image<float32_t> slice(img, n, n);
+
+				size_t badPixelCount = deadPixelRemovalSlice(img, med, tmp, medianRadius, stdDevCount);
+
+				#pragma omp critical(badpixels)
+				{
+					averageBadPixels += badPixelCount;
+					maxBadPixels = std::max(maxBadPixels, badPixelCount);
+				}
+
+				showThreadProgress(counter, img.depth());
+			}
+		}
+
+		printBadPixelInfo(averageBadPixels / (float)img.depth(), maxBadPixels);
+	}
+
 	
 
 	namespace internals
@@ -862,6 +953,8 @@ namespace itl2
 		cout << "Preprocessing..." << endl;
 
 		// Process slice by slice to reduce disk I/O when the transmission projection image is memory-mapped.
+		float32_t averageBadPixels = 0;
+		size_t maxBadPixels = 0;
 		size_t counter = 0;
 		#pragma omp parallel
 		{
@@ -905,7 +998,12 @@ namespace itl2
 
 				if(settings.removeDeadPixels)
 				{
-					deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
+					size_t badPixelCount = deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
+#pragma omp critical(badpixelsslice)
+					{
+						averageBadPixels += badPixelCount;
+						maxBadPixels = std::max(maxBadPixels, badPixelCount);
+					}
 				}
 
 				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
@@ -920,6 +1018,36 @@ namespace itl2
 				showThreadProgress(counter, preprocessedProjections.depth());
 			}
 		}
+
+		if (settings.removeDeadPixels)
+			printBadPixelInfo(averageBadPixels / (float)preprocessedProjections.depth(), maxBadPixels);
+
+
+		//setValue(preprocessedProjections, transmissionProjections);
+
+		//// Perform dead pixel correction
+		//if (settings.removeDeadPixels)
+		//{
+		//	cout << "Dead pixel removal..." << endl;
+		//	deadPixelRemoval(preprocessedProjections);
+		//}
+
+		//// Calculate -log or phase retrieval
+		//if (settings.phaseMode == PhaseMode::Absorption)
+		//	cout << "Negative logarithm..." << endl;
+		//else
+		//	cout << "Phase retrieval..." << endl;
+		//phaseRetrieval(preprocessedProjections, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.objectCameraDistance, settings.delta, settings.mu);
+
+		//cout << "Beam hardening correction..." << endl;
+		//beamHardeningCorrection(preprocessedProjections, settings.bhc);
+
+		//
+		//cout << "Weighting..." << endl;
+		//fbpWeighting(preprocessedProjections, settings.reconstructAs180degScan, settings.angles, settings.centerShift, settings.csAngleSlope, settings.sourceToRA, settings.cameraZShift, settings.csZSlope, centralAngle, gammamax0, settings.heuristicSinogramWindowingParameter);
+
+		//cout << "Filter..." << endl;
+		//filter(preprocessedProjections, settings.padType, settings.padFraction, settings.filterType);
 	}
 
 
@@ -975,6 +1103,11 @@ namespace itl2
 			const char* newBackprojectProgram = R"***(
 
 #pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable
+
+float csZPerturbation(float projectionZ, float projectionHeight, float csZSlope)
+{
+	return (projectionZ - projectionHeight / 2) * csZSlope;
+}
 
 kernel void backproject(read_only image3d_t transmissionProjections,
 						global read_only float3* pss,				// Source positions

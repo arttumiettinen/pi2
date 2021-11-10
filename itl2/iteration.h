@@ -208,4 +208,93 @@ namespace itl2
 			}
 		}
 	}
+
+	namespace internals
+	{
+
+		/**
+		Helper for forEdges function.
+		Processes x and y edges for given z. The z coordinate must be in [block.minc.z+1, block.maxc.z-2].
+		This code is from StackOverflow: https://stackoverflow.com/questions/53432767/how-to-iterate-over-pixels-on-edge-of-a-square-in-1-iteration
+		*/
+		template<typename F>
+		void forEdgesHelperXY(const AABox<coord_t>& block, F&& lambda, coord_t z, size_t boxDimensionality)
+		{
+			// y = block.minc.y
+			if (boxDimensionality >= 2)
+			{
+				for (coord_t x = block.minc.x; x < block.maxc.x; x++)
+				{
+					lambda(x, block.minc.y, z);
+				}
+
+				// y in block
+				for (coord_t y = block.minc.y + 1; y < block.maxc.y - 1; y++)
+				{
+					lambda(block.minc.x, y, z);
+					lambda(block.maxc.x - 1, y, z);
+				}
+
+				// y = block.maxc.y - 1
+				for (coord_t x = block.minc.x; x < block.maxc.x; x++)
+				{
+					lambda(x, block.maxc.y - 1, z);
+				}
+			}
+			else
+			{
+				for (coord_t y = block.minc.y; y < block.maxc.y; y++)
+				{
+					lambda(block.minc.x, y, z);
+					lambda(block.maxc.x - 1, y, z);
+				}
+			}
+		}
+	}
+
+	/**
+	Call lambda(x, y, z) for all (x, y, z) in the edges of the box that spans [block.minc, block.maxc[.
+	This function is not multi-threaded and processes the edge points in the same order.
+	Each edge point is processed once.
+	@param boxDimensionality If 1, fills only x-directional edges. If 2, fills x- and y-directional edges. If 3, fills x-, y-, and z-directional edges.
+	*/
+	template<typename F>
+	void forEdges(const AABox<coord_t>& block, size_t boxDimensionality, F&& lambda)
+	{
+		if (boxDimensionality >= 3)
+		{
+			// z = block.minc.z
+			coord_t z = block.minc.z;
+			for (coord_t y = block.minc.y; y < block.maxc.y; y++)
+			{
+				for (coord_t x = block.minc.x; x < block.maxc.x; x++)
+				{
+					lambda(x, y, z);
+				}
+			}
+
+			// z between block.minc.z + 1 and block.maxc.z - 1
+			for (coord_t z = block.minc.z + 1; z < block.maxc.z - 1; z++)
+			{
+				internals::forEdgesHelperXY(block, lambda, z, boxDimensionality);
+			}
+
+			// z = block.maxc.z - 1
+			z = block.maxc.z - 1;
+			for (coord_t y = block.minc.y; y < block.maxc.y; y++)
+			{
+				for (coord_t x = block.minc.x; x < block.maxc.x; x++)
+				{
+					lambda(x, y, z);
+				}
+			}
+		}
+		else
+		{
+			for (coord_t z = block.minc.z; z < block.maxc.z; z++)
+			{
+				internals::forEdgesHelperXY(block, lambda, z, boxDimensionality);
+			}
+		}
+	}
 }

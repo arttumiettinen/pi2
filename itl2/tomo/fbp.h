@@ -632,6 +632,14 @@ namespace itl2
 		float32_t csAnglePerturbation(size_t angleIndex, float32_t centralAngle, const std::vector<float32_t>& angles, float32_t csAngleSlope);
 
 		/**
+		Calculates perturbation to be applied to CS values, given projection height and z-coordinate in the projection in range [0, projectionHeight - 1[.
+		*/
+		inline float32_t csZPerturbation(float32_t projectionZ, float32_t projectionHeight, float32_t csZSlope)
+		{
+			return (projectionZ - projectionHeight / 2) * csZSlope;
+		}
+
+		/**
 		Adjusts reconstruction settings for binning.
 		*/
 		void applyBinningToParameters(RecSettings& settings);
