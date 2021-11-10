@@ -13,6 +13,7 @@ namespace pilib
 		ADD_REAL(LabelCommand);
 		ADD_REAL(AnalyzeLabelsCommand);
 		CommandList::add<HeadersCommand>();
+		CommandList::add<Headers2Command>();
 		CommandList::add<ListAnalyzersCommand>();
 		ADD_REAL(FillParticlesCommand);
 		ADD_REAL(DrawEllipsoidsCommand);

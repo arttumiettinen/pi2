@@ -100,7 +100,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		HeadersCommand() : Command("headers", "Shows headers of particle analysis result table.",
+		HeadersCommand() : Command("headers", "Shows the column headers of a particle analysis result table.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers that were used. Use the same value that was passed to `analyzeparticles` command. Separate the analyzer names with any non-alphanumeric character sequence."),
 			},
@@ -113,20 +113,47 @@ namespace pilib
 		virtual void run(vector<ParamVariant>& args) const override
 		{
 			string titles = pop<string>(args);
-
-			AnalyzerSet<Vec3sc, uint8_t> analyzers;
-			if (contains(titles, "2d"))
-			{
-				// Probably cross-section analyzers
-				analyzers = createCrossSectionAnalyzers<uint8_t>(titles);
-			}
-			else
-			{
-				// Probably 3D analyzers
-				analyzers = createAnalyzers<uint8_t>(titles, Vec3c(1, 1, 1));
-			}
+			AnalyzerSet<Vec3sc, uint8_t> analyzers = createAnalyzers<uint8_t>(titles, Vec3c(1, 1, 1));
+			//AnalyzerSet<Vec3sc, uint8_t> analyzers;
+			//if (contains(titles, "2d"))
+			//{
+			//	// Probably cross-section analyzers
+			//	analyzers = createCrossSectionAnalyzers<uint8_t>(titles);
+			//}
+			//else
+			//{
+			//	// Probably 3D analyzers
+			//	analyzers = createAnalyzers<uint8_t>(titles, Vec3c(1, 1, 1));
+			//}
 
 			std::cout << analyzers.headers() << std::endl;
+		}
+	};
+
+	class Headers2Command : public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		Headers2Command() : Command("headers", "Gets a comma-separated list of the column headers of particle analysis result table.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers that were used. Use the same value that was passed to `analyzeparticles` command. Separate the analyzer names with any non-alphanumeric character sequence."),
+				CommandArgument<string>(ParameterDirection::Out, "value", "The headers are placed into this string as a comma-separated list."),
+			},
+			particleSeeAlso())
+		{
+
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			string titles = pop<string>(args);
+			string* value = std::get<string*>(args[1]);
+			AnalyzerSet<Vec3sc, uint8_t> analyzers = createAnalyzers<uint8_t>(titles, Vec3c(1, 1, 1));
+			std::stringstream s;
+			s << analyzers.headers();
+			*value = s.str();
 		}
 	};
 

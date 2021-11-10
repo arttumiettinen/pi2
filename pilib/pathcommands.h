@@ -14,7 +14,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		PathLengthCommand() : TwoImageInputOutputCommand<pixel_t, float32_t>("pathlength", "Replaces value of each pixel by the length of the longest constrained path that goes through that pixel. Works only with binary input images. NOTE: This command creates temporary files to the current directory.",
+		PathLengthCommand() : TwoImageInputOutputCommand<pixel_t, float32_t>("pathlength", "Replaces value of each pixel by the length of the longest constrained path that goes through that pixel. Works only with binary input images. NOTE: This command creates temporary files to the current directory. NOTE: This command is highly work-in-progress.",
 			{
 			},
 			"")

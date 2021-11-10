@@ -1074,7 +1074,9 @@ namespace itl2
 	{
 		size_t xi = results.getColumnIndex("X");
 		size_t yi = results.getColumnIndex("Y");
-		size_t zi = results.getColumnIndex("Z");
+		size_t zi = -1;
+		if(image.dimensionality() >= 3)
+			zi = results.getColumnIndex("Z");
 
 		prepareParticleAnalysis(image);
 
@@ -1090,7 +1092,9 @@ namespace itl2
 				Vec3c pos;
 				pos.x = round(results[n][xi]);
 				pos.y = round(results[n][yi]);
-				pos.z = round(results[n][zi]);
+				pos.z = 0;
+				if (image.dimensionality() >= 3)
+					pos.z = round(results[n][zi]);
 
 				floodfill<pixel_t>(image, pos, fillColor, fillColor, conn);
 			}
@@ -1110,7 +1114,9 @@ namespace itl2
 	{
 		size_t xi = results.getColumnIndex("X");
 		size_t yi = results.getColumnIndex("Y");
-		size_t zi = results.getColumnIndex("Z");
+		size_t zi = 0;
+		if (image.dimensionality() >= 3)
+			zi = results.getColumnIndex("Z");
 
 		prepareParticleAnalysis(image);
 
@@ -1123,7 +1129,9 @@ namespace itl2
 			Vec3c pos;
 			pos.x = round(results[n][xi]);
 			pos.y = round(results[n][yi]);
-			pos.z = round(results[n][zi]);
+			pos.z = 0;
+			if (image.dimensionality() >= 3)
+				pos.z = round(results[n][zi]);
 
 			floodfill<pixel_t>(image, pos, value, value, conn);
 
@@ -1142,7 +1150,9 @@ namespace itl2
 	{
 		size_t xi = results.getColumnIndex("X");
 		size_t yi = results.getColumnIndex("Y");
-		size_t zi = results.getColumnIndex("Z");
+		size_t zi = 0;
+		if (image.dimensionality() >= 3)
+			zi = results.getColumnIndex("Z");
 
 		prepareParticleAnalysis(image);
 
@@ -1153,7 +1163,9 @@ namespace itl2
 			Vec3c pos;
 			pos.x = round(results[n][xi]);
 			pos.y = round(results[n][yi]);
-			pos.z = round(results[n][zi]);
+			pos.z = 0;
+			if (image.dimensionality() >= 3)
+				pos.z = round(results[n][zi]);
 
 			floodfillSingleThreaded<pixel_t>(image, pos + shift, fillColor, fillColor, conn);
 

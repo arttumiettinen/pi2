@@ -1138,7 +1138,7 @@ namespace itl2
 		/**
 		Get analyzer from list by its name.
 		*/
-		template<typename pixel_t> std::shared_ptr<Analyzer<Vec3sc, pixel_t> > getAnalyzer(AnalyzerSet<Vec3sc, pixel_t>& all, const string& name)
+		template<typename pixel_t> std::shared_ptr<Analyzer<Vec3sc, pixel_t> > getAnalyzer(AnalyzerSet<Vec3sc, pixel_t>& all, const string& name, bool throwIfNotFound)
 		{
 			string loname = name;
 			toLower(loname);
@@ -1151,7 +1151,9 @@ namespace itl2
 					return all[n];
 			}
 
-			throw ITLException(string("Invalid analyzer name: ") + name);
+			if(throwIfNotFound)
+				throw ITLException(string("Invalid analyzer name: ") + name);
+			return nullptr;
 		}
 	}
 
@@ -1166,12 +1168,38 @@ namespace itl2
 		std::vector<string> parts = split(names, false, ' ');
 
 		AnalyzerSet<Vec3sc, pixel_t> all = allAnalyzers<pixel_t>(dimensions);
+		AnalyzerSet<Vec3sc, pixel_t> all2d = allCrossSectionAnalyzers<pixel_t>();
 		AnalyzerSet<Vec3sc, pixel_t> result;
 
 		for (size_t n = 0; n < parts.size(); n++)
 		{
-			std::shared_ptr<Analyzer<Vec3sc, pixel_t> > tmp = internals::getAnalyzer<pixel_t>(all, parts[n]);
-			result.push_back(tmp);
+			string name = parts[n];
+			std::shared_ptr<Analyzer<Vec3sc, pixel_t> > analyzer = internals::getAnalyzer<pixel_t>(all, name, false);
+			if (analyzer)
+			{
+				// 3D analyzer found
+				result.push_back(analyzer);
+			}
+			else
+			{
+				// 3D analyzer not found, try 2D
+				analyzer = internals::getAnalyzer<pixel_t>(all2d, name, false);
+				
+				if (analyzer)
+				{
+					// 2D analyzer found.
+					if (dimensions.z <= 1)
+						result.push_back(analyzer);
+					else
+						throw ITLException(string("Analyzer ") + name + " is for 2-dimensional images, but the image to be analyzed is not 2-dimensional.");
+				}
+				else
+				{
+					// 2D analyzer not found
+					ITLException(string("Invalid analyzer name: ") + name);
+				}
+				
+			}
 		}
 
 		return result;
@@ -1193,7 +1221,7 @@ namespace itl2
 
 		for (size_t n = 0; n < parts.size(); n++)
 		{
-			std::shared_ptr<Analyzer<Vec3sc, pixel_t> > tmp = internals::getAnalyzer<pixel_t>(all, parts[n]);
+			std::shared_ptr<Analyzer<Vec3sc, pixel_t> > tmp = internals::getAnalyzer<pixel_t>(all, parts[n], true);
 			result.push_back(tmp);
 		}
 

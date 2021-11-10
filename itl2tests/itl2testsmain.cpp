@@ -229,6 +229,7 @@ int main()
 	//test(itl2::tests::montage, "2D montage of 3D stack");
 
 	//test(itl2::tests::pathopening, "Path opening");
+	test(itl2::tests::pathopening2d, "Path opening 2D");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
 	//test(itl2::tests::imagemetadata, "image metadata");
@@ -238,7 +239,7 @@ int main()
 
 	//test(itl2::tests::eval, "evaluation of string expressions");
 
-	test(itl2::tests::seededDMap, "seeded distance map");
+	//test(itl2::tests::seededDMap, "seeded distance map");
 
 	//test(itl2::tests::stddevuint16, "standard deviation, uint16");
 

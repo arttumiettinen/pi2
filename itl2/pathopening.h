@@ -36,10 +36,10 @@ namespace itl2
 	namespace internals
 	{
 		/**
-		Builds list of strides to neighbours in the main direction (nplus) and in the opposite direction (nminus).
+		Builds list of strides to neighbours in the main direction.
 		3D version.
 		*/
-		inline void buildNeighbours(std::vector<Vec3c>& nbs, const Vec3c& mainDir)
+		inline void buildNeighbours(std::vector<Vec3c>& nbs, const Vec3c& mainDir, size_t dimensionality)
 		{
 			nbs.clear();
 
@@ -54,6 +54,10 @@ namespace itl2
 					{
 						// Skip zero vector
 						if (x == 0 && y == 0 && z == 0)
+							continue;
+
+						// Skip neighbours with z != 0 if 2D version.
+						if (dimensionality == 2 && z != 0)
 							continue;
 
 						if (abs(x - mainDir.x) <= 1 && abs(y - mainDir.y) <= 1 && abs(z - mainDir.z) <= 1)
@@ -292,13 +296,24 @@ namespace itl2
 			l.push_back(mainDir.dot<coord_t>(Vec3c(w - 1, 0, 0)));
 			l.push_back(mainDir.dot<coord_t>(Vec3c(0, h - 1, 0)));
 			l.push_back(mainDir.dot<coord_t>(Vec3c(w - 1, h - 1, 0)));
-			l.push_back(mainDir.dot<coord_t>(Vec3c(0, 0, d - 1)));
-			l.push_back(mainDir.dot<coord_t>(Vec3c(w - 1, 0, d - 1)));
-			l.push_back(mainDir.dot<coord_t>(Vec3c(0, h - 1, d - 1)));
-			l.push_back(mainDir.dot<coord_t>(Vec3c(w - 1, h - 1, d - 1)));
+			if (img.dimensionality() >= 3)
+			{
+				l.push_back(mainDir.dot<coord_t>(Vec3c(0, 0, d - 1)));
+				l.push_back(mainDir.dot<coord_t>(Vec3c(w - 1, 0, d - 1)));
+				l.push_back(mainDir.dot<coord_t>(Vec3c(0, h - 1, d - 1)));
+				l.push_back(mainDir.dot<coord_t>(Vec3c(w - 1, h - 1, d - 1)));
+			}
 			coord_t lmin = min(l);
 			coord_t lmax = max(l);
 
+
+			coord_t minz = 0;
+			coord_t maxz = 1;
+			if (img.dimensionality() >= 3)
+			{
+				minz = 1;
+				maxz = d - 1;
+			}
 
 			//size_t pixelsAtCurrentLevel = 0;
 
@@ -312,7 +327,7 @@ namespace itl2
 				//pixelsAtCurrentLevel = 0;
 
 #pragma omp parallel for
-				for (coord_t z = 1; z < d - 1; z++)
+				for (coord_t z = minz; z < maxz; z++)
 				{
 					coord_t orderz = mainDir.z * z;
 					for (coord_t y = 1; y < h - 1; y++)
@@ -394,8 +409,8 @@ namespace itl2
 	*/
 	template<typename PIXEL_TYPE> void pathLength2Binary3dNormalOrChamferMemorySave(Image<PIXEL_TYPE>& img, Image<float32_t>& lengths, LengthType lengthType = LengthType::Ones, const std::string& tempName = "TEMP")
 	{
-		if (img.dimensionality() != 3)
-			throw ITLException("This method supports only 3-dimensional images.");
+		if (img.dimensionality() != 3 && img.dimensionality() != 2)
+			throw ITLException("This method supports only 2- and 3-dimensional images.");
 
 		// Constrain paths to the image
 		setEdges<PIXEL_TYPE>(img, 0);
@@ -405,19 +420,23 @@ namespace itl2
 
 		// List of main directions
 		std::vector<Vec3c> mainDirs;
-		mainDirs.push_back(Vec3c(1, -1, -1));
 		mainDirs.push_back(Vec3c(1, -1, 0));
-		mainDirs.push_back(Vec3c(1, -1, 1));
-		mainDirs.push_back(Vec3c(1, 0, -1));
 		mainDirs.push_back(Vec3c(1, 0, 0));
-		mainDirs.push_back(Vec3c(1, 0, 1));
-		mainDirs.push_back(Vec3c(1, 1, -1));
 		mainDirs.push_back(Vec3c(1, 1, 0));
-		mainDirs.push_back(Vec3c(1, 1, 1));
-		mainDirs.push_back(Vec3c(0, 1, -1));
 		mainDirs.push_back(Vec3c(0, 1, 0));
-		mainDirs.push_back(Vec3c(0, 1, 1));
-		mainDirs.push_back(Vec3c(0, 0, 1));
+
+		if (img.dimensionality() >= 3)
+		{
+			mainDirs.push_back(Vec3c(1, -1, -1));
+			mainDirs.push_back(Vec3c(1, -1, 1));
+			mainDirs.push_back(Vec3c(1, 0, -1));
+			mainDirs.push_back(Vec3c(1, 0, 1));
+			mainDirs.push_back(Vec3c(1, 1, -1));
+			mainDirs.push_back(Vec3c(1, 1, 1));
+			mainDirs.push_back(Vec3c(0, 1, -1));
+			mainDirs.push_back(Vec3c(0, 1, 1));
+			mainDirs.push_back(Vec3c(0, 0, 1));
+		}
 
 		// Stride vector
 		coord_t s1 = 1;
@@ -443,7 +462,7 @@ namespace itl2
 			nds.reserve(8);
 
 			std::vector<Vec3c> nbs;
-			internals::buildNeighbours(nbs, mainDir);
+			internals::buildNeighbours(nbs, mainDir, img.dimensionality());
 			internals::calcStrides(nplus, nminus, nds, nbs, s, lengthType);
 
 			// Run the algorithm
@@ -570,6 +589,7 @@ namespace itl2
 
 	namespace tests
 	{
+		void pathopening2d();
 		void pathopening();
 	}
 }

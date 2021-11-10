@@ -663,6 +663,58 @@ class Pi2:
         return self.id_generator("value_")
 
 
+    ############ Special Python interoperability functions ############
+
+
+    def get_column_index(self, column_name, analyzers):
+        """
+        Get the index of a column from a particle analysis result table as a NumPy array.
+        :param column_name: Column name without unit. An exception is thrown if the column name is not found.
+        :param analyzers: Analyzer list string (previously passed to analyzeparticles function).
+        :return: column index as integer, and unit as a string, if available; empty string if no unit has been specified in the header.
+        """
+        unit = ""
+
+        headers = self.newstring()
+        self.headers(analyzers, headers)
+        headers = headers.as_string().split(', ')
+
+        index = -1
+        for i in range(0, len(headers)):
+
+            hdr = headers[i]
+            if hdr.lower().startswith(column_name.lower()):
+                remaining = hdr[len(column_name):].strip()
+                if not remaining:
+                    index = i
+                    break
+                if remaining.startswith('[') and remaining.endswith(']'):
+                    index = i
+                    unit = remaining[1:-1]
+                    break
+
+        if index < 0:
+            raise SystemError(f"Column {column_name} not found.")
+
+        return index, unit
+
+
+    def get_column(self, column_name, particle_analysis_result, analyzers):
+        """
+        Get a column from a particle analysis result table as a NumPy array.
+        :param column_name: Column name without unit.
+        :param particle_analysis_result: Particle analysis result image (previously passed to analyzeparticles function).
+        :param analyzers: Analyzer list string (previously passed to analyzeparticles function).
+        :return: column data as a Numpy array, and unit as a string, if available; empty string if no unit has been specified in the header.
+        """
+
+        index, unit = self.get_column_index(column_name, analyzers)
+        data = particle_analysis_result.get_data_pointer()
+        column = data[:, index]
+        return column, unit
+
+
+
     ############ Implementations of functions that require special arrangements ############
 
 
