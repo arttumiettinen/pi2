@@ -1823,8 +1823,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			//	}
 			//}
 
-			//cout << "projMinCoords = " << projMinCoords << endl;
-			//cout << "projMaxCoords = " << projMaxCoords << endl;
+		cout << "projMinCoords = " << projMinCoords << endl;
+		cout << "projMaxCoords = " << projMaxCoords << endl;
 
 			Vec2c projMin = floor(projMinCoords - Vec2f(2, 2));
 			Vec2c projMax = ceil(projMaxCoords + Vec2f(2, 2) + Vec2f(1, 1));
@@ -1836,6 +1836,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 			Vec3c projBlockSize = env.max3DImageSize;
 
+		cout << "projBlockSize2D = " << projBlockSize2D << endl;
+		cout << "initial projBlockSize = " << projBlockSize << endl;
+
 			if (projBlockSize.x < projBlockSize2D.x ||
 				projBlockSize.y < projBlockSize2D.y)
 				throw ITLException("OpenCL device does not support large enough 3D images to hold the required block of projection image.");
@@ -1845,6 +1848,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 			projBlockSize.z = std::min(projBlockSize.z, transmissionProjections.depth());
 			projBlockSize.z = std::min(projBlockSize.z, maxProjBlockSizeZ);
+
+		cout << "after clamping to projection count and maxProjBlockSizeZ, projBlockSize = " << projBlockSize << endl;
 
 			size_t outputSize = output.pixelCount() * sizeof(float32_t);
 			size_t allocSize = projBlockSize.x * projBlockSize.y * projBlockSize.z * sizeof(float32_t);
