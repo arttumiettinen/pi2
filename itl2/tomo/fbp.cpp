@@ -1154,7 +1154,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	float3 p = posf - center;
 	for (int anglei = 0; anglei < projSize.z; anglei++)
 	{
-		arrayInd = anglei + firstAngleIndex;
+		int arrayInd = anglei + firstAngleIndex;
 		float3 ps = pss[arrayInd];
 		float3 pd = pds[arrayInd];
 		float3 uVec = us[arrayInd];
