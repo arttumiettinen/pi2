@@ -1415,6 +1415,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 				Vec4f centerCL(center.x, center.y, center.z, 0); // CL defines float3 as float4, so we need extra zero after center position.
 
+				cl_int firstAngleIndex = (cl_int)projBlockStart.z;
+
 				// Set all arguments
 				clEnv.kernel.setArg(0, transmissionProjectionsCL);
 				clEnv.kernel.setArg(1, pssCL);
@@ -1422,7 +1424,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				clEnv.kernel.setArg(3, usCL);
 				clEnv.kernel.setArg(4, vsCL);
 				clEnv.kernel.setArg(5, wsCL);
-				clEnv.kernel.setArg(6, projBlockStart.z);
+				clEnv.kernel.setArg(6, firstAngleIndex);
 				clEnv.kernel.setArg(7, projectionShift);
 				clEnv.kernel.setArg(8, fullProjectionHalfSizeFloat);
 				clEnv.kernel.setArg(9, centerCL);
