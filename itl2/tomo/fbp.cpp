@@ -47,6 +47,7 @@ namespace itl2
 		stream << endl;
 		stream << "center_shift = " << s.centerShift << endl;
 		stream << "camera_z_shift = " << s.cameraZShift << endl;
+		stream << "camera_rotation = " << s.cameraRotation << endl;
 		stream << "cs_angle_slope = " << s.csAngleSlope << endl;
 		stream << endl;
 		stream << "pad_type = " << s.padType << endl;
@@ -365,9 +366,9 @@ namespace itl2
 	*/
 	void fbpWeightingSlice(Image<float32_t>& slice, coord_t angleIndex, bool reconstructAs180DegScan, const vector<float32_t>& angles, float32_t baseCenterShift, float32_t csAngleSlope, float32_t sourceToRA, float32_t cameraZShift, float32_t centralAngle, float32_t gammaMax0, float32_t heuristicSinogramWindowingParameter)
 	{
-		// Disable these as now we have object shifts, not camera shifts.
-			//float32_t dx = settings.objectShifts[anglei].x;
-			//float32_t dz = settings.objectShifts[anglei].y;
+		// TODO: How to calculate these in the new geometry? These shifts are probably not very important...
+		//float32_t dx = settings.objectShifts[anglei].x;
+		//float32_t dz = settings.objectShifts[anglei].y;
 		float32_t dx = 0;
 		float32_t dz = 0;
 

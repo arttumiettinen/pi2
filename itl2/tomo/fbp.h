@@ -511,7 +511,7 @@ namespace itl2
 		s.sampleShifts = id.getList<Vec3f>("sample_shifts", emptyV3);
 		s.sourceShifts = id.getList<Vec3f>("source_shifts", emptyV3);
 		s.cameraShifts = id.getList<Vec3f>("camera_shifts", emptyV3);
-		s.rotationAxisShifts= id.getList<Vec3f>("rotation_axis_shifts", emptyV3);
+		s.rotationAxisShifts = id.getList<Vec3f>("rotation_axis_shifts", emptyV3);
 
 		// If there are no shifts supplied, set all shifts to zero.
 		if (s.sampleShifts.size() <= 0)
