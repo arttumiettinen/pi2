@@ -1117,6 +1117,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 						global read_only float3* vs,				// Detector up vectors
 						global read_only float3* ws,				// Detector normal vectors, w = u x w
 
+						read_only int firstAngleIndex,				// Index in pss, pds, us, vs, and ws arrays of the first projection in transmissionProjections
 						read_only float2 projectionShift,
 						read_only float2 fullProjectionHalfSize,	// Projection size divided by 2
 
@@ -1153,11 +1154,12 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 	float3 p = posf - center;
 	for (int anglei = 0; anglei < projSize.z; anglei++)
 	{
-		float3 ps = pss[anglei];
-		float3 pd = pds[anglei];
-		float3 uVec = us[anglei];
-		float3 vVec = vs[anglei];
-		float3 wHat = ws[anglei];
+		arrayInd = anglei + firstAngleIndex;
+		float3 ps = pss[arrayInd];
+		float3 pd = pds[arrayInd];
+		float3 uVec = us[arrayInd];
+		float3 vVec = vs[arrayInd];
+		float3 wHat = ws[arrayInd];
 
 		float3 dVec = p - ps;
 		float denom = dot(dVec, wHat);
@@ -1420,12 +1422,13 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				clEnv.kernel.setArg(3, usCL);
 				clEnv.kernel.setArg(4, vsCL);
 				clEnv.kernel.setArg(5, wsCL);
-				clEnv.kernel.setArg(6, projectionShift);
-				clEnv.kernel.setArg(7, fullProjectionHalfSizeFloat);
-				clEnv.kernel.setArg(8, centerCL);
-				clEnv.kernel.setArg(9, sourceToRA);
-				clEnv.kernel.setArg(10, clEnv.temp);
-				clEnv.kernel.setArg(11, clEnv.output);
+				clEnv.kernel.setArg(6, projBlockStart.z);
+				clEnv.kernel.setArg(7, projectionShift);
+				clEnv.kernel.setArg(8, fullProjectionHalfSizeFloat);
+				clEnv.kernel.setArg(9, centerCL);
+				clEnv.kernel.setArg(10, sourceToRA);
+				clEnv.kernel.setArg(11, clEnv.temp);
+				clEnv.kernel.setArg(12, clEnv.output);
 
 
 				cl::size_t<3> projSizeCL;
@@ -1817,6 +1820,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			//		projMaxCoords = max(projMaxCoords, Vec2f(ix, iy));
 			//	}
 			//}
+
+			//cout << "projMinCoords = " << projMinCoords << endl;
+			//cout << "projMaxCoords = " << projMaxCoords << endl;
 
 			Vec2c projMin = floor(projMinCoords - Vec2f(2, 2));
 			Vec2c projMax = ceil(projMaxCoords + Vec2f(2, 2) + Vec2f(1, 1));
