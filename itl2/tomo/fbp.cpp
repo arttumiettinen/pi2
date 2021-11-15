@@ -870,6 +870,12 @@ namespace itl2
 				settings.objectCameraDistance /= b;
 				for (size_t n = 0; n < settings.sampleShifts.size(); n++)
 					settings.sampleShifts[n] /= b;
+				for (size_t n = 0; n < settings.sourceShifts.size(); n++)
+					settings.sourceShifts[n] /= b;
+				for (size_t n = 0; n < settings.cameraShifts.size(); n++)
+					settings.cameraShifts[n] /= b;
+				for (size_t n = 0; n < settings.rotationAxisShifts.size(); n++)
+					settings.rotationAxisShifts[n] /= b;
 				settings.roiCenter /= (coord_t)settings.binning;
 				settings.roiSize /= (coord_t)settings.binning;
 				
@@ -1849,7 +1855,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			projBlockSize.z = std::min(projBlockSize.z, transmissionProjections.depth());
 			projBlockSize.z = std::min(projBlockSize.z, maxProjBlockSizeZ);
 
-		cout << "after clamping to projection count and maxProjBlockSizeZ, projBlockSize = " << projBlockSize << endl;
+		cout << "After clamping to projection count and maxProjBlockSizeZ, projBlockSize = " << projBlockSize << endl;
 
 			size_t outputSize = output.pixelCount() * sizeof(float32_t);
 			size_t allocSize = projBlockSize.x * projBlockSize.y * projBlockSize.z * sizeof(float32_t);
