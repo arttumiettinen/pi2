@@ -202,7 +202,7 @@ namespace pilib
 	{
 		string id = itl2::toString(get<0>(submittedJobs[jobIndex]));
 
-		string bjobsArgs = "-X - noheader -o \"STAT\" " + id;
+		string bjobsArgs = "-X -noheader -o \"STAT\" " + id;
 
 	cout << "bjobs arguments: " << bjobsArgs << endl;
 
