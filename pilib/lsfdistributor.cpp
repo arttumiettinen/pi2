@@ -141,9 +141,9 @@ namespace pilib
 		vector<string> lines = split(result);
 		try
 		{
-			if (lines.size() == 1)
+			if (lines.size() == 2)
 			{
-				string line = lines[0];
+				string line = lines[1];
 				if (startsWith(line, "Job <"))
 				{
 					size_t idStart = string("Job <").length();
