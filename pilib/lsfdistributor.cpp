@@ -198,7 +198,7 @@ namespace pilib
 		resubmit(jobIndex);
 	}
 
-	bool LSFDistributor::isJobDone(size_t jobIndex) const
+	int LSFDistributor::getJobStatus(size_t jobIndex) const
 	{
 		string id = itl2::toString(get<0>(submittedJobs[jobIndex]));
 
@@ -212,29 +212,29 @@ namespace pilib
 
 		trim(result);
 
-		// TODO: Is this correct?
-		// Empty result means the job is done
-		if (result.length() <= 0)
-			return true;
+		bool waiting = startsWith(result, "PEND") ||
+			startsWith(result, "PROV") ||
+			startsWith(result, "PSUSP") ||
+			startsWith(result, "USUSP") ||
+			startsWith(result, "SSUSP") ||
+			startsWith(result, "WAIT");
 
-		// If the message starts with job id, the job is running or in queue.
-		bool running = startsWith(result, id);
+		bool running = startsWith(result, "RUN");
 
-		// If the message contains "invalid job id...", the job data has been already erased.
-		//bool notRunning = contains(result, "Invalid job id specified");
-		bool notRunning = !running; // TODO
+		bool finished = startsWith(result, "DONE");
 
-		// Check that the job is running or its data has been erased.
-		// Otherwise we don't know what is going on, and assume this is a temporary error message.
-		if ((running && notRunning) ||
-			(!running && !notRunning))
-		{
-			// Erroneous squeue output. Assume that the job is not done.
-			cout << "Warning: Unexpected " << bjobsCommand << " output '" << result << "' for job " << jobIndex << " (LSF id " << id << "). Assuming the job is still running." << endl;
-			return false;
-		}
+		bool error = startsWith(result, "EXIT") ||
+			startsWith(result, "UNKWN") ||
+			startsWith(result, "ZOMBI");
 
-		return !running;
+		if (waiting)
+			return JOB_WAITING;
+		if (running)
+			return 0;
+		if (finished)
+			return 100;
+		
+		return JOB_FAILED;
 	}
 
 	
@@ -259,11 +259,6 @@ namespace pilib
 		// Check if the job has been cancelled?
 		string errorLog = getErrorLog(jobIndex);
 
-		// TODO: What does LSF output when a job gets cancelled?
-
-		if (contains(errorLog, "CANCELLED"))
-			return JOB_FAILED;
-
 		// Get progress from output
 		string log = getLog(jobIndex);
 		if (log.length() <= 0)
@@ -283,19 +278,21 @@ namespace pilib
 		progress.reserve(submittedJobs.size());
 		for (size_t n = 0; n < submittedJobs.size(); n++)
 		{
-			int state;
-			if (!isJobDone(n))
+			int state = getJobStatus(n);
+
+			if (state == 0)
 			{
-				// Read progress from log file or -1 if it does not exist.
+				// Job is running, read progress from the log file.
 				state = getJobProgressFromLog(n);
 				// Do not let the progress read from log ever reach 100 as that is interpreted
 				// as job done.
 				if (state >= 100)
 					state = 99;
 			}
-			else
+			else if (state == 100)
 			{
-				// The job is not in squeue anymore
+				// Job is done
+
 				// Job is ready or failed
 				state = getJobProgressFromLog(n);
 
@@ -320,8 +317,6 @@ namespace pilib
 		}
 		return progress;
 	}
-
-
 
 
 	bool isCancelledLSF(const string& errorMessage)

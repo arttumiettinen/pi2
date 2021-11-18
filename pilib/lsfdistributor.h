@@ -88,7 +88,7 @@ namespace pilib
 		/**
 		Checks if the given job has finished.
 		*/
-		bool isJobDone(size_t jobIndex) const;
+		int getJobStatus(size_t jobIndex) const;
 
 		/**
 		Gets log of given job.
