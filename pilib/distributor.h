@@ -13,6 +13,26 @@ namespace pilib
 	class Command;
 	class PISystem;
 
+	void flushCache(const std::string& filename);
+	
+	constexpr int JOB_FAILED = -2;
+	constexpr int JOB_WAITING = -1;
+
+	/**
+	Gets character describing progress of single task.
+	*/
+	char getProgressChar(int progress);
+
+	/**
+	Creates a string containing progress bar for multiple tasks.
+	*/
+	std::string createProgressBar(const std::vector<int>& progress);
+
+	/**
+	Shows progress bar in console.
+	*/
+	void showProgressBar(const std::string& bar, size_t& barLength);
+
 	/**
 	Base class for objects that are used to distribute commands to multiple processes.
 	*/

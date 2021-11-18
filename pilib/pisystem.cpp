@@ -4,6 +4,9 @@
 #include "io/io.h"
 #include "commandlist.h"
 #include "pilibutilities.h"
+#include "slurmdistributor.h"
+#include "localdistributor.h"
+#include "lsfdistributor.h"
 
 using namespace std;
 
@@ -1170,6 +1173,11 @@ namespace pilib
 			{
 				cout << "Enabling distributed computing mode using local sequential processing." << endl;
 				distributor = new LocalDistributor(this);
+			}
+			else if (provider == "lsf")
+			{
+				cout << "Enabling distributed computing mode using LSF workload manager." << endl;
+				distributor = new LSFDistributor(this);
 			}
 			else
 				throw ITLException(string("Invalid distributed computing system name: ") + provider + ". Valid names are SLURM or Local.");

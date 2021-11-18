@@ -1022,6 +1022,15 @@ def dead_pixels():
 
 
 
+def lsf_cluster():
+
+    pi2.distribute(Distributor.LSF)
+    pi2.maxmemory(1)
+    img = pi2.newimage(ImageDataType.UINT16, 100, 100, 100)
+    pi2.add(img, 10)
+    pi2.writeraw(img, output_file("lsf/noise"))
+
+
 
 # Enable or disable echoing of commands and timing info on screen
 pi2.echo(True, False)
@@ -1232,7 +1241,9 @@ pi2.echo(True, False)
 
 #test_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 100], 'img', input_file_bin(), maxmem=5)
 
-dead_pixels()
+#dead_pixels()
+
+lsf_cluster()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

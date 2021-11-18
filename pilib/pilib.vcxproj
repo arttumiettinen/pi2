@@ -306,6 +306,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="iocommands.h" />
     <ClInclude Include="jobtype.h" />
     <ClInclude Include="localdistributor.h" />
+    <ClInclude Include="lsfdistributor.h" />
     <ClInclude Include="maximacommands.h" />
     <ClInclude Include="metadatacommands.h" />
     <ClInclude Include="othercommands.h" />
@@ -354,6 +355,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClCompile Include="infocommand.cpp" />
     <ClCompile Include="iocommands.cpp" />
     <ClCompile Include="localdistributor.cpp" />
+    <ClCompile Include="lsfdistributor.cpp" />
     <ClCompile Include="maximacommands.cpp" />
     <ClCompile Include="metadatacommands.cpp" />
     <ClCompile Include="othercommands.cpp" />

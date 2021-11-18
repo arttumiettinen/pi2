@@ -7,7 +7,10 @@
 #include "exeutils.h"
 #include "math/vectoroperations.h"
 #include "whereamicpp.h"
-
+#if defined(__linux__)
+#include <sys/types.h>
+#include <dirent.h>
+#endif
 #include <tuple>
 #include "filesystem.h"
 
@@ -16,6 +19,93 @@ using namespace std;
 
 namespace pilib
 {
+
+	void flushCache(const string& filename)
+	{
+#if defined(__linux__)
+		// This may flush NFS cache on the files of the folder where the log file lives.
+		int fd = open(filename.c_str(), O_RDONLY);
+		fsync(fd);
+		close(fd);
+
+		fs::path dir(filename);
+		dir = dir.parent_path();
+		DIR* dr = opendir(dir.string().c_str());
+		closedir(dr);
+#endif
+	}
+
+	void showProgressBar(const string& bar, size_t& barLength)
+	{
+		// Remove old bar
+		for (size_t n = 0; n < barLength; n++)
+			cout << ' ';
+		if (barLength > 0)
+			cout << '\r';
+
+		// Store length of new bar
+		barLength = bar.length();
+
+		// Show new bar
+		cout << bar;
+		if (barLength > 0)
+			cout << '\r';
+
+		cout << flush;
+	}
+
+	char getProgressChar(int progress)
+	{
+		if (progress == JOB_FAILED)
+			return '!';
+		if (progress == JOB_WAITING)
+			return 'W';
+
+
+		// 20	40	60	80	100
+		// _	.	o	O	*
+
+		if (progress < 20)
+			return '_';
+		if (progress < 40)
+			return '.';
+		if (progress < 60)
+			return 'o';
+		if (progress < 80)
+			return 'O';
+
+		return '*';
+	}
+
+	string createProgressBar(const vector<int>& progress)
+	{
+		int readyCount = 0;
+		int waitingCount = 0;
+
+		for (size_t n = 0; n < progress.size(); n++)
+		{
+			if (progress[n] == JOB_WAITING)
+				waitingCount++;
+			else if (progress[n] >= 100)
+				readyCount++;
+		}
+
+		int runningCount = (int)progress.size() - waitingCount - readyCount;
+
+		stringstream s;
+		s << "waiting: " << waitingCount << ", ready: " << readyCount << ", running: " << runningCount << "; ";
+
+		for (size_t n = 0; n < progress.size(); n++)
+		{
+			if (progress[n] != JOB_WAITING && progress[n] < 100)
+				s << getProgressChar(progress[n]);
+		}
+
+		return s.str();
+	}
+
+
+
 	fs::path findPi2()
 	{
 #if defined(__linux__)
@@ -53,6 +143,7 @@ namespace pilib
 	{
 		piCommand = findPi2().string();
 	}
+
 
 	void Distributor::readSettings(INIReader& reader)
 	{

@@ -6,9 +6,9 @@
 namespace pilib
 {
 	/**
-	Distributes tasks using SLURM cluster manager system.
+	Distributes tasks using LSF cluster manager system.
 	*/
-	class SLURMDistributor : public Distributor
+	class LSFDistributor : public Distributor
 	{
 	private:
 		size_t allowedMem;
@@ -16,40 +16,40 @@ namespace pilib
 		std::string getErrorMessage(size_t jobIndex) const;
 
 		/**
-		Stores (job slurm id, queue type, submission count) of all submitted jobs since last call to waitForJobs.
+		Stores (job LSF id, queue type, submission count) of all submitted jobs since last call to waitForJobs.
 		*/
 		std::vector<std::tuple<size_t, JobType, size_t> > submittedJobs;
 
 		/**
 		Extra arguments for sbatch and sinfo, for fast jobs
 		*/
-		std::string extraArgsFastJobsSBatch, extraArgsFastJobsSInfo;
+		std::string extraArgsFastJobs;
 
 		/**
 		Extra arguments for sbatch and sinfo, for normal jobs
 		*/
-		std::string extraArgsNormalJobsSBatch, extraArgsNormalJobsSInfo;
+		std::string extraArgsNormalJobs;
 
 		/**
 		Extra arguments for sbatch and sinfo, for slow jobs
 		*/
-		std::string extraArgsSlowJobsSBatch, extraArgsSlowJobsSInfo;
+		std::string extraArgsSlowJobs;
 
 		/**
 		Commands used to run sbatch, squeue, scancel and sinfo.
 		*/
-		std::string sbatchCommand, squeueCommand, scancelCommand, sinfoCommand;
+		std::string bsubCommand, bjobsCommand, bkillCommand;
 
 		/**
 		Returns suitable sbatch arguments given type of job.
 		*/
-		std::string extraArgsSBatch(JobType jobType) const
+		std::string extraArgs(JobType jobType) const
 		{
 			switch (jobType)
 			{
-			case JobType::Fast: return extraArgsFastJobsSBatch;
-			case JobType::Normal: return extraArgsNormalJobsSBatch;
-			case JobType::Slow: return extraArgsSlowJobsSBatch;
+			case JobType::Fast: return extraArgsFastJobs;
+			case JobType::Normal: return extraArgsNormalJobs;
+			case JobType::Slow: return extraArgsSlowJobs;
 			default: throw std::logic_error("Invalid JobType value.");
 			}
 		}
@@ -66,14 +66,14 @@ namespace pilib
 		std::string jobInitCommands;
 
 		/**
-		Identifies this running instance from others so that multiple SLURM distributor instances can run from the same working folder.
+		Identifies this running instance from others so that multiple LSF distributor instances can run from the same working folder.
 		*/
 		std::string myName;
 
 		/**
-		Cancels job with given SLURM id.
+		Cancels job with given LSF id.
 		*/
-		void cancelJob(size_t slurmId) const;
+		void cancelJob(size_t id) const;
 
 		/**
 		Cancel all jobs submitted by this object.
@@ -96,9 +96,9 @@ namespace pilib
 		std::string getLog(size_t jobIndex, bool flush = false) const;
 
 		/**
-		Gets SLURM error log of given job.
+		Gets LSF error log of given job.
 		*/
-		std::string getSlurmErrorLog(size_t jobIndex, bool flush = false) const;
+		std::string getErrorLog(size_t jobIndex, bool flush = false) const;
 
 		/**
 		Gets job progress from log file.
@@ -131,7 +131,7 @@ namespace pilib
 		std::string makeErrorName(size_t jobIndex) const;
 
 	public:
-		SLURMDistributor(PISystem* system);
+		LSFDistributor(PISystem* system);
 
 		virtual void submitJob(const std::string& piCode, JobType jobType) override;
 
@@ -145,3 +145,4 @@ namespace pilib
 		virtual void allowedMemory(size_t maxMem) override;
 	};
 }
+

@@ -165,6 +165,9 @@
     <ClInclude Include="evalcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lsfdistributor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">
@@ -282,6 +285,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="evalcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lsfdistributor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

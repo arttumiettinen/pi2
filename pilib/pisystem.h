@@ -14,8 +14,6 @@
 #include "distributor.h"
 #include "distributable.h"
 #include "distributedimage.h"
-#include "slurmdistributor.h"
-#include "localdistributor.h"
 #include "stringutils.h"
 #include "commandlist.h"
 #include "pick.h"

@@ -1,4 +1,4 @@
-; Configuration file used for SLURM to schedule distributed processing tasks.
+; Configuration file used in SLURM clusters to schedule distributed processing tasks.
 
 
 ; Extra arguments that are passed to sinfo and sbatch

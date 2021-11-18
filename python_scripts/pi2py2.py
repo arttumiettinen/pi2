@@ -109,6 +109,7 @@ class Distributor(Enum):
     NONE = ""
     LOCAL = "local"
     SLURM = "slurm"
+    LSF = "lsf"
 
     def __str__(self):
         return str(self.value)

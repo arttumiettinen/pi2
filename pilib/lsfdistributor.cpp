@@ -1,5 +1,5 @@
 
-#include "slurmdistributor.h"
+#include "lsfdistributor.h"
 
 #include "exeutils.h"
 #include "utilities.h"
@@ -15,9 +15,9 @@ using namespace std;
 
 namespace pilib
 {
-	
 
-	SLURMDistributor::SLURMDistributor(PISystem* system) : Distributor(system), allowedMem(0)
+
+	LSFDistributor::LSFDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
 		// Create unique name for this distributor
 		std::random_device dev;
@@ -29,36 +29,30 @@ namespace pilib
 		fs::path configPath = getPiCommand();
 		size_t mem = 0;
 		if (configPath.has_filename())
-		{		
-			configPath = configPath.replace_filename("slurm_config.txt");
-			
+		{
+			configPath = configPath.replace_filename("lsf_config.txt");
+
 			//cout << "Reading settings from " << configPath << endl;
 
 			INIReader reader(configPath.string());
 
-			extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
-			extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
-			extraArgsSlowJobsSBatch = reader.get<string>("extra_args_slow_jobs_sbatch", "");
-			extraArgsFastJobsSInfo = reader.get<string>("extra_args_fast_jobs_sinfo", "");
-			extraArgsNormalJobsSInfo = reader.get<string>("extra_args_normal_jobs_sinfo", "");
-			extraArgsSlowJobsSInfo = reader.get<string>("extra_args_slow_jobs_sinfo", "");
+			extraArgsFastJobs = reader.get<string>("extra_args_fast_jobs", "");
+			extraArgsNormalJobs = reader.get<string>("extra_args_normal_jobs", "");
+			extraArgsSlowJobs = reader.get<string>("extra_args_slow_jobs", "");
 			jobInitCommands = reader.get<string>("job_init_commands", "");
 			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
 			maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
-			sbatchCommand = reader.get<string>("sbatch_command", "sbatch");
-			squeueCommand = reader.get<string>("squeue_command", "squeue");
-			scancelCommand = reader.get<string>("scancel_command", "scancel");
-			sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
+			bsubCommand = reader.get<string>("bsub_command", "bsub");
+			bjobsCommand = reader.get<string>("bjobs_command", "bjobs");
+			bkillCommand = reader.get<string>("bkill_command", "bkill");
 
 			readSettings(reader);
-			
-			//cout << "done" << endl;
 		}
-		
+
 		allowedMemory(mem);
 	}
 
-	void SLURMDistributor::allowedMemory(size_t maxMem)
+	void LSFDistributor::allowedMemory(size_t maxMem)
 	{
 		allowedMem = maxMem;
 
@@ -67,56 +61,57 @@ namespace pilib
 
 		}
 
-		if (allowedMem <= 0)
-		{
-			// Run cluster info command to get amount of memory in megabytes
-			//string cmd = string("sinfo --Node --Format=freemem ") + extraArgs; // Memory available to start new programs. Jobs running on nodes may affect this.
-			string cmd = sinfoCommand + string(" --Node --Format=memory ") + extraArgsNormalJobsSInfo; // Total installed memory. Not all of that may be available!
-			string output = execute(cmd);
+		// TODO: Convert this from Slurm to LSF
+		//if (allowedMem <= 0)
+		//{
+		//	// Run cluster info command to get amount of memory in megabytes
+		//	//string cmd = string("sinfo --Node --Format=freemem ") + extraArgs; // Memory available to start new programs. Jobs running on nodes may affect this.
+		//	string cmd = sinfoCommand + string(" --Node --Format=memory ") + extraArgsNormalJobsSInfo; // Total installed memory. Not all of that may be available!
+		//	string output = execute(cmd);
 
-			// Split lines
-			trim(output);
-			vector<string> lines = split(output, false);
+		//	// Split lines
+		//	trim(output);
+		//	vector<string> lines = split(output, false);
 
-			// Remove header
-			lines.erase(lines.begin() + 0);
+		//	// Remove header
+		//	lines.erase(lines.begin() + 0);
 
-			// Convert list to list of ints
-			vector<size_t> values = fromString<size_t>(lines);
+		//	// Convert list to list of ints
+		//	vector<size_t> values = fromString<size_t>(lines);
 
-			// Calculate minimum in bytes
-			if (values.size() > 0)
-				allowedMem = (size_t)std::round(min(values) * 1024 * 1024 * 0.75);
+		//	// Calculate minimum in bytes
+		//	if (values.size() > 0)
+		//		allowedMem = (size_t)std::round(min(values) * 1024 * 1024 * 0.75);
 
-			if (allowedMem <= 0)
-				throw ITLException("Unable to determine maximum memory available in the SLURM cluster. Are the extra_args_* parameters in the slurm_config.txt file correct?");
-					//The file is read from ") + configPath.string());
-		}
+		//	if (allowedMem <= 0)
+		//		throw ITLException("Unable to determine maximum memory available in the SLURM cluster. Are the extra_args_* parameters in the slurm_config.txt file correct?");
+		//	//The file is read from ") + configPath.string());
+		//}
 
-		cout << "Memory per node in the SLURM cluster: " << bytesToString((double)allowedMem) << endl;
+		cout << "Memory per node in the LSF cluster: " << bytesToString((double)allowedMem) << endl;
 	}
 
-	string SLURMDistributor::makeJobName(size_t jobIndex) const
+	string LSFDistributor::makeJobName(size_t jobIndex) const
 	{
 		return "pi2-" + itl2::toString<size_t>(jobIndex) + "-" + myName;
 	}
-	
-	string SLURMDistributor::makeInputName(size_t jobIndex) const
+
+	string LSFDistributor::makeInputName(size_t jobIndex) const
 	{
-	    return "./slurm-io-files/" + makeJobName(jobIndex) + "-in.txt";
+		return "./lsf-io-files/" + makeJobName(jobIndex) + "-in.txt";
 	}
 
-	string SLURMDistributor::makeOutputName(size_t jobIndex) const
+	string LSFDistributor::makeOutputName(size_t jobIndex) const
 	{
-		return "./slurm-io-files/" + makeJobName(jobIndex) + "-out.txt";
-	}
-	
-	string SLURMDistributor::makeErrorName(size_t jobIndex) const
-	{
-		return "./slurm-io-files/" + makeJobName(jobIndex) + "-err.txt";
+		return "./lsf-io-files/" + makeJobName(jobIndex) + "-out.txt";
 	}
 
-	void SLURMDistributor::resubmit(size_t jobIndex)
+	string LSFDistributor::makeErrorName(size_t jobIndex) const
+	{
+		return "./lsf-io-files/" + makeJobName(jobIndex) + "-err.txt";
+	}
+
+	void LSFDistributor::resubmit(size_t jobIndex)
 	{
 		string jobName = makeJobName(jobIndex);
 		string inputName = makeInputName(jobIndex);
@@ -127,62 +122,65 @@ namespace pilib
 		fs::remove(outputName);
 		fs::remove(errorName);
 
-		string jobCmdLine;
+		string initStr = " ";
 		if (jobInitCommands.length() > 0)
-			jobCmdLine = jobInitCommands + "; ";
-		jobCmdLine += "'" + getPiCommand() + "' " + inputName;
+			initStr = string(" -E ") + jobInitCommands + " ";
+		string jobCmdLine = "'" + getPiCommand() + "' " + inputName;
 
-		string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgsSBatch(jobType) + " --wrap=\"" + jobCmdLine + "\"";
+		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + initStr + extraArgs(jobType) + " " + jobCmdLine;
 
-	//cout << "sbatch input: " << sbatchArgs << endl;
+	cout << "bsub arguments: " << bsubArgs << endl;
 
-		string result = execute(sbatchCommand, sbatchArgs);
+		string result = execute(bsubCommand, bsubArgs);
 
-	//cout << "sbatch output: " << result << endl;
+	cout << "bsub output: " << result << endl;
+
+		// Here I assume that the output looks like this:
+		// Job <930> is submitted to default queue <normal>.
 
 		vector<string> lines = split(result);
-		if (lines.size() == 1)
+		try
 		{
-			vector<string> parts = split(*lines.rbegin(), false, ' ');
-			
-			size_t slurmId;
-			try
+			if (lines.size() == 1)
 			{
-			    if (parts.size() < 1)
-				    throw ITLException("SLURM returned no batch job id.");
-			    
-			    slurmId = fromString<int>(parts[parts.size() - 1]);
-			}
-			catch(ITLException e)
-			{
-			    cout << "Command" << endl;
-				cout << sbatchCommand << " " << sbatchArgs << endl;
-				cout << "returned" << endl;
-				cout << result << endl;
-				throw ITLException(string("Command ") + sbatchCommand + " did not return a job id. The received output has been printed to standard output.");
-			}
-			
-			get<0>(submittedJobs[jobIndex]) = slurmId;
-			get<2>(submittedJobs[jobIndex])++;
-		}
-		else
-		{
-			if (result.length() > 0)
-			{
-				cout << "Command" << endl;
-				cout << sbatchCommand << " " << sbatchArgs << endl;
-				cout << "returned" << endl;
-				cout << result << endl;
-				throw ITLException(string("Unexpected ") + sbatchCommand + " output. The output has been printed to standard output.");
+				string line = lines[0];
+				if (startsWith(line, "Job <"))
+				{
+					size_t idStart = string("Job <").length() + 1;
+					size_t idEnd = line.find('>');
+					if (idEnd != string::npos)
+					{
+						string idStr = line.substr(idStart, idEnd - idStart + 1);
+						size_t id = fromString<int>(idStr);
+						get<0>(submittedJobs[jobIndex]) = id;
+						get<2>(submittedJobs[jobIndex])++;
+					}
+					else
+					{
+						throw ITLException(bsubCommand + " output does contain '>'.");
+					}
+				}
+				else
+				{
+					throw ITLException(bsubCommand + " output does not start with 'Job <'.");
+				}
 			}
 			else
 			{
-				throw ITLException(string("Empty ") + sbatchCommand + " output.");
+				throw ITLException(string("Unxpected ") + bsubCommand + " output.");
 			}
+		}
+		catch (ITLException)
+		{
+			cout << "Command" << endl;
+			cout << bsubCommand << " " << bsubArgs << endl;
+			cout << "returned" << endl;
+			cout << result << endl;
+			throw;
 		}
 	}
 
-	void SLURMDistributor::submitJob(const string& piCode, JobType jobType)
+	void LSFDistributor::submitJob(const string& piCode, JobType jobType)
 	{
 		// Add job completion marker
 		string piCode2 = piCode + "\nprint(Everything done.);\n";
@@ -200,71 +198,86 @@ namespace pilib
 		resubmit(jobIndex);
 	}
 
-	bool SLURMDistributor::isJobDone(size_t jobIndex) const
+	bool LSFDistributor::isJobDone(size_t jobIndex) const
 	{
-		string slurmId = itl2::toString(get<0>(submittedJobs[jobIndex]));
+		string id = itl2::toString(get<0>(submittedJobs[jobIndex]));
 
-		string result = execute(squeueCommand, string("--noheader --jobs=") + slurmId);
+		string bjobsArgs = "-X - noheader - o \"STAT\" " + id;
+
+	cout << "bjobs arguments: " << bjobsArgs << endl;
+
+		string result = execute(bjobsCommand, bjobsArgs);
+
+	cout << "bjobs output: " << result << endl;
+
 		trim(result);
-		
+
+		// TODO: Is this correct?
 		// Empty result means the job is done
-		if(result.length() <= 0)
-		    return true;
+		if (result.length() <= 0)
+			return true;
 
-        // If the message starts with job id, the job is running or in queue.
-		bool running = startsWith(result, slurmId);
-		
+		// If the message starts with job id, the job is running or in queue.
+		bool running = startsWith(result, id);
+
 		// If the message contains "invalid job id...", the job data has been already erased.
-		bool notRunning = contains(result, "Invalid job id specified");
+		//bool notRunning = contains(result, "Invalid job id specified");
+		bool notRunning = !running; // TODO
 
-        // Check that the job is running or its data has been erased.
-        // Otherwise we don't know what is going on, and assume this is a temporary error message.
+		// Check that the job is running or its data has been erased.
+		// Otherwise we don't know what is going on, and assume this is a temporary error message.
 		if ((running && notRunning) ||
 			(!running && !notRunning))
 		{
 			// Erroneous squeue output. Assume that the job is not done.
-			cout << "Warning: Unexpected " << squeueCommand << " output '" << result << "' for job " << jobIndex << " (SLURM id " << slurmId << "). Assuming the job is still running." << endl;
+			cout << "Warning: Unexpected " << bjobsCommand << " output '" << result << "' for job " << jobIndex << " (LSF id " << id << "). Assuming the job is still running." << endl;
 			return false;
 		}
 
 		return !running;
 	}
 
-	string SLURMDistributor::getLog(size_t jobIndex, bool flush) const
+	
+
+	string LSFDistributor::getLog(size_t jobIndex, bool flush) const
 	{
-	    string outputName = makeOutputName(jobIndex);
-	    flushCache(outputName);
+		string outputName = makeOutputName(jobIndex);
+		flushCache(outputName);
 		return readText(outputName);
 	}
 
-	string SLURMDistributor::getSlurmErrorLog(size_t jobIndex, bool flush) const
+	string LSFDistributor::getErrorLog(size_t jobIndex, bool flush) const
 	{
 		string outputName = makeErrorName(jobIndex);
 		flushCache(outputName);
 		return readText(outputName);
 	}
 
-	int SLURMDistributor::getJobProgressFromLog(size_t jobIndex) const
+
+	int LSFDistributor::getJobProgressFromLog(size_t jobIndex) const
 	{
-	    // Check if the job has been cancelled?
-        string slurmLog = getSlurmErrorLog(jobIndex);
-        if(contains(slurmLog, "CANCELLED"))
-            return JOB_FAILED;
-	
-	    // Get progress from output
+		// Check if the job has been cancelled?
+		string errorLog = getErrorLog(jobIndex);
+
+		// TODO: What does LSF output when a job gets cancelled?
+
+		if (contains(errorLog, "CANCELLED"))
+			return JOB_FAILED;
+
+		// Get progress from output
 		string log = getLog(jobIndex);
 		if (log.length() <= 0)
 			return JOB_WAITING;
 		string line = lastLine(log);
-		
+
 		if (startsWith(line, "Error"))
 			return JOB_FAILED;
 
-        // NOTE: This counting method does not work if showProgress function is changed!
+		// NOTE: This counting method does not work if showProgress function is changed!
 		return (int)std::count(line.begin(), line.end(), '=') * 10;
 	}
 
-	vector<int> SLURMDistributor::getJobProgress() const
+	vector<int> LSFDistributor::getJobProgress() const
 	{
 		vector<int> progress;
 		progress.reserve(submittedJobs.size());
@@ -277,15 +290,15 @@ namespace pilib
 				state = getJobProgressFromLog(n);
 				// Do not let the progress read from log ever reach 100 as that is interpreted
 				// as job done.
-				if(state >= 100)
-    				state = 99;
+				if (state >= 100)
+					state = 99;
 			}
 			else
 			{
-       			// The job is not in squeue anymore
+				// The job is not in squeue anymore
 				// Job is ready or failed
 				state = getJobProgressFromLog(n);
-				
+
 				// If the job is in waiting state something is wrong!
 				if (state == JOB_WAITING)
 				{
@@ -298,8 +311,8 @@ namespace pilib
 					if (last != "Everything done.")
 						state = JOB_FAILED;
 				}
-				    
-				if(state != JOB_FAILED)
+
+				if (state != JOB_FAILED)
 					state = 100;
 			}
 
@@ -308,13 +321,18 @@ namespace pilib
 		return progress;
 	}
 
-	bool isCancelled(const string& errorMessage)
+
+
+
+	bool isCancelledLSF(const string& errorMessage)
 	{
+		// TODO
 		return startsWith(errorMessage, "Job ") && contains(errorMessage, "was cancelled");
 	}
 
-	bool isCancelledDueToTimeLimit(const string& errorMessage)
+	bool isCancelledDueToTimeLimitLSF(const string& errorMessage)
 	{
+		// TODO
 		return startsWith(errorMessage, "Job ") && contains(errorMessage, "was cancelled due to time limit");
 	}
 
@@ -322,13 +340,15 @@ namespace pilib
 	Extracts error message from pi2 log string.
 	@param jobIndex Index of the job whose log we are parsing. The value is printed to some error messages.
 	*/
-	string SLURMDistributor::getErrorMessage(size_t jobIndex) const
+	string LSFDistributor::getErrorMessage(size_t jobIndex) const
 	{
 		stringstream msg;
 
+		// TODO: How LSF indicates that a job has been cancelled due to time limit?
+
 		string log = getLog(jobIndex, true);
-		string slurmErrors = getSlurmErrorLog(jobIndex, true);
-		
+		string slurmErrors = getErrorLog(jobIndex, true);
+
 		// First check if the job has been cancelled
 		if (contains(slurmErrors, "CANCELLED"))
 		{
@@ -348,7 +368,7 @@ namespace pilib
 
 		if (log.length() <= 0)
 		{
-			msg << "SLURM did not run pi2. SLURM log " << makeErrorName(jobIndex) << " may contain further details. If it does not exist, please make sure that SLURM has read and write access to the current folder.";
+			msg << "LSF did not run pi2. Log " << makeErrorName(jobIndex) << " may contain further details. If it does not exist, please make sure that LSF has read and write access to the current folder.";
 		}
 		else
 		{
@@ -373,12 +393,12 @@ namespace pilib
 		return msg.str();
 	}
 
-	void SLURMDistributor::cancelJob(size_t slurmId) const
+	void LSFDistributor::cancelJob(size_t slurmId) const
 	{
-		execute(scancelCommand, itl2::toString(slurmId));
+		execute(bkillCommand, itl2::toString(slurmId));
 	}
 
-	void SLURMDistributor::cancelAll() const
+	void LSFDistributor::cancelAll() const
 	{
 		for (size_t n = 0; n < submittedJobs.size(); n++)
 		{
@@ -386,7 +406,7 @@ namespace pilib
 		}
 	}
 
-	vector<string> SLURMDistributor::waitForJobs()
+	vector<string> LSFDistributor::waitForJobs()
 	{
 		vector<string> result;
 		if (submittedJobs.size() <= 0)
@@ -419,23 +439,23 @@ namespace pilib
 						{
 							// We can re-submit
 
-							if (isCancelled(errorMessage))
+							if (isCancelledLSF(errorMessage))
 							{
-								if (isCancelledDueToTimeLimit(errorMessage))
+								if (isCancelledDueToTimeLimitLSF(errorMessage))
 								{
 									// Try to move the job to slower queue
 									JobType& type = get<1>(submittedJobs[n]);
 									JobType oldType = type;
 									if (type == JobType::Fast)
 									{
-										if (extraArgsFastJobsSBatch != extraArgsNormalJobsSBatch)
+										if (extraArgsFastJobs != extraArgsNormalJobs)
 											type = JobType::Normal;
-										else if (extraArgsFastJobsSBatch != extraArgsSlowJobsSBatch)
+										else if (extraArgsFastJobs != extraArgsSlowJobs)
 											type = JobType::Slow;
 									}
 									else if (type == JobType::Normal)
 									{
-										if (extraArgsNormalJobsSBatch != extraArgsSlowJobsSBatch)
+										if (extraArgsNormalJobs != extraArgsSlowJobs)
 											type = JobType::Slow;
 									}
 
@@ -507,14 +527,14 @@ namespace pilib
 		ostringstream msg;
 		for (size_t n = 0; n < submittedJobs.size(); n++)
 		{
-			if(progress[n] == JOB_FAILED)
+			if (progress[n] == JOB_FAILED)
 				msg << "Job " << n << " failed: " << getErrorMessage(n) << endl;
-		    
+
 			string log = getLog(n, true);
 			result.push_back(log);
 		}
 		submittedJobs.clear();
-		
+
 		string s = msg.str();
 		if (s.length() > 0)
 			throw ITLException(s.substr(0, s.length() - 1));

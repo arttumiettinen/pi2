@@ -1,0 +1,49 @@
+; Configuration file used in an LSF cluster to schedule distributed processing tasks.
+
+
+; Extra arguments that are passed to bsub command
+; This item is used for fast jobs only.
+; Use, e.g., to select queue, set maximum runtime, and exclude some nodes.
+extra_args_fast_jobs = -q short -W 1
+
+; Extra arguments that are passed to bsub command
+; This item is used for normal jobs only.
+; Use, e.g., to select queue, set maximum runtime, and exclude some nodes.
+extra_args_normal_jobs = -q local -W 24
+
+; Extra arguments that are passed to bsub command
+; This item is used for slow jobs only.
+; Use, e.g., to select queue, set maximum runtime, and exclude some nodes.
+extra_args_slow_jobs = -q local -W 168
+
+; Shell commands run on node before starting job.
+; Use, e.g., to load modules or mount disks.
+job_init_commands = hostname
+
+; Maximum amount of memory to use per node in megabytes.
+; Set to zero to determine the value automatically as 90 % of
+; the minimum RAM in any node of the cluster.
+max_memory = 180000
+
+; Maximum number of re-tries that are done if a job fails.
+; The job may fail, e.g., due to node failure, memory problems, or time limits.
+; If you have specified different queues for different types of jobs (see
+; extra_args_*_jobs settings), specify here at least the number of different
+; queues.
+max_resubmit_count = 5
+
+; Set to true to allow delayed execution of commands in order to combine execution of multiple
+; commands to save I/O and scratch disk space.
+;allow_delaying = true
+
+; Set to true to show automatically generated Pi2 work scripts.
+;show_submitted_scripts = false
+
+; Use these to override standard SLURM commands.
+; Some HPC environments use specific scripts in place of the standard commands,
+; and these settings can be used to take advantage of those.
+;bsub_command = bsub
+;bkill_command = bkill
+;bjobs_command = bjobs
+
+
