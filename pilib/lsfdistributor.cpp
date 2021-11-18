@@ -127,7 +127,7 @@ namespace pilib
 			initStr = string(" -E ") + jobInitCommands + " ";
 		string jobCmdLine = "'" + getPiCommand() + "' " + inputName;
 
-		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + initStr + extraArgs(jobType) + " " + jobCmdLine;
+		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + " -Ne " + initStr + extraArgs(jobType) + " " + jobCmdLine;
 
 	cout << "bsub arguments: " << bsubArgs << endl;
 
