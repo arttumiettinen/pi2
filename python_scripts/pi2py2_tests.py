@@ -1028,7 +1028,7 @@ def lsf_cluster():
     pi2.maxmemory(1)
     img = pi2.newimage(ImageDataType.UINT16, 100, 100, 100)
     pi2.add(img, 10)
-    pi2.writeraw(img, output_file("lsf/noise"))
+    pi2.writeraw(img, output_file("lsf/result"))
 
 
 

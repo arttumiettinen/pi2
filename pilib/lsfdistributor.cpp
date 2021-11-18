@@ -146,11 +146,11 @@ namespace pilib
 				string line = lines[0];
 				if (startsWith(line, "Job <"))
 				{
-					size_t idStart = string("Job <").length() + 1;
+					size_t idStart = string("Job <").length();
 					size_t idEnd = line.find('>');
 					if (idEnd != string::npos)
 					{
-						string idStr = line.substr(idStart, idEnd - idStart + 1);
+						string idStr = line.substr(idStart, idEnd - idStart);
 						size_t id = fromString<int>(idStr);
 						get<0>(submittedJobs[jobIndex]) = id;
 						get<2>(submittedJobs[jobIndex])++;
