@@ -144,11 +144,7 @@ namespace pilib
 
 		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + " -Ne " + initStr + extraArgs(jobType) + " " + jobCmdLine;
 
-	cout << "bsub arguments: " << bsubArgs << endl;
-
 		string result = execute(bsubCommand, bsubArgs);
-
-	cout << "bsub output: " << result << endl;
 
 		// Here I assume that the output looks like this:
 		// something something something
@@ -215,15 +211,27 @@ namespace pilib
 		resubmit(jobIndex);
 	}
 
+	int LSFDistributor::getLSFJobExitCode(size_t lsfId) const
+	{
+		string bjobsArgs = "-X -noheader -o \"EXIT_CODE\" " + itl2::toString(lsfId);
+		string result = execute(bjobsCommand, bjobsArgs);
+		trim(result);
+		return fromString<int>(result);
+	}
+
+	string LSFDistributor::getLSFJobStatus(size_t lsfId) const
+	{
+		string bjobsArgs = "-X -noheader -o \"STAT\" " + itl2::toString(lsfId);
+		string result = execute(bjobsCommand, bjobsArgs);
+		trim(result);
+		return result;
+	}
+
 	int LSFDistributor::getJobStatus(size_t jobIndex) const
 	{
-		string id = itl2::toString(get<0>(submittedJobs[jobIndex]));
+		size_t id = get<0>(submittedJobs[jobIndex]);
 
-		string bjobsArgs = "-X -noheader -o \"STAT\" " + id;
-
-		string result = execute(bjobsCommand, bjobsArgs);
-
-		trim(result);
+		string result = getLSFJobStatus(id);
 
 		bool waiting = startsWith(result, "PEND") ||
 			startsWith(result, "PROV") ||
@@ -331,17 +339,13 @@ namespace pilib
 		return progress;
 	}
 
-
-	bool isCancelledLSF(const string& errorMessage)
+	bool LSFDistributor::isCancelledDueToTimeLimitLSF(size_t jobIndex) const
 	{
-		// TODO
-		return startsWith(errorMessage, "Job ") && contains(errorMessage, "was cancelled");
-	}
-
-	bool isCancelledDueToTimeLimitLSF(const string& errorMessage)
-	{
-		// TODO
-		return startsWith(errorMessage, "Job ") && contains(errorMessage, "was cancelled due to time limit");
+		// Note the info "For example, exit code 131 means that the job exceeded a configured resource usage limit and LSF killed the job."
+		// from page https://www.ibm.com/docs/en/spectrum-lsf/10.1.0?topic=bjobs-description
+		size_t id = get<0>(submittedJobs[jobIndex]);
+		int exitCode = getLSFJobExitCode(id);
+		return exitCode == 131;
 	}
 
 	/**
@@ -352,27 +356,8 @@ namespace pilib
 	{
 		stringstream msg;
 
-		// TODO: How LSF indicates that a job has been cancelled due to time limit?
-
 		string log = getLog(jobIndex, true);
-		string slurmErrors = getErrorLog(jobIndex, true);
-
-		// First check if the job has been cancelled
-		if (contains(slurmErrors, "CANCELLED"))
-		{
-			// The job has been cancelled by user or by system.
-			if (contains(slurmErrors, "DUE TO TIME LIMIT"))
-			{
-				// Cancellation due to time limit
-				msg << "Job " << jobIndex << " was cancelled due to time limit.";
-			}
-			else
-			{
-				// Cancellation due to unknown reason
-				msg << "Job " << jobIndex << " was cancelled: " << lastLine(slurmErrors);
-			}
-			return msg.str();
-		}
+		string lsfErrors = getErrorLog(jobIndex, true);
 
 		if (log.length() <= 0)
 		{
@@ -391,8 +376,8 @@ namespace pilib
 				// No internal error message.
 
 				// Output info from slurm error log if it is not empty. If it is, we have no clue what the error could be, so output "no error message available".
-				if (slurmErrors != "")
-					msg << slurmErrors << endl;
+				if (lsfErrors != "")
+					msg << lsfErrors << endl;
 				else
 					msg << "No error message available.";
 			}
@@ -447,44 +432,36 @@ namespace pilib
 						{
 							// We can re-submit
 
-							if (isCancelledLSF(errorMessage))
+							if (isCancelledDueToTimeLimitLSF(n))
 							{
-								if (isCancelledDueToTimeLimitLSF(errorMessage))
+								// Try to move the job to slower queue
+								JobType& type = get<1>(submittedJobs[n]);
+								JobType oldType = type;
+								if (type == JobType::Fast)
 								{
-									// Try to move the job to slower queue
-									JobType& type = get<1>(submittedJobs[n]);
-									JobType oldType = type;
-									if (type == JobType::Fast)
-									{
-										if (extraArgsFastJobs != extraArgsNormalJobs)
-											type = JobType::Normal;
-										else if (extraArgsFastJobs != extraArgsSlowJobs)
-											type = JobType::Slow;
-									}
-									else if (type == JobType::Normal)
-									{
-										if (extraArgsNormalJobs != extraArgsSlowJobs)
-											type = JobType::Slow;
-									}
-
-									if (type == oldType)
-									{
-										// The job was cancelled due to time limit and it is in the Slow queue, throw fatal error.
-										// Fail and notify the user to change settings.
-										throw ITLException(string("Job ") + itl2::toString(n) + " was cancelled due to time limit and no queue with higher time limits is available. Consider increasing time limits for jobs in the slurm_settings.txt file.");
-									}
-
-									cout << "Job " << n << " was cancelled due to time limit. Moving it from " << toString(oldType) << " to " << toString(type) << " queue." << endl;
+									if (extraArgsFastJobs != extraArgsNormalJobs)
+										type = JobType::Normal;
+									else if (extraArgsFastJobs != extraArgsSlowJobs)
+										type = JobType::Slow;
 								}
-								else
+								else if (type == JobType::Normal)
 								{
-									// Job was cancelled, throw fatal error as the system is failing or somebody is cancelling the jobs.
-									throw ITLException(errorMessage);
+									if (extraArgsNormalJobs != extraArgsSlowJobs)
+										type = JobType::Slow;
 								}
+
+								if (type == oldType)
+								{
+									// The job was cancelled due to time limit and it is in the Slow queue, throw fatal error.
+									// Fail and notify the user to change settings.
+									throw ITLException(string("Job ") + itl2::toString(n) + " was cancelled due to time limit and no queue with higher time limits is available. Consider increasing time limits for jobs in the slurm_settings.txt file.");
+								}
+
+								cout << "Job " << n << " was cancelled due to time limit. Moving it from " << toString(oldType) << " to " << toString(type) << " queue." << endl;
 							}
 							else
 							{
-								cout << "Re-submitting failed job " << n << ". (" << errorMessage << ")" << endl;
+								throw ITLException(string("Job ") + itl2::toString(n) + " has failed (" + errorMessage + ")");
 							}
 
 							resubmit(n);

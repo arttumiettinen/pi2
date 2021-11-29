@@ -130,6 +130,12 @@ namespace pilib
 		*/
 		std::string makeErrorName(size_t jobIndex) const;
 
+		int getLSFJobExitCode(size_t lsfId) const;
+
+		std::string getLSFJobStatus(size_t lsfId) const;
+
+		bool isCancelledDueToTimeLimitLSF(size_t jobIndex) const;
+
 	public:
 		LSFDistributor(PISystem* system);
 
