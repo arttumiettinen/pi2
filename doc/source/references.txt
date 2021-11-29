@@ -4,6 +4,7 @@ Articles where pi2 has been used
 This is an incomplete list of articles where this software or some of its previous versions has been used.
 If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
+* Marina Eckermann, Bernhard Schmitzer, Franziska van der Meer, Jonas Franz, Ove Hansen, Christine Stadelmann, and Tim Salditt. Three-dimensional virtual histology of the human hippocampus based on phase-contrast computed tomography, PNAS 118(48), 2021.
 * Wälchli T., Bisschop J., Miettinen A. et al. Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Nature Protocols, 2021.
 * Bosch C. et al. Functional and multiscale 3D structural investigation of brain tissue through correlative in vivo physiology, synchrotron micro-tomography and volume electron microscopy. Pre-print available at https://www.biorxiv.org/content/10.1101/2021.01.13.426503v1.full.
 * Truong M. et al. Submicrometer morphology of human atherosclerotic plaque revealed by synchrotron radiation-based μCT - a comparison with histology. In press.
@@ -21,3 +22,4 @@ If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 * Arttu Miettinen, Roberts Joffe, Liva Pupure, Bo Madsen. Identification of true microstructure of composites based on various flax fibre assemblies by means of three-dimensional tomography, 20th International Conference on Composite Materials, Copenhagen, 2015.
 * Thomas Joffre, Arttu Miettinen, Fredrik Berthold, E. Kristofer Gamstedt. X-ray micro-computed tomography investigation of fibre length degradation during the processing steps of short-fibre composites, Composites Science and Technology 105, 2014.
 * Arttu Miettinen, Cris L. Luengo Hendriks, Gary Chinga-Carrasco, E. Kristofer Gamstedt, Markku Kataja. A non-destructive X-ray microtomography approach for measuring fibre length in short-fibre composites, Composites Science and Technology 72(15), 2012.
+

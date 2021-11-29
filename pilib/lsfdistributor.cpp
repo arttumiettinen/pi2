@@ -111,6 +111,21 @@ namespace pilib
 		return "./lsf-io-files/" + makeJobName(jobIndex) + "-err.txt";
 	}
 
+	/**
+	Finds string that starts with "Job <" among the given strings, and returns that.
+	Returns empty string if no suitable line is found.
+	*/
+	string findJobIdLine(const vector<string>& lines)
+	{
+		for (const string& line : lines)
+		{
+			if (startsWith(line, "Job <"))
+				return line;
+		}
+
+		return "";
+	}
+
 	void LSFDistributor::resubmit(size_t jobIndex)
 	{
 		string jobName = makeJobName(jobIndex);
@@ -127,7 +142,7 @@ namespace pilib
 			initStr = string(" -E ") + jobInitCommands + " ";
 		string jobCmdLine = "'" + getPiCommand() + "' " + inputName;
 
-		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + initStr + extraArgs(jobType) + " " + jobCmdLine;
+		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + " -Ne " + initStr + extraArgs(jobType) + " " + jobCmdLine;
 
 	cout << "bsub arguments: " << bsubArgs << endl;
 
@@ -136,15 +151,17 @@ namespace pilib
 	cout << "bsub output: " << result << endl;
 
 		// Here I assume that the output looks like this:
+		// something something something
 		// Job <930> is submitted to default queue <normal>.
+		// something something something
 
 		vector<string> lines = split(result);
 		try
 		{
-			if (lines.size() == 1)
+			if (lines.size() > 0)
 			{
-				string line = lines[0];
-				if (startsWith(line, "Job <"))
+				string line = findJobIdLine(lines);
+				if(line.length() > 0)
 				{
 					size_t idStart = string("Job <").length();
 					size_t idEnd = line.find('>');
@@ -162,12 +179,12 @@ namespace pilib
 				}
 				else
 				{
-					throw ITLException(bsubCommand + " output does not start with 'Job <'.");
+					throw ITLException(bsubCommand + " output does not contain a line that starts with 'Job <'.");
 				}
 			}
 			else
 			{
-				throw ITLException(string("Unxpected ") + bsubCommand + " output.");
+				throw ITLException(string("Empty ") + bsubCommand + " output.");
 			}
 		}
 		catch (ITLException)
@@ -204,11 +221,7 @@ namespace pilib
 
 		string bjobsArgs = "-X -noheader -o \"STAT\" " + id;
 
-	cout << "bjobs arguments: " << bjobsArgs << endl;
-
 		string result = execute(bjobsCommand, bjobsArgs);
-
-	cout << "bjobs output: " << result << endl;
 
 		trim(result);
 

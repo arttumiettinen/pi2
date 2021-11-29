@@ -27,7 +27,7 @@ radius [input]
 
 **Default value:** 1
 
-Radius parameter
+Median filtering radius.
 
 magnitude [input]
 ~~~~~~~~~~~~~~~~~
@@ -36,7 +36,7 @@ magnitude [input]
 
 **Default value:** 10
 
-Magnitude parameter.
+Magnitude parameter :math:`M`.
 
 See also
 --------
