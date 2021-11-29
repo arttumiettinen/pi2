@@ -37,6 +37,7 @@ namespace pilib
 	void addPathCommands();
 	void addMetadataCommands();
 	void addEvalCommands();
+	void addDistributeCommands();
 
 	vector<unique_ptr<Command> > CommandList::commands;
 
@@ -68,6 +69,7 @@ namespace pilib
 		addPathCommands();
 		addMetadataCommands();
 		addEvalCommands();
+		addDistributeCommands();
 	}
 
 

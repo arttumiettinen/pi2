@@ -291,6 +291,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="commandsbase.h" />
     <ClInclude Include="convertcommands.h" />
     <ClInclude Include="delayed.h" />
+    <ClInclude Include="distributecommands.h" />
     <ClInclude Include="distributedtempimage.h" />
     <ClInclude Include="dmapcommands.h" />
     <ClInclude Include="distributable.h" />
@@ -343,6 +344,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClCompile Include="convertcommands.cpp" />
     <ClCompile Include="delayed.cpp" />
     <ClCompile Include="distributable.cpp" />
+    <ClCompile Include="distributecommands.cpp" />
     <ClCompile Include="distributedimage.cpp" />
     <ClCompile Include="distributor.cpp" />
     <ClCompile Include="dllmain.cpp" />
