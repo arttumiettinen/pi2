@@ -137,19 +137,78 @@ namespace itl2
 
 	string getToken(string& str, const char* delimiters, char& foundDelimiter)
 	{
-		size_t pos = str.find_first_of(delimiters);
-		if (pos == string::npos)
+		// Old version that does not support quoted strings
+		//size_t pos = str.find_first_of(delimiters);
+		//if (pos == string::npos)
+		//{
+		//	// No delimiter found
+		//	foundDelimiter = 0;
+		//	string res = str;
+		//	str = "";
+		//	return res;
+		//}
+
+		//foundDelimiter = str[pos];
+		//string res = str.substr(0, pos);
+		//str.erase(0, pos + 1);
+		//return res;
+
+		string delimList = delimiters;
+
+		char terminator = 0;
+		size_t pos = 0;
+		while (true)
 		{
-			// No delimiter found
-			foundDelimiter = 0;
-			string res = str;
-			str = "";
-			return res;
+			if (terminator == 0)
+			{
+				// Not in a quoted string
+
+				if (pos >= str.length())
+				{
+					// No delimiter found
+					foundDelimiter = 0;
+					string res = str;
+					str = "";
+					return res;
+				}
+				else if (delimList.find(str[pos]) != string::npos)
+				{
+					// Delimiter found
+					foundDelimiter = str[pos];
+					string res = str.substr(0, pos);
+					str.erase(0, pos + 1);
+					return res;
+				}
+				else if (str[pos] == '\"')
+				{
+					// Start of double-quote string
+					terminator = '\"';
+				}
+				else if (str[pos] == '\'')
+				{
+					// Start of single-quote string
+					terminator = '\'';
+				}
+			}
+			else
+			{
+				// In a quoted string
+
+				// Test for escape sequence
+				if (str[pos] == '\\' && pos < str.length())
+				{
+					// The next character is an escape sequence that cannot be a delimiter, so skip one extra character
+					pos++;
+				}
+				else if(str[pos] == terminator)
+				{
+					// End of the quoted string
+					terminator = 0;
+				}
+			}
+
+			pos++;
 		}
 
-		foundDelimiter = str[pos];
-		string res = str.substr(0, pos);
-		str.erase(0, pos + 1);
-		return res;
 	}
 }

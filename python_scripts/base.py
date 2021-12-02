@@ -12,36 +12,24 @@ import numpy as np
 import scipy
 import scipy.optimize
 
+from pi2py2 import *
+pi = Pi2()
+
+
 # Path to pi2 program.
 pi_path = "."
 
-# Indicates if cluster should be used for compute-intensive tasks
-use_cluster = False
-
-# Partition to use if calculations are performed on cluster
-cluster_partition = ""
-
-# Init commands that are run before pi2 program when a cluster job starts.
-cluster_job_init_commands = ""
+# Indicates which cluster system should be used for compute-intensive tasks, if any
+cluster = ""
 
 # Maximum image dimension to use while stitching. 2500 corresponds to ~120 GB memory requirement.
 max_block_size = 2500
 
-# Should the script wait until all cluster jobs are finished?
-wait_for_jobs = True
-
-# Extra parameters for sbatch
-sbatch_extra_params = ""
-
-# List of submitted but non-finished jobs
-submitted_jobs = []
 
 
 def is_use_cluster():
-    return use_cluster
+    return cluster != ""
 
-def is_wait_for_jobs():
-    return wait_for_jobs
 
 
 
@@ -66,34 +54,23 @@ def read_global_settings(config):
 
     # Global settings
     global pi_path
-    global use_cluster
-    global cluster_partition
-    global cluster_job_init_commands
+    global cluster
     global max_block_size
-    global wait_for_jobs
-    global sbatch_extra_params
 
     # Path to pi2 program. By default directory of running script.
     pi_path = os.path.dirname(os.path.realpath(__file__))
     pi_path = get(config, 'pipath', pi_path)
 
-    # Should we wait for the cluster jobs to complete?
-    wait_for_jobs = get(config, 'wait_for_jobs', wait_for_jobs) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
-
     # Indicates if the calculations should be performed on a cluster
-    use_cluster = get(config, 'use_cluster', use_cluster) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    cluster = get(config, 'cluster', cluster)
+    if cluster == "None" or cluster == "none":
+        cluster = ""
 
-    # Cluster partition to use (if cluster calculation is enabled). Empty value means default partition.
-    cluster_partition = get(config, 'cluster_partition', cluster_partition)
-
-    # Job init commands
-    cluster_job_init_commands = get(config, 'cluster_job_init_commands', cluster_job_init_commands)
+    if cluster != "":
+        pi.distribute(cluster)
 
     # Maximum stitching block size
     max_block_size = get(config, 'max_block_size', max_block_size)
-
-	# Extra parameters for sbatch command
-    sbatch_extra_params = get(config, 'cluster_extra_params', sbatch_extra_params)
 
 
 
@@ -126,46 +103,45 @@ def run_pi2(pi_script, output_prefix):
     output_prefix is a prefix for error and output log files.
     """
 
-    global submitted_jobs
+    #global submitted_jobs
 
-    if use_cluster:
+    #if is_use_cluster():
 
-        job_cmdline = ""
-        if len(cluster_job_init_commands) > 0:
-            job_cmdline = cluster_job_init_commands + ";"
-        job_cmdline = job_cmdline + f"{pi_path}/pi2 '{pi_script}'"
+        #job_cmdline = ""
+        #if len(cluster_job_init_commands) > 0:
+        #    job_cmdline = cluster_job_init_commands + ";"
+        #job_cmdline = job_cmdline + f"{pi_path}/pi2 '{pi_script}'"
 
-        sbatch_params = f"--job-name=stitch --partition={cluster_partition} --output={output_prefix}-out.txt --error={output_prefix}-err.txt {sbatch_extra_params} --wrap=\"{job_cmdline}\""
+        #sbatch_params = f"--job-name=stitch --partition={cluster_partition} --output={output_prefix}-out.txt --error={output_prefix}-err.txt {sbatch_extra_params} --wrap=\"{job_cmdline}\""
 
         # For testing
         #cmd = "echo"
         # Real command line
-        cmd = "sbatch"
+        #cmd = "sbatch"
 
-        res = subprocess.check_output(cmd + " " + sbatch_params, shell=True)
-        job_id = int(res.split()[-1])
-        submitted_jobs.append(job_id)
+        #res = subprocess.check_output(cmd + " " + sbatch_params, shell=True)
+        #job_id = int(res.split()[-1])
+        #submitted_jobs.append(job_id)
+    #else:
+        #run_pi2_locally(pi_script)
 
-    else:
-        run_pi2_locally(pi_script)
+    pi.submitjob(pi_script, "normal")
 
 
+#def is_job_running(job_id):
+#    """
+#    Tests if a cluster job with given job id is not finished (running or waiting to be run).
+#    """
 
+#    cmd = "squeue"
+#    params = f"--noheader --jobs={job_id}"
+#    res = subprocess.run(cmd + " " + params, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+#    res = res.decode("utf-8")
+#    res = res.strip()
+#    if res.startswith(str(job_id)):
+#        return True
 
-def is_job_running(job_id):
-    """
-    Tests if a cluster job with given job id is not finished (running or waiting to be run).
-    """
-
-    cmd = "squeue"
-    params = f"--noheader --jobs={job_id}"
-    res = subprocess.run(cmd + " " + params, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
-    res = res.decode("utf-8")
-    res = res.strip()
-    if res.startswith(str(job_id)):
-        return True
-
-    return False
+#    return False
 
 
 
@@ -175,26 +151,29 @@ def wait_for_cluster_jobs():
     Waits until all jobs in the submitted jobs array are finished.
     """
 
-    global submitted_jobs
+#    global submitted_jobs
 
-    if not use_cluster:
+    if not is_use_cluster():
         return
 
-    if len(submitted_jobs) <= 0:
-        return
+#    if len(submitted_jobs) <= 0:
+#        return
 
-    print(f"Waiting for {len(submitted_jobs)} cluster jobs to finish...")
+#    print(f"Waiting for {len(submitted_jobs)} cluster jobs to finish...")
 
-    time.sleep(2)
+#    time.sleep(2)
 
-    while True:
-        if len(submitted_jobs) <= 0:
-            return
+#    while True:
+#        if len(submitted_jobs) <= 0:
+#            return
 
-        job_id = submitted_jobs.pop(0)
+#        job_id = submitted_jobs.pop(0)
 
-        while is_job_running(job_id):
-            time.sleep(2)
+#        while is_job_running(job_id):
+#            time.sleep(2)
+
+    print("Waiting for cluster jobs to finish...")
+    pi.waitforjobs()
 
 
 
@@ -655,7 +634,7 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
 
 
     # If using a cluster, tell the user to wait until the results of the calculations are available.
-    if (jobs_started > 0) and use_cluster:
+    if (jobs_started > 0) and is_use_cluster():
         return False
 
 
@@ -678,7 +657,7 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
             filter_displacement_field(sample_name, scan1, scan2, filter_threshold)
             jobs_started = jobs_started + 1
 
-    if (jobs_started > 0) and use_cluster:
+    if (jobs_started > 0) and is_use_cluster():
         return False
 
     return True
@@ -1559,26 +1538,30 @@ def calculate_world_to_local(tree, allow_local_deformations, force_redo):
 
 
 
-def is_stitch_job_ok(out_template):
-    """
-    Tests if a cluster stitch job has succeeded.
-    """
+#def is_stitch_job_ok(out_template):
+#    """
+#    Tests if a cluster stitch job has succeeded.
+#    """
     
-    if not use_cluster:
-        return True
+#    print("ENTRY")
+
+#    if not is_use_cluster():
+#        return True
     
-    filename = f"{out_template}-out.txt"
-    if not os.path.isfile(filename):
-        return False
+#    print("OUT TEST")
+
+#    filename = f"{out_template}-out.txt"
+#    if not os.path.isfile(filename):
+#        return False
         
-    with open(filename, "r") as f:
-        text = f.read()
+#    with open(filename, "r") as f:
+#        text = f.read()
         
-    # TODO: This is not 100 % sure condition.
-    if "writerawblock" in text:
-        return True
+#    # TODO: This is not 100 % sure condition.
+#    if "writerawblock" in text:
+#        return True
         
-    return False
+#    return False
         
     
 
@@ -1675,20 +1658,28 @@ def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotat
                                  f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                                  f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize});"
                                  f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                                 f"newimage(marker, uint8, 1, 1, 1);"
+                                 f"writetif(marker, {out_template}_{jobs_started}_done);"
                                 )
                 else:
-                    # f"newimage(goodnessimg, Float32, 1, 1, 1);"
                     pi_script = (f"echo;"
                              f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"newlikefile(goodnessimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize});"
                              f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
                              f"writerawblock(goodnessimg, {out_goodness_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                             f"newimage(marker, uint8, 1, 1, 1);"
+                             f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )
 
-                log_template = f"{out_template}_{jobs_started}"
-                if force_redo or (not is_stitch_job_ok(log_template)):
-                    run_pi2(pi_script, log_template)
+                #log_template = f"{out_template}_{jobs_started}"
+                #if force_redo or (not is_stitch_job_ok(log_template)):
+                #    print("RUNNING")
+                #    run_pi2(pi_script, log_template)
+                if force_redo or (not os.path.isfile(f"{out_template}_{jobs_started}_done.tif")):
+                     run_pi2(pi_script, "")
+                else:
+                     print(f"Stitch job {jobs_started} has been done already. Skipping it.")
                     
                 # jobs_started must be increased even if no job started due to result of is_stitch_job_ok.
                 jobs_started = jobs_started + 1
@@ -1706,7 +1697,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     for comp in comps:
         jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo)
 
-    if (jobs_started > 0) and use_cluster:
+    if (jobs_started > 0) and is_use_cluster():
         return False
 
     return True

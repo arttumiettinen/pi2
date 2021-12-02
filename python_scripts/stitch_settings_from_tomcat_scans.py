@@ -161,7 +161,7 @@ def main():
         if good_count > 1:
             print("Writing output to stitch_settings.txt...")
 
-            write_stitch_settings(args.name, args.binning, positions)
+            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm')
             
             print('All done. Consider running nr_stitcher.py now.')
         else:

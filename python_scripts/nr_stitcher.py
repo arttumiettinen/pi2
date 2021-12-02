@@ -169,13 +169,8 @@ def main():
         if auto_binning(relations, settings.binning):
             break;
 
-        if is_use_cluster():
-            if is_wait_for_jobs():
-                wait_for_cluster_jobs()
-            else:
-                print("Please run this program again when all the cluster jobs have finished.")
-                exit()
-
+        wait_for_cluster_jobs()
+        
     if settings.binning != 1:
         for node in relations.nodes():
             node.rec_file = node.binned_file
@@ -215,20 +210,13 @@ def main():
         if calculate_displacement_fields(settings.sample_name, relations, settings.point_spacing, settings.coarse_block_radius, settings.coarse_binning, settings.fine_block_radius, settings.fine_binning, settings.normalize_in_blockmatch, settings.filter_threshold, settings.force_redo):
             break
 
-        if is_use_cluster():
-            if is_wait_for_jobs():
-                wait_for_cluster_jobs()
-            else:
-                print("Please run this program again when all the cluster jobs have finished.")
-                exit()
-
+        wait_for_cluster_jobs()
+        
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
     run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.force_redo)
 
-
-    if is_use_cluster() and is_wait_for_jobs():
-        wait_for_cluster_jobs()
+    wait_for_cluster_jobs()
 
 
 if __name__ == "__main__":

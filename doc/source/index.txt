@@ -39,7 +39,9 @@ Installation
 ------------
 
 Versions for Windows and some Linuxes can be downloaded from the `GitHub Releases page <https://github.com/arttumiettinen/pi2/releases>`_.
-For Windows users no specific installation steps are necessary. Just unpack the .zip archive to a suitable folder.
+
+Windows users must have the `Visual Studio Redistributable package <https://aka.ms/vs/17/release/vc_redist.x64.exe>`_ installed. Other installation steps are not necessary, just unpack the .zip archive to a suitable folder.
+
 Linux users must ensure that fftw3, libpng, libtiff, zlib, and a recent version of glibc are installed.
 
 For other platforms, refer to prerequisites and build instructions at `GitHub <https://github.com/arttumiettinen/pi2>`_.

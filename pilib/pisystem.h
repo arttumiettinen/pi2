@@ -81,6 +81,16 @@ namespace pilib
 		Distributor* distributor = 0;
 
 		/**
+		List of commands that are to be run. This is in re-entrant calls to run method.
+		*/
+		std::vector<string> commandsWaiting;
+
+		/**
+		Indicates if run method is currently running.
+		*/
+		bool running = false;
+
+		/**
 		Parse line expected to contain function call
 		funcname(param1, param2, param3, ...)
 		*/

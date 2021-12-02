@@ -11,3 +11,4 @@ rm ./*_gof_*.raw
 rm ./*_defpoints_*.raw
 rm ./*_world_to_local_shifts_*.raw
 rm ./*_index.txt
+rm ./*_done.tif

@@ -103,8 +103,9 @@ redo = False
 create_goodness = False
 
 
-# Indicates if the calculations should be performed on a cluster
-use_cluster = False
+# Indicates if the calculations should be performed on a cluster or not.
+# Can be 'None' for local computations, 'Slurm' for Slurm cluster, or 'LSF' for IBM LSF cluster.
+cluster = None
 
 
 # Indicates if the script should wait until submitted cluster jobs are finished, and then continue.
@@ -118,23 +119,6 @@ wait_for_jobs = True
 # If create_goodness is true, set to such a value that 
 # (2 * pixel_size_in_bytes + 4 + 4) * max_block_size^3 + (size_of_single_subimage_in_bytes) < (available_memory_in_bytes).
 max_block_size = 2100
-
-
-# Partition of cluster that should be used
-cluster_partition = day
-
-
-# Commands that are run before each calculation job. Use to e.g. load required modules.
-cluster_job_init_commands = module load gcc/7.3.0
-
-
-# Extra parameters for sbatch command
-#cluster_extra_params = --exclude=ra-c-[017-048]
-
-
-# Path to pi2 program
-#pipath = ./
-
 
 
 

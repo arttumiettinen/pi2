@@ -1,6 +1,6 @@
 
 
-def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, use_cluster=True, normalize_while_stitching=False):
+def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, cluster_name='None', normalize_while_stitching=False):
     """
     Writes new stitch settings file to stitch_settings.txt.
     sample_name - prefix of output files.
@@ -100,34 +100,13 @@ displacement_filter_threshold = 12
 redo = False
 
 
-# Indicates if the calculations should be performed on a cluster
-use_cluster = {use_cluster}
-
-
-# Indicates if the script should wait until submitted cluster jobs are finished, and then continue.
-# If set to false, the script will return after submitting jobs.
-wait_for_jobs = True
+# Indicates which cluster manager should be used to submit jobs
+cluster = {cluster_name}
 
 
 # Maximum size of image block that is processed in one process is max_block_size^3.
 # Set to such a value that (2 * pixel_size_in_bytes + 4) * max_block_size^3 < available memory in bytes.
 max_block_size = 2500
-
-
-# Partition of cluster that should be used
-cluster_partition = day
-
-
-# Commands that are run before each calculation job. Use to e.g. load required modules.
-cluster_job_init_commands = module load gcc/7.3.0
-
-
-# Extra parameters for sbatch command
-#cluster_extra_params = --exclude=ra-c-[017-048]
-
-
-# Path to pi2 program
-#pipath = ./
 
 
 

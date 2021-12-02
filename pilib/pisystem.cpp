@@ -101,6 +101,7 @@ namespace pilib
 					}
 					else if (argSection[0] == '"')
 					{
+						// Start of double-quote string
 						argSection.erase(argSection.begin());
 						string arg = parseString(argSection, '"');
 						args.push_back(arg);
@@ -112,6 +113,7 @@ namespace pilib
 					}
 					else if (argSection[0] == '\'')
 					{
+						// Start of single-quote string
 						argSection.erase(argSection.begin());
 						string arg = parseString(argSection, '\'');
 						args.push_back(arg);
@@ -1189,34 +1191,54 @@ namespace pilib
 	*/
 	bool PISystem::run(const string& commands)
 	{
-		try
+		if (!running)
+			commandsWaiting.clear();
+
+		commandsWaiting.push_back(commands);
+
+		if (!running)
 		{
-			string rest = commands;
-			lastExceptionLine = 1;
-			while (rest.length() > 0)
+			running = true;
+
+			while (commandsWaiting.size() > 0)
 			{
-				char delim = 0;
-				string token = getToken(rest, "\n", delim);
+				string nextItem = commandsWaiting[0];
+				commandsWaiting.erase(commandsWaiting.begin());
 
-				parseLine(token);
+				try
+				{
+					string rest = nextItem;
+					lastExceptionLine = 1;
+					while (rest.length() > 0)
+					{
+						char delim = 0;
+						string token = getToken(rest, "\n", delim);
 
-				if (delim == '\n')
-					lastExceptionLine++;
+						parseLine(token);
+
+						if (delim == '\n')
+							lastExceptionLine++;
+					}
+				}
+				catch (ITLException& e)
+				{
+					lastException = e.message();
+					running = false;
+					return false;
+				}
+				catch (exception& e)
+				{
+					lastException = e.what();
+					running = false;
+					return false;
+				}
 			}
 
 			lastExceptionLine = 0;
-			return true;
+			running = false;
 		}
-		catch (ITLException& e)
-		{
-			lastException = e.message();
-			return false;
-		}
-		catch (exception& e)
-		{
-			lastException = e.what();
-			return false;
-		}
+
+		return true;
 	}
 
 

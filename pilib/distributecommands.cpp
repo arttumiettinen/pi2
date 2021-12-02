@@ -16,6 +16,7 @@ namespace pilib
 	{
 		string script = pop<string>(args);
 		JobType jobType = itl2::fromString<JobType>(pop<string>(args));
+
 		system->run(script);
 	}
 

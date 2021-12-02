@@ -16,7 +16,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		SubmitJobCommand() : Command("submitjob", "Submits a pi2 script job to the active cluster system, or runs it locally if distributed processing is not active. Does not wait for job completion. Typically you would not use this method of job submission, but just call `distribute` function and let the system deal with submitting jobs.",
+		SubmitJobCommand() : Command("submitjob", "Submits a pi2 script job to the active cluster system, or runs it locally if distributed processing is not active as if the commands in the parameter script would be run instead of this command. Does not wait for job completion. Typically you would not use this method of job submission, but just call `distribute` function and let the system deal with submitting jobs.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "script", "Pi2 script to run."),
 				CommandArgument<string>(ParameterDirection::In, "job type", "Job type, either fast, normal, or slow.", "normal"),
@@ -52,7 +52,7 @@ namespace pilib
 	public:
 		virtual void run(vector<ParamVariant>& args) const override
 		{
-
+			// No need to do anything
 		}
 
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
