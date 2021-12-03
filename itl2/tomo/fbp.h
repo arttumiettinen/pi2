@@ -321,6 +321,11 @@ namespace itl2
 		*/
 		float32_t csAngleSlope = 0.0f;
 
+		/**
+		This value is used to increase or decrease the angular range by the given amount of degrees.
+		*/
+		float32_t angleTweak = 0.0f;
+
 
 
 
@@ -489,6 +494,7 @@ namespace itl2
 		s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
 		s.cameraRotation = id.get("camera_rotation", s.cameraRotation);
 		s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
+		s.angleTweak = id.get("angle_tweak", s.angleTweak);
 		s.padType = id.get("pad_type", s.padType);
 		s.padFraction = id.get("pad_size", s.padFraction);
 		s.filterType = id.get("filter_type", s.filterType);
@@ -829,9 +835,9 @@ namespace itl2
 			float32_t gammamax0 = internals::calculateGammaMax0((float32_t)projectionWidth, settings.sourceToRA);
 			float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
 
-			float32_t rotMul = 1;
+			float32_t rotMul = 1 + (settings.angleTweak / max(settings.angles));
 			if (settings.rotationDirection == RotationDirection::Counterclockwise)
-				rotMul = -1;
+				rotMul *= -1;
 
 			if (!settings.useShifts)
 				settings.shiftScaling = 0;

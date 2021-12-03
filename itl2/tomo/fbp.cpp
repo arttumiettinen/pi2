@@ -35,6 +35,7 @@ namespace itl2
 		stream << "bhc = " << s.bhc << endl;
 		stream << "rec_as_180_deg_scan = " << s.reconstructAs180degScan << endl;
 		stream << "central_angle = " << s.centralAngleFor180degScan << endl;
+		stream << "angle_tweak = " << s.angleTweak << endl;
 		stream << "hswp = " << s.heuristicSinogramWindowingParameter << endl;
 		stream << "rotation = " << s.rotation << endl;
 		stream << "roi_center = " << s.roiCenter << endl;
