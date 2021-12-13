@@ -6,7 +6,7 @@ pathlength
 
 **Syntax:** :code:`pathlength(input image, output image)`
 
-Replaces value of each pixel by the length of the longest constrained path that goes through that pixel. Works only with binary input images. NOTE: This command creates temporary files to the current directory.
+Replaces value of each pixel by the length of the longest constrained path that goes through that pixel. Works only with binary input images. NOTE: This command creates temporary files to the current directory. NOTE: This command is highly work-in-progress.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
