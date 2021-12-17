@@ -1,0 +1,16 @@
+.. _waitforjobs:
+
+waitforjobs
+***********
+
+
+**Syntax:** :code:`waitforjobs()`
+
+Waits until all running cluster jobs are complete. Use this command to wait for jobs submitted using the submitjob command.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+See also
+--------
+
+:ref:`submitjob`, :ref:`waitforjobs`

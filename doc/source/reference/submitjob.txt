@@ -1,0 +1,35 @@
+.. _submitjob:
+
+submitjob
+*********
+
+
+**Syntax:** :code:`submitjob(script, job type)`
+
+Submits a pi2 script job to the active cluster system, or runs it locally if distributed processing is not active as if the commands in the parameter script would be run instead of this command. Does not wait for job completion. Typically you would not use this method of job submission, but just call :ref:`distribute` function and let the system deal with submitting jobs.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+script [input]
+~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Pi2 script to run.
+
+job type [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** normal
+
+Job type, either fast, normal, or slow.
+
+See also
+--------
+
+:ref:`submitjob`, :ref:`waitforjobs`

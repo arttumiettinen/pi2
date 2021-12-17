@@ -310,6 +310,7 @@ namespace pilib
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image that will be pulled back."),
 				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "pullback image", "Will store the result of the pullback operation."),
 				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "File name prefix (and path) passed to blockmatch command."),
+				CommandArgument<InterpolationMode>(ParameterDirection::In, "interpolation mode", string("Interpolation mode. ") + interpolationHelp(), InterpolationMode::Cubic),
 			},
 			blockMatchSeeAlso())
 		{
@@ -321,6 +322,8 @@ namespace pilib
 			Image<pixel_t>& deformed = *pop<Image<pixel_t>* >(args);
 			Image<pixel_t>& pullback = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
+			InterpolationMode imode = pop<InterpolationMode>(args);
+			auto interp = createInterpolator<pixel_t, pixel_t, double, double>(imode, BoundaryCondition::Zero);
 			
 			PointGrid3D<coord_t> refPoints;
 			Image<Vec3d> defPoints;
@@ -330,7 +333,7 @@ namespace pilib
 
 			pullback.ensureSize(deformed);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, CubicInterpolator<pixel_t, pixel_t, double, double>(BoundaryCondition::Zero));
+			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp);
 		}
 	};
 
@@ -403,7 +406,8 @@ namespace pilib
 				CommandArgument<Vec3c>(ParameterDirection::In, "grid max", "End of reference point grid in the coordinates of the reference image. The grid will contain floor((max - start) / step) + 1 points in each coordinate direction. Difference between maximum and minimum does not need to be divisible by step."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "x", "X-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "y", "Y-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
-				CommandArgument<Image<float32_t> >(ParameterDirection::In, "z", "Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.")
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "z", "Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
+				CommandArgument<InterpolationMode>(ParameterDirection::In, "interpolation mode", string("Interpolation mode. ") + interpolationHelp(), InterpolationMode::Cubic),
 			},
 			blockMatchSeeAlso())
 		{
@@ -420,7 +424,8 @@ namespace pilib
 			Image<float32_t>& x = *pop<Image<float32_t>*>(args);
 			Image<float32_t>& y = *pop<Image<float32_t>*>(args);
 			Image<float32_t>& z = *pop<Image<float32_t>*>(args);
-
+			InterpolationMode imode = pop<InterpolationMode>(args);
+			auto interp = createInterpolator<pixel_t, pixel_t, double, double>(imode, BoundaryCondition::Zero);
 
 			PointGrid3D<coord_t> refPoints(
 				PointGrid1D<coord_t>(gridStart.x, gridEnd.x, gridStep.x),
@@ -440,7 +445,7 @@ namespace pilib
 
 			pullback.ensureSize(deformed);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, CubicInterpolator<pixel_t, pixel_t, double, double>(BoundaryCondition::Zero));
+			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp);
 		}
 	};
 
