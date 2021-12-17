@@ -884,6 +884,34 @@ def get_pixels():
 
 
 
+def set_pixels():
+
+    img = pi2.newimage(ImageDataType.UINT8, 100, 200, 300)
+    p = np.array([[0, 0, 0], [10, 20, 30], [70, 70, 70]], dtype=float)
+    v = np.array([[10, 20, 30]], dtype=np.uint8)
+
+    pos = pi2.newimage()
+    pos.set_data(p)
+
+    gt = pi2.newimage()
+    gt.set_data(v)
+
+    pi2.set(img, pos, gt)
+
+    pi2.writetif(img, output_file("set_pixels"))
+
+
+    v2 = pi2.newimage()
+    pi2.get(img, v2, pos)
+
+    
+
+    M = calc_difference(gt, v2)
+    
+    
+    check_result(M <= 0, "Pixels are not written and read correctly.")
+
+
 
 def distributed_numpy():
     """
@@ -1229,6 +1257,7 @@ pi2.echo(True, False)
 
 #tif_and_tiff()
 #get_pixels()
+set_pixels()
 #distributed_numpy()
 #memory()
 
@@ -1243,7 +1272,7 @@ pi2.echo(True, False)
 
 #dead_pixels()
 
-lsf_cluster()
+#lsf_cluster()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

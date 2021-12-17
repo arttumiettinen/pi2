@@ -80,6 +80,48 @@ namespace pilib
 	};
 
 
+	template<typename pixel_t> class SetPixelsCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		SetPixelsCommand() : Command("set", "Sets values of multiple pixels in an image. Points outside of the image are not set.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::InOut, "image", "Image where the pixels are set."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "positions", "Positions of pixels to set. Each row of this image contains (x, y, z) coordinates of a pixel to be set. The size of the image must be 3xN where N is the count of pixels to write. Floating point values are rounded to the nearest integer."),
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "values", "Values of the pixels to be set. The size of the image must be the number of pixels to set.")
+			},
+			"set, set, getpointsandlines")
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			Image<float32_t>& positions = *pop<Image<float32_t>* >(args);
+			Image<pixel_t>& values = *pop<Image<pixel_t>* >(args);
+
+			if (positions.dimensionality() != 2 ||
+				positions.width() != 3 ||
+				positions.height() != values.pixelCount())
+			{
+				throw ITLException("Positions image must have size 3xN, where N is the pixel count in the values image.");
+			}
+
+			for (coord_t n = 0; n < values.pixelCount(); n++)
+			{
+				pixel_t val = values(n);
+				Vec3c pos(pixelRound<coord_t>(positions(0, n)),
+					pixelRound<coord_t>(positions(1, n)),
+					pixelRound<coord_t>(positions(2, n)));
+				if(in.isInImage(pos))
+					in(pos) = val;
+			}
+		}
+	};
+
+
 
 	template<typename pixel_t> class GetPixelsToTempFileCommand : public Command, public Distributable
 	{
@@ -123,6 +165,9 @@ namespace pilib
 
 			string filename = getTempName(out, blockIndex);
 
+			if (positions.width() != 3)
+				throw ITLException("Positions image width must be 3.");
+
 			std::ofstream outs(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
 
 			for (coord_t n = 0; n < positions.height(); n++)
@@ -158,6 +203,9 @@ namespace pilib
 			{
 				// Read whole positions image
 				DistributedImage<float32_t>& positions = *std::get<DistributedImage<float32_t>* >(args[2]);
+
+				if (positions.width() != 3)
+					throw ITLException("Positions image width must be 3.");
 
 				readStart = Vec3c();
 				readSize = positions.dimensions();
@@ -195,6 +243,9 @@ namespace pilib
 			Image<float32_t>& positions = *pop<Image<float32_t>* >(args);
 			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
 
+			if (positions.width() != 3)
+				throw ITLException("Positions image width must be 3.");
+
 			out.ensureSize(positions.height());
 
 			for (coord_t n = 0; n < positions.height(); n++)
@@ -220,6 +271,9 @@ namespace pilib
 			// -> out will be sparse, how to write that to disk transparently?
 			// Write to temporary file in format (position index, value)
 			// After all jobs are finished, read each temporary file and write to output to the correct position
+
+			if (positions.width() != 3)
+				throw ITLException("Positions image width must be 3.");
 
 			out.ensureSize(positions.height());
 

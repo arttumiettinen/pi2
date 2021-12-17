@@ -8,6 +8,7 @@ namespace pilib
 	{
 		ADD_REAL(RampCommand);
 		ADD_REAL(SetPixelCommand);
+		ADD_REAL(SetPixelsCommand);
 		ADD_REAL(GetPixelsCommand);
 		ADD_REAL(GetPixelsToTempFileCommand);
 		ADD_REAL(SphereCommand);
