@@ -38,6 +38,7 @@ namespace pilib
 	void addMetadataCommands();
 	void addEvalCommands();
 	void addDistributeCommands();
+	void addInpaintCommands();
 
 	vector<unique_ptr<Command> > CommandList::commands;
 
@@ -70,6 +71,7 @@ namespace pilib
 		addMetadataCommands();
 		addEvalCommands();
 		addDistributeCommands();
+		addInpaintCommands();
 	}
 
 
