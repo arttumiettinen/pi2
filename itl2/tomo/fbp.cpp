@@ -1412,13 +1412,13 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			try
 			{
 				cl::ImageFormat format(CL_INTENSITY, CL_FLOAT);
-				cl::Image3D transmissionProjectionsCL = cl::Image3D(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, format, transmissionProjections.width(), transmissionProjections.height(), transmissionProjections.depth());
+				cl::Image3D transmissionProjectionsCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, format, transmissionProjections.width(), transmissionProjections.height(), transmissionProjections.depth());
 
-				cl::Buffer pssCL = cl::Buffer(clEnv.context, pss.begin(), pss.end(), true, true);
-				cl::Buffer pdsCL = cl::Buffer(clEnv.context, pds.begin(), pds.end(), true, true);
-				cl::Buffer usCL = cl::Buffer(clEnv.context, us.begin(), us.end(), true, true);
-				cl::Buffer vsCL = cl::Buffer(clEnv.context, vs.begin(), vs.end(), true, true);
-				cl::Buffer wsCL = cl::Buffer(clEnv.context, ws.begin(), ws.end(), true, true);
+				cl::Buffer pssCL(pss.begin(), pss.end(), true, true);
+				cl::Buffer pdsCL(pds.begin(), pds.end(), true, true);
+				cl::Buffer usCL(us.begin(), us.end(), true, true);
+				cl::Buffer vsCL(vs.begin(), vs.end(), true, true);
+				cl::Buffer wsCL(ws.begin(), ws.end(), true, true);
 
 				Vec4f centerCL(center.x, center.y, center.z, 0); // CL defines float3 as float4, so we need extra zero after center position.
 
