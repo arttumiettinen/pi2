@@ -126,7 +126,7 @@ namespace pilib
 
 		FlipCommand() : OneImageInPlaceCommand<pixel_t>("flip", "Flips image in the given dimension, e.g. if dimension is zero, the left edge of the image becomes the right edge and vice versa.",
 			{
-				CommandArgument<size_t>(ParameterDirection::In, "dimension", "The dimension to flip. Zero corresponds to $x$, one ty $y$, etc."),
+				CommandArgument<size_t>(ParameterDirection::In, "dimension", "The dimension to flip. Zero corresponds to $x$, one to $y$, etc."),
 			},
 			transformSeeAlso())
 		{
