@@ -722,7 +722,7 @@ namespace pilib
 			{
 				CommandArgument<size_t>(ParameterDirection::In, "volume threshold", "All nonzero regions consisting of less than this many pixels are removed.", 600),
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours),
-				//CommandArgument<size_t>(ParameterDirection::In, "thread count", "Count of threads to use in the process. Set to zero to determine count of threads automatically. Set to one to use single-threaded processing.", 0),
+				CommandArgument<bool>(ParameterDirection::In, "allow multi-threading", "Set to true to allow multi-threaded processing. Set to false to use single-threaded processing. Single-threaded processing is often faster if it is known in advance that there are only a few particles or if the image is small. This argument has no effect in the distributed processing mode. There, the processing is always multi-threaded.", true),
 			},
 			"openingfilter, closingfilter, analyzeparticles")
 		{
@@ -733,10 +733,10 @@ namespace pilib
 		{
 			size_t volumeLimit = pop<size_t>(args);
 			Connectivity connectivity = pop<Connectivity>(args);
-			//coord_t threadCount = (coord_t)pop<size_t>(args);
+			bool multiThreaded = pop<bool>(args);
 
 			// TODO: Add preserveEdges if that is required
-			regionRemoval(in, volumeLimit, false, connectivity);
+			regionRemoval(in, volumeLimit, false, connectivity, multiThreaded);
 		}
 
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
@@ -744,6 +744,7 @@ namespace pilib
 			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>* >(args);
 			size_t volumeLimit = pop<size_t>(args);
 			Connectivity connectivity = pop<Connectivity>(args);
+			bool multiThreaded = pop<bool>(args);
 			//coord_t threadCount = (coord_t)pop<size_t>(args);
 
 			// TODO: Add preserveEdges if that is required

@@ -421,5 +421,7 @@ namespace itl2
 		void lineMax();
 		void lineMin();
 		void sphereMaxSpeed();
+		void sphereMaxApprox();
+		void sphereMinApprox();
 	}
 }

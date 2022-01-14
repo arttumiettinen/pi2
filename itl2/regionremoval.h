@@ -14,7 +14,7 @@ namespace itl2
 	@param preserveEdges Set to true to skip processing of regions that touch image edge.
 	@param connectivity Connectivity of pixels.
 	*/
-	template<typename pixel_t> void regionRemoval(Image<pixel_t>& img, size_t volumeLimit, bool preserveEdges = false, Connectivity connectivity = Connectivity::NearestNeighbours)
+	template<typename pixel_t> void regionRemoval(Image<pixel_t>& img, size_t volumeLimit, bool preserveEdges = false, Connectivity connectivity = Connectivity::NearestNeighbours, bool multiThreaded = true)
 	{
 		// Analyze particles
 		Results results;
@@ -25,8 +25,11 @@ namespace itl2
 			analyzers.push_back(new analyzers::IsOnEdge<Vec3sc, pixel_t>(img.dimensions()));
 
 		std::cout << "Searching for particles..." << std::endl;
-		analyzeParticles<pixel_t>(img, analyzers, results, connectivity, volumeLimit);
-
+		if(multiThreaded)
+			analyzeParticles<pixel_t>(img, analyzers, results, connectivity, volumeLimit);
+		else
+			analyzeParticlesSingleThreaded<pixel_t>(img, analyzers, results, connectivity, volumeLimit);
+		
 		if (preserveEdges)
 		{
 			// Remove all particles that touch edges.

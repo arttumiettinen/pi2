@@ -432,5 +432,41 @@ namespace itl2
 			raw::writed(result, "filters/max_sphere_exact");
 
 		}
+
+
+		void sphereMaxApprox()
+		{
+			Image<uint8_t> img(200, 200, 200);
+			img(100, 100, 100) = 255;
+
+			coord_t r = 50;
+
+			Image<uint8_t> approx(img.dimensions());
+			setValue(approx, img);
+			maxFilterSphereApprox(approx, r, BoundaryCondition::Nearest);
+			raw::writed(approx, "sphereapprox/approximate_max");
+
+			Image<uint8_t> exact(img.dimensions());
+			filter<uint8_t, uint8_t, internals::maxOp<uint8_t> >(img, exact, Vec3c(r, r, r), NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);
+			raw::writed(exact, "sphereapprox/exact_max");
+		}
+
+		void sphereMinApprox()
+		{
+			Image<uint8_t> img(200, 200, 200);
+			setValue(img, 255);
+			img(100, 100, 100) = 0;
+
+			coord_t r = 20;
+
+			Image<uint8_t> approx(img.dimensions());
+			setValue(approx, img);
+			minFilterSphereApprox(approx, r, BoundaryCondition::Nearest);
+			raw::writed(approx, "sphereapprox/approximate_min");
+
+			Image<uint8_t> exact(img.dimensions());
+			filter<uint8_t, uint8_t, internals::minOp<uint8_t> >(img, exact, Vec3c(r, r, r), NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);
+			raw::writed(exact, "sphereapprox/exact_min");
+		}
 	}
 }

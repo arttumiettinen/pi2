@@ -243,12 +243,15 @@ int main()
 
 	//test(itl2::tests::stddevuint16, "standard deviation, uint16");
 
+	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
+	test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");
+
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
 
-	test(itl2::tests::createPlates, "Input geometry generation");
+	//test(itl2::tests::createPlates, "Input geometry generation");
 	//test(itl2::tests::createMoreProjections, "Large number of projections");
-	test(itl2::tests::fbp, "Filtered backprojection");
+	//test(itl2::tests::fbp, "Filtered backprojection");
 	
 	
 	
