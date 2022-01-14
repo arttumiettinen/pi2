@@ -436,8 +436,8 @@ namespace itl2
 
 		void sphereMaxApprox()
 		{
-			Image<uint8_t> img(200, 200, 200);
-			img(100, 100, 100) = 255;
+			Image<uint8_t> img(200, 200, 1);
+			img(100, 100, 0) = 255;
 
 			coord_t r = 50;
 
@@ -449,13 +449,15 @@ namespace itl2
 			Image<uint8_t> exact(img.dimensions());
 			filter<uint8_t, uint8_t, internals::maxOp<uint8_t> >(img, exact, Vec3c(r, r, r), NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);
 			raw::writed(exact, "sphereapprox/exact_max");
+
+			// NOTE: No asserts!
 		}
 
 		void sphereMinApprox()
 		{
-			Image<uint8_t> img(200, 200, 200);
+			Image<uint8_t> img(200, 200, 1);
 			setValue(img, 255);
-			img(100, 100, 100) = 0;
+			img(100, 100, 0) = 0;
 
 			coord_t r = 20;
 
@@ -467,6 +469,8 @@ namespace itl2
 			Image<uint8_t> exact(img.dimensions());
 			filter<uint8_t, uint8_t, internals::minOp<uint8_t> >(img, exact, Vec3c(r, r, r), NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);
 			raw::writed(exact, "sphereapprox/exact_min");
+
+			// NOTE: No asserts!
 		}
 	}
 }

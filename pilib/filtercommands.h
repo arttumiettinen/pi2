@@ -196,7 +196,10 @@ namespace pilib
 
 	inline std::string periodicLinesHelp()
 	{
-		return "Set to true to allow use of approximate decompositions of spherical structuring elements using periodic lines. As a result of the approximation processing is much faster but the true shape of the structuring element is not sphere but a regular polyhedron. See van Herk - A fast algorithm for local minimum and maximum filters on rectangular and octagonal kernels and Jones - Periodic lines Definition, cascades, and application to granulometries.";
+		return "Set to true to allow use of approximate decompositions of spherical structuring elements using periodic lines. As a result of the approximation processing is much faster but the true shape of the structuring element is not sphere but a regular polyhedron. See van Herk - A fast algorithm for local minimum and maximum filters on rectangular and octagonal kernels and Jones - Periodic lines Definition, cascades, and application to granulometries. "
+			" The approximate filtering will give wrong results where distance from image edge is less than r."
+			" Consider enlarging the image by r to all directions before processing."
+			" Enlarging in the $z$-direction is especially important for 2D images, and therefore approximate processing is not allowed if the image is 2-dimensional.";
 	}
 
 
@@ -228,6 +231,8 @@ namespace pilib
 		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, const Vec3c& r, NeighbourhoodType nbtype, BoundaryCondition bc, vector<ParamVariant>& args) const override
 		{
 			bool allowOpt = pop<bool>(args);
+			if (in.dimensionality() < 3)
+				allowOpt = false;
 			minFilter<pixel_t, pixel_t>(in, out, r, nbtype, bc, allowOpt);
 		}
 
@@ -268,6 +273,8 @@ namespace pilib
 		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, const Vec3c& r, NeighbourhoodType nbtype, BoundaryCondition bc, vector<ParamVariant>& args) const override
 		{
 			bool allowOpt = pop<bool>(args);
+			if (in.dimensionality() < 3)
+				allowOpt = false;
 			maxFilter<pixel_t, pixel_t>(in, out, r, nbtype, bc, allowOpt);
 		}
 

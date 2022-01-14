@@ -391,6 +391,9 @@ namespace itl2
 	Calculates approximation of maximum filtering by sphere.
 	Decomposes spherical structuring element approximately to a set of periodic lines.
 	It is not advisable to use this approximation for radiuses less than 5.
+	The filtering will give wrong results where distance from image edge is less than r.
+	Consider enlarging the image by r to all directions before processing.
+	Enlarging in the z-direction is especially important for 2D images.
 	*/
 	template<typename pixel_t> void maxFilterSphereApprox(Image<pixel_t>& img, coord_t r, BoundaryCondition bc)
 	{
@@ -405,6 +408,9 @@ namespace itl2
 	Calculates approximation of minimum filtering by sphere.
 	Decomposes spherical structuring element approximately to a set of periodic lines.
 	It is not advisable to use this approximation for radiuses less than 5.
+	The filtering will give wrong results where distance from image edge is less than r.
+	Consider enlarging the image by r to all directions before processing.
+	Enlarging in the z-direction is especially important for 2D images.
 	*/
 	template<typename pixel_t> void minFilterSphereApprox(Image<pixel_t>& img, coord_t r, BoundaryCondition bc)
 	{
