@@ -536,7 +536,7 @@ namespace itl2
 
 		static inline uint64_t saturatingMultiply(const uint64_t x, const uint64_t y)
 		{
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 			__uint128_t  res = (__uint128_t)x * (__uint128_t)y;
 
 			uint64_t hi = res >> 8 * sizeof(uint64_t);
@@ -971,7 +971,7 @@ namespace itl2
 		static inline int64_t saturatingMultiply(const int64_t x, const int64_t y)
 		{
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 			__int128_t  res = (__int128_t)x * (__int128_t)y;
 			int64_t hi = (res >> 8 * sizeof(uint64_t));
 			int64_t lo = (int64_t)res;

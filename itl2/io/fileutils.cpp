@@ -8,7 +8,7 @@
 
 #include "filesystem.h"
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -56,7 +56,7 @@ namespace itl2
 	*/
 	void setFileSize(const std::string& filename, size_t size)
 	{
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 		// Open file (if the file is created, user has read and write permissions, group has read permissions.
 		int fd = open(filename.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP);
@@ -157,7 +157,7 @@ namespace itl2
 		if (fileExists(sourceName))
 			deleteFile(destinationName);
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 		// TODO: This does not show progress bar
 		system((string("cp \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
@@ -207,7 +207,7 @@ namespace itl2
 
 		createFoldersFor(destinationName);
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 		system((string("mv \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
 

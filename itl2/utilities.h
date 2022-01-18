@@ -1,7 +1,7 @@
 #pragma once
 
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 	#include <unistd.h>
 	#include <stdio.h>
@@ -48,7 +48,7 @@ namespace itl2
 	*/
 	inline void sleep(unsigned int ms)
 	{
-#if defined(__linux__)
+#if defined(__linux__)  || defined(__APPLE__)
 		usleep(ms);
 #elif defined(_WIN32)
 		Sleep(ms);
@@ -70,7 +70,7 @@ namespace itl2
     */
 	inline size_t memorySize()
 	{
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
         struct sysinfo info;
         if(sysinfo(&info) != 0)

@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 	#include "pstream.h"
 
@@ -28,7 +28,7 @@ using namespace std;
 
 namespace pilib
 {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 	/**
 	Execute a program and return all output.

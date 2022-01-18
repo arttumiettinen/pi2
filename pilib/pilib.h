@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 #define PILIB_API __attribute__ ((visibility("default"))) extern
 
