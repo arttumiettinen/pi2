@@ -1,7 +1,7 @@
 #pragma once
 
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
 
 	#include <unistd.h>
 	#include <stdio.h>
@@ -16,6 +16,11 @@
 	{
 		return fileno(stream);
 	}
+
+#elif defined(__APPLE__)
+
+	#include <sys/types.h>
+	#include <sys/sysctl.h>
 
 #elif defined(_WIN32)
 
@@ -70,12 +75,23 @@ namespace itl2
     */
 	inline size_t memorySize()
 	{
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
 
         struct sysinfo info;
         if(sysinfo(&info) != 0)
-            throw ITLException("sysinfo call failed.");
+            throw ITLException("Sysinfo call failed.");
         return info.totalram;
+#elif defined(__APPLE__)
+		int mib[] = { CTL_HW, HW_MEMSIZE };
+		int64_t value = 0;
+		size_t length = sizeof(value);
+
+		if (-1 == sysctl(mib, 2, &value, &length, NULL, 0))
+		{
+			throw ITLException("Sysctl call failed when requesting system RAM size.");
+		}
+
+		return value;
 
 #elif defined(_WIN32)
 		MEMORYSTATUSEX status;
