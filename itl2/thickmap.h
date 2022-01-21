@@ -4,7 +4,7 @@
 #include <queue>
 #include <functional>
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 	#include <parallel/algorithm>
 #elif defined(_WIN32)
 	#include <execution>
@@ -1003,7 +1003,7 @@ namespace itl2
 			// Sort according to sphere diameter
 #if defined(_WIN32)
 			std::sort(std::execution::par_unseq, centers.begin(), centers.end(), internals::ridgeSorter<pixel_t>);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			__gnu_parallel::sort(centers.begin(), centers.end(), internals::ridgeSorter<pixel_t>);
 #endif
 

@@ -31,7 +31,7 @@
 namespace itl2
 {
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
     /**
 	Reads errno and converts it to error message.

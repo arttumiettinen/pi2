@@ -1,7 +1,7 @@
 
 #include "diskmappedbuffer.h"
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 #include <errno.h>
 
@@ -11,7 +11,7 @@
 namespace itl2
 {
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
     std::string getErrNoMessage()
 	{

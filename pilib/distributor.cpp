@@ -7,7 +7,7 @@
 #include "exeutils.h"
 #include "math/vectoroperations.h"
 #include "whereamicpp.h"
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <dirent.h>
 #endif
@@ -22,7 +22,7 @@ namespace pilib
 
 	void flushCache(const string& filename)
 	{
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 		// This may flush NFS cache on the files of the folder where the log file lives.
 		int fd = open(filename.c_str(), O_RDONLY);
 		fsync(fd);
@@ -108,7 +108,7 @@ namespace pilib
 
 	fs::path findPi2()
 	{
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 		string piName = "pi2";
 #elif defined(_WIN32)
 		string piName = "pi2.exe";
