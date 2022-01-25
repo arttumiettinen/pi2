@@ -1,11 +1,17 @@
 #pragma once
 
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 	#include <unistd.h>
 	#include <stdio.h>
-	#include <sys/sysinfo.h>
+
+	#if defined(__linux__)	
+		#include <sys/sysinfo.h>
+	#else
+		#include <sys/types.h>
+		#include <sys/sysctl.h>
+	#endif
 
 	inline bool _isatty(int fileHandle)
 	{
@@ -16,11 +22,6 @@
 	{
 		return fileno(stream);
 	}
-
-#elif defined(__APPLE__)
-
-	#include <sys/types.h>
-	#include <sys/sysctl.h>
 
 #elif defined(_WIN32)
 
