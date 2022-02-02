@@ -24,7 +24,7 @@ namespace itl2
 			// Find and label local maxima
 			auto results = findLocalMaxima(dmap);
 
-			Image<uint8> vis;
+			Image<uint8_t> vis;
 			setValue(vis, geom);
 			draw(vis, results);
 			raw::writed(vis, "maxima/dmap_local_maxima");
