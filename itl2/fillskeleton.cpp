@@ -18,7 +18,7 @@ namespace itl2
 			traceLineSkeleton(skele, false, 1.0, 1.0, net);
 
 			Image<float32_t> verts;
-			Image<size_t> edges;
+			Image<uint64_t> edges;
 			Image<float32_t> meas;
 			Image<int32_t> points;
 			net.toImage(verts, edges, &meas, &points);

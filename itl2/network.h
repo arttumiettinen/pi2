@@ -380,12 +380,12 @@ namespace itl2
 		z22
 		Set this parameter to nullptr if this information is not required.
 		*/
-		void toImage(Image<float32_t>& vertices, Image<size_t>& edges, Image<float32_t>* pEdgeMeasurements, Image<int32_t>* pEdgePoints) const;
+		void toImage(Image<float32_t>& vertices, Image<uint64_t>& edges, Image<float32_t>* pEdgeMeasurements, Image<int32_t>* pEdgePoints) const;
 
 		/**
 		Replaces this network by one read from given vertex, edge and measurements images.
 		*/
-		void fromImage(const Image<float32_t>& verts, const Image<size_t>& edg, const Image<float32_t>* pEdgeMeasurements, const Image<int32_t>* pEdgePoints);
+		void fromImage(const Image<float32_t>& verts, const Image<uint64_t>& edg, const Image<float32_t>* pEdgeMeasurements, const Image<int32_t>* pEdgePoints);
 
 
 		/**

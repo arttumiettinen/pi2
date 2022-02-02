@@ -610,7 +610,7 @@ namespace itl2
 		removeInvalidNodes(reportProgress);
 	}
 
-	void Network::toImage(Image<float32_t>& vertices, Image<size_t>& edges, Image<float32_t>* pEdgeMeasurements, Image<int32_t>* pEdgePoints) const
+	void Network::toImage(Image<float32_t>& vertices, Image<uint64_t>& edges, Image<float32_t>* pEdgeMeasurements, Image<int32_t>* pEdgePoints) const
 	{
 		vertices.ensureSize(3, this->vertices.size());
 		edges.ensureSize(2, this->edges.size());
@@ -679,7 +679,7 @@ namespace itl2
 		}
 	}
 
-	void Network::fromImage(const Image<float32_t>& verts, const Image<size_t>& edg, const Image<float32_t>* pEdgeMeasurements, const Image<int32_t>* pEdgePoints)
+	void Network::fromImage(const Image<float32_t>& verts, const Image<uint64_t>& edg, const Image<float32_t>* pEdgeMeasurements, const Image<int32_t>* pEdgePoints)
 	{
 		vertices.clear();
 		edges.clear();
