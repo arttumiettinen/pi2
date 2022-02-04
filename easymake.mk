@@ -104,10 +104,11 @@ all:
 
 # If there is a main function defined in this object, register the source file
 # as entry.
+# NOTE: In Linux the main function is defined as "main T [something]", in MacOS as "_main S [something]"
 $(BUILD_ROOT)/%.o: %.$(CXXEXT)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(GEN_DEP_FLAG) -c -o $@  $<
-	@if [ $$(nm -g --format="posix" $@ | grep -c "^main T") -eq 1 ]; then 		\
+	@if [ $$(nm -g --format="posix" $@ | grep -c -e "^main T" -e "^_main S") -eq 1 ]; then 		\
 		echo "$(patsubst $(BUILD_ROOT)/%.o,%.$(CXXEXT),$@)" >> $(em_f_entries);	\
 		sort -u $(em_f_entries) -o $(em_f_entries); 							\
 	fi;
@@ -115,7 +116,7 @@ $(BUILD_ROOT)/%.o: %.$(CXXEXT)
 $(BUILD_ROOT)/%.o: %.$(CEXT)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(GEN_DEP_FLAG)  -c -o $@ $<
-	@if [ $$(nm -g --format="posix" $@ | grep -c "^main T") -eq 1 ]; then		\
+	@if [ $$(nm -g --format="posix" $@ | grep -c -e "^main T" -e "^_main S") -eq 1 ]; then		\
 		echo "$(patsubst $(BUILD_ROOT)/%.o,%.$(CEXT),$@)" >> $(em_f_entries);	\
 		sort -u $(em_f_entries) -o $(em_f_entries); 							\
 		fi;
