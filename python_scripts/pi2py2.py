@@ -19,7 +19,9 @@ class Connectivity(Enum):
     """
 
     NEAREST = "nearest"
+    Nearest = NEAREST
     ALL = "all"
+    All = ALL
 
     def __str__(self):
         return str(self.value)
@@ -33,7 +35,9 @@ class BoundaryCondition(Enum):
     """
 
     ZERO = "zero"
+    Zero = ZERO
     NEAREST = "nearest"
+    Nearest = NEAREST
 
     def __str__(self):
         return str(self.value)
@@ -48,8 +52,11 @@ class Interpolation(Enum):
     """
 
     NEAREST = "nearest"
+    Nearest = NEAREST
     LINEAR = "linear"
+    Linear = LINEAR
     CUBIC = "cubic"
+    Cubic = CUBIC
 
     def __str__(self):
         return str(self.value)
@@ -63,9 +70,13 @@ class NeighbourhoodType(Enum):
     """
 
     RECTANGULAR = "rectangular"
+    Rectangular = RECTANGULAR
     BOX = RECTANGULAR
+    Box = BOX
     ELLIPSOIDAL = "ellipsoidal"
+    Ellipsoidal = ELLIPSOIDAL
     SPHERE = ELLIPSOIDAL
+    Sphere = SPHERE
 
     def __str__(self):
         return str(self.value)
@@ -80,16 +91,27 @@ class ImageDataType(Enum):
     """
 
     UNKNOWN = "unknown"
+    Unknown = UNKNOWN
     UINT8 = "uint8"
+    UInt8 = UINT8
     UINT16 = "uint16"
+    UInt16 = UINT16
     UINT32 = "uint32"
+    UInt32 = UINT32
     UINT64 = "uint64"
+    UInt64 = UINT64
     INT8 = "int8"
+    Int8 = INT8
     INT16 = "int16"
+    Int16 = INT16
     INT32 = "int32"
+    Int32 = INT32
     INT64 = "int64"
+    Int64 = INT64
     FLOAT32 = "float32"
+    Float32 = FLOAT32
     COMPLEX32 = "complex32"
+    Complex32 = COMPLEX32
 
     def __str__(self):
         return str(self.value)
@@ -102,14 +124,21 @@ class Distributor(Enum):
     NONE corresponds to normal non-distributed processing.
     LOCAL mode is used to divide large job into smaller chunks, and to run each of the chunks sequentially on the local computer.
     This mode can be used to process images that do not fit into the RAM of the local computer.
-    SLURM mode is similar to LOCAL mode but the individual jobs are submitted to a computing cluster using Slurm job management system.
-    This mode is usually used when the code runs on the login node of the cluster.
+    SLURM and LSF modes are similar to the LOCAL mode but the individual jobs are submitted to a computing cluster using Slurm or IBM LSF job management system.
+    These modes are usually used when the code runs on the login node of the cluster.
     """
 
     NONE = ""
+    No = NONE
+    OFF = NONE
+    Off = NONE
+
     LOCAL = "local"
+    Local = LOCAL
     SLURM = "slurm"
+    Slurm = SLURM
     LSF = "lsf"
+    Lsf = LSF
 
     def __str__(self):
         return str(self.value)
@@ -122,7 +151,9 @@ class Direction(Enum):
     """
 
     UP = "up"
+    Up = UP
     DOWN = "down"
+    Down = DOWN
     
     def __str__(self):
         return str(self.value)
@@ -134,9 +165,13 @@ class ResliceDirection(Enum):
     """
 
     TOP = "top"
+    Top = TOP
     BOTTOM = "bottom"
+    Bottom = BOTTOM
     LEFT = "left"
+    Left = LEFT
     RIGHT = "right"
+    Right = RIGHT
 
     def __str__(self):
         return str(self.value)
@@ -148,9 +183,13 @@ class EllipsoidType(Enum):
     """
 
     PRINCIPAL = "Principal"
+    Principal = PRINCIPAL
     BOUNDING = "BoundingEllipsoid"
+    Bounding = BOUNDING
     BOUNDINGSPHERE = "BoundingSphere"
+    BoundingSphere = BOUNDINGSPHERE
     VOLUME = "CorrectVolume"
+    Volume = VOLUME
 
     def __str__(self):
         return str(self.value)
@@ -162,26 +201,47 @@ class AutoThresholdMethod(Enum):
     """
 
     OTSU = "Otsu"
+    Otsu = OTSU
     HUANG = "Huang"
+    Huang = HUANG
     INTERMODES = "Intermodes"
+    Intermodes = INTERMODES
     ISODATA = "IsoData"
+    Isodata = ISODATA
     LI = "Li"
+    Li = LI
     MAXENTROPY = "MaxEntropy"
+    MaxEntropy = MAXENTROPY
     MEAN = "Mean"
+    Mean = MEAN
     MINERROR = "MinError"
+    MinError = MINERROR
     MINIMUM = "Minimum"
+    Minimum = MINIMUM
     MOMENTS = "Moments"
+    Moments = MOMENTS
     PERCENTILE = "Percentile"
+    Percentile = PERCENTILE
     RENYI = "Renyi"
-    SHANBHAG  = "Shanbhag"
+    Renyi = RENYI
+    SHANBHAG = "Shanbhag"
+    Shanbhag = SHANBHAG
     TRIANGLE = "Triangle"
+    Triangle = TRIANGLE
     YEN = "Yen"
+    Yen = YEN
     MEDIAN = "Median"
+    Median = MEDIAN
     MIDGREY = "MidGrey"
+    MidGrey = MIDGREY
     NIBLACK = "Niblack"
+    Niblack = NIBLACK
     PHANSALKAR = "Phansalkar"
+    Phansalkar = PHANSALKAR
     SAUVOLA = "Sauvola"
+    Sauvola = SAUVOLA
     BERNSEN = "Bernsen"
+    Bernsen = BERNSEN
 
 
     def __str__(self):
@@ -294,6 +354,12 @@ class Pi2Image(Pi2Object):
 
         return w, h, d, dt
 
+    def info(self):
+        """
+        Gets size and data type of the image without reading data to memory in distributed mode.
+        """
+
+        return self.get_info()
 
     def get_data_pointer(self):
         """
@@ -427,6 +493,32 @@ class Pi2Image(Pi2Object):
         """
         return self.get_dimensions()[2]
 
+    def dimensions(self):
+        """
+        Gets a NumPy array describing dimensions of this image.
+        """
+
+        w, h, d, dt = self.get_info()
+        return np.array([w, h, d])
+
+    def width(self):
+        """
+        Gets width of this image.
+        """
+        return self.get_dimensions()[0]
+
+    def height(self):
+        """
+        Gets height of this image.
+        """
+        return self.get_dimensions()[1]
+
+    def depth(self):
+        """
+        Gets depth of this image.
+        """
+        return self.get_dimensions()[2]
+
     def get_data_type(self):
         """
         Gets data type of pixels as one of values of ImageDataType enumeration.
@@ -459,12 +551,18 @@ class Pi2Image(Pi2Object):
         else:
             raise RuntimeError("pilib returned unsupported image data type.")
 
+    def data_type(self):
+        """
+        Gets data type of pixels as one of values of ImageDataType enumeration.
+        """
+        return self.get_data_type()
+
     def __str__(self):
         """
         Converts this image to a string.
         """
 
-        return str(self.get_dimensions()) + ", " + str(self.get_data_type())
+        return str(self.dimensions()) + ", " + str(self.data_type())
 
 
 
@@ -500,7 +598,7 @@ class Pi2:
         # (No docstring as it is visible in IPython class documentation.)
         # Finds commands that are available from the pilib and adds them as methods of the class instance.
 
-        self.piobj = None
+        self.piobj = N
 
         # Create pilib instance
         if os.name == 'nt':
