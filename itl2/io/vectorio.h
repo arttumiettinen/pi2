@@ -27,7 +27,7 @@ namespace itl2
 	/**
 	Reads a list of values from a stream, given a function that can read one item.
 	*/
-	template<typename item_t, typename ReadItem = decltype(readItem<item_t>)> void readList(std::ifstream& in, std::vector<item_t>& v, ReadItem readItem = readItem<item_t>)
+	template<typename item_t, typename ReadItem = decltype(readItem<item_t>)> void readList(std::ifstream& in, std::vector<item_t>& v, ReadItem readItem = itl2::readItem<item_t>)
 	{
 		size_t s = 0;
 		in.read((char*)&s, sizeof(size_t));
@@ -53,7 +53,7 @@ namespace itl2
 	/**
 	Reads a list of values from a file, given a function that can read one item.
 	*/
-	template<typename item_t, typename ReadItem = decltype(readItem<item_t>)> void readListFile(const std::string& filename, std::vector<item_t>& v, ReadItem readItem = readItem<item_t>)
+	template<typename item_t, typename ReadItem = decltype(readItem<item_t>)> void readListFile(const std::string& filename, std::vector<item_t>& v, ReadItem readItem = itl2::readItem<item_t>)
 	{
 		std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
 		if (!in)
@@ -72,7 +72,7 @@ namespace itl2
 	/**
 	Writes a list of values to a stream, given a function that can write one item.
 	*/
-	template<typename item_t, typename WriteItem = decltype(writeItem<item_t>)> void writeList(std::ofstream& out, const std::vector<item_t>& v, WriteItem writeItem = writeItem<item_t>)
+	template<typename item_t, typename WriteItem = decltype(writeItem<item_t>)> void writeList(std::ofstream& out, const std::vector<item_t>& v, WriteItem writeItem = itl2::writeItem<item_t>)
 	{
 		size_t s = v.size();
 		out.write((const char*)&s, sizeof(size_t));
@@ -89,7 +89,7 @@ namespace itl2
 	/**
 	Writes a list of values to a file, given a function that can write one item.
 	*/
-	template<typename item_t, typename WriteItem = decltype(writeItem<item_t>)> void writeListFile(const std::string& filename, const std::vector<item_t>& v, WriteItem writeItem = writeItem<item_t>)
+	template<typename item_t, typename WriteItem = decltype(writeItem<item_t>)> void writeListFile(const std::string& filename, const std::vector<item_t>& v, WriteItem writeItem = itl2::writeItem<item_t>)
 	{
 		createFoldersFor(filename);
 

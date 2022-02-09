@@ -4,10 +4,12 @@
 #include <queue>
 #include <functional>
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
 	#include <parallel/algorithm>
 #elif defined(_WIN32)
 	#include <execution>
+#elif defined(__APPLE__)
+	#include <algorithm>
 #endif
 
 
@@ -1003,8 +1005,10 @@ namespace itl2
 			// Sort according to sphere diameter
 #if defined(_WIN32)
 			std::sort(std::execution::par_unseq, centers.begin(), centers.end(), internals::ridgeSorter<pixel_t>);
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__)
 			__gnu_parallel::sort(centers.begin(), centers.end(), internals::ridgeSorter<pixel_t>);
+#elif defined(__APPLE__)
+			std::sort(centers.begin(), centers.end(), internals::ridgeSorter<pixel_t>);
 #endif
 
 			// Bitmask where filled pixels are marked. This enables testing 8 filled pixels at once

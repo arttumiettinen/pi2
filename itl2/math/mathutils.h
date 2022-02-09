@@ -184,12 +184,14 @@ namespace itl2
 		}
 		else if constexpr(std::is_integral<Tout>::value)
 		{
-			if(value >= std::numeric_limits<Tout>::max())
+			Tin rounded = ::round(value);
+
+			if(rounded >= (Tin)std::numeric_limits<Tout>::max())
 				return std::numeric_limits<Tout>::max();
-			else if(value <= std::numeric_limits<Tout>::lowest())
+			else if(rounded <= (Tin)std::numeric_limits<Tout>::lowest())
 				return std::numeric_limits<Tout>::lowest();
 
-			return (Tout)::round(value);
+			return (Tout)rounded;
 		}
 		else if constexpr (std::is_same<Tout, complex32_t>::value)
 		{

@@ -222,7 +222,7 @@ namespace itl2
 		template<class POINT, typename pixel_t> class Coordinates3D : public Analyzer<POINT, pixel_t>
 		{
 		public:
-			virtual std::vector<std::string> getTitles() const
+			virtual std::vector<std::string> getTitles() const override
 			{
 				std::vector<std::string> labels;
 				labels.push_back("X [pixel]");
@@ -264,7 +264,7 @@ namespace itl2
 		template<class POINT, typename pixel_t> class Coordinates2D : public Analyzer<POINT, pixel_t>
 		{
 		public:
-			virtual std::vector<std::string> getTitles() const
+			virtual std::vector<std::string> getTitles() const override
 			{
 				std::vector<std::string> labels;
 				labels.push_back("X [pixel]");
@@ -575,7 +575,7 @@ namespace itl2
 					"$b lN$, where $b$ is the bounding scale and $lN$ are the lengths of the principal axes.";
 			}
 
-			virtual std::vector<string> getTitles() const
+			virtual std::vector<string> getTitles() const override
 			{
 				std::vector<string> titles;
 				titles.push_back("CX [pixel]");
@@ -740,7 +740,7 @@ namespace itl2
 					"$b lN$, where $b$ is the bounding scale and $lN$ are the lengths of the principal axes.";
 			}
 
-			virtual std::vector<string> getTitles() const
+			virtual std::vector<string> getTitles() const override
 			{
 				std::vector<string> titles;
 				titles.push_back("CX [pixel]");
