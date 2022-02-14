@@ -19,12 +19,12 @@ This example shows how to create images, retrieve their dimensions and data type
 		# newlike command can be used to create new image that is similar to existing image,
 		# This line creates second image that has the same dimensions than img1 and pixel
 		# data type UINT16.
-		img2 = pi.newlike(img1, ImageDataType.UINT16);
+		img2 = pi.newlike(img1, ImageDataType.UINT16)
 		print(f"img2 is {img2}")
 
 		# This line creates second image that has the same pixel data type than img1,
 		# but its dimensions are 50x50x50.
-		img3 = pi.newlike(img1, ImageDataType.UNKNOWN, 50, 50, 50);
+		img3 = pi.newlike(img1, ImageDataType.UNKNOWN, 50, 50, 50)
 		print(f"img3 is {img3}")
 
 		# The data in the image can be retrieved as a NumPy array

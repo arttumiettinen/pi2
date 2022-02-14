@@ -131,7 +131,7 @@ For running this example code, a demonstration image package available at the `G
 		# Convert to vtk format in order to get radius for each point and line
 		vtkpoints = pi.newimage()
 		vtklines = pi.newimage()
-		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
+		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines)
 		
 		# Get radius for each point
 		points_data = vtkpoints.get_data()
@@ -170,7 +170,7 @@ For running this example code, a demonstration image package available at the `G
 		# Convert to vtk format again, now with smoothing the point coordinates to get non-jagged branches.
 		vtkpoints = pi.newimage()
 		vtklines = pi.newimage()
-		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines, smoothing_sigma, max_displacement);
+		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines, smoothing_sigma, max_displacement)
 		
 
 		# Write to file

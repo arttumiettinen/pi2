@@ -1,0 +1,35 @@
+.. _inpaintg:
+
+inpaintg
+********
+
+
+**Syntax:** :code:`inpaintg(image, flag)`
+
+Replaces pixels that have specific flag value by a value interpolated from the neighbouring pixels that do not have the specific flag value..
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+flag [input]
+~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Values of pixels that have this (flag) value are inpainted.
+
+See also
+--------
+
+:ref:`inpaintn`, :ref:`inpaintg`

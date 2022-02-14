@@ -35,13 +35,13 @@ The generated .vtk file is compatible, e.g., with `ParaView <https://www.paravie
 		pi.line(geometry, p2, p4, 255)
 
 		# Save the geometry
-		pi.writeraw(geometry, output_file("geometry"));
+		pi.writeraw(geometry, output_file("geometry"))
 
 		# Convert geometry to line skeleton
-		pi.lineskeleton(geometry);
+		pi.lineskeleton(geometry)
 
 		# Write the skeleton so that it can be visualized
-		pi.writeraw(geometry, output_file("skeleton"));
+		pi.writeraw(geometry, output_file("skeleton"))
 
 		# Create images for tracing the skeleton into a graph
 		vertices = pi.newimage(ImageDataType.FLOAT32)
@@ -58,7 +58,7 @@ The generated .vtk file is compatible, e.g., with `ParaView <https://www.paravie
 		# need that format.
 		vtkpoints = pi.newimage()
 		vtklines = pi.newimage()
-		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
+		pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines)
 
 		pi.writevtk(vtkpoints, vtklines, output_file("vtk_test_file"))
 

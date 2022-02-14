@@ -651,7 +651,7 @@ def analyze_labels():
     y = pa_local[:, 2]
     z = pa_local[:, 3]
 
-    data = img.get_data();
+    data = img.get_data()
 
     for i in range(0, len(x)):
         pix = data[int(y[i]), int(x[i]), int(z[i])] # NOTE: the order of coordinates is y, x, z in the Numpy array!
@@ -769,13 +769,13 @@ def autothreshold():
         img = pi2.read(input_file())
         pi2.linmap(img, 0, 600, 0, 255)
         pi2.convert(img, ImageDataType.UINT8)
-        pi2.writetif(img, output_file('threshold_orig'));
+        pi2.writetif(img, output_file('threshold_orig'))
 
         th = pi2.newlike(img)
         pi2.set(th, img)
         pi2.autothreshold(th, method)
         pi2.multiply(th, 255)
-        pi2.writetif(th, output_file(f"threshold_{method}"));
+        pi2.writetif(th, output_file(f"threshold_{method}"))
 
     single_test(AutoThresholdMethod.OTSU)
     single_test(AutoThresholdMethod.HUANG)
@@ -829,9 +829,9 @@ def get_pixels():
 
     pi2.distribute(Distributor.NONE)
     # Generate image
-    w = 100;
-    h = 80;
-    d = 120;
+    w = 100
+    h = 80
+    d = 120
     img = pi2.newimage(ImageDataType.UINT16, w, h, d)
     pi2.ramp(img, 0)
     pi2.noise(img, 0, 25)
@@ -852,7 +852,7 @@ def get_pixels():
     img = pi2.read(output_file("ramp"))
     out = pi2.newimage(img.get_data_type())
     pi2.get(img, out, pos)
-    data_normal = out.get_data();
+    data_normal = out.get_data()
 
 
     # Get pixels at positions (distributed)
@@ -862,7 +862,7 @@ def get_pixels():
     img = pi2.read(output_file("ramp"))
     out = pi2.newimage(img.get_data_type())
     pi2.get(img, out, pos)
-    data_distributed = out.get_data();
+    data_distributed = out.get_data()
 
     pi2.distribute(Distributor.NONE)
 

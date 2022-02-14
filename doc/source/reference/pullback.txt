@@ -5,8 +5,8 @@ pullback
 
 There are 2 forms of this command.
 
-:code:`pullback(image, pullback image, file name prefix)`
-=========================================================
+:code:`pullback(image, pullback image, file name prefix, interpolation mode)`
+=============================================================================
 
 Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.
 
@@ -36,13 +36,22 @@ file name prefix [input]
 
 File name prefix (and path) passed to blockmatch command.
 
+interpolation mode [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** interpolation mode
+
+**Default value:** Cubic
+
+Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
+
 See also
 --------
 
 :ref:`blockmatch`, :ref:`blockmatchmemsave`, :ref:`pullback`, :ref:`pointstodeformed`
 
-:code:`pullback(image, pullback image, grid start, grid step, grid max, x, y, z)`
-=================================================================================
+:code:`pullback(image, pullback image, grid start, grid step, grid max, x, y, z, interpolation mode)`
+=====================================================================================================
 
 Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.
 
@@ -106,6 +115,15 @@ z [input]
 **Data type:** float32 image
 
 Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid.
+
+interpolation mode [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** interpolation mode
+
+**Default value:** Cubic
+
+Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
 
 See also
 --------

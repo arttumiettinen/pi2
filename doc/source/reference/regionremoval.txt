@@ -4,7 +4,7 @@ regionremoval
 *************
 
 
-**Syntax:** :code:`regionremoval(image, volume threshold, connectivity)`
+**Syntax:** :code:`regionremoval(image, volume threshold, connectivity, allow multi-threading)`
 
 Removes nonzero foreground regions smaller than given threshold. This command supports only binary images (where regions are separated by backround).
 
@@ -37,6 +37,15 @@ connectivity [input]
 **Default value:** Nearest
 
 Connectivity of the particles. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+allow multi-threading [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boolean
+
+**Default value:** True
+
+Set to true to allow multi-threaded processing. Set to false to use single-threaded processing. Single-threaded processing is often faster if it is known in advance that there are only a few particles or if the image is small. This argument has no effect in the distributed processing mode. There, the processing is always multi-threaded.
 
 See also
 --------

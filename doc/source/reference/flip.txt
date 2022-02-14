@@ -25,7 +25,7 @@ dimension [input]
 
 **Data type:** positive integer
 
-The dimension to flip. Zero corresponds to :math:`x`, one ty :math:`y`, etc.
+The dimension to flip. Zero corresponds to :math:`x`, one to :math:`y`, etc.
 
 See also
 --------

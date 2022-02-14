@@ -22,7 +22,7 @@ Here we calculate bivariate histogram of an image and its local thickness transf
 
 		# Calculate thickness map.
 		# Convert input image first to uint32 so that it can hold even large values.
-		pi.convert(bin, ImageDataType.UINT32);
+		pi.convert(bin, ImageDataType.UINT32)
 		tmap = pi.newlike(bin, ImageDataType.FLOAT32)
 		pi.tmap(bin, tmap)
 

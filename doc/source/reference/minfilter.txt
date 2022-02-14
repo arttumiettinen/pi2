@@ -43,7 +43,7 @@ allow optimization [input]
 
 **Default value:** True
 
-Set to true to allow use of approximate decompositions of spherical structuring elements using periodic lines. As a result of the approximation processing is much faster but the true shape of the structuring element is not sphere but a regular polyhedron. See van Herk - A fast algorithm for local minimum and maximum filters on rectangular and octagonal kernels and Jones - Periodic lines Definition, cascades, and application to granulometries.
+Set to true to allow use of approximate decompositions of spherical structuring elements using periodic lines. As a result of the approximation processing is much faster but the true shape of the structuring element is not sphere but a regular polyhedron. See van Herk - A fast algorithm for local minimum and maximum filters on rectangular and octagonal kernels and Jones - Periodic lines Definition, cascades, and application to granulometries.  The approximate filtering will give wrong results where distance from image edge is less than r. Consider enlarging the image by r to all directions before processing. Enlarging in the :math:`z`-direction is especially important for 2D images, and therefore approximate processing is not allowed if the image is 2-dimensional.
 
 neighbourhood type [input]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

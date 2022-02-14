@@ -48,12 +48,12 @@ def create_and_access_images():
     # newlike command can be used to create new image that is similar to existing image,
     # This line creates second image that has the same dimensions than img1 and pixel
     # data type UINT16.
-    img2 = pi.newlike(img1, ImageDataType.UINT16);
+    img2 = pi.newlike(img1, ImageDataType.UINT16)
     print(f"img2 is {img2}")
 
     # This line creates second image that has the same pixel data type than img1,
     # but its dimensions are 50x50x50.
-    img3 = pi.newlike(img1, ImageDataType.UNKNOWN, 50, 50, 50);
+    img3 = pi.newlike(img1, ImageDataType.UNKNOWN, 50, 50, 50)
     print(f"img3 is {img3}")
 
     # The data in the image can be retrieved as a NumPy array
@@ -386,13 +386,13 @@ def skeleton_vtk():
     pi.line(geometry, p2, p4, 255)
 
     # Save the geometry
-    pi.writeraw(geometry, output_file("geometry"));
+    pi.writeraw(geometry, output_file("geometry"))
 
     # Convert geometry to line skeleton
-    pi.lineskeleton(geometry);
+    pi.lineskeleton(geometry)
 
     # Write the skeleton so that it can be visualized
-    pi.writeraw(geometry, output_file("skeleton"));
+    pi.writeraw(geometry, output_file("skeleton"))
 
     # Create images for tracing the skeleton into a graph
     vertices = pi.newimage(ImageDataType.FLOAT32)
@@ -409,7 +409,7 @@ def skeleton_vtk():
     # need that format.
     vtkpoints = pi.newimage()
     vtklines = pi.newimage()
-    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
+    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines)
 
     # Create some additional data for the points
     N = vtkpoints.get_height()
@@ -761,7 +761,7 @@ def bivariate_histogram():
 
     # Calculate thickness map.
     # Convert input image first to uint32 so that it can hold even large values.
-    pi.convert(bin, ImageDataType.UINT32);
+    pi.convert(bin, ImageDataType.UINT32)
     tmap = pi.newlike(bin, ImageDataType.FLOAT32)
     pi.tmap(bin, tmap)
 
@@ -866,7 +866,7 @@ def levelset_fill_cavity():
     pi.noise(geom, 0, 20)
     
     # Save the geometry
-    pi.writetif(geom, output_file('levelset_geom'));
+    pi.writetif(geom, output_file('levelset_geom'))
 
 
     # Initialize an image that holds the level set function.
@@ -1115,7 +1115,7 @@ def generate_orientation_image(main_az=np.pi/4, main_pol=np.pi/2, kappa=3, n=150
 
         L = 100
         r = 5
-        pos = np.random.rand(1, 3) * size;
+        pos = np.random.rand(1, 3) * size
 
         pi.capsule(img, pos - L * dir, pos + L * dir, r, 255)
         if lumen:
@@ -1403,7 +1403,7 @@ def vessel_tracing():
     # Convert to vtk format in order to get radius for each point and line
     vtkpoints = pi.newimage()
     vtklines = pi.newimage()
-    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines);
+    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines)
     
     # Get radius for each point
     points_data = vtkpoints.get_data()
@@ -1442,7 +1442,7 @@ def vessel_tracing():
     # Convert to vtk format again, now with smoothing the point coordinates to get non-jagged branches.
     vtkpoints = pi.newimage()
     vtklines = pi.newimage()
-    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines, smoothing_sigma, max_displacement);
+    pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines, smoothing_sigma, max_displacement)
     
 
     # Write to file

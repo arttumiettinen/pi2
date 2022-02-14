@@ -57,6 +57,9 @@ def main():
                 if folder.endswith('xml') or folder.endswith('log'):
                     logs.append(folder)
 
+        # Remove '_dacatXXX.log' entries
+        logs = [p for p in logs if '_dacat' not in p]
+
         # Normalize paths
         logs = [os.path.normpath(p) for p in logs]
 

@@ -33,7 +33,7 @@ This example shows how to fill a concave cavity using a level set method.
 		pi.noise(geom, 0, 20)
 		
 		# Save the geometry
-		pi.writetif(geom, output_file('levelset_geom'));
+		pi.writetif(geom, output_file('levelset_geom'))
 
 
 		# Initialize an image that holds the level set function.

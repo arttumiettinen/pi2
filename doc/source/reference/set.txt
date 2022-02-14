@@ -3,7 +3,7 @@
 set
 ***
 
-There are 4 forms of this command.
+There are 5 forms of this command.
 
 :code:`set(name, value)`
 ========================
@@ -128,3 +128,39 @@ See also
 --------
 
 :ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`get`, :ref:`ramp`
+
+:code:`set(image, positions, values)`
+=====================================
+
+Sets values of multiple pixels in an image. Points outside of the image are not set.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image where the pixels are set.
+
+positions [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Positions of pixels to set. Each row of this image contains (x, y, z) coordinates of a pixel to be set. The size of the image must be 3xN where N is the count of pixels to write. Floating point values are rounded to the nearest integer.
+
+values [input]
+~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Values of the pixels to be set. The size of the image must be the number of pixels to set.
+
+See also
+--------
+
+:ref:`set`, :ref:`set`, :ref:`getpointsandlines`
