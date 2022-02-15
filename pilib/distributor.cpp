@@ -823,12 +823,12 @@ namespace pilib
 
 				if (img->currentReadSource() != img->currentWriteTarget())
 				{
-					cout << "Job skipping is not allowed as there are in-place processed images that need to be copied from input file to output file." << endl;
+					cout << "Job skipping is not allowed as there are in-place processed images that need to be copied from the input file to the output file." << endl;
 					jobSkippingAllowed = false;
 					break;
 
-							// This is commented as I don't want to support copying (without file type conversion) here.
-							// I don't know if it would be good to do it without submitting copy jobs, anyway?
+					// This is commented as I don't want to support copying (without file type conversion) here.
+					// I don't know if it would be good to do it without submitting copy jobs, anyway?
 					//if (img->isRaw() != img->isOutputRaw())
 					//{
 					//	cout << "Job skipping is not allowed as there are in-place processed images that require file type conversion." << endl;
