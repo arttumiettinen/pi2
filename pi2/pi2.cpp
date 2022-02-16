@@ -9,6 +9,7 @@
 
 #if defined(__linux__)
 #include <signal.h>
+#include <cstring>
 #endif
 
 using namespace std;
@@ -43,9 +44,9 @@ void sigbushandler(int signo, siginfo_t* si, void* data) {
 		cout << endl << endl;
 		cout << "Received sigbus." << endl;
 		cout << "signo = " << signo << endl;
-		cout << "si->si_signo = " << (int)si->si_signo << endl;
-		cout << "si->si_error = " << si->si_error << endl;
+		cout << "si->si_signo = " << si->si_signo << endl;
 		cout << "si->si_code = " << si->si_code << endl;
+		cout << "si->si_errno = " << si->si_errno << endl;
 		exit(0);
 	}
 }
