@@ -7,6 +7,10 @@
 
 #include "argumentexception.h"
 
+#if defined(__linux__)
+#include <signal.h>
+#endif
+
 using namespace std;
 using namespace pi2;
 
@@ -30,11 +34,37 @@ bool readFile(const string& filename, string& code)
 	return false;
 }
 
+#if defined(__linux__)
+
+void sigbushandler(int signo, siginfo_t* si, void* data) {
+
+	if (signo == SIGBUS)
+	{
+		cout << endl << endl;
+		cout << "Received sigbus." << endl;
+		cout << "signo = " << signo << endl;
+		cout << "si->si_signo = " << (int)si->si_signo << endl;
+		cout << "si->si_error = " << si->si_error << endl;
+		cout << "si->si_code = " << si->si_code << endl;
+		exit(0);
+	}
+}
+#endif
+
 /*
 Main entry point
 */
 int main(int argc, char** argv)
 {
+
+#if defined(__linux__)
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = sigbushandler;
+	if (sigaction(SIGBUS, &sa, 0) == -1)
+		cout << "Unable to catch SIGBUS, " << strerror(errno) << endl;
+#endif
 	
 	auto handle = unique_ptr<void, decltype(destroyPI)*>(createPI(), destroyPI);
 	try
