@@ -47,6 +47,7 @@ void sigbushandler(int signo, siginfo_t* si, void* data) {
 		cout << "si->si_signo = " << si->si_signo << endl;
 		cout << "si->si_code = " << si->si_code << endl;
 		cout << "si->si_errno = " << si->si_errno << endl;
+		cout << "si->si_addr = " << si->si_addr << endl;
 		exit(0);
 	}
 }
