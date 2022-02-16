@@ -247,9 +247,9 @@ namespace pilib
 		case ArgumentDataType::ImageInt64: return ImageDataType::Int64;
 		case ArgumentDataType::ImageFloat32: return ImageDataType::Float32;
 		case ArgumentDataType::ImageComplex32: return ImageDataType::Complex32;
+		default: return ImageDataType::Unknown;
 		}
 
-		return ImageDataType::Unknown;
 	}
 
 	static inline ArgumentDataType imageDataTypeToArgumentDataType(ImageDataType t)
@@ -266,10 +266,9 @@ namespace pilib
 		case ImageDataType::Int64: return ArgumentDataType::ImageInt64;
 		case ImageDataType::Float32: return ArgumentDataType::ImageFloat32;
 		case ImageDataType::Complex32: return ArgumentDataType::ImageComplex32;
+		default: throw ITLException("Unsupported image to argument type conversion.");
 		}
 
-		throw ITLException("Unsupported image to argument type conversion.");
-		//return ArgumentDataType::Int;
 	}
 
 	/**

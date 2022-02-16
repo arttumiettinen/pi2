@@ -164,7 +164,7 @@ namespace pilib
 			return std::vector<std::string>();
 		}
 
-		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
 		{
 			if (argIndex == 1)
 			{
@@ -188,7 +188,7 @@ namespace pilib
 			}
 		}
 
-		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
+		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const override
 		{
 			// Input image is the reference image.
 			return 0;

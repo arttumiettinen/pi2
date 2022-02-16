@@ -4,6 +4,7 @@
 #include "filesystem.h"
 
 #include <iostream>
+#include <sstream>
 
 #if defined(__linux__) || defined(__APPLE__)
 

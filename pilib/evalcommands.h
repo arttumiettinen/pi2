@@ -66,7 +66,7 @@ namespace pilib
 			itl2::eval(expression, out, std::vector<ImageBase*>{&out});
 		}
 
-		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const
+		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const override
 		{
 			// Check sizes of argument images.
 			return Vec3c(0, 0, 0);
@@ -98,7 +98,7 @@ namespace pilib
 			itl2::eval(expression, out, std::vector<ImageBase*>{&out, &param1});
 		}
 
-		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const
+		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const override
 		{
 			// Check sizes of argument images.
 			DistributedImage<output_t>& out = *std::get<DistributedImage<output_t>* >(args[1]);
@@ -137,7 +137,7 @@ namespace pilib
 			itl2::eval(expression, out, std::vector<ImageBase*>{&out, &param1, &param2});
 		}
 
-		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const
+		virtual Vec3c getMargin(const std::vector<ParamVariant>& args) const override
 		{
 			// Check sizes of argument images.
 			DistributedImage<output_t>& out = *std::get<DistributedImage<output_t>* >(args[1]);

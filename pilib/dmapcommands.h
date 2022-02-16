@@ -142,7 +142,7 @@ namespace pilib
 			run(input, output, bgval);
 		}
 
-		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& input = *pop<DistributedImage<pixel_t>* >(args);
 			DistributedImage<dmap_t>& output = *pop<DistributedImage<dmap_t>* >(args);
@@ -190,7 +190,7 @@ namespace pilib
 			distanceTransform(input, output, nullptr, pixelRound<pixel_t>(bgval));
 		}
 
-		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
 		{
 			DistributedImage<dmap_t>& output = *std::get<DistributedImage<dmap_t>* >(args[1]);
 

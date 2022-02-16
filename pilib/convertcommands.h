@@ -98,7 +98,7 @@ namespace pilib
 			return vector<string>();
 		}
 
-		virtual void run(vector<ParamVariant>& args) const
+		virtual void run(vector<ParamVariant>& args) const override
 		{
 		}
 	};
@@ -138,7 +138,7 @@ namespace pilib
 			return vector<string>();
 		}
 
-		virtual void run(vector<ParamVariant>& args) const
+		virtual void run(vector<ParamVariant>& args) const override
 		{
 		}
 	};
