@@ -326,12 +326,16 @@ namespace itl2
 		*/
 		size_t getLinearIndex(coord_t x, coord_t y = 0, coord_t z = 0) const
 		{
-			size_t ind = (size_t)z * (size_t)width() * (size_t)height() + (size_t)y * (size_t)width() + (size_t)x;
-#if _DEBUG
-			//if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d)
-			if (ind >= (size_t)pixelCount())
-				throw ::std::runtime_error("Bounds check failure.");
+#if defined(_DEBUG) || defined(BOUNDS_CHECK)
+			if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d)
+			{
+				std::stringstream s;
+				s << "Bounds check failure. Trying to access " << Vec3c(x, y, z) << " when image size is " << dimensions();
+				throw ::std::runtime_error(s.str());
+			}
 #endif
+			size_t ind = (size_t)z * (size_t)width() * (size_t)height() + (size_t)y * (size_t)width() + (size_t)x;
+
 			return ind;
 		}
 
