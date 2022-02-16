@@ -2,6 +2,8 @@
 # NOTE: Use "make" or "make all" to do a normal build.
 #       Use "make NO_OPENCL=1" or "make all NO_OPENCL=1" to do a build without OpenCL support.
 #       use "make TESTS=1" to build also itl2tests project.
+#		Use "make BOUNDS_CHECK=1" to build a version with image access bounds checking. Usually
+#			bounds checking is not necessary unless tracking bugs etc.
 
 CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
 LDFLAGS := -fopenmp

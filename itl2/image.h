@@ -324,18 +324,37 @@ namespace itl2
 		/**
 		Get index of pixel at (x, y, z) in the array returned by getData() method.
 		*/
-		size_t getLinearIndex(coord_t x, coord_t y = 0, coord_t z = 0) const
+		size_t getLinearIndex(coord_t x, coord_t y, coord_t z) const
 		{
 #if defined(_DEBUG) || defined(BOUNDS_CHECK)
 #pragma message("Bounds check is enabled. This might cause performance problems.")
 			if (x < 0 || y < 0 || z < 0 || x >= width() || y >= height() || z >= depth())
 			{
 				std::stringstream s;
-				s << "Bounds check failure. Trying to access " << Vec3c(x, y, z) << " when image size is " << dimensions();
+				s << "Bounds check failure. Trying to access location " << Vec3c(x, y, z) << " from image of size " << dimensions();
 				throw ::std::runtime_error(s.str());
 			}
 #endif
 			size_t ind = (size_t)z * (size_t)width() * (size_t)height() + (size_t)y * (size_t)width() + (size_t)x;
+
+			return ind;
+		}
+
+		/**
+		Get linear index of n:th pixel in the image.
+		*/
+		size_t getLinearIndex(coord_t n) const
+		{
+#if defined(_DEBUG) || defined(BOUNDS_CHECK)
+			if (n < 0 || n >= pixelCount())
+			{
+				std::stringstream s;
+				s << "Bounds check failure. Trying to access pixel " << n << " from image of size " << dimensions();
+				throw ::std::runtime_error(s.str());
+			}
+#endif
+			// Nothing really to do here.
+			size_t ind = (size_t)n;
 
 			return ind;
 		}
@@ -705,18 +724,54 @@ namespace itl2
 		Get a pixel at specified location.
 		No bounds checking is performed.
 		*/
-		const pixel_t& operator()(coord_t x, coord_t y = 0, coord_t z = 0) const
+		const pixel_t& operator()(coord_t x, coord_t y, coord_t z) const
 		{
 			return pDataConst[getLinearIndex(x, y, z)];
 		}
 
 		/**
-		Get a reference to pixel at the specified location.
+		Get a pixel at specified location, assuming this is a 2D image.
 		No bounds checking is performed.
 		*/
-		pixel_t& operator()(coord_t x, coord_t y = 0, coord_t z = 0)
+		const pixel_t& operator()(coord_t x, coord_t y) const
+		{
+			return pDataConst[getLinearIndex(x, y, 0)];
+		}
+
+		/**
+		Get the n:th pixel of the image.
+		No bounds checking is performed.
+		*/
+		const pixel_t& operator()(coord_t n) const
+		{
+			return pDataConst[getLinearIndex(n)];
+		}
+
+		/**
+		Get a reference to a pixel at the specified location.
+		No bounds checking is performed.
+		*/
+		pixel_t& operator()(coord_t x, coord_t y, coord_t z)
 		{
 			return pData[getLinearIndex(x, y, z)];
+		}
+
+		/**
+		Get a reference to a pixel at the specified location, assuming a 2D image.
+		No bounds checking is performed.
+		*/
+		pixel_t& operator()(coord_t x, coord_t y)
+		{
+			return pData[getLinearIndex(x, y, 0)];
+		}
+
+		/**
+		Get a reference to the n:th pixel of the image.
+		No bounds checking is performed.
+		*/
+		pixel_t& operator()(coord_t n)
+		{
+			return pData[getLinearIndex(n)];
 		}
 
 		/**
