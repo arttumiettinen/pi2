@@ -598,7 +598,7 @@ class Pi2:
         # (No docstring as it is visible in IPython class documentation.)
         # Finds commands that are available from the pilib and adds them as methods of the class instance.
 
-        self.piobj = N
+        self.piobj = None
 
         # Create pilib instance
         if os.name == 'nt':
