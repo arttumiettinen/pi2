@@ -327,7 +327,7 @@ namespace itl2
 		size_t getLinearIndex(coord_t x, coord_t y = 0, coord_t z = 0) const
 		{
 #if defined(_DEBUG) || defined(BOUNDS_CHECK)
-			if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d)
+			if (x < 0 || y < 0 || z < 0 || x >= width() || y >= height() || z >= depth())
 			{
 				std::stringstream s;
 				s << "Bounds check failure. Trying to access " << Vec3c(x, y, z) << " when image size is " << dimensions();
