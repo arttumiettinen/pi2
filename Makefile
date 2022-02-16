@@ -23,6 +23,10 @@ ifdef NO_OPENCL
     OPENCL_LIB=
 endif
 
+ifdef BOUNDS_CHECK
+	CXXFLAGS += -DBOUNDS_CHECK
+endif
+
 
 TEMP_DIR := $(shell pwd)/intermediate
 BUILD_ROOT = $(TEMP_DIR)/$(CONFIG)/$@
