@@ -497,7 +497,7 @@ namespace pilib
 			return JobType::Slow;
 		}
 
-		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
+		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const override
 		{
 			// Input image is the reference image
 			return 0;

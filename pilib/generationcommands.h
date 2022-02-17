@@ -46,7 +46,7 @@ namespace pilib
 			return true;
 		}
 
-		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
 		}
@@ -191,13 +191,13 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
-		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const
+		virtual size_t getRefIndex(const std::vector<ParamVariant>& args) const override
 		{
 			// We have to use the input image as a reference.
 			return 0;
 		}
 
-		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
 		{
 			if (argIndex == 2)
 			{
@@ -212,7 +212,7 @@ namespace pilib
 			}
 		}
 
-		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
 		{
 			return JobType::Fast;
 		}

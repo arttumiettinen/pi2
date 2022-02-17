@@ -888,7 +888,7 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
-		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const
+		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const override
 		{
 			// The amount of extra memory is impossible to know, so we make a bad estimate.
 			// TODO: How to improve this?
@@ -1215,7 +1215,7 @@ namespace pilib
 			return JobType::Normal;
 		}
 
-		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const
+		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const override
 		{
 			// Allocate some extra memory for priority queue
 			return 1.0;
@@ -1305,7 +1305,7 @@ namespace pilib
 			return Vec3c(3, 3, 3);
 		}
 
-		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const
+		virtual double calculateExtraMemory(const std::vector<ParamVariant>& args) const override
 		{
 			// Allocate some extra memory for priority queue in filling
 			return 2.0;

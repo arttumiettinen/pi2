@@ -116,6 +116,11 @@ namespace pilib
 
 	public:
 
+		virtual ~Distributor()
+		{
+			// Nothing to do here.
+		}
+
 		/**
 		Block origin command parameter type and name.
 		*/

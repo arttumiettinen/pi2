@@ -46,7 +46,7 @@ namespace pilib
 			run(in, out);
 		}
 
-		virtual Vec3c calculateOverlap(const std::vector<ParamVariant>& args) const
+		virtual Vec3c calculateOverlap(const std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& input = *std::get<DistributedImage<pixel_t>* >(args[0]);
 			DistributedImage<pixel_t>& output = *std::get<DistributedImage<pixel_t>* >(args[1]);
@@ -310,7 +310,7 @@ namespace pilib
 			run(in, out, saveMemory);
 		}
 
-		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& dmap2 = *pop<DistributedImage<pixel_t>* >(args);
 			DistributedImage<pixel_t>& result = *pop<DistributedImage<pixel_t>* >(args);
@@ -474,7 +474,7 @@ namespace pilib
 			CommandList::get<FinalizeThicknessMapCommand<pixel_t, out_t> >().run(input, output);
 		}
 
-		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& input = *pop<DistributedImage<pixel_t>* >(args);
 			DistributedImage<out_t>& output = *pop<DistributedImage<out_t>* >(args);

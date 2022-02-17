@@ -285,7 +285,7 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
-		virtual double calculateExtraMemory(const vector<ParamVariant>& args) const
+		virtual double calculateExtraMemory(const vector<ParamVariant>& args) const override
 		{
 			// Reserve some extra memory for the processing queues.
 			return 0.75;

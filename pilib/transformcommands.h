@@ -37,7 +37,7 @@ namespace pilib
 			rot90cw(in, out);
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>*>(args[0]);
 			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>*>(args[1]);
@@ -45,7 +45,7 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
-		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
 		{
 			if (argIndex == 0)
 			{
@@ -59,7 +59,7 @@ namespace pilib
 			}
 		}
 
-		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
 		{
 			return JobType::Fast;
 		}
@@ -85,7 +85,7 @@ namespace pilib
 			rot90ccw(in, out);
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>*>(args[0]);
 			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>*>(args[1]);
@@ -110,7 +110,7 @@ namespace pilib
 			}
 		}
 
-		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
 		{
 			return JobType::Fast;
 		}
@@ -139,12 +139,12 @@ namespace pilib
 			flip(img, dim);
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			return distributor.distribute(this, args);
 		}
 
-		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const
+		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const override
 		{
 			// Return any other direction than the one we are flipping in.
 			// This is to make sure that the scanlines are full in the flipping dimension.
@@ -158,7 +158,7 @@ namespace pilib
 			}
 		}
 
-		virtual JobType getJobType(const std::vector<ParamVariant>& args) const
+		virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
 		{
 			return JobType::Fast;
 		}
@@ -190,7 +190,7 @@ namespace pilib
 			reslice(in, out, dir);
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>*>(args[0]);
 			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>*>(args[1]);
@@ -211,7 +211,7 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
-		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
 		{
 			if (argIndex == 0)
 			{
@@ -270,7 +270,7 @@ namespace pilib
 			}
 		}
 
-		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
 		}
@@ -371,14 +371,14 @@ namespace pilib
 			itl2::rotate<pixel_t, pixel_t>(in, out, angle, axis, inCenter - Vec3d(inputOrigin), outCenter - Vec3d(outputOrigin), *createInterpolator<pixel_t, pixel_t>(imode, bc));
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>*>(args[0]);
 			args[9] = in.dimensions();
 			return distributor.distribute(this, args);
 		}
 
-		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
 		{
 			if (argIndex == 0)
 			{
@@ -401,7 +401,7 @@ namespace pilib
 			}
 		}
 
-		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
 		}
@@ -436,7 +436,7 @@ namespace pilib
 			CommandList::get<RotateCommand<pixel_t>>().run(in, out, args);
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>*>(args[0]);
 			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>*>(args[1]);
