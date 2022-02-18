@@ -63,7 +63,11 @@ namespace itl2
 		{
 			// Parse again to make separate expression object for each thread.
 			std::vector<double> varValues;
-			auto [symbols, expr] = internals::parse(expression, params, varValues);
+			internals::symbol_table_t symbols;
+			internals::expression_t expr;
+			// Note: This does not work in clang
+			//auto [symbols, expr] = internals::parse(expression, params, varValues);
+			std::tie(symbols, expr) = internals::parse(expression, params, varValues);
 
 			#pragma omp for
 			for (coord_t n = 0; n < target.pixelCount(); n++)
