@@ -53,21 +53,9 @@ void sigbushandler(int signo, siginfo_t* si, void* data) {
 }
 #endif
 
-/*
-Main entry point
-*/
-int main(int argc, char** argv)
-{
 
-#if defined(__linux__)
-	struct sigaction sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_flags = SA_SIGINFO;
-	sa.sa_sigaction = sigbushandler;
-	if (sigaction(SIGBUS, &sa, 0) == -1)
-		cout << "Unable to catch SIGBUS, " << strerror(errno) << endl;
-#endif
-	
+int main2(int argc, char** argv)
+{
 	auto handle = unique_ptr<void, decltype(destroyPI)*>(createPI(), destroyPI);
 	try
 	{
@@ -154,4 +142,23 @@ int main(int argc, char** argv)
 
 		return 4;
 	}
+}
+
+/*
+Main entry point
+*/
+int main(int argc, char** argv)
+{
+
+#if defined(__linux__)
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = sigbushandler;
+	if (sigaction(SIGBUS, &sa, 0) == -1)
+		cout << "Unable to catch SIGBUS, " << strerror(errno) << endl;
+#endif
+	
+	int result = main2(argc, argv);
+	return result;
 }
