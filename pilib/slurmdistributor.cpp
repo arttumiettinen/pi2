@@ -164,6 +164,8 @@ namespace pilib
 			
 			get<0>(submittedJobs[jobIndex]) = slurmId;
 			get<2>(submittedJobs[jobIndex])++;
+
+			cout << "Submitted job " << jobName << ", SLURM id = " << slurmId << endl;
 		}
 		else
 		{
