@@ -4,6 +4,7 @@ Articles where pi2 has been used
 This is an incomplete list of articles where this software or some of its previous versions has been used.
 If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
+* Blaskovic A. et al., Early life exposure to nicotine modifies lung gene response after elastase-induced emphysema. Respiratory Research 23, 2022. https://doi.org/10.1186/s12931-022-01956-4
 * Romano M., et al., X-Ray Phase Contrast 3D Virtual Histology:Evaluation of Lung Alterations AfterMicrobeam Irradiation. Radiation Oncology, Biology, Physics, 2022. https://doi.org/10.1016/j.ijrobp.2021.10.009
 * Eckermann M. et al., Three-dimensional virtual histology of the human hippocampus based on phase-contrast computed tomography, PNAS 118(48), 2021.
 * Wälchli T. et al., Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Nature Protocols, 2021.
