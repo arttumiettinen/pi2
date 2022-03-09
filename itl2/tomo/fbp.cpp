@@ -381,7 +381,7 @@ namespace itl2
 			{
 				if (NumberUtils<float32_t>::greaterThan(abs(angles[angleIndex] - angles[0]), 360 - (angles[1] - angles[0]), 0.1f * abs(angles[1] - angles[0])))
 				{
-					cout << "Excess projection removed (index = " << angleIndex << ", angle = " << angles[angleIndex] << " deg)." << endl;
+					//cout << "Excess projection removed (index = " << angleIndex << ", angle = " << angles[angleIndex] << " deg)." << endl;
 					proj_weight = 0;
 				}
 			}
@@ -903,7 +903,7 @@ namespace itl2
 	/**
 	Caps values to range ]0, 1[.
 	*/
-	void replaceBadValues(Image<float32_t>& img)
+	void replaceOutOfRangeValues(Image<float32_t>& img)
 	{
 		float32_t eps = 0.00001f;
 		for(coord_t n = 0; n < img.pixelCount(); n++)
@@ -1002,7 +1002,9 @@ namespace itl2
 					setValue(slice, origSlice);
 				}
 				
-				replaceBadValues(slice);
+				// NOTE: In the Direct mode no values are out of range.
+				if(settings.phaseMode != PhaseMode::Direct)
+					replaceOutOfRangeValues(slice);
 
 				if(settings.removeDeadPixels)
 				{
@@ -1209,109 +1211,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 };
 )***";
 
-//			const char* backprojectProgram = R"***(
-//
-//#pragma OPENCL EXTENSION cl_khr_3d_image_writes : enable
-//
-//float csZPerturbation(float z, float projectionHeight, float csZSlope)
-//{
-//	return (z - projectionHeight / 2) * csZSlope;
-//}
-//
-//kernel void backproject(read_only image3d_t transmissionProjections,
-//						global read_only float3* xHatArray,
-//						global read_only float3* nHatArray,
-//						read_only float centerShift, read_only float csZSlope,
-//						global read_only float* csAnglePerturbations,
-//						read_only float3 center,
-//						read_only float d,
-//						global read_only float2* objectShifts,
-//						read_only float cameraZShift,
-//						//read_only float dynMin, read_only float dynMax, read_only float scale,
-//						read_only float2 projectionShift,
-//						read_only float2 fullProjectionSize,
-//						read_only image3d_t initialValue,
-//						write_only image3d_t output)
-//{
-//
-//	const int3 projSize = (int3)(get_image_width(transmissionProjections), get_image_height(transmissionProjections), get_image_depth(transmissionProjections));
-//	const int3 outSize = (int3)(get_image_width(output), get_image_height(output), get_image_depth(output));
-//
-//	//float projectionWidth = (float)projSize.x;
-//	//float projectionHeight = (float)projSize.y;
-//	float projectionWidth = fullProjectionSize.x;
-//	float projectionHeight = fullProjectionSize.y;
-//	
-//	
-//	// Calculate position of current pixel
-//    const int3 pos = (int3)(get_global_id(0), get_global_id(1), get_global_id(2));
-//    const float3 posf = convert_float3(pos);
-//    if (pos.x < 0 || pos.y < 0 || pos.z < 0 || pos.x >= outSize.x || pos.y >= outSize.y || pos.z >= outSize.z)
-//        return;
-//
-//	float3 zHat = (float3)(0, 0, 1);
-//
-//	const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
-//
-//	float currentCS = centerShift + csZPerturbation(posf.z, projectionHeight, csZSlope);
-//
-//	// Read initial value of the pixel as this kernel may be called multiple times with different set of projections if
-//	// all of them do not fit into memory at once.
-//	//const sampler_t readSampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
-//	//float sum = read_imagef(initialValue, readSampler, (int4)(pos.x, pos.y, pos.z, 0)).x;
-//	float sum = read_imagef(initialValue, (int4)(pos.x, pos.y, pos.z, 0)).x;
-//	//float sum = 0;
-//
-//	for (int anglei = 0; anglei < projSize.z; anglei++)
-//	{
-//		float3 rho = posf - center;
-//		float3 xHat = xHatArray[anglei];
-//		float3 nHat = nHatArray[anglei];
-//
-//		float dprhox = d + dot(rho, xHat);
-//		float Y = (d * dot(rho, nHat)) / dprhox;
-//		float Z = (d * dot(rho, zHat)) / dprhox;
-//
-//		float w = (d * d) / (dprhox * dprhox);
-//
-//		// Get data from ideal detector position (Y, Z)
-//		// First account for detector shifts and rotation
-//		// TODO: Actually we have object shifts so this is only approximation that is correct for parallel beam case.
-//		float sdx = objectShifts[anglei].x;
-//		float sdz = objectShifts[anglei].y;
-//		float angleCS = currentCS + csAnglePerturbations[anglei];
-//		float ix = Y + projectionWidth / 2.0f + angleCS - sdx;
-//		float iy = Z + projectionHeight / 2.0f + cameraZShift - sdz;
-//
-//		// TODO: Handle camera rotation here
-//
-//		// Apply projection shift (we load only part of projections)
-//		ix -= projectionShift.x;
-//		iy -= projectionShift.y;
-//
-//		float imgVal = read_imagef(transmissionProjections, sampler, (float4)(ix + 0.5f, iy + 0.5f, anglei + 0.5f, 0)).s0;
-//
-//		sum += w * imgVal;
-//	}
-//
-//	// This is done later as this kernel may be called multiple times with different set of projections if
-//	// all the projections do not fit into device memory at once.
-//	//sum *= normFactor;
-//	//sum = (sum - dynMin) / (dynMax - dynMin) * scale;
-//
-//	write_imagef(output, (int4)(pos.x, pos.y, pos.z, 0), sum);
-//
-//
-//
-//
-//	//// Scaling
-//	//sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
-//	////output(x, y, zi) = pixelRound<out_t>(sum);
-//	//output(x, y, z) = pixelRound<out_t>(sum);
-//
-//};
-//)***";
-
 			try
 			{
 
@@ -1414,11 +1313,18 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 				cl::ImageFormat format(CL_INTENSITY, CL_FLOAT);
 				cl::Image3D transmissionProjectionsCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, format, transmissionProjections.width(), transmissionProjections.height(), transmissionProjections.depth());
 
-				cl::Buffer pssCL(pss.begin(), pss.end(), true, true);
-				cl::Buffer pdsCL(pds.begin(), pds.end(), true, true);
-				cl::Buffer usCL(us.begin(), us.end(), true, true);
-				cl::Buffer vsCL(vs.begin(), vs.end(), true, true);
-				cl::Buffer wsCL(ws.begin(), ws.end(), true, true);
+				// NOTE: The constructor taking iterators does not have a form where context could be specified.
+				//		 That form is in the specs but not in the NVidia-provided file.
+				//cl::Buffer pssCL(pss.begin(), pss.end(), true, true);
+				cl::Buffer pssCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, pss.size() * sizeof(cl_float3), (cl_float3*)pss.data());
+				//cl::Buffer pdsCL(pds.begin(), pds.end(), true, true);
+				cl::Buffer pdsCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, pds.size() * sizeof(cl_float3), (cl_float3*)pds.data());
+				//cl::Buffer usCL(us.begin(), us.end(), true, true);
+				cl::Buffer usCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, us.size() * sizeof(cl_float3), (cl_float3*)us.data());
+				//cl::Buffer vsCL(vs.begin(), vs.end(), true, true);
+				cl::Buffer vsCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, vs.size() * sizeof(cl_float3), (cl_float3*)vs.data());
+				//cl::Buffer wsCL(ws.begin(), ws.end(), true, true);
+				cl::Buffer wsCL(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, ws.size() * sizeof(cl_float3), (cl_float3*)ws.data());
 
 				Vec4f centerCL(center.x, center.y, center.z, 0); // CL defines float3 as float4, so we need extra zero after center position.
 
@@ -1498,144 +1404,6 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			}
 
 		}
-
-		///**
-		//Internal OpenCL backprojection routine.
-		//@param firstAngleIndex Index of angle in settings.angles corresponding to the first image in transmissionProjections.
-		//*/
-		//void backprojectOpenCL(const Image<float32_t>& transmissionProjections, const Vec3c& fullProjectionSize, const Vec3c& projBlockStart, const RecSettings& settings, Image<float32_t>& output, CLEnv& clEnv)
-		//{
-
-		//	float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
-		//	float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
-
-
-		//	// Pre-calculate direction vectors. OpenCL requires 4-component vectors!
-		//	std::vector<Vec4f> xHatArray;
-		//	std::vector<Vec4f> nHatArray;
-		//	xHatArray.reserve(transmissionProjections.depth());
-		//	nHatArray.reserve(transmissionProjections.depth());
-
-		//	// Pre-calculate center shift angle perturbations
-		//	vector<float32_t> csAnglePerturbations;
-		//	csAnglePerturbations.reserve(transmissionProjections.depth());
-
-		//	// Make arrays containing correct shifts
-		//	vector<Vec2f> objectShifts;
-		//	objectShifts.reserve(transmissionProjections.depth());
-
-		//	double rotMul = 1.0;
-		//	if (settings.rotationDirection == RotationDirection::Counterclockwise)
-		//		rotMul = -1.0;
-
-		//	for (size_t anglei = projBlockStart.z; anglei < projBlockStart.z + (size_t)transmissionProjections.depth(); anglei++)
-		//	{
-		//		double angle = rotMul * (settings.angles[anglei] - 90 + settings.rotation) / 180.0 * PI;
-
-		//		float32_t c = (float32_t)cos(angle);
-		//		float32_t s = (float32_t)sin(angle);
-		//		xHatArray.push_back(Vec4f(c, s, 0, 0));
-		//		nHatArray.push_back(Vec4f(-s, c, 0, 0));
-
-		//		csAnglePerturbations.push_back(internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope));
-
-		//		objectShifts.push_back(settings.objectShifts[anglei] * settings.shiftScaling * (settings.useShifts ? 1.0f : 0.0f));
-		//	}
-		//	Vec3f zHat(0, 0, 1);
-
-		//	// Backproject
-		//	float32_t d = settings.sourceToRA;
-
-		//	
-		//	// NOTE: -0.5 ensures that if roiSize.z == 1, roiCenter.z = 1 / 2 - roiCenter.z - 0.5 = roiCenter.z
-		//	// TODO: Should subtraction be done for all the components?
-		//	Vec3f center = Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter) - Vec3f(0, 0, 0.5);
-
-		//	Vec2f fullProjectionSizeFloat((float32_t)fullProjectionSize.x, (float32_t)fullProjectionSize.y);
-		//	Vec2f projectionShift((float32_t)projBlockStart.x, (float32_t)projBlockStart.y);
-
-		//	Timer timer;
-
-		//	try
-		//	{
-		//		cl::ImageFormat format(CL_INTENSITY, CL_FLOAT);
-		//		cl::Image3D transmissionProjectionsCL = cl::Image3D(clEnv.context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, format, transmissionProjections.width(), transmissionProjections.height(), transmissionProjections.depth());
-
-		//		cl::Buffer xHatArrayCL = cl::Buffer(clEnv.context, xHatArray.begin(), xHatArray.end(), true, true);
-		//		cl::Buffer nHatArrayCL = cl::Buffer(clEnv.context, nHatArray.begin(), nHatArray.end(), true, true);
-		//		cl::Buffer csAnglePerturbationsCL = cl::Buffer(clEnv.context, csAnglePerturbations.begin(), csAnglePerturbations.end(), true, true);
-
-		//		Vec4f centerCL(center.x, center.y, center.z, 0); // CL defines float3 as float4, so we need extra zero after center position.
-
-		//		cl::Buffer objectShiftsCL = cl::Buffer(clEnv.context, objectShifts.begin(), objectShifts.end(), true, true);
-
-		//		// Set all arguments
-		//		clEnv.kernel.setArg(0, transmissionProjectionsCL);
-		//		clEnv.kernel.setArg(1, xHatArrayCL);
-		//		clEnv.kernel.setArg(2, nHatArrayCL);
-		//		clEnv.kernel.setArg(3, settings.centerShift);
-		//		clEnv.kernel.setArg(4, settings.csZSlope);
-		//		clEnv.kernel.setArg(5, csAnglePerturbationsCL);
-		//		clEnv.kernel.setArg(6, centerCL);
-		//		clEnv.kernel.setArg(7, d);
-		//		clEnv.kernel.setArg(8, objectShiftsCL);
-		//		clEnv.kernel.setArg(9, settings.cameraZShift);
-		//		//clEnv.kernel.setArg(10, settings.dynMin);
-		//		//clEnv.kernel.setArg(11, settings.dynMax);
-		//		//clEnv.kernel.setArg(12, NumberUtils<float32_t>::scale());
-		//		//clEnv.kernel.setArg(13, outputCL);
-		//		clEnv.kernel.setArg(10, projectionShift); // Shift that must be applied to projection coordinates
-		//		clEnv.kernel.setArg(11, fullProjectionSizeFloat); // Width and height of full projection images
-		//		clEnv.kernel.setArg(12, clEnv.temp);
-		//		clEnv.kernel.setArg(13, clEnv.output);
-
-
-		//		cl::size_t<3> projSizeCL;
-		//		projSizeCL[0] = transmissionProjections.width();
-		//		projSizeCL[1] = transmissionProjections.height();
-		//		projSizeCL[2] = transmissionProjections.depth();
-		//		clEnv.queue.enqueueWriteImage(transmissionProjectionsCL, true, cl::size_t<3>(), projSizeCL, 0, 0, (void*)transmissionProjections.getData());
-		//		
-
-		//		cl::size_t<3> outSizeCL;
-		//		outSizeCL[0] = output.width();
-		//		outSizeCL[1] = output.height();
-		//		outSizeCL[2] = output.depth();
-		//		clEnv.queue.enqueueCopyImage(clEnv.output, clEnv.temp, cl::size_t<3>(), cl::size_t<3>(), outSizeCL);
-
-		//		clEnv.queue.finish();
-
-		//		// Enqueue in batches so that watchdog timer issues are avoided
-		//		size_t blockSize = 1; // TODO: Optimize block size somehow.
-		//		coord_t zStart = 0;
-		//		do
-		//		{
-		//			coord_t zEnd = zStart + blockSize;
-		//			if (zEnd > output.depth())
-		//				zEnd = output.depth();
-		//			
-		//			//cout << "enqueueNDRangeKernel z = " << zStart << " - " << zEnd << endl;
-		//			
-		//			timer.start();
-		//			clEnv.queue.enqueueNDRangeKernel(clEnv.kernel,
-		//				cl::NDRange(0, 0, zStart),
-		//				cl::NDRange(output.width(), output.height(), zEnd - zStart),
-		//				cl::NullRange);
-
-		//			clEnv.queue.finish();
-
-		//			zStart = zEnd;
-		//		} while (zStart < output.depth());
-
-		//	}
-		//	catch (cl::Error err)
-		//	{
-		//		timer.stop();
-		//		//cout << timer.getSeconds() << endl;
-		//		throw ITLException("OpenCL error at " + string(err.what()) + ", error code = " + toString(err.err()) + ", OpenCL kernel run time = " + toString(timer.getSeconds()) + " s.");
-		//	}
-
-		//}
 
 		/**
 		Performs scaling of output pixel values to desired range.
@@ -1780,58 +1548,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			}
 
 
-
-			//float32_t gammamax0 = internals::calculateGammaMax0((float32_t)transmissionProjections.width(), settings.sourceToRA);
-			//float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
-
-			//double rotMul = 1.0;
-			//if (settings.rotationDirection == RotationDirection::Counterclockwise)
-			//	rotMul = -1.0;
-
-			//float32_t projectionWidth = (float32_t)transmissionProjections.width();
-			//float32_t projectionHeight = (float32_t)transmissionProjections.height();
-
-			//Vec3f center = Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter);
-
-			//Vec2f projMinCoords(numeric_limits<float32_t>::infinity(), numeric_limits<float32_t>::infinity());
-			//Vec2f projMaxCoords = -projMinCoords;
-			//for (size_t anglei = 0; anglei < settings.angles.size(); anglei++)
-			//{
-			//	double angle = rotMul * (settings.angles[anglei] - 90 + settings.rotation) / 180.0 * PI;
-			//	
-			//	float32_t c = (float32_t)cos(angle);
-			//	float32_t s = (float32_t)sin(angle);
-
-			//	Vec3f xHat(c, s, 0);
-			//	Vec3f nHat(-s, c, 0);
-			//	Vec3f zHat(0, 0, 1);
-			//	float32_t d = settings.sourceToRA;
-			//	
-			//	for (size_t m = 0; m < corners.size(); m++)
-			//	{
-			//		Vec3f xyz = corners[m];
-
-			//		float32_t currentCS = settings.centerShift + internals::csZPerturbation(xyz.z, (float32_t)settings.roiCenter.z, (float32_t)settings.roiSize.z, projectionHeight, settings.csZSlope);
-
-			//		Vec3f rho = xyz - center;
-
-			//		float32_t dprhox = d + rho.dot(xHat);
-			//		float32_t Y = (d * rho.dot(nHat)) / dprhox;
-			//		float32_t Z = (d * rho.dot(zHat)) / dprhox;
-
-			//		float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-			//		float32_t sdz = settings.objectShifts[anglei].y * settings.shiftScaling * (settings.useShifts ? 1 : 0);
-			//		float32_t angleCS = currentCS + internals::csAnglePerturbation(anglei, centralAngle, settings.angles, settings.csAngleSlope);
-			//		float32_t ix = Y + projectionWidth / 2.0f + angleCS - sdx;
-			//		float32_t iy = Z + projectionHeight / 2.0f + settings.cameraZShift - sdz;
-
-			//		projMinCoords = min(projMinCoords, Vec2f(ix, iy));
-			//		projMaxCoords = max(projMaxCoords, Vec2f(ix, iy));
-			//	}
-			//}
-
-		cout << "projMinCoords = " << projMinCoords << endl;
-		cout << "projMaxCoords = " << projMaxCoords << endl;
+		//cout << "projMinCoords = " << projMinCoords << endl;
+		//cout << "projMaxCoords = " << projMaxCoords << endl;
 
 			Vec2c projMin = floor(projMinCoords - Vec2f(2, 2));
 			Vec2c projMax = ceil(projMaxCoords + Vec2f(2, 2) + Vec2f(1, 1));
@@ -1843,8 +1561,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 
 			Vec3c projBlockSize = env.max3DImageSize;
 
-		cout << "projBlockSize2D = " << projBlockSize2D << endl;
-		cout << "initial projBlockSize = " << projBlockSize << endl;
+		//cout << "projBlockSize2D = " << projBlockSize2D << endl;
+		//cout << "initial projBlockSize = " << projBlockSize << endl;
 
 			if (projBlockSize.x < projBlockSize2D.x ||
 				projBlockSize.y < projBlockSize2D.y)
@@ -1856,7 +1574,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			projBlockSize.z = std::min(projBlockSize.z, transmissionProjections.depth());
 			projBlockSize.z = std::min(projBlockSize.z, maxProjBlockSizeZ);
 
-		cout << "After clamping to projection count and maxProjBlockSizeZ, projBlockSize = " << projBlockSize << endl;
+		//cout << "After clamping to projection count and maxProjBlockSizeZ, projBlockSize = " << projBlockSize << endl;
 
 			size_t outputSize = output.pixelCount() * sizeof(float32_t);
 			size_t allocSize = projBlockSize.x * projBlockSize.y * projBlockSize.z * sizeof(float32_t);
