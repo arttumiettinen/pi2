@@ -50,7 +50,7 @@
 #include "pathopening.h"
 #include "eval.h"
 #include "sdmap.h"
-
+#include "io/itllz4.h"
 
 using namespace itl2;
 using namespace std;
@@ -75,17 +75,19 @@ int main()
 	//test(itl2::tests::cgne, "CGNE");
 	//test(itl2::tests::image, "Image");
 
-	//test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
-	//test(raw::tests::expandFilename, "Raw filename expansion");
-	//test(raw::tests::raw, "Raw reader");
-	//test(io::tests::readWrite, "IO read");
-	//test(raw::tests::writeBlock, "Block based raw reader & writer");
-	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
-	//test(vol::tests::volio, ".vol input/output");
-	//test(itl2::png::tests::png, "Png read and write");
-	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
-	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
-	//test(itl2::pcr::tests::read, "PCR read");
+	test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
+	test(raw::tests::expandFilename, "Raw filename expansion");
+	test(raw::tests::raw, "Raw reader");
+	test(io::tests::readWrite, "IO read");
+	test(raw::tests::writeBlock, "Block based raw reader & writer");
+	test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
+	test(vol::tests::volio, ".vol input/output");
+	test(itl2::png::tests::png, "Png read and write");
+	test(itl2::tiff::tests::readWrite, "Tiff read and write");
+	//test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
+	test(itl2::nrrd::tests::readWrite, "NRRD read and write");
+	test(itl2::pcr::tests::read, "PCR read");
+	
 
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
@@ -244,7 +246,7 @@ int main()
 	//test(itl2::tests::stddevuint16, "standard deviation, uint16");
 
 	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
-	test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");
+	//test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");
 
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
@@ -252,7 +254,11 @@ int main()
 	//test(itl2::tests::createPlates, "Input geometry generation");
 	//test(itl2::tests::createMoreProjections, "Large number of projections");
 	//test(itl2::tests::fbp, "Filtered backprojection");
+	//test(itl2::tests::nn5Metadata, "NN5 metadata");
 	
+	//test(itl2::lz4::tests::lz4io, "LZ4");
+	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
+	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
 	
 	
 	

@@ -38,7 +38,9 @@ namespace itl2
     			return lastTiffErrorMessage;
 			}
 
-			bool getCurrentDirectoryInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason)
+			bool getCurrentDirectoryInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes,
+				coord_t& imageJDepth, uint64_t& imageJOffset,
+				string& reason)
 			{
 				reason = "";
 
@@ -49,6 +51,7 @@ namespace itl2
 				uint32_t tiffDepth = 0;
 				uint16_t samplesPerPixel = 0;
 				uint16_t bitsPerSample = 0;
+				char* description = 0;
 
 				TIFFGetFieldDefaulted(tif, TIFFTAG_DATATYPE, &tiffDatatype);
 				TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
@@ -57,8 +60,35 @@ namespace itl2
 				TIFFGetFieldDefaulted(tif, TIFFTAG_IMAGEDEPTH, &tiffDepth);
 				TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
 				TIFFGetFieldDefaulted(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+				TIFFGetFieldDefaulted(tif, TIFFTAG_IMAGEDESCRIPTION, &description);
 
 				dimensions = Vec3c(tiffWidth, tiffHeight, tiffDepth);
+				imageJDepth = dimensions.z;
+				imageJOffset = 0;
+
+				// Test if this file is a ImageJ fake tiff.
+				if (description)
+				{
+					string desc = description;
+					if (startsWith(desc, "ImageJ="))
+					{
+						auto start = desc.find("images=");
+						if (start != string::npos)
+						{
+							start += string("images=").length();
+							auto end = desc.find("\n", start);
+							if (end != string::npos)
+							{
+								string depth = desc.substr(start, end - start);
+								imageJDepth = fromString<uint32_t>(depth);
+
+								uint64_t* stripOffsets = 0;
+								int result = TIFFGetField(tif, TIFFTAG_STRIPOFFSETS, &stripOffsets);
+								imageJOffset = stripOffsets[0];
+							}
+						}
+					}
+				}
 
 				switch (sampleFormat)
 				{
@@ -90,6 +120,7 @@ namespace itl2
 					break;
 				case SAMPLEFORMAT_INT:
 					reason = "Unsupported signed integer data type.";
+					break;
 				case SAMPLEFORMAT_IEEEFP:
 					if (bitsPerSample == 32)
 					{
@@ -103,6 +134,7 @@ namespace itl2
 					break;
 				case SAMPLEFORMAT_COMPLEXINT:
 					reason = "Unsupported complex integer data type.";
+					break;
 				case SAMPLEFORMAT_COMPLEXIEEEFP:
 					if (bitsPerSample == 64)
 					{
@@ -170,11 +202,13 @@ namespace itl2
 				return reason.length() <= 0;
 			}
 
-			bool getInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason)
+			bool getInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, uint64_t& rawDataOffset, string& reason)
 			{
 				// Read information from all .tif directories and make sure that all of them match.
 
-				if (!getCurrentDirectoryInfo(tif, dimensions, dataType, pixelSizeBytes, reason))
+				coord_t imageJDepth;
+				uint64_t imageJOffset;
+				if (!getCurrentDirectoryInfo(tif, dimensions, dataType, pixelSizeBytes, imageJDepth, imageJOffset, reason))
 					return false;
 
 				coord_t dirCount = 1;
@@ -185,7 +219,7 @@ namespace itl2
 					{
 						if (TIFFReadDirectory(tif) != 1)
 						{
-							reason = "Unable to read TIFF directory. The file invalid.";
+							reason = "Unable to read TIFF directory. The file is invalid.";
 							return false;
 						}
 
@@ -198,8 +232,9 @@ namespace itl2
 						Vec3c currDims;
 						ImageDataType currDT;
 						size_t currPixelSizeBytes;
-
-						if (!getCurrentDirectoryInfo(tif, currDims, currDT, currPixelSizeBytes, reason))
+						coord_t dummy1;
+						uint64_t dummy2;
+						if (!getCurrentDirectoryInfo(tif, currDims, currDT, currPixelSizeBytes, dummy1, dummy2, reason))
 							return false;
 
 						if (currDims != dimensions || currDims.z > 1)
@@ -229,8 +264,20 @@ namespace itl2
 					} while (TIFFLastDirectory(tif) == 0);
 				}
 
-				dimensions.z = dirCount;
 				TIFFSetDirectory(tif, 0);
+
+				if (imageJDepth > dirCount)
+				{
+					// This is an ImageJ fake tiff.
+					dimensions.z = imageJDepth;
+					rawDataOffset = imageJOffset;
+				}
+				else
+				{
+					// This is a normal tiff where each slice is in separate tiff directory.
+					dimensions.z = dirCount;
+					rawDataOffset = 0;
+				}
 				return true;
 			}
 
@@ -245,12 +292,9 @@ namespace itl2
 			if (tif)
 			{
 				size_t bytesPerPixel = 0;
-				return internals::getInfo(tif, dimensions, dataType, bytesPerPixel, reason);
+				uint64_t dummy;
+				return internals::getInfo(tif, dimensions, dataType, bytesPerPixel, dummy, reason);
 			}
-			//else
-			//{
-			//	throw ITLException(string("Unable to open .tiff file: ") + internals::tiffLastError());
-			//}
 
 			reason = "The file does not contain a valid TIFF header.";
 			return false;
@@ -341,6 +385,20 @@ namespace itl2
 				crop(headBlockGTFull, headBlockGT, Vec3c(128, 128, 63));
 
 				testAssert(equals(headBlock, headBlockGT), ".tif block read and crop");
+			}
+
+			void imageJLargeTiff()
+			{
+				// NOTE: This test requires that the current folder contains file imagej_large.tif that
+				// is a .tiff image saved from ImageJ using command File->Save as->Tiff...
+				
+				if (testAssert(fileExists(string("imagej_large.tif")), "ImageJ large TIFF support: test data does not exist."))
+				{
+					Image<uint8_t> img;
+					tiff::read(img, "imagej_large.tif");
+
+					tiff::writed(img, "./image_large_tiff/out.tif");
+				}
 			}
 		}
 	}

@@ -53,9 +53,10 @@ namespace itl2
 	void createFoldersFor(const std::string& filename);
 
 	/**
-	Adds .raw image dimensions to file name.
+	Adds image dimensions and ".raw" suffix to file name.
 	*/
 	std::string concatDimensions(const std::string& baseName, const Vec3c& dimensions);
+
 
 	/**
 	Removes .raw image dimensions from file name.

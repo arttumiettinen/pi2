@@ -41,6 +41,24 @@ namespace itl2
 		}
 	}
 
+	/**
+	Fills given image with ramp in all dimensions
+	*/
+	template<typename pixel_t> void ramp3(Image<pixel_t>& img, coord_t shift = 0)
+	{
+		#pragma omp parallel for if(!omp_in_parallel())
+		for (coord_t z = 0; z < img.depth(); z++)
+		{
+			for (coord_t y = 0; y < img.height(); y++)
+			{
+				for (coord_t x = 0; x < img.width(); x++)
+				{
+					img(x, y, z) = pixelRound<pixel_t>(x + y + z + shift);
+				}
+			}
+		}
+	}
+
 
 	/**
 	Sets pixel values in an image to a constant.

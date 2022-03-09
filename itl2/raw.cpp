@@ -145,10 +145,10 @@ namespace itl2
 				raw::internals::expandRawFilename(f3);
 				raw::internals::expandRawFilename(f4);
 
-				testAssert(f1 == ".\\input_data\\t1-head_256x256x129.raw", "filename 1");
-				testAssert(f2 == ".\\input_data\\t1-head_bin_256x256x129.raw", "filename 2");
-				testAssert(f3 == ".\\input_data\\t1-head_bin_dmap_256x256x129.raw", "filename 3");
-				testAssert(f4 == ".\\input_data\\t1-head_256x256x129.raw", "filename 4");
+				testAssert(fs::path(f1) == fs::path(".\\input_data\\t1-head_256x256x129.raw"), "filename 1");
+				testAssert(fs::path(f2) == fs::path(".\\input_data\\t1-head_bin_256x256x129.raw"), "filename 2");
+				testAssert(fs::path(f3) == fs::path(".\\input_data\\t1-head_bin_dmap_256x256x129.raw"), "filename 3");
+				testAssert(fs::path(f4) == fs::path(".\\input_data\\t1-head_256x256x129.raw"), "filename 4");
 			}
 		}
 	}

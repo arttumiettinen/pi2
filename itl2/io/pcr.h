@@ -9,6 +9,7 @@
 #include "image.h"
 #include "io/raw.h"
 #include "pointprocess.h"
+#include "byteorder.h"
 
 namespace itl2
 {
@@ -39,8 +40,8 @@ namespace itl2
 			ImageDataType dataType;
 			std::string reason;
 			std::string datafile;
-			bool isBigEndian;
-			if (!getInfo(filename, dimensions, dataType, reason, datafile, isBigEndian))
+			bool isBigEndianFile;
+			if (!getInfo(filename, dimensions, dataType, reason, datafile, isBigEndianFile))
 				throw ITLException(reason);
 
 			if (dataType != imageDataType<pixel_t>())
@@ -49,7 +50,7 @@ namespace itl2
 			img.ensureSize(dimensions);
 			raw::readNoParse(img, datafile);
 
-			if (isBigEndian)
+			if (isBigEndianFile != isBigEndian())
 				swapByteOrder(img);
 		}
 
@@ -66,8 +67,8 @@ namespace itl2
 			ImageDataType dataType;
 			std::string reason;
 			std::string datafile;
-			bool isBigEndian;
-			if (!getInfo(filename, dimensions, dataType, reason, datafile, isBigEndian))
+			bool isBigEndianFile;
+			if (!getInfo(filename, dimensions, dataType, reason, datafile, isBigEndianFile))
 				throw ITLException(reason);
 
 			if (dataType != imageDataType<pixel_t>())
@@ -75,7 +76,7 @@ namespace itl2
 
 			raw::readBlockNoParse(img, datafile, dimensions, start, showProgressInfo);
 
-			if (isBigEndian)
+			if (isBigEndianFile != isBigEndian())
 				swapByteOrder(img);
 		}
 

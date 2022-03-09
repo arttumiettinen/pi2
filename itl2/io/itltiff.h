@@ -17,7 +17,7 @@ namespace itl2
 	{
 		namespace internals
 		{
-			bool getInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, string& reason);
+			bool getInfo(TIFF* tif, Vec3c& dimensions, ImageDataType& dataType, size_t& pixelSizeBytes, uint64_t& rawDataOffset, std::string& reason);
 
 			/**
 			Initialize .tiff reading library.
@@ -30,14 +30,24 @@ namespace itl2
 			*/
 			std::string tiffLastError();
 
-            template<typename pixel_t> void readDirectories(Image<pixel_t>& img, TIFF* tif, size_t z, const Vec3c& dimensions)
-            {
-                if (z >= (size_t)img.depth())
+			template<typename pixel_t> void readDirectories(Image<pixel_t>& img, TIFF* tif, size_t z, const Vec3c& dimensions, const std::string& filename, uint64_t rawDataOffset)
+			{
+				if (z >= (size_t)img.depth())
 					throw ITLException("Invalid target z coordinate.");
+
+
+				if (rawDataOffset != 0)
+				{
+					// This is an ImageJ fake tiff. Read it as raw data file.
+					raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)rawDataOffset);
+					return;
+				}
 
 				// Read all directories
 				do
 				{
+					if (z >= (size_t)img.depth())
+						throw ITLException("TIFF file contains more frames than expected. This is a bug in the software. Please report it to the authors.");
 
 					bool isTiled = TIFFIsTiled(tif) != 0;
 					if (isTiled)
@@ -127,7 +137,8 @@ namespace itl2
 					ImageDataType dataType;
 					size_t pixelSizeBytes;
 					string reason;
-					if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes, reason))
+					uint64_t rawDataOffset;
+					if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes, rawDataOffset, reason))
 					{
 						if (dataType != imageDataType<pixel_t>() && pixelSizeBytes != sizeof(pixel_t))
 							throw ITLException(string("Pixel data type in .tiff file is ") + toString(dataType) + " (" + toString(pixelSizeBytes) + " bytes per pixel), but image data type is " + toString(imageDataType<pixel_t>()) + " (" + toString(sizeof(pixel_t)) + " bytes per pixel).");
@@ -139,59 +150,59 @@ namespace itl2
 							dimensions.z = 1;
 							
 							if(allowResize)
-    							    img.ensureSize(dimensions.x, dimensions.y, img.depth());
+								img.ensureSize(dimensions.x, dimensions.y, img.depth());
 
-                            if(img.dimensions() == Vec3c(dimensions.x, dimensions.y, img.depth()))
-                            {
-    							internals::readDirectories(img, tif, z, dimensions);
-    						}
-    						else
-    						{
-    						    //if(img.dimensions() != Vec3c(dimensions.x, dimensions.y, img.depth()))
-							    //    throw ITLException(string("Dimensions of the data in the 2D .tif file ") + filename + string(" do not match to the dimensions of the image."));
+							if(img.dimensions() == Vec3c(dimensions.x, dimensions.y, img.depth()))
+							{
+								internals::readDirectories(img, tif, z, dimensions, filename, rawDataOffset);
+							}
+							else
+							{
+								//if(img.dimensions() != Vec3c(dimensions.x, dimensions.y, img.depth()))
+								//    throw ITLException(string("Dimensions of the data in the 2D .tif file ") + filename + string(" do not match to the dimensions of the image."));
 
-                                Image<pixel_t> tempImage(dimensions.x, dimensions.y, 1);
-                                internals::readDirectories(tempImage, tif, 0, dimensions);
-							    
-       						    // Calculate shift such that the on-disk image becomes centered in the space available.
-    						    Vec3c target = (img.dimensions() - Vec3c(dimensions.x, dimensions.y, img.depth())) / 2;
-    						    target.z = z;
-    						    
-    						    // Copy pixel values to final image.
-    						    copyValues(img, tempImage, target);
-    						}
+								Image<pixel_t> tempImage(dimensions.x, dimensions.y, 1);
+								internals::readDirectories(tempImage, tif, 0, dimensions, filename, rawDataOffset);
+								
+								// Calculate shift such that the on-disk image becomes centered in the space available.
+								Vec3c target = (img.dimensions() - Vec3c(dimensions.x, dimensions.y, img.depth())) / 2;
+								target.z = z;
+								
+								// Copy pixel values to final image.
+								copyValues(img, tempImage, target);
+							}
 						}
 						else
 						{
-						    if(allowResize)
-							    img.ensureSize(dimensions);
-							    
+							if(allowResize)
+								img.ensureSize(dimensions);
+								
 							if(img.dimensions() == Vec3c(dimensions.x, dimensions.y, img.depth()))
-                            {
-    							internals::readDirectories(img, tif, 0, dimensions);
-    						}
-    						else
-    						{
-    						    //if(img.dimensions() != Vec3c(dimensions.x, dimensions.y, img.depth()))
-							    //    throw ITLException(string("Dimensions of the data in the .tif file ") + filename + string(" do not match to the dimensions of the image."));
+							{
+								internals::readDirectories(img, tif, 0, dimensions, filename, rawDataOffset);
+							}
+							else
+							{
+								//if(img.dimensions() != Vec3c(dimensions.x, dimensions.y, img.depth()))
+								//    throw ITLException(string("Dimensions of the data in the .tif file ") + filename + string(" do not match to the dimensions of the image."));
 
-                                Image<pixel_t> tempImage(dimensions);
-                                internals::readDirectories(tempImage, tif, 0, dimensions);
-							    
-       						    // Calculate shift such that the on-disk image becomes centered in the space available.
-    						    Vec3c target = (img.dimensions() - dimensions) / 2;
-    						    
-    						    // Copy pixel values to final image.
-    						    copyValues(img, tempImage, target);
-    						}
+								Image<pixel_t> tempImage(dimensions);
+								internals::readDirectories(tempImage, tif, 0, dimensions, filename, rawDataOffset);
+								
+								// Calculate shift such that the on-disk image becomes centered in the space available.
+								Vec3c target = (img.dimensions() - dimensions) / 2;
+								
+								// Copy pixel values to final image.
+								copyValues(img, tempImage, target);
+							}
 						}
 						
 						return;
 					}
-				    else
-				    {
-					    throw ITLException(reason);
-				    }
+					else
+					{
+						throw ITLException(reason);
+					}
 				}
 
 				throw ITLException(string("Error while reading .tif image: ") + internals::tiffLastError());
@@ -252,10 +263,18 @@ namespace itl2
 				ImageDataType dataType;
 				size_t pixelSizeBytes;
 				string reason;
-				if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes, reason))
+				uint64_t rawDataOffset;
+				if (internals::getInfo(tif, dimensions, dataType, pixelSizeBytes, rawDataOffset, reason))
 				{
 					if (dataType != imageDataType<pixel_t>() && pixelSizeBytes != sizeof(pixel_t))
 						throw ITLException(string("Pixel data type in .tiff file is ") + toString(dataType) + " (" + toString(pixelSizeBytes) + " bytes per pixel), but image data type is " + toString(imageDataType<pixel_t>()) + " (" + toString(sizeof(pixel_t)) + " bytes per pixel).");
+
+					if (rawDataOffset != 0)
+					{
+						// This is an ImageJ fake tiff. Read it as a .raw file.
+						raw::readBlockNoParse(img, filename, dimensions, start, showProgressInfo, rawDataOffset);
+						return;
+					}
 
 					// Read all directories
 					coord_t tifz = start.z;
@@ -467,6 +486,7 @@ namespace itl2
 		namespace tests
 		{
 			void readWrite();
+			void imageJLargeTiff();
 		}
 	}
 }
