@@ -311,7 +311,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ReadRawBlockCommand() : Command("readrawblock", "Reads a block of a .raw image from a file. " + rawFilenameFormatHelp(),
+		ReadRawBlockCommand() : Command("readrawblock", "Reads a block of a .raw image file. " + rawFilenameFormatHelp(),
 			{
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read."),
@@ -343,7 +343,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ReadRawBlock2Command() : Command("readrawblock", "Reads a block of a .raw image from a file. " + rawFilenameFormatHelp(),
+		ReadRawBlock2Command() : Command("readrawblock", "Reads a block of a .raw image file. " + rawFilenameFormatHelp(),
 			{
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read."),
@@ -371,7 +371,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ReadSequenceBlockCommand() : Command("readsequenceblock", "Reads a block of an image sequence from a file.",
+		ReadSequenceBlockCommand() : Command("readsequenceblock", "Reads a block of an image sequence.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read."),
@@ -399,10 +399,62 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ReadSequenceBlock2Command() : Command("readsequenceblock", "Reads a block of an image sequence from a file.",
+		ReadSequenceBlock2Command() : Command("readsequenceblock", "Reads a block of an image sequence.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "position", "Coordinates of the first pixel to read."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "block size", "The size of the block to read."),
+			})
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+	};
+
+
+	class ReadNN5BlockCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		ReadNN5BlockCommand() : Command("readnn5block", "Reads a block of an NN5 dataset.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of the dataset to read."),
+				CommandArgument<coord_t>(ParameterDirection::In, "x", "X-coordinate of the first pixel to read."),
+				CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-coordinate of the first pixel to read."),
+				CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-coordinate of the first pixel to read."),
+				CommandArgument<coord_t>(ParameterDirection::In, "block width", "Width of block to read."),
+				CommandArgument<coord_t>(ParameterDirection::In, "block height", "Height of block to read."),
+				CommandArgument<coord_t>(ParameterDirection::In, "block depth", "Depth of block to read.")
+			})
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+	};
+
+
+	class ReadNN5Block2Command : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		ReadNN5Block2Command() : Command("readnn5block", "Reads a block of an NN5 dataset.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
+				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of the dataset to read."),
 				CommandArgument<Vec3c>(ParameterDirection::In, "position", "Coordinates of the first pixel to read."),
 				CommandArgument<Vec3c>(ParameterDirection::In, "block size", "The size of the block to read."),
 			})

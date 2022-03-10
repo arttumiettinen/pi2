@@ -263,6 +263,52 @@ namespace pilib
 		}
 	};
 
+	template<typename pixel_t> class WriteLZ4Command : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WriteLZ4Command() : Command("writelz4", "Write an image to an .lz4raw file.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the file to write. If the file exists, its current contents are erased. Extension .lz4raw is automatically appended to the name of the file.")
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			itl2::lz4::writed(in, fname);
+		}
+	};
+
+	template<typename pixel_t> class WriteNN5Command : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WriteNN5Command() : Command("writenn5", "Write an image to an .nn5 dataset.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "path", "Name (and path) of the dataset to write. If the dataset exists, its current contents are erased.")
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			itl2::nn5::write(in, fname);
+		}
+	};
+
 
 	template<typename pixel_t> class WriteRawCommand : virtual public Command, public Distributable
 	{
@@ -696,6 +742,125 @@ namespace pilib
 			}
 
 			sequence::writeBlock(img, fname, position, fileSize, blockPosition, blockSize, true);
+		}
+	};
+
+
+
+
+	template<typename pixel_t> class WriteNN5BlockCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WriteNN5BlockCommand() : Command("writenn5block", "Write an image to a specified position in an NN5 dataset. Optionally can write only a block of the source image.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the dataset to write."),
+				CommandArgument<coord_t>(ParameterDirection::In, "x", "X-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-position of the image in the target file."),
+				CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output file. Specify zero to parse dimensions from the files.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output file. Specify zero to parse dimensions from the files.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output file. Specify zero to parse dimensions from the files.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "ix", "X-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iy", "Y-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iz", "Z-position of the block of the source image to write.", 0),
+				CommandArgument<coord_t>(ParameterDirection::In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<coord_t>(ParameterDirection::In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
+				CommandArgument<coord_t>(ParameterDirection::In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			coord_t x = pop<coord_t>(args);
+			coord_t y = pop<coord_t>(args);
+			coord_t z = pop<coord_t>(args);
+
+			coord_t w = pop<coord_t>(args);
+			coord_t h = pop<coord_t>(args);
+			coord_t d = pop<coord_t>(args);
+
+			coord_t ix = pop<coord_t>(args);
+			coord_t iy = pop<coord_t>(args);
+			coord_t iz = pop<coord_t>(args);
+			coord_t iw = pop<coord_t>(args);
+			coord_t ih = pop<coord_t>(args);
+			coord_t id = pop<coord_t>(args);
+
+			if (iw <= 0 || ih <= 0 || id <= 0)
+			{
+				iw = img.width();
+				ih = img.height();
+				id = img.depth();
+			}
+
+			// Parse dimensions from files if no dimensions are provided
+			if (w <= 0 || h <= 0 || d <= 0)
+			{
+				Vec3c dims;
+				itl2::ImageDataType dt2;
+				std::string reason;
+				if (!nn5::getInfo(fname, dims, dt2, reason))
+					throw ParseException(std::string("Unable to find metadata from NN5 dataset: ") + fname + ". " + reason);
+				w = dims.x;
+				h = dims.y;
+				d = dims.z;
+			}
+
+			nn5::writeBlock(img, fname, nn5::DEFAULT_CHUNK_SIZE, nn5::NN5Compression::LZ4, Vec3c(x, y, z), Vec3c(w, h, d), Vec3c(ix, iy, iz), Vec3c(iw, ih, id));
+		}
+	};
+
+	template<typename pixel_t> class WriteNN5Block2Command : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WriteNN5Block2Command() : Command("writenn5block", "Write an image to a specified position in an NN5 dataset. Optionally can write only a block of the source image.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the file to write."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "position", "Position of the image in the target file."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "file dimensions", "Dimensions of the output file. Specify zero to parse dimensions from the file. In this case it must exist.", Vec3c(0, 0, 0)),
+				CommandArgument<Vec3c>(ParameterDirection::In, "source position", "Position of the block of the source image to write.", Vec3c(0, 0, 0)),
+				CommandArgument<Vec3c>(ParameterDirection::In, "source block size", "Size of the block to write. Specify zero to write the whole source image.", Vec3c(0, 0, 0)),
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			Vec3c position = pop<Vec3c>(args);
+			Vec3c fileSize = pop<Vec3c>(args);
+			Vec3c blockPosition = pop<Vec3c>(args);
+			Vec3c blockSize = pop<Vec3c>(args);
+
+			if (blockSize.x <= 0 || blockSize.y <= 0 || blockSize.z <= 0)
+				blockSize = img.dimensions();
+
+			// Parse dimensions from files if no dimensions are provided
+			if (fileSize.x <= 0 || fileSize.y <= 0 || fileSize.z <= 0)
+			{
+				Vec3c dims;
+				itl2::ImageDataType dt2;
+				std::string reason;
+				if (!sequence::getInfo(fname, dims, dt2, reason))
+					throw ParseException(std::string("Unable to find metadata from NN5 dataset: ") + fname + ". " + reason);
+				fileSize = dims;
+			}
+
+			nn5::writeBlock(img, fname, nn5::DEFAULT_CHUNK_SIZE, nn5::NN5Compression::LZ4, position, fileSize, blockPosition, blockSize);
 		}
 	};
 }

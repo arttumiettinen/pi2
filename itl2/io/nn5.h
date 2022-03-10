@@ -414,6 +414,8 @@ namespace itl2
 			internals::writeChunks(img, path, chunkSize, compression, img.dimensions());
 		}
 
+		const Vec3c DEFAULT_CHUNK_SIZE(1536, 1536, 1536);
+
 		/**
 		Write an image to an nn5 dataset.
 		@param img Image to write.
@@ -421,7 +423,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path)
 		{
-			write(img, path, Vec3c(1536, 1536, 1536), NN5Compression::LZ4);
+			write(img, path, DEFAULT_CHUNK_SIZE, NN5Compression::LZ4);
 		}
 
 

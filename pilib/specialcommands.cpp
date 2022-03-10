@@ -55,6 +55,9 @@ namespace pilib
 
 		CommandList::add<ReadSequenceBlockCommand>();
 		CommandList::add<ReadSequenceBlock2Command>();
+
+		CommandList::add<ReadNN5BlockCommand>();
+		CommandList::add<ReadNN5Block2Command>();
 		
 		ADD_ALL(EnsureSizeCommand);
 		ADD_ALL(EnsureSize2Command);
@@ -1224,6 +1227,59 @@ the FAQ for more information on the distribution of modified source versions.)EN
 			throw ParseException(string("Unable to read sequence: ") + fname + ". " + reason);
 
 		pick<CreateImageAndReadSequenceBlock>(dt, blockDims, name, system, fname, blockStart);
+	}
+
+
+
+
+
+	template<typename pixel_t> struct CreateImageAndReadNN5Block
+	{
+		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
+		{
+			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
+			nn5::readBlock<pixel_t>(img, filename, blockStart);
+		}
+	};
+
+	void ReadNN5BlockCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		coord_t x = pop<coord_t>(args);
+		coord_t y = pop<coord_t>(args);
+		coord_t z = pop<coord_t>(args);
+		coord_t bw = pop<coord_t>(args);
+		coord_t bh = pop<coord_t>(args);
+		coord_t bd = pop<coord_t>(args);
+
+		Vec3c dimensions;
+		ImageDataType dt;
+		string reason;
+		if (!nn5::getInfo(fname, dimensions, dt, reason))
+			throw ParseException(string("Unable to read NN5 dataset: ") + fname + ". " + reason);
+
+		Vec3c blockDims(bw, bh, bd);
+
+		Vec3c blockStart(x, y, z);
+
+		pick<CreateImageAndReadNN5Block>(dt, blockDims, name, system, fname, blockStart);
+	}
+
+	void ReadNN5Block2Command::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		string name = pop<string>(args);
+		string fname = pop<string>(args);
+		Vec3c blockStart = pop<Vec3c>(args);
+		Vec3c blockDims = pop<Vec3c>(args);
+
+		Vec3c dimensions;
+		ImageDataType dt;
+		string reason;
+		if (!nn5::getInfo(fname, dimensions, dt, reason))
+			throw ParseException(string("Unable to read NN5 dataset: ") + fname + ". " + reason);
+
+		pick<CreateImageAndReadNN5Block>(dt, blockDims, name, system, fname, blockStart);
 	}
 
 
