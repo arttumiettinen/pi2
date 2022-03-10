@@ -10,7 +10,7 @@ namespace itl2
 	
     	bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
-			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason;
+			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, lz4Reason;
 			if (vol::getInfo(filename, dimensions, dataType, volReason))
 			{
 				return true;
@@ -39,9 +39,13 @@ namespace itl2
 			{
 				return true;
 			}
+			else if (lz4::getInfo(filename, dimensions, dataType, lz4Reason))
+			{
+				return true;
+			}
 			else
 			{
-				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason);
+				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason);
 				return false;
 			}
 		}
