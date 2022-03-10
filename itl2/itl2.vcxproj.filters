@@ -37,6 +37,12 @@
     <Filter Include="Header Files\exprtk">
       <UniqueIdentifier>{43e4336c-d592-424b-bf49-10c699d9a33a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\lz4">
+      <UniqueIdentifier>{4b268b45-e4fa-408a-b3b3-4a7d1b4f5381}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lz4">
+      <UniqueIdentifier>{cecb8c5e-d3a9-48c1-a373-8e4780c795bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="datatypes.h">
@@ -375,6 +381,30 @@
     <ClInclude Include="sdmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="io\nn5.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\json.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="byteorder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4.h">
+      <Filter>Header Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4frame.h">
+      <Filter>Header Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4hc.h">
+      <Filter>Header Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="io\itllz4.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\xxhash.h">
+      <Filter>Header Files\lz4</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
@@ -565,6 +595,24 @@
     </ClCompile>
     <ClCompile Include="sdmap.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\nn5.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\lz4.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\lz4frame.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\lz4hc.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="io\itllz4.cpp">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\xxhash.c">
+      <Filter>Source Files\lz4</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

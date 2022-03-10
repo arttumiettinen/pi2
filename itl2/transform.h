@@ -313,21 +313,24 @@ namespace itl2
 	}
 
 	/**
-	Copies 'block' to 'img', to given position.
+	Copies 'block' to 'target', to given position.
 	In other words, makes the 'inverse' of crop operation:
 	crop(img, block, pos)
 	assigns pixels in img to pixels of block but
 	copyValues(img, block, pos)
 	assigns pixels in block to pixels of img.
 	Does not resize target image.
+	@param target Target image where the pixels are written to.
+	@param block Source image where the pixels are copied from.
+	@param pos Position of source image data in the target image.
 	*/
 	template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& pos)
 	{
 		target.mustNotBe(block);
 
-		AABox sourceBox(Vec3c(0, 0, 0), block.dimensions());
-		AABox targetBox(Vec3c(0, 0, 0), target.dimensions());
-		AABox clippedBox = sourceBox.translate(pos).intersection(targetBox).translate(-pos);
+		AABox<coord_t> sourceBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), block.dimensions());
+		AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
+		AABox<coord_t> clippedBox = sourceBox.translate(pos).intersection(targetBox).translate(-pos);
 
 		if (pos.x == 0 && pos.y == 0 && block.dimensions().x == target.dimensions().x && block.dimensions().y == target.dimensions().y)
 		{

@@ -75,18 +75,18 @@ int main()
 	//test(itl2::tests::cgne, "CGNE");
 	//test(itl2::tests::image, "Image");
 
-	test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
-	test(raw::tests::expandFilename, "Raw filename expansion");
-	test(raw::tests::raw, "Raw reader");
-	test(io::tests::readWrite, "IO read");
-	test(raw::tests::writeBlock, "Block based raw reader & writer");
-	test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
-	test(vol::tests::volio, ".vol input/output");
-	test(itl2::png::tests::png, "Png read and write");
-	test(itl2::tiff::tests::readWrite, "Tiff read and write");
-	//test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
-	test(itl2::nrrd::tests::readWrite, "NRRD read and write");
-	test(itl2::pcr::tests::read, "PCR read");
+	//test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
+	//test(raw::tests::expandFilename, "Raw filename expansion");
+	//test(raw::tests::raw, "Raw reader");
+	//test(io::tests::readWrite, "IO read");
+	//test(raw::tests::writeBlock, "Block based raw reader & writer");
+	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
+	//test(vol::tests::volio, ".vol input/output");
+	//test(itl2::png::tests::png, "Png read and write");
+	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
+	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
+	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
+	//test(itl2::pcr::tests::read, "PCR read");
 	
 
 	//test(itl2::sequence::tests::match, "Matching");
@@ -259,6 +259,7 @@ int main()
 	//test(itl2::lz4::tests::lz4io, "LZ4");
 	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
 	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
+	test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
 	
 	
 	

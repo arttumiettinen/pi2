@@ -311,7 +311,7 @@ namespace itl2
 			Vec3c cEnd = fileStart + img.dimensions();
 			clamp(cEnd, Vec3c(0, 0, 0), fileDimensions);
 
-			if (cStart == Vec3c(0, 0, 0) && cEnd == fileDimensions)
+			if (cStart == Vec3c(0, 0, 0) && cEnd == fileDimensions && fileDimensions == img.dimensions())
 			{
 				// Reading whole file, use the whole file reading function.
 				raw::readNoParse(img, filename, bytesToSkip);

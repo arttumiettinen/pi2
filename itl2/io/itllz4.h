@@ -67,6 +67,11 @@ namespace itl2
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason);
 
 		/**
+		Tests if the given path points to a .lz4raw file.
+		*/
+		bool isFile(const std::string& filename);
+
+		/**
 		Reads an .lz4raw image from disk.
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& target, const std::string& filename)
@@ -202,7 +207,7 @@ namespace itl2
 
 			if (filePos == Vec3c(0, 0, 0) && img.dimensions() == fileDimensions)
 			{
-				// Read the entire file
+				// Read the entire file.
 				read(img, filename);
 				return;
 			}
@@ -283,11 +288,120 @@ namespace itl2
 		}
 
 
+		namespace internals
+		{
+			template<typename pixel_t> void writeBlockToFullFile(const Image<pixel_t>& img, const std::string& filename,
+				const Vec3c& imagePosition,
+				const Vec3c& blockDimensions)
+			{
+				createFoldersFor(filename);
+
+				std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+
+				if (!out)
+					throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
+
+				internals::writeSafe(out, blockDimensions.x);
+				internals::writeSafe(out, blockDimensions.y);
+				internals::writeSafe(out, blockDimensions.z);
+				internals::writeSafe(out, (int32_t)img.dataType());
+
+				LZ4F_cctx* ctx;
+				LZ4F_errorCode_t err = LZ4F_createCompressionContext(&ctx, LZ4F_VERSION);
+				if (LZ4F_isError(err))
+					throw ITLException(string("Unable to create LZ4 compression context: ") + LZ4F_getErrorName(err));
+				std::unique_ptr<LZ4F_cctx, decltype(LZ4F_freeCompressionContext)*> pCtx(ctx, LZ4F_freeCompressionContext);
+
+				size_t lzChunkSize = internals::LZ4_CHUNK_SIZE;
+				if (lzChunkSize < (size_t)blockDimensions.x)
+					lzChunkSize = (size_t)blockDimensions.x;
+
+				size_t outputCapacity = LZ4F_compressBound(lzChunkSize, &internals::lz4Prefs);
+				std::unique_ptr<uint8_t[]> pDest = std::make_unique<uint8_t[]>(outputCapacity);
+
+				// Frame header
+				{
+					size_t headerSize = LZ4F_compressBegin(ctx, pDest.get(), outputCapacity, &internals::lz4Prefs);
+					if (LZ4F_isError(headerSize))
+						throw ITLException(string("Unable to init LZ4 compression: ") + LZ4F_getErrorName(headerSize));
+
+					out.write((char*)pDest.get(), headerSize);
+				}
+
+				// Compress data one x-directional scan line at time.
+				for (coord_t z = imagePosition.z; z < imagePosition.z + blockDimensions.z; z++)
+				{
+					for (coord_t y = imagePosition.y; y < imagePosition.y + blockDimensions.y; y++)
+					{
+						size_t readSize = blockDimensions.x * img.pixelSize();
+						uint8_t* sourceAddr = (uint8_t*)&img(imagePosition.x, y, z);
+
+						size_t compressedSize = LZ4F_compressUpdate(ctx,
+							pDest.get(), outputCapacity,
+							sourceAddr, readSize,
+							NULL);
+						if (LZ4F_isError(compressedSize))
+							throw ITLException(string("Unable to perform LZ4 compression: ") + LZ4F_getErrorName(compressedSize));
+
+						out.write((char*)pDest.get(), compressedSize);
+					}
+				}
+
+				// Finalize compression
+				{
+					size_t const compressedSize = LZ4F_compressEnd(ctx, pDest.get(), outputCapacity, NULL);
+					if (LZ4F_isError(compressedSize))
+						throw ITLException(string("Unable to finalize LZ4 compression: ") + LZ4F_getErrorName(compressedSize));
+
+					out.write((char*)pDest.get(), compressedSize);
+				}
+			}
+		}
+
+
+		/**
+		Copies some pixels from 'source' to 'target', to given position.
+		@param target Target image where the pixels are written to.
+		@param block Source image where the pixels are copied from.
+		@param targetPos Position of source image data in the target image.
+		@param blockPos Position of the first pixel of the block to copy.
+		@param copySize Size of the block to copy.
+		*/
+		template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& targetPos, const Vec3c& sourcePos, const Vec3c& copySize)
+		{
+			target.mustNotBe(block);
+
+			// The region where we are going to copy from.
+			AABox<coord_t> sourceBox = AABox<coord_t>::fromPosSize(sourcePos, copySize);
+			
+			// Clip it to the available region in the source block
+			AABox<coord_t> fullSourceBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), block.dimensions());
+			sourceBox = sourceBox.intersection(fullSourceBox);
+
+			// Clip it to the target box so that we don't copy values out of target image.
+			AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
+			
+			AABox<coord_t> clippedSourceBox = sourceBox.translate(-sourcePos).translate(targetPos).intersection(targetBox).translate(-targetPos).translate(sourcePos);
+
+			// General shift
+			forAllInBox(clippedSourceBox, [&](coord_t x, coord_t y, coord_t z)
+				{
+					Vec3c xi = Vec3c(x, y, z) - sourcePos + targetPos;
+					target(xi) = pixelRound<pixel_t>(block(x, y, z));
+				});
+		}
+
 		/**
 		Writes block of an image into a .lz4raw file.
 		Replaces existing file.
+		If the output file exists, writing a block that does not cover it entirely, triggers reading of the entire file to a temporary image.
+		@param img Image to write.
+		@param filename Name of file to write.
+		@param filePosition Position in the file where the first pixel should be written.
+		@param fileDimensions Dimensions of the entire output file. If zero, 
 		*/
 		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename,
+			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions)
 		{
@@ -297,68 +411,37 @@ namespace itl2
 			if (!img.isInImage(imagePosition + blockDimensions - Vec3c(1, 1, 1)))
 				throw ITLException("Block end position must be inside the image.");
 
-			createFoldersFor(filename);
-
-			std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-
-			if (!out)
-				throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
-
-
-			internals::writeSafe(out, blockDimensions.x);
-			internals::writeSafe(out, blockDimensions.y);
-			internals::writeSafe(out, blockDimensions.z);
-			internals::writeSafe(out, (int32_t)img.dataType());
-
-			LZ4F_cctx* ctx;
-			LZ4F_errorCode_t err = LZ4F_createCompressionContext(&ctx, LZ4F_VERSION);
-			if (LZ4F_isError(err))
-				throw ITLException(string("Unable to create LZ4 compression context: ") + LZ4F_getErrorName(err));
-			std::unique_ptr<LZ4F_cctx, decltype(LZ4F_freeCompressionContext)*> pCtx(ctx, LZ4F_freeCompressionContext);
-
-			size_t lzChunkSize = internals::LZ4_CHUNK_SIZE;
-			if (lzChunkSize < (size_t)blockDimensions.x)
-				lzChunkSize = (size_t)blockDimensions.x;
-
-			size_t outputCapacity = LZ4F_compressBound(lzChunkSize, &internals::lz4Prefs);
-			std::unique_ptr<uint8_t[]> pDest = std::make_unique<uint8_t[]>(outputCapacity);
-
-			// Frame header
+			
+			if (filePosition == Vec3c(0, 0, 0) && (fileDimensions == blockDimensions || fileDimensions == Vec3c(0, 0, 0)))
 			{
-				size_t headerSize = LZ4F_compressBegin(ctx, pDest.get(), outputCapacity, &internals::lz4Prefs);
-				if (LZ4F_isError(headerSize))
-					throw ITLException(string("Unable to init LZ4 compression: ") + LZ4F_getErrorName(headerSize));
-
-				out.write((char*)pDest.get(), headerSize);
+				// We are overwriting entire output file if it exists.
+				internals::writeBlockToFullFile(img, filename, imagePosition, blockDimensions);
 			}
-
-			// Compress data one x-directional scan line at time.
-			for (coord_t z = imagePosition.z; z < imagePosition.z + blockDimensions.z; z++)
+			else
 			{
-				for (coord_t y = imagePosition.y; y < imagePosition.y + blockDimensions.y; y++)
+				// We are writing a block of the image to a block of the output file.
+				// As the file is compressed, we must read the entire file, modify the data, and write the entire file again.
+				Image<pixel_t> temp;
+				if (isFile(filename))
 				{
-					size_t readSize = blockDimensions.x * img.pixelSize();
-					uint8_t* sourceAddr = (uint8_t*)&img(imagePosition.x, y, z);
-
-					size_t compressedSize = LZ4F_compressUpdate(ctx,
-						pDest.get(), outputCapacity,
-						sourceAddr, readSize,
-						NULL);
-					if (LZ4F_isError(compressedSize))
-						throw ITLException(string("Unable to perform LZ4 compression: ") + LZ4F_getErrorName(compressedSize));
-
-					out.write((char*)pDest.get(), compressedSize);
+					// We have existing data, so read it.
+					lz4::read(temp, filename);
+					if (fileDimensions != Vec3c(0, 0, 0))
+						temp.ensureSize(fileDimensions);
 				}
+				else
+				{
+					// No existing data; just ensure that temp image size is correct.
+					if (fileDimensions != Vec3c(0, 0, 0))
+						temp.ensureSize(fileDimensions);
+					else
+						temp.ensureSize(filePosition + blockDimensions);
+				}
+				copyValues(temp, img, filePosition, imagePosition, blockDimensions);
+				lz4::write(temp, filename);
 			}
 
-			// Finalize compression
-			{
-				size_t const compressedSize = LZ4F_compressEnd(ctx, pDest.get(), outputCapacity, NULL);
-				if (LZ4F_isError(compressedSize))
-					throw ITLException(string("Unable to finalize LZ4 compression: ") + LZ4F_getErrorName(compressedSize));
-
-				out.write((char*)pDest.get(), compressedSize);
-			}
+			
 		}
 
 

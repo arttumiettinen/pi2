@@ -39,6 +39,14 @@ namespace itl2
 			return internals::getInfo(in, dimensions, dataType, reason);
 		}
 
+		bool isFile(const std::string& filename)
+		{
+			Vec3c dimensions;
+			ImageDataType dataType;
+			string reason;
+			return getInfo(filename, dimensions, dataType, reason);
+		}
+
 
 		namespace tests
 		{
@@ -84,7 +92,7 @@ namespace itl2
 
 				// Write entire image and a block.
 				lz4::write(img, "./lz4block/entire_image");
-				lz4::writeBlock(img, "./lz4block/block", blockStart, blockSize);
+				lz4::writeBlock(img, "./lz4block/block", Vec3c(0, 0, 0), Vec3c(0, 0, 0), blockStart, blockSize);
 
 				// Generate ground truth block by cropping the image.
 				Image<uint16_t> gtBlock(blockSize);
@@ -101,6 +109,34 @@ namespace itl2
 				Image<uint16_t> readBlockResult(blockSize);
 				lz4::readBlock(readBlockResult, "./lz4block/entire_image", blockStart);
 				testAssert(equals(readBlockResult, gtBlock), "LZ4raw readBlock");
+
+				// Now write entire image in multiple blocks, read back, and compare to original
+				fs::remove_all("./lz4_multiple_blocks_full_file");
+				Vec3c blockCount = img.dimensions().componentwiseDivide(blockSize);
+				for (coord_t z = 0; z < blockCount.z+1; z++)
+				{
+					for (coord_t y = 0; y < blockCount.y+1; y++)
+					{
+						for (coord_t x = 0; x < blockCount.x+1; x++)
+						{
+							Vec3c pos(x * blockSize.x, y * blockSize.y, z * blockSize.z);
+							if (img.isInImage(pos))
+							{
+								Vec3c blockEnd = pos + blockSize;
+								blockEnd = min(img.dimensions(), blockEnd);
+								Vec3c realBlockSize = blockEnd - pos;
+								lz4::writeBlock(img, "./lz4_multiple_blocks_full_file/image", pos, img.dimensions(), pos, realBlockSize);
+							}
+						}
+					}
+				}
+
+				Image<uint16_t> multiBlockResult;
+				lz4::read(multiBlockResult, "./lz4_multiple_blocks_full_file/image");
+
+				raw::writed(multiBlockResult, "./lz4_multiple_blocks_result");
+
+				testAssert(equals(img, multiBlockResult), "LZ4 file written in multiple blocks compared to the original.");
 			}
 		}
 	}
