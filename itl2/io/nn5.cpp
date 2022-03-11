@@ -12,7 +12,7 @@ namespace itl2
 {
 	namespace nn5
 	{
-		const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
+		//const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 
 		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason)
 		{

@@ -431,7 +431,7 @@ namespace itl2
 		/**
 		Default chunk size for NN5 dataset.
 		*/
-		extern const Vec3c DEFAULT_CHUNK_SIZE;
+		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 
 		/**
 		Write an image to an nn5 dataset.

@@ -9,9 +9,6 @@ from pi2py2 import *
 import numpy as np
 pi2 = Pi2()
 
-# Some utilities. Examples can be found after heading 'Examples begin here'
-###########################################################################
-
 
 # Define convenience functions that return input and output file names.
 # This is just to avoid copying the paths to all the examples in case they change.
@@ -58,7 +55,7 @@ def check_result(is_ok, msg, print_if_ok = True):
 
 def calc_difference(img1, img2):
     """
-    Determines maximum absolute difference between img1 and img2 in pi system.
+    Determines maximum absolute difference between img1 and img2.
     """
 
     imgf = pi2.newimage()
@@ -78,6 +75,9 @@ def calc_difference(img1, img2):
 
 
 def check_distribution_test_result(file1, file2, operation_name, compname, tolerance=0.00001, data_type=ImageDataType.UNKNOWN):
+    """
+    Helper function used to check results of distributed processing tests.
+    """
 
     # Load both results and calculate maximum absolute difference
     img1 = pi2.read(file1, data_type)
