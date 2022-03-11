@@ -111,7 +111,7 @@ namespace itl2
 				throw ITLException(string("Unable to read LZ4 compressed data from file ") + filename);
 			
 			LZ4F_frameInfo_t info;
-			size_t consumedSize;
+			size_t consumedSize = readSize;
 			err = LZ4F_getFrameInfo(dctx, &info, pSrc.get(), &consumedSize);
 			if (LZ4F_isError(err))
 				throw ITLException(string("getFrameInfo failed for file ") + filename + string(": ") + LZ4F_getErrorName(err));

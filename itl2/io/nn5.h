@@ -90,7 +90,7 @@ namespace itl2
 					}
 					case NN5Compression::LZ4:
 					{
-						filename += ".lz4";
+						filename += ".lz4raw";
 						lz4::writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords, realWriteSize);
 						break;
 					}
