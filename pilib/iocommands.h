@@ -294,7 +294,8 @@ namespace pilib
 		WriteNN5Command() : Command("writenn5", "Write an image to an .nn5 dataset.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
-				CommandArgument<std::string>(ParameterDirection::In, "path", "Name (and path) of the dataset to write. If the dataset exists, its current contents are erased.")
+				CommandArgument<std::string>(ParameterDirection::In, "path", "Name (and path) of the dataset to write. If the dataset exists, its current contents are erased."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size for the NN5 dataset to be written.", nn5::DEFAULT_CHUNK_SIZE)
 			})
 		{
 		}
@@ -304,8 +305,9 @@ namespace pilib
 		{
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
+			Vec3c chunkSize = pop<Vec3c>(args);
 
-			itl2::nn5::write(in, fname);
+			itl2::nn5::write(in, fname, chunkSize);
 		}
 	};
 

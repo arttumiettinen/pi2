@@ -1032,11 +1032,25 @@ def big_tiff():
     big_tiff_write()
 
     # Whoops: I don't have enough memory for this in my computer...
-    img1 = pi.read(output_file("big_tiff.tif"))
-    img2 = pi.read(output_file("big_raw"))
+    img1 = pi2.read(output_file("big_tiff.tif"))
+    img2 = pi2.read(output_file("big_raw"))
     M = calc_difference(img1, img2)
     check_result(M <= 0, f"ERROR: Images saved as .tif and .raw are not equal.")
     
+
+def nn5_files():
+
+    img1 = pi2.newimage(ImageDataType.FLOAT32, 100, 250, 200)
+    pi2.ramp3(img1)
+    pi2.writenn5(img1, output_file("nn5test"))
+    pi2.writenn5(img1, output_file("nn5test_small_chunks"), [20, 40, 60])
+    pi2.writetif(img1, output_file("nn5test.tif"))
+
+    img2 = pi2.read(output_file("nn5test"))
+    check_result(calc_difference(img1, img2) == 0, "Image saved and read from NN5 dataset changed in the I/O process.")
+
+    img3 = pi2.read(output_file("nn5test_small_chunks"))
+    check_result(calc_difference(img1, img3) == 0, "Image saved and read from NN5 small chunks dataset changed in the I/O process.")
 
 
 def dead_pixels():
@@ -1247,7 +1261,7 @@ pi2.echo(True, False)
 #test_difference_normal_distributed('eval', ['77', 'img'], 'img', maxmem=5)
 #test_difference_normal_distributed('eval', ['x0+x1', 'result', 'img'], 'result', maxmem=5)
 #test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'], 'result', maxmem=5)
-
+#test_difference_normal_distributed('ramp3', ['img'], 'img', maxmem=5)
 
 #infile = input_file()
 #test_difference_delaying('delaying_1', f"read(img, {infile}); gaussfilter(img, out, 1); add(img, 100); clear(img); convert(out, conv, uint8);", 'conv');
@@ -1257,7 +1271,7 @@ pi2.echo(True, False)
 
 #tif_and_tiff()
 #get_pixels()
-set_pixels()
+#set_pixels()
 #distributed_numpy()
 #memory()
 
@@ -1265,6 +1279,7 @@ set_pixels()
 #metadata()
 #set_overloads()
 #big_tiff()
+nn5_files()
 
 #trace_skeleton_test()
 

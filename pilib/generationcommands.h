@@ -12,7 +12,7 @@ namespace pilib
 {
 	inline std::string genSeeAlso()
 	{
-		return "line, capsule, sphere, ellipsoid, set, get, ramp";
+		return "line, capsule, sphere, ellipsoid, set, get, ramp, ramp3";
 	}
 
 	/**
@@ -575,6 +575,26 @@ namespace pilib
 				throw ITLException(string("Invalid dimension: ") + itl2::toString(dim));
 
 			ramp(in, dim, origin[dim]);
+		}
+	};
+
+	template<typename pixel_t> class Ramp3Command : public GenerationDistributable<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		Ramp3Command() : GenerationDistributable<pixel_t>("ramp3", "Fills image with ramp in all three dimensions, i.e. performs img[r] = ||r||_1.",
+			{
+			})
+		{
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const override
+		{
+			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
+
+			ramp3(in, origin.sum());
 		}
 	};
 

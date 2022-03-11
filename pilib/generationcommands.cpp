@@ -7,6 +7,7 @@ namespace pilib
 	void addGenerationCommands()
 	{
 		ADD_REAL(RampCommand);
+		ADD_REAL(Ramp3Command);
 		ADD_REAL(SetPixelCommand);
 		ADD_REAL(SetPixelsCommand);
 		ADD_REAL(GetPixelsCommand);

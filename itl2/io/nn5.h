@@ -394,6 +394,9 @@ namespace itl2
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
 		{
+			if (chunkSize.min() <= 0)
+				throw ITLException(string("NN5 chunk size must be positive, but it is ") + toString(chunkSize));
+
 			// Delete old dataset if it exists.
 			if (fs::exists(path))
 			{
@@ -414,7 +417,21 @@ namespace itl2
 			internals::writeChunks(img, path, chunkSize, compression, img.dimensions());
 		}
 
-		const Vec3c DEFAULT_CHUNK_SIZE(1536, 1536, 1536);
+
+		/**
+		Write an image to an nn5 dataset.
+		@param img Image to write.
+		@param path Name of the top directory of the nn5 dataset.
+		*/
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize)
+		{
+			write(img, path, chunkSize, NN5Compression::LZ4);
+		}
+
+		/**
+		Default chunk size for NN5 dataset.
+		*/
+		extern const Vec3c DEFAULT_CHUNK_SIZE;
 
 		/**
 		Write an image to an nn5 dataset.
@@ -423,7 +440,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path)
 		{
-			write(img, path, DEFAULT_CHUNK_SIZE, NN5Compression::LZ4);
+			write(img, path, DEFAULT_CHUNK_SIZE);
 		}
 
 
