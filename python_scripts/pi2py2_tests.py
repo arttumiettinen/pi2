@@ -1042,7 +1042,7 @@ def lz4_files():
 
     img1 = pi2.newimage(ImageDataType.FLOAT32, 100, 250, 200)
     pi2.ramp3(img1)
-    pi2.writenn5(img1, output_file("lz4test"))
+    pi2.writelz4(img1, output_file("lz4test"))
     pi2.writetif(img1, output_file("lz4test.tif"))
 
     img2 = pi2.read(output_file("lz4test"))
