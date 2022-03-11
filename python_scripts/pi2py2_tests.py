@@ -1290,8 +1290,8 @@ pi2.echo(True, False)
 #metadata()
 #set_overloads()
 #big_tiff()
-lz4_files()
-#nn5_files()
+#lz4_files()
+nn5_files()
 
 #trace_skeleton_test()
 

@@ -85,7 +85,7 @@ namespace itl2
 
 			if (!in)
 			{
-				failReason = string("Unable to open file ") + filename;
+				failReason = string("Unable to open file.");
 				return false;
 			}
 
