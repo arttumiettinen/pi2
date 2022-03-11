@@ -5,6 +5,7 @@
 #include "image.h"
 #include "io/fileutils.h"
 #include "byteorder.h"
+#include "transform.h"
 
 #include "lz4/lz4frame.h"
 
@@ -182,19 +183,6 @@ namespace itl2
 		@param img Image where the data is placed. The size of the image defines the size of the block that is read.
 		@param filename The name of the file to read.
 		@param filePos Start location of the read. The size of the image defines the size of the block that is read.
-		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& filePos)
-		{
-			Image<pixel_t> temp;
-			readBlock(img, filename, filePos, temp);
-		}
-
-		/**
-		Reads a part of a .lz4raw file to the given image.
-		NOTE: Does not support out of bounds start position.
-		@param img Image where the data is placed. The size of the image defines the size of the block that is read.
-		@param filename The name of the file to read.
-		@param filePos Start location of the read. The size of the image defines the size of the block that is read.
 		@param temp Temporary image. If this image has the same dimensions than the file, no temporary memory allocations for image data are made. At output, this image will contain the entire decompressed file.
 		*/
 		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& filePos, Image<pixel_t>& temp)
@@ -215,6 +203,19 @@ namespace itl2
 			// Read and crop, as the compressed data must be decompressed entirely before getting access to the required block.
 			read(temp, filename);
 			crop(temp, img, filePos);
+		}
+
+        /**
+		Reads a part of a .lz4raw file to the given image.
+		NOTE: Does not support out of bounds start position.
+		@param img Image where the data is placed. The size of the image defines the size of the block that is read.
+		@param filename The name of the file to read.
+		@param filePos Start location of the read. The size of the image defines the size of the block that is read.
+		*/
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& filePos)
+		{
+			Image<pixel_t> temp;
+			readBlock(img, filename, filePos, temp);
 		}
 
 		/**
@@ -356,39 +357,6 @@ namespace itl2
 					out.write((char*)pDest.get(), compressedSize);
 				}
 			}
-		}
-
-
-		/**
-		Copies some pixels from 'source' to 'target', to given position.
-		@param target Target image where the pixels are written to.
-		@param block Source image where the pixels are copied from.
-		@param targetPos Position of source image data in the target image.
-		@param blockPos Position of the first pixel of the block to copy.
-		@param copySize Size of the block to copy.
-		*/
-		template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& targetPos, const Vec3c& sourcePos, const Vec3c& copySize)
-		{
-			target.mustNotBe(block);
-
-			// The region where we are going to copy from.
-			AABox<coord_t> sourceBox = AABox<coord_t>::fromPosSize(sourcePos, copySize);
-			
-			// Clip it to the available region in the source block
-			AABox<coord_t> fullSourceBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), block.dimensions());
-			sourceBox = sourceBox.intersection(fullSourceBox);
-
-			// Clip it to the target box so that we don't copy values out of target image.
-			AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
-			
-			AABox<coord_t> clippedSourceBox = sourceBox.translate(-sourcePos).translate(targetPos).intersection(targetBox).translate(-targetPos).translate(sourcePos);
-
-			// General shift
-			forAllInBox(clippedSourceBox, [&](coord_t x, coord_t y, coord_t z)
-				{
-					Vec3c xi = Vec3c(x, y, z) - sourcePos + targetPos;
-					target(xi) = pixelRound<pixel_t>(block(x, y, z));
-				});
 		}
 
 		/**

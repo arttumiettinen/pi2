@@ -18,24 +18,6 @@ namespace itl2
 		namespace internals
 		{
 			/**
-			Builds naturally sorted list of files that match the given template.
-			The file name part of the template may contain wildcards and @ as discussed in matches(...) function above,
-			but directory must not contain wildcards.
-			If the template is a directory (no file name specified), all files in the directory are listed.
-			*/
-			std::vector<std::string> buildFileList(const std::string& templ);
-
-			/**
-			Works as buildFileList but removed non-image files from the list.
-			*/
-			std::vector<std::string> buildFilteredFileList(const std::string& templ);
-
-			/**
-			Separates directory and filename parts of a sequence template.
-			*/
-			void separatePathAndFileTemplate(const std::string& templ, fs::path& dir, std::string& fileTemplate);
-
-			/**
 			Returns metadata of a 2D image.
 			*/
 			bool getInfo2D(const std::string& filename, coord_t& width, coord_t& height, ImageDataType& dataType, std::string& reason);
@@ -114,7 +96,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& filename, size_t firstSlice = 0, size_t lastSlice = std::numeric_limits<size_t>::max())
 		{
-			std::vector<std::string> files = internals::buildFilteredFileList(filename);
+			std::vector<std::string> files = buildFilteredFileList(filename);
 
 			if (files.size() <= 0)
 				throw ITLException("Sequence contains no images.");
@@ -199,7 +181,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
 		{
-			std::vector<std::string> files = internals::buildFilteredFileList(filename);
+			std::vector<std::string> files = buildFilteredFileList(filename);
 
 			if (files.size() <= 0)
 				throw ITLException("Sequence contains no images.");
@@ -269,7 +251,7 @@ namespace itl2
 		{
 			inline void prepareTemplate(const std::string& filename, size_t sliceCount, fs::path& dir, std::string& fileTempl, int& fieldWidth, size_t& atPos)
 			{
-				internals::separatePathAndFileTemplate(filename, dir, fileTempl);
+				separatePathAndFileTemplate(filename, dir, fileTempl);
 
 				if (fileTempl.find('@') >= fileTempl.size())
 				{
@@ -566,7 +548,7 @@ namespace itl2
 			// TODO: Check that input and output sequences have the same file type.
 
 			// Get list of input files
-			std::vector<std::string> inputFiles = internals::buildFileList(inputName);
+			std::vector<std::string> inputFiles = buildFileList(inputName);
 
 			if (inputFiles.size() <= 0)
 				throw ITLException("Sequence contains no images.");

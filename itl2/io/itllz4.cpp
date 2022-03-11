@@ -2,6 +2,7 @@
 #include "io/itllz4.h"
 #include "projections.h"
 #include "generation.h"
+#include "transform.h"
 
 namespace itl2
 {

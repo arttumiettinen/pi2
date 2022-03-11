@@ -1,6 +1,5 @@
 
 #include "io/sequence.h"
-#include "io/alphanum.h"
 #include "io/raw.h"
 #include "pointprocess.h"
 #include "testutils.h"
@@ -16,83 +15,9 @@ namespace itl2
 	{
 		namespace internals
 		{
-			/**
-			Tests if given str matches template.
-			In the template
-			* matches to sequence of any characters
-			? matches to any single character
-			@ matches to one or more numerical digits
-			*/
-			bool matches(const string& str, const string& templ)
-			{
-				size_t strPos = 0;
-				size_t templPos = 0;
-				while (true)
-				{
-					if (strPos >= str.length())
-						return templPos == templ.length();
+			
 
-					if (templPos >= templ.length())
-						return false;
-
-					if (templ[templPos] == '?')
-					{
-						// Any character is ok, no need to test.
-						templPos++;
-						strPos++;
-					}
-					else if (templ[templPos] == '*')
-					{
-						if (templPos >= templ.length() - 1)
-							return true;
-
-						for (size_t n = strPos; n < str.length(); n++)
-							if (matches(str.substr(n), templ.substr(templPos + 1)))
-								return true;
-
-						return false;
-					}
-					else if (templ[templPos] == '@')
-					{
-						if (!isdigit(str[strPos]))
-							return false;
-
-						while(strPos < str.length() && isdigit(str[strPos]))
-							strPos++;
-
-						templPos++;
-					}
-					else
-					{
-						// Characters must be equal.
-						if (str[strPos] != templ[templPos])
-							return false;
-						strPos++;
-						templPos++;
-					}
-				}
-			}
-
-			/**
-			Separates directory and filename parts of a sequence template.
-			*/
-			void separatePathAndFileTemplate(const string& templ, fs::path& dir, string& fileTemplate)
-			{
-				fs::path p(templ);
-
-				if (fs::is_directory(p))
-				{
-					dir = p;
-					fileTemplate = "";
-				}
-				else
-				{
-					dir = p.parent_path();
-					fileTemplate = p.filename().string();
-					if (fileTemplate == ".")
-						fileTemplate = "";
-				}
-			}
+			
 
 			///*
 			//Separates directory and filename parts of a sequence template.
@@ -104,73 +29,6 @@ namespace itl2
 			//	dir = p.string();
 			//}
 
-			
-			vector<string> buildFileList(const string& templ)
-			{
-				// Separate directory and file name template
-				string fileTemplate;
-				fs::path dir;
-				separatePathAndFileTemplate(templ, dir, fileTemplate);
-
-				if (dir == "")
-					dir = ".";
-
-				if(fileTemplate == "")
-					fileTemplate = "*";
-				
-				//cout << "Directory: " << dir << endl;
-				//cout << "Template: " << fileTemplate << endl;
-
-				// Get those files in directory that match the template
-				vector<string> filenames;
-
-				if (fs::is_directory(dir)) // Note: This is required in Linux, or otherwise we get an exception for non-existing directories.
-				{
-					for (auto & p : fs::directory_iterator(dir))
-					{
-						if (p.is_regular_file())
-						{
-							string filename = p.path().filename().string();
-							if (matches(filename, fileTemplate))
-								filenames.push_back(p.path().string());
-						}
-					}
-
-					// Sort to natural order
-					sort(filenames.begin(), filenames.end(), doj::alphanum_less<std::string>());
-				}
-
-				//for (size_t n = 0; n < filenames.size(); n++)
-				//	cout << filenames[n] << endl;
-				return filenames;
-			}
-
-			vector<string> buildFilteredFileList(const string& templ)
-			{
-				vector<string> results = buildFileList(templ);
-
-				// Remove non-images
-				//coord_t w, h;
-				//ImageDataType dt;
-				for (size_t n = 0; n < results.size(); n++)
-				{
-					// This is too slow!
-					//if (!getInfo2D(result[n], w, h, dt))
-					fs::path p(results[n]);
-					fs::path ext = p.extension();
-					string exts = ext.string();
-					toLower(exts);
-
-					// TODO: Add other formats here.
-					if(ext != ".tif" && ext != ".tiff" && ext != ".png")
-					{
-						results.erase(results.begin() + n);
-						n--;
-					}
-				}
-
-				return results;
-			}
 			
 			
 			
@@ -208,7 +66,7 @@ namespace itl2
 		    depth = 0;
 		    dataType = ImageDataType::Unknown;
 		    
-		    vector<string> files = internals::buildFilteredFileList(filename);
+		    vector<string> files = buildFilteredFileList(filename);
 
 			if (files.size() <= 0)
 			{
@@ -227,7 +85,7 @@ namespace itl2
 		{
 			void matchTest(const string& str, const string& templ, bool expected)
 			{
-				bool result = internals::matches(str, templ);
+				bool result = matches(str, templ);
 				cout << str << " / " << templ << " = " << result;
 				if (result == expected)
 					cout << endl;
@@ -276,9 +134,9 @@ namespace itl2
 
 			void buildFileList()
 			{
-				internals::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq\\test_sequence@.png");
-				internals::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq\\");
-				internals::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq");
+				itl2::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq\\test_sequence@.png");
+				itl2::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq\\");
+				itl2::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq");
 			}
 
 			void sequence()

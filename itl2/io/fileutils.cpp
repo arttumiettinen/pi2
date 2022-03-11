@@ -3,6 +3,7 @@
 #include "itlexception.h"
 #include "utilities.h"
 #include "stringutils.h"
+#include "io/alphanum.h"
 
 #include <cstring>
 
@@ -159,8 +160,12 @@ namespace itl2
 
 #if defined(__linux__) || defined(__APPLE__)
 
+        if(system(0) == 0)
+            throw ITLException("Command processor is not available.");
+
 		// TODO: This does not show progress bar
-		system((string("cp \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
+		if(system((string("cp \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str()) != 0)
+            throw ITLException(string("Unable to copy ") + sourceName + " to " + destinationName);
 
 #elif defined(_WIN32)
 
@@ -209,7 +214,11 @@ namespace itl2
 
 #if defined(__linux__) || defined(__APPLE__)
 
-		system((string("mv \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str());
+        if(system(0) == 0)
+            throw ITLException("Command processor is not available.");
+
+		if(system((string("mv \"") + sourceName + string("\" \"") + destinationName + string("\"")).c_str()) != 0)
+            throw ITLException(string("Unable to move ") + sourceName + " to " + destinationName);
 
 #elif defined(_WIN32)
 		if (MoveFileWithProgressA(sourceName.c_str(), destinationName.c_str(), &progressRoutine, NULL, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING) == 0)
@@ -240,6 +249,146 @@ namespace itl2
 		if (pos != std::string::npos)
 			filename.erase(filename.begin() + pos, filename.end());
 		return filename;
+	}
+
+
+	bool matches(const string& str, const string& templ)
+	{
+		size_t strPos = 0;
+		size_t templPos = 0;
+		while (true)
+		{
+			if (strPos >= str.length())
+				return templPos == templ.length();
+
+			if (templPos >= templ.length())
+				return false;
+
+			if (templ[templPos] == '?')
+			{
+				// Any character is ok, no need to test.
+				templPos++;
+				strPos++;
+			}
+			else if (templ[templPos] == '*')
+			{
+				if (templPos >= templ.length() - 1)
+					return true;
+
+				for (size_t n = strPos; n < str.length(); n++)
+					if (matches(str.substr(n), templ.substr(templPos + 1)))
+						return true;
+
+				return false;
+			}
+			else if (templ[templPos] == '@')
+			{
+				if (!isdigit(str[strPos]))
+					return false;
+
+				while(strPos < str.length() && isdigit(str[strPos]))
+					strPos++;
+
+				templPos++;
+			}
+			else
+			{
+				// Characters must be equal.
+				if (str[strPos] != templ[templPos])
+					return false;
+				strPos++;
+				templPos++;
+			}
+		}
+	}
+
+    /**
+	Separates directory and filename parts of a sequence template.
+	*/
+	void separatePathAndFileTemplate(const string& templ, fs::path& dir, string& fileTemplate)
+	{
+		fs::path p(templ);
+
+		if (fs::is_directory(p))
+		{
+			dir = p;
+			fileTemplate = "";
+		}
+		else
+		{
+			dir = p.parent_path();
+			fileTemplate = p.filename().string();
+			if (fileTemplate == ".")
+				fileTemplate = "";
+		}
+	}
+
+
+    vector<string> buildFileList(const string& templ)
+	{
+		// Separate directory and file name template
+		string fileTemplate;
+		fs::path dir;
+		separatePathAndFileTemplate(templ, dir, fileTemplate);
+
+		if (dir == "")
+			dir = ".";
+
+		if(fileTemplate == "")
+			fileTemplate = "*";
+		
+		//cout << "Directory: " << dir << endl;
+		//cout << "Template: " << fileTemplate << endl;
+
+		// Get those files in directory that match the template
+		vector<string> filenames;
+
+		if (fs::is_directory(dir)) // Note: This is required in Linux, or otherwise we get an exception for non-existing directories.
+		{
+			for (auto & p : fs::directory_iterator(dir))
+			{
+				if (p.is_regular_file())
+				{
+					string filename = p.path().filename().string();
+					if (matches(filename, fileTemplate))
+						filenames.push_back(p.path().string());
+				}
+			}
+
+			// Sort to natural order
+			sort(filenames.begin(), filenames.end(), doj::alphanum_less<std::string>());
+		}
+
+		//for (size_t n = 0; n < filenames.size(); n++)
+		//	cout << filenames[n] << endl;
+		return filenames;
+	}
+
+	vector<string> buildFilteredFileList(const string& templ)
+	{
+		vector<string> results = buildFileList(templ);
+
+		// Remove non-images
+		//coord_t w, h;
+		//ImageDataType dt;
+		for (size_t n = 0; n < results.size(); n++)
+		{
+			// This is too slow!
+			//if (!getInfo2D(result[n], w, h, dt))
+			fs::path p(results[n]);
+			fs::path ext = p.extension();
+			string exts = ext.string();
+			toLower(exts);
+
+			// TODO: Add other formats here.
+			if(ext != ".tif" && ext != ".tiff" && ext != ".png")
+			{
+				results.erase(results.begin() + n);
+				n--;
+			}
+		}
+
+		return results;
 	}
 
 }

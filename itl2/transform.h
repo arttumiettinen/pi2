@@ -355,6 +355,39 @@ namespace itl2
 		}
 	}
 
+
+    /**
+	Copies some pixels from 'source' to 'target', to given position.
+	@param target Target image where the pixels are written to.
+	@param block Source image where the pixels are copied from.
+	@param targetPos Position of source image data in the target image.
+	@param blockPos Position of the first pixel of the block to copy.
+	@param copySize Size of the block to copy.
+	*/
+	template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& targetPos, const Vec3c& sourcePos, const Vec3c& copySize)
+	{
+		target.mustNotBe(block);
+
+		// The region where we are going to copy from.
+		AABox<coord_t> sourceBox = AABox<coord_t>::fromPosSize(sourcePos, copySize);
+		
+		// Clip it to the available region in the source block
+		AABox<coord_t> fullSourceBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), block.dimensions());
+		sourceBox = sourceBox.intersection(fullSourceBox);
+
+		// Clip it to the target box so that we don't copy values out of target image.
+		AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
+		
+		AABox<coord_t> clippedSourceBox = sourceBox.translate(-sourcePos).translate(targetPos).intersection(targetBox).translate(-targetPos).translate(sourcePos);
+
+		// General shift
+		forAllInBox(clippedSourceBox, [&](coord_t x, coord_t y, coord_t z)
+			{
+				Vec3c xi = Vec3c(x, y, z) - sourcePos + targetPos;
+				target(xi) = pixelRound<pixel_t>(block(x, y, z));
+			});
+	}
+
 	namespace internals
 	{
 		/**

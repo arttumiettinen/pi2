@@ -9,7 +9,6 @@
 #include "timer.h"
 #include "math/mathutils.h"
 #include "io/imagedatatype.h"
-#include "io/sequence.h"
 #include "io/fileutils.h"
 #include "math/vec3.h"
 #include "progress.h"
@@ -84,7 +83,7 @@ namespace itl2
 			{
 				if (!fileExists(filename))
 				{
-					::std::vector<::std::string> candidates = sequence::internals::buildFileList(filename + "*.raw");
+					::std::vector<::std::string> candidates = buildFileList(filename + "*.raw");
 
 					if (candidates.size() == 0)
 						throw ITLException(::std::string("No file found matching to template ") + filename + "*.raw");
@@ -96,7 +95,7 @@ namespace itl2
 						// Try with more restricting templates.
 						
 						// First, try with the template as-is.
-						candidates = sequence::internals::buildFileList(filename + "_@x@x@.raw");
+						candidates = buildFileList(filename + "_@x@x@.raw");
 
 						if (candidates.size() == 1)
 							filename = candidates[0];
@@ -109,7 +108,7 @@ namespace itl2
 							if (endsWith(reducedFilename, "_"))
 							{
 								reducedFilename = reducedFilename.substr(0, reducedFilename.length() - 1);
-								candidates = sequence::internals::buildFileList(reducedFilename + "_@x@x@.raw");
+								candidates = buildFileList(reducedFilename + "_@x@x@.raw");
 							}
 
 							if (candidates.size() == 0)

@@ -7,6 +7,7 @@
 #include "image.h"
 #include "math/mathutils.h"
 #include "transform.h"
+#include "io/raw.h"
 
 #include <string>
 #include <memory>
@@ -39,7 +40,7 @@ namespace itl2
 				if (rawDataOffset != 0)
 				{
 					// This is an ImageJ fake tiff. Read it as raw data file.
-					raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)rawDataOffset);
+					::itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)rawDataOffset);
 					return;
 				}
 

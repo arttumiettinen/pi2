@@ -16,6 +16,7 @@
 #include "montage.h"
 #include "pilibutilities.h"
 #include "io/vectorio.h"
+#include "io/fileutils.h"
 
 #include <vector>
 #include <string>
@@ -981,12 +982,12 @@ namespace pilib
 
 
 				// Delete sources (seedsSourceFilenamePrefix*)
-				auto items = itl2::sequence::internals::buildFileList(seedsSourceFilenamePrefix + "_*");
+				auto items = itl2::buildFileList(seedsSourceFilenamePrefix + "_*");
 				for (const string& file : items)
 					itl2::deleteFile(file);
 
 				// Check if there are any seedsTarget files (seedsTargetFilenamePrefix*)
-				items = itl2::sequence::internals::buildFileList(seedsTargetFilenamePrefix + "_*");
+				items = itl2::buildFileList(seedsTargetFilenamePrefix + "_*");
 				if (items.size() <= 0)
 					break; // No seeds target files means there are no more seeds to process.
 				

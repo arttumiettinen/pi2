@@ -13,6 +13,7 @@
 #include "projectioncommands.h"
 #include "aabox.h"
 #include "pilibutilities.h"
+#include "io/fileutils.h"
 
 #include <vector>
 #include <type_traits>
@@ -349,7 +350,7 @@ namespace pilib
 					std::cout << "Remove unncesessary temporary files..." << std::endl;
 
 					// Delete temporary files from previous round
-					auto items = itl2::sequence::internals::buildFileList(riPrefix + "_dim" + itl2::toString(dim - 1) + "_*");
+					auto items = itl2::buildFileList(riPrefix + "_dim" + itl2::toString(dim - 1) + "_*");
 					for (const string& file : items)
 						itl2::deleteFile(file);
 				}

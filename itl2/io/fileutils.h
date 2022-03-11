@@ -63,4 +63,32 @@ namespace itl2
 	*/
 	std::string getPrefix(std::string filename);
 
+
+    /**
+	Builds naturally sorted list of files that match the given template.
+	The file name part of the template may contain wildcards and @ as discussed in matches(...) function above,
+	but directory must not contain wildcards.
+	If the template is a directory (no file name specified), all files in the directory are listed.
+	*/
+	std::vector<std::string> buildFileList(const std::string& templ);
+
+	/**
+	Works as buildFileList but removed non-image files from the list.
+	*/
+	std::vector<std::string> buildFilteredFileList(const std::string& templ);
+
+    /**
+	Tests if given str matches template.
+	In the template
+	* matches to sequence of any characters
+	? matches to any single character
+	@ matches to one or more numerical digits
+	*/
+	bool matches(const std::string& str, const std::string& templ);
+
+    /**
+	Separates directory and filename parts of a sequence template.
+	*/
+	void separatePathAndFileTemplate(const std::string& templ, fs::path& dir, std::string& fileTemplate);
+
 }

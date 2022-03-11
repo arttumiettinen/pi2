@@ -18,6 +18,7 @@
 #include "math/vectoroperations.h"
 #include "imagemetadata.h"
 #include "tomo/siddonprojections.h"
+#include "neighbourhoodtype.h"
 
 namespace itl2
 {
