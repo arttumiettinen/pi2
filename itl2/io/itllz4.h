@@ -114,7 +114,7 @@ namespace itl2
 			size_t consumedSize;
 			err = LZ4F_getFrameInfo(dctx, &info, pSrc.get(), &consumedSize);
 			if (LZ4F_isError(err))
-				throw ITLException(string("getFrameInfo failed for file ") + filename);
+				throw ITLException(string("getFrameInfo failed for file ") + filename + string(": ") + LZ4F_getErrorName(err));
 
 
 			// Decompress data

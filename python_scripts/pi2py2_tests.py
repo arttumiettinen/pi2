@@ -1038,6 +1038,17 @@ def big_tiff():
     check_result(M <= 0, f"ERROR: Images saved as .tif and .raw are not equal.")
     
 
+def lz4_files():
+
+    img1 = pi2.newimage(ImageDataType.FLOAT32, 100, 250, 200)
+    pi2.ramp3(img1)
+    pi2.writenn5(img1, output_file("lz4test"))
+    pi2.writetif(img1, output_file("lz4test.tif"))
+
+    img2 = pi2.read(output_file("lz4test"))
+    check_result(calc_difference(img1, img2) == 0, "Image saved and read from .lz4raw dataset changed in the I/O process.")
+    
+
 def nn5_files():
 
     img1 = pi2.newimage(ImageDataType.FLOAT32, 100, 250, 200)
@@ -1279,7 +1290,8 @@ pi2.echo(True, False)
 #metadata()
 #set_overloads()
 #big_tiff()
-nn5_files()
+lz4_files()
+#nn5_files()
 
 #trace_skeleton_test()
 
