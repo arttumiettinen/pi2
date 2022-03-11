@@ -1045,7 +1045,7 @@ def lz4_files():
     pi2.writelz4(img1, output_file("lz4test"))
     pi2.writetif(img1, output_file("lz4test.tif"))
 
-    img2 = pi2.read(output_file("lz4test"))
+    img2 = pi2.read(output_file("lz4test.lz4raw"))
     check_result(calc_difference(img1, img2) == 0, "Image saved and read from .lz4raw dataset changed in the I/O process.")
     
 
@@ -1290,8 +1290,8 @@ pi2.echo(True, False)
 #metadata()
 #set_overloads()
 #big_tiff()
-lz4_files()
-#nn5_files()
+#lz4_files()
+nn5_files()
 
 #trace_skeleton_test()
 
