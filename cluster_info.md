@@ -16,6 +16,9 @@ module load Python/3.6.3
 Please do not load Python module when compiling as there seems to be
 some incompatibilities between some gcc and Python modules.
 
+Additionally, there is a Ra-specific Makefile that you should activate by command
+ln Makefile.local.Ra Makefile.local
+
 Compile using command
 make -j16 NO_OPENCL=1
 
