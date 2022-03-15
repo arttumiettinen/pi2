@@ -100,49 +100,10 @@ def run_pi2_locally(pi_script):
 def run_pi2(pi_script, output_prefix):
     """
     Runs pi2 job either locally or on cluster.
-    output_prefix is a prefix for error and output log files.
+    output_prefix is a prefix for error and output log files. (currently not in use)
     """
 
-    #global submitted_jobs
-
-    #if is_use_cluster():
-
-        #job_cmdline = ""
-        #if len(cluster_job_init_commands) > 0:
-        #    job_cmdline = cluster_job_init_commands + ";"
-        #job_cmdline = job_cmdline + f"{pi_path}/pi2 '{pi_script}'"
-
-        #sbatch_params = f"--job-name=stitch --partition={cluster_partition} --output={output_prefix}-out.txt --error={output_prefix}-err.txt {sbatch_extra_params} --wrap=\"{job_cmdline}\""
-
-        # For testing
-        #cmd = "echo"
-        # Real command line
-        #cmd = "sbatch"
-
-        #res = subprocess.check_output(cmd + " " + sbatch_params, shell=True)
-        #job_id = int(res.split()[-1])
-        #submitted_jobs.append(job_id)
-    #else:
-        #run_pi2_locally(pi_script)
-
     pi.submitjob(pi_script, "normal")
-
-
-#def is_job_running(job_id):
-#    """
-#    Tests if a cluster job with given job id is not finished (running or waiting to be run).
-#    """
-
-#    cmd = "squeue"
-#    params = f"--noheader --jobs={job_id}"
-#    res = subprocess.run(cmd + " " + params, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
-#    res = res.decode("utf-8")
-#    res = res.strip()
-#    if res.startswith(str(job_id)):
-#        return True
-
-#    return False
-
 
 
 
@@ -151,26 +112,8 @@ def wait_for_cluster_jobs():
     Waits until all jobs in the submitted jobs array are finished.
     """
 
-#    global submitted_jobs
-
     if not is_use_cluster():
         return
-
-#    if len(submitted_jobs) <= 0:
-#        return
-
-#    print(f"Waiting for {len(submitted_jobs)} cluster jobs to finish...")
-
-#    time.sleep(2)
-
-#    while True:
-#        if len(submitted_jobs) <= 0:
-#            return
-
-#        job_id = submitted_jobs.pop(0)
-
-#        while is_job_running(job_id):
-#            time.sleep(2)
 
     print("Waiting for cluster jobs to finish...")
     pi.waitforjobs()
@@ -220,6 +163,7 @@ class Scan:
         Tests if reconstructed image file exists.
         """
         
+        # TODO: Replace this hack with pi2py.
         pi_script = f"fileinfo({self.rec_file});"
         s = run_pi2_locally(pi_script)
         s = s.decode('ASCII')
@@ -237,6 +181,7 @@ def get_image_size(filename):
     Finds out size of given image and returns it as numpy array.
     """
 
+    # TODO: Replace this hack with pi2py.
     pi_script = f"fileinfo({filename});"
     s = run_pi2_locally(pi_script)
     s = s.decode('ASCII')
@@ -840,26 +785,26 @@ def check_result(result):
 
 
 
-def add_corner_points_2d(relations):
-    """
-    For each edge in relations, adds list of corner points of overlapping region between the scans in older scan coordinates to edge['corner_points'].
-    Discards z dimension
-    """
+#def add_corner_points_2d(relations):
+#    """
+#    For each edge in relations, adds list of corner points of overlapping region between the scans in older scan coordinates to edge['corner_points'].
+#    Discards z dimension
+#    """
 
-    # Determine corner points of overlapping region between each pair of scans
-    for edge in relations.edges():
-        parent = edge[0]
-        scan = edge[1]
+#    # Determine corner points of overlapping region between each pair of scans
+#    for edge in relations.edges():
+#        parent = edge[0]
+#        scan = edge[1]
 
-        # Find corner points of initial overlap region between the two scans in parent scan coordinates
-        xmin, ymin, zmin, xmax, ymax, zmax, shiftx, shifty, shiftz = overlap_region(parent, scan)
+#        # Find corner points of initial overlap region between the two scans in parent scan coordinates
+#        xmin, ymin, zmin, xmax, ymax, zmax, shiftx, shifty, shiftz = overlap_region(parent, scan)
 
-        points = np.array([np.array([[xmin, ymin, 0]]).T,
-                           np.array([[xmax, ymin, 0]]).T,
-                           np.array([[xmin, ymax, 0]]).T,
-                           np.array([[xmax, ymax, 0]]).T])
+#        points = np.array([np.array([[xmin, ymin, 0]]).T,
+#                           np.array([[xmax, ymin, 0]]).T,
+#                           np.array([[xmin, ymax, 0]]).T,
+#                           np.array([[xmax, ymax, 0]]).T])
 
-        relations[parent][scan]["corner_points"] = points
+#        relations[parent][scan]["corner_points"] = points
 
 
 #def weight(cs, rotmats, edgelist):
@@ -1533,35 +1478,7 @@ def calculate_world_to_local(tree, allow_local_deformations, force_redo):
                     if force_redo or (not is_world_to_local_ok(scan.world_to_local_prefix)):     
                         run_pi2(script, scan.world_to_local_prefix)
 
-        #print("--")
         wait_for_cluster_jobs()
-
-
-
-#def is_stitch_job_ok(out_template):
-#    """
-#    Tests if a cluster stitch job has succeeded.
-#    """
-    
-#    print("ENTRY")
-
-#    if not is_use_cluster():
-#        return True
-    
-#    print("OUT TEST")
-
-#    filename = f"{out_template}-out.txt"
-#    if not os.path.isfile(filename):
-#        return False
-        
-#    with open(filename, "r") as f:
-#        text = f.read()
-        
-#    # TODO: This is not 100 % sure condition.
-#    if "writerawblock" in text:
-#        return True
-        
-#    return False
         
     
 
@@ -1672,16 +1589,12 @@ def run_stitching(comp, sample_name, normalize, global_optimization, allow_rotat
                              f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )
 
-                #log_template = f"{out_template}_{jobs_started}"
-                #if force_redo or (not is_stitch_job_ok(log_template)):
-                #    print("RUNNING")
-                #    run_pi2(pi_script, log_template)
                 if force_redo or (not os.path.isfile(f"{out_template}_{jobs_started}_done.tif")):
                      run_pi2(pi_script, "")
                 else:
                      print(f"Stitch job {jobs_started} has been done already. Skipping it.")
                     
-                # jobs_started must be increased even if no job started due to result of is_stitch_job_ok.
+                # jobs_started must be increased even if no job started due to result of above test.
                 jobs_started = jobs_started + 1
 
     return jobs_started
