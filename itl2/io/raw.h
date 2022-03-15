@@ -9,7 +9,6 @@
 #include "timer.h"
 #include "math/mathutils.h"
 #include "io/imagedatatype.h"
-#include "io/fileutils.h"
 #include "math/vec3.h"
 #include "progress.h"
 
@@ -81,7 +80,7 @@ namespace itl2
 			*/
 			inline void expandRawFilename(::std::string& filename)
 			{
-				if (!fileExists(filename))
+				if (!fs::exists(filename))
 				{
 					::std::vector<::std::string> candidates = buildFileList(filename + "*.raw");
 
@@ -203,7 +202,7 @@ namespace itl2
 				return false;
 			}
 
-			if (!itl2::fileExists(filename))
+			if (!fs::exists(filename))
 			{
 				reason = "Input file does not exist.";
 				return false;

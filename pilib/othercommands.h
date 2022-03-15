@@ -16,7 +16,6 @@
 #include "montage.h"
 #include "pilibutilities.h"
 #include "io/vectorio.h"
-#include "io/fileutils.h"
 
 #include <vector>
 #include <string>
@@ -724,7 +723,7 @@ namespace pilib
 
 		static void readInputFile(const string& infile, int32_t z, vector<Vec3sc>& output)
 		{
-			if(fileExists(infile))
+			if(fs::exists(infile))
 				readListFile(infile, output, [=](std::ifstream& in, Vec3sc& val) { readPoint(in, val, z); });
 		}
 
@@ -872,12 +871,12 @@ namespace pilib
 			int32_t blockStartZ = (int32_t)readStart.z;
 			int32_t blockEndZ = (int32_t)(blockStartZ + readSize.z - 1);
 
-			if(fileExists(seedsSourcePrefix + "_" + itl2::toString(blockStartZ)) || 
-				fileExists(seedsSourcePrefix + "_" + itl2::toString(blockEndZ)))
+			if(fs::exists(seedsSourcePrefix + "_" + itl2::toString(blockStartZ)) ||
+				fs::exists(seedsSourcePrefix + "_" + itl2::toString(blockEndZ)))
 				return true;
 
 			if(blockStartZ <= startPoint.z && startPoint.z <= blockEndZ)
-				return fileExists(seedsSourcePrefix + "_" + itl2::toString(startPoint.z));
+				return fs::exists(seedsSourcePrefix + "_" + itl2::toString(startPoint.z));
 
 			return false;
 		}

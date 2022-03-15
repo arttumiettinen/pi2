@@ -24,7 +24,7 @@ namespace pilib
 		{
 			std::string settings = pop<std::string>(args);
 
-			if (fileExists(settings))
+			if (fs::exists(settings))
 			{
 				settings = readText(settings, true);
 			}
@@ -91,7 +91,7 @@ namespace pilib
 			bool useGPU = pop<bool>(args);
 			
 
-			if (fileExists(settings))
+			if (fs::exists(settings))
 			{
 				settings = readText(settings, true);
 			}

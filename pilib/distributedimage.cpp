@@ -73,7 +73,7 @@ namespace pilib
 		uniqName = name + "_" + itl2::toString(randc(10000));
 
 		//if (readSource == "" || isRaw())
-		if(!fileExists(readSource) || isRaw())
+		if(!fs::exists(readSource) || isRaw())
 		{
 			s1 << path << uniqueName() << "-1_" << dims.x << "x" << dims.y << "x" << dims.z << ".raw";
 			s2 << path << uniqueName() << "-2_" << dims.x << "x" << dims.y << "x" << dims.z << ".raw";

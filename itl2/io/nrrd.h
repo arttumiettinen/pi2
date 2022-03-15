@@ -74,7 +74,7 @@ namespace itl2
 
 				datafile = fs::path(filename).replace_filename(fs::path(datafile)).string();
 
-				if (!fileExists(datafile))
+				if (!fs::exists(datafile))
 					throw ITLException(std::string("Data file not found or specifies unsupported image sequence: ") + datafile);
 
 				raw::readNoParse(img, datafile);

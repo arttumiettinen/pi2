@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "image.h"
-#include "io/fileutils.h"
 #include "byteorder.h"
 #include "transform.h"
 
@@ -419,9 +418,9 @@ namespace itl2
 		*/
 		template<typename pixel_t> void readd(Image<pixel_t>& target, const std::string& filename)
 		{
-			if (fileExists(filename))
+			if (fs::exists(filename))
 				read(target, filename);
-			else if (fileExists(filename + ".lz4raw"))
+			else if (fs::exists(filename + ".lz4raw"))
 				read(target, filename + ".lz4raw");
 			else
 				throw ITLException(string("File not found: ") + filename);

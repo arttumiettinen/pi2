@@ -13,7 +13,6 @@
 #include "projectioncommands.h"
 #include "aabox.h"
 #include "pilibutilities.h"
-#include "io/fileutils.h"
 
 #include <vector>
 #include <type_traits>

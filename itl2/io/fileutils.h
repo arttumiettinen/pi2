@@ -24,12 +24,6 @@ namespace itl2
 	void setFileSize(const std::string& filename, size_t size);
 
 	/**
-	Tests if a file exists.
-	*/
-	bool fileExists(const std::string& filename);
-	bool fileExists(const fs::path& filename);
-
-	/**
 	Deletes a file.
 	*/
 	void deleteFile(const std::string& filename);

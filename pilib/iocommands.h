@@ -364,7 +364,7 @@ namespace pilib
 
 				if (in.isSavedToTemp())
 				{
-					if (fileExists(in.currentReadSource()))
+					if (fs::exists(in.currentReadSource()))
 					{
 						// The image has been saved to a temporary file
 						// Just move the temporary file to new location (and name) and sets read source to that file.
@@ -379,7 +379,7 @@ namespace pilib
 				}
 				else
 				{
-					if (fileExists(in.currentReadSource()))
+					if (fs::exists(in.currentReadSource()))
 					{
 						// The image has been saved to a non-temporary file, so we cannot just move it.
 						// The file must be copied.

@@ -101,20 +101,6 @@ namespace itl2
 #endif
 	}
 
-	/**
-	Tests if a file exists.
-	*/
-	bool fileExists(const std::string& filename)
-	{
-		//std::ifstream infile(filename);
-		//return (bool)infile;
-		return fs::exists(filename);
-	}
-
-	bool fileExists(const fs::path& filename)
-	{
-		return fileExists(filename.string());
-	}
 
 	/**
 	Deletes a file.
@@ -155,7 +141,7 @@ namespace itl2
 		if (fs::equivalent(p1, p2, code))
 			return;
 
-		if (fileExists(sourceName))
+		if (fs::exists(sourceName))
 			deleteFile(destinationName);
 
 #if defined(__linux__) || defined(__APPLE__)

@@ -405,6 +405,9 @@
     <ClInclude Include="lz4\xxhash.h">
       <Filter>Header Files\lz4</Filter>
     </ClInclude>
+    <ClInclude Include="io\nn5compression.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">

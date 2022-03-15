@@ -392,7 +392,7 @@ namespace itl2
 				// NOTE: This test requires that the current folder contains file imagej_large.tif that
 				// is a .tiff image saved from ImageJ using command File->Save as->Tiff...
 				
-				if (testAssert(fileExists(string("imagej_large.tif")), "ImageJ large TIFF support: test data does not exist."))
+				if (testAssert(fs::exists(string("imagej_large.tif")), "ImageJ large TIFF support: test data does not exist."))
 				{
 					Image<uint8_t> img;
 					tiff::read(img, "imagej_large.tif");

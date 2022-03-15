@@ -73,15 +73,15 @@ namespace itl2
 			// Third candidate is header file name but with .vol extension
 			fs::path datafile3 = fs::path(filename).replace_extension(".vol");
 
-			if (fileExists(datafile2))
+			if (fs::exists(datafile2))
 			{
 				datafile = datafile2.string();
 			}
-			else if (fileExists(datafile1))
+			else if (fs::exists(datafile1))
 			{
 				datafile = datafile1.string();
 			}
-			else if (fileExists(datafile3))
+			else if (fs::exists(datafile3))
 			{
 				datafile = datafile3.string();
 			}

@@ -6,6 +6,7 @@
 #include "io/raw.h"
 #include "io/itllz4.h"
 #include "aabox.h"
+#include "io/nn5compression.h"
 
 namespace itl2
 {
@@ -17,12 +18,6 @@ namespace itl2
 
 	namespace nn5
 	{
-		enum class NN5Compression
-		{
-			Raw,
-			LZ4
-		};
-
 		namespace internals
 		{
 			/**
@@ -54,10 +49,22 @@ namespace itl2
 			template<typename pixel_t> void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize,
 				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, NN5Compression compression)
 			{
+				// Build path to chunk folder.
 				string filename = path;
 				for (size_t n = 0; n < img.dimensionality(); n++)
 					filename += string("/") + toString(chunkIndex[n]);
-				filename += "/chunk";
+
+				// Check if we are in a non-safe chunk where writing to the chunk file is prohibited.
+				if (fs::exists(filename + string("/writes")))
+				{
+					// Unsafe chunk, write to separate writes folder.
+					filename += string("/writes/chunk_") + toString(startInChunkCoords);
+				}
+				else
+				{
+					// Safe chunk, write directly to the chunk file.
+					filename += "/chunk";
+				}
 
 				// Clamp write size to the size of the image.
 				Vec3c imageChunkEnd = startInImageCoords + writeSize;
@@ -345,37 +352,6 @@ namespace itl2
 				}
 			}
 		}
-
-		
-
-	}
-
-	template<>
-	inline std::string toString(const nn5::NN5Compression& x)
-	{
-		switch (x)
-		{
-		case nn5::NN5Compression::Raw: return "Raw";
-		case nn5::NN5Compression::LZ4: return "LZ4Raw";
-		}
-		throw ITLException("Invalid nn5 compression type.");
-	}
-
-	template<>
-	inline nn5::NN5Compression fromString(const string& str0)
-	{
-		string str = str0;
-		toLower(str);
-		if (str == "raw")
-			return nn5::NN5Compression::Raw;
-		if (str == "lz4raw")
-			return nn5::NN5Compression::LZ4;
-
-		throw ITLException(string("Invalid nn5 compression type: ") + str);
-	}
-
-	namespace nn5
-	{
 
 		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason);
 
