@@ -249,9 +249,6 @@
     <ClInclude Include="indexforest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="line.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tomo\fbp.h">
       <Filter>Header Files\tomo</Filter>
     </ClInclude>
@@ -291,9 +288,6 @@
     <ClInclude Include="surfaceskeleton2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="capsule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="fillskeleton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -319,15 +313,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="marchingcubes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ellipsoid.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="aabox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="box.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="montage.h">
@@ -407,6 +392,21 @@
     </ClInclude>
     <ClInclude Include="io\nn5compression.h">
       <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="math\aabox.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\box.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\capsule.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\ellipsoid.h">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\line.h">
+      <Filter>Header Files\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

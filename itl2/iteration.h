@@ -4,7 +4,7 @@
 // and in particular replace pointprocess.h.
 
 #include "image.h"
-#include "aabox.h"
+#include "math/aabox.h"
 #include "progress.h"
 
 namespace itl2

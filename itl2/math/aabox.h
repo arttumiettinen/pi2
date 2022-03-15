@@ -247,4 +247,6 @@ namespace itl2
 
     };
 
+	typedef AABox<itl2::coord_t> AABoxc;
+
 }

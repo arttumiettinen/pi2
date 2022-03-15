@@ -1,12 +1,12 @@
 #pragma once
 
 #include "image.h"
-#include "aabox.h"
-#include "box.h"
+#include "math/aabox.h"
+#include "math/box.h"
 #include "sphere.h"
-#include "ellipsoid.h"
-#include "line.h"
-#include "capsule.h"
+#include "math/ellipsoid.h"
+#include "math/line.h"
+#include "math/capsule.h"
 #include "raytrace.h"
 #include "math/vec3.h"
 #include "network.h"

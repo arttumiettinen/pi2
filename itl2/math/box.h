@@ -2,7 +2,7 @@
 
 #include "math/vec3.h"
 #include "math/matrix3x3.h"
-#include "aabox.h"
+#include "math/aabox.h"
 
 namespace itl2
 {

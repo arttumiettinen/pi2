@@ -14,7 +14,7 @@
 #include "diskmappedbuffer.h"
 #include "io/imagedatatype.h"
 #include "imagemetadata.h"
-#include "aabox.h"
+#include "math/aabox.h"
 
 namespace itl2
 {

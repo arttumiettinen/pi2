@@ -22,12 +22,9 @@
     <ClInclude Include="analyzers.h" />
     <ClInclude Include="autothreshold.h" />
     <ClInclude Include="boundarycondition.h" />
-    <ClInclude Include="aabox.h" />
-    <ClInclude Include="box.h" />
     <ClInclude Include="buffer.h" />
     <ClInclude Include="buildsettings.h" />
     <ClInclude Include="byteorder.h" />
-    <ClInclude Include="capsule.h" />
     <ClInclude Include="carpet.h" />
     <ClInclude Include="connectivity.h" />
     <ClInclude Include="conversions.h" />
@@ -37,7 +34,6 @@
     <ClInclude Include="datatypes.h" />
     <ClInclude Include="diskmappedbuffer.h" />
     <ClInclude Include="dmap.h" />
-    <ClInclude Include="ellipsoid.h" />
     <ClInclude Include="eval.h" />
     <ClInclude Include="exprtk\exprtk.hpp" />
     <ClInclude Include="fastbilateralfilter.h" />
@@ -66,6 +62,11 @@
     <ClInclude Include="lz4\lz4hc.h" />
     <ClInclude Include="lz4\xxhash.h" />
     <ClInclude Include="marchingcubes.h" />
+    <ClInclude Include="math\aabox.h" />
+    <ClInclude Include="math\box.h" />
+    <ClInclude Include="math\capsule.h" />
+    <ClInclude Include="math\ellipsoid.h" />
+    <ClInclude Include="math\line.h" />
     <ClInclude Include="math\ludecomposition.h" />
     <ClInclude Include="math\matrix2x2.h" />
     <ClInclude Include="math\qrdecomposition.h" />
@@ -90,7 +91,6 @@
     <ClInclude Include="io\sequence.h" />
     <ClInclude Include="io\vol.h" />
     <ClInclude Include="itlexception.h" />
-    <ClInclude Include="line.h" />
     <ClInclude Include="lineskeleton.h" />
     <ClInclude Include="math\conjugategradient.h" />
     <ClInclude Include="math\dsyevc3.h" />

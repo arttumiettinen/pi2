@@ -11,7 +11,7 @@
 #include "specialcommands.h"
 #include "pisystem.h"
 #include "projectioncommands.h"
-#include "aabox.h"
+#include "math/aabox.h"
 #include "pilibutilities.h"
 
 #include <vector>

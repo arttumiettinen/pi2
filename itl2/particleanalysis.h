@@ -11,7 +11,7 @@
 #include "math/vec3.h"
 
 #include "indexforest.h"
-#include "aabox.h"
+#include "math/aabox.h"
 #include "misc.h"
 
 #include "resultstable.h"

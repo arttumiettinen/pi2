@@ -15,7 +15,7 @@
 
 #include "image.h"
 #include "math/vec3.h"
-#include "aabox.h"
+#include "math/aabox.h"
 #include "danielsson.h"
 
 namespace itl2

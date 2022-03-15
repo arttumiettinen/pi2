@@ -14,7 +14,7 @@
 #include "sphere.h"
 
 #include "marchingcubes.h"
-#include "ellipsoid.h"
+#include "math/ellipsoid.h"
 
 #include "convexhull.h"
 //#include "sphere.h"

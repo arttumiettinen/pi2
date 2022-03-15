@@ -840,7 +840,7 @@ namespace pilib
 		}
 
 		size_t jobCount = blocksPerImage.begin()->second.size();
-		cout << "Submitting " << jobCount << " jobs, each estimated to require at most " << bytesToString((double)memoryReq) << " of RAM..." << endl;
+		cout << "Submitting " << jobCount << " jobs, each estimated to require at most " << bytesToString((double)memoryReq) << " of RAM per job..." << endl;
 		vector<size_t> skippedJobs;
 		vector<tuple<string, JobType>> jobsToSubmit;
 		for (size_t i = 0; i < jobCount; i++)

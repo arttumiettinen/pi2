@@ -8,7 +8,7 @@
 #include "math/vec3.h"
 #include "utilities.h"
 #include "network.h"
-#include "aabox.h"
+#include "math/aabox.h"
 #include "math/matrix3x3.h"
 #include "math/vectoroperations.h"
 #include "interpolation.h"
