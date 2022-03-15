@@ -5,6 +5,7 @@
 #		Use "make BOUNDS_CHECK=1" to build a version with image access bounds checking. Usually
 #			bounds checking is not necessary unless tracking bugs etc.
 
+CFLAGS := -O3
 CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
 LDFLAGS := -fopenmp
 
@@ -33,6 +34,7 @@ endif
 TEMP_DIR := $(shell pwd)/intermediate
 BUILD_ROOT = $(TEMP_DIR)/$(CONFIG)/$@
 
+export CFLAGS
 export CXXFLAGS
 export LDFLAGS
 export OPENCL_LIB
