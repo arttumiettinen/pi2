@@ -139,7 +139,7 @@ namespace itl2
 		*/
 		AABox<coord_t> bounds() const
 		{
-			return AABox<coord_t>(Vec3c(), dimensions());
+			return AABox<coord_t>::fromPosSize(Vec3c(), dimensions());
 		}
 
 		/**

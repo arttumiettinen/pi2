@@ -95,8 +95,8 @@ namespace itl2
 	*/
 	template<typename pixel_t, typename box_t> size_t draw(Image<pixel_t>& img, const AABox<box_t>& box, pixel_t value)
 	{
-		AABox<coord_t> rounded(box);
-		AABox<coord_t> region = rounded.intersection(AABox(Vec3c(), img.dimensions()));
+		AABoxc rounded(box);
+		AABoxc region = rounded.intersection(AABoxc::fromMinMax(Vec3c(), img.dimensions()));
 
 		#pragma omp parallel for if(!omp_in_parallel() && region.volume() > PARALLELIZATION_THRESHOLD)
 		for (coord_t z = region.minc.z; z < region.maxc.z; z++)
@@ -126,7 +126,7 @@ namespace itl2
 		clamp(maxPos, Vec3c(0, 0, 0), image.dimensions() - Vec3c(1, 1, 1));
 
 		size_t filledCount = 0;
-		#pragma omp parallel for if(!omp_in_parallel() && AABox(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+		#pragma omp parallel for if(!omp_in_parallel() && AABoxc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
 		for(coord_t z = minPos.z; z <= maxPos.z; z++)
 		{
 			for(coord_t y = minPos.y; y <= maxPos.y; y++)
@@ -162,7 +162,7 @@ namespace itl2
 		clamp(maxPos, Vec3sc(0, 0, 0), Vec3sc(image.dimensions()) - Vec3sc(1, 1, 1));
 
 		size_t filledCount = 0;
-		#pragma omp parallel for if(!omp_in_parallel() && AABox(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+		#pragma omp parallel for if(!omp_in_parallel() && AABoxsc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
 		for (int32_t z = minPos.z; z <= maxPos.z; z++)
 		{
 			for (int32_t y = minPos.y; y <= maxPos.y; y++)
@@ -200,7 +200,7 @@ namespace itl2
 		clamp(maxPos, Vec3sc(0, 0, 0), Vec3sc(image.dimensions()) - Vec3sc(1, 1, 1));
 
 		size_t filledCount = 0;
-		#pragma omp parallel for if(!omp_in_parallel() && AABox(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+		#pragma omp parallel for if(!omp_in_parallel() && AABoxsc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
 		for (int32_t z = minPos.z; z <= maxPos.z; z++)
 		{
 			for (int32_t y = minPos.y; y <= maxPos.y; y++)
@@ -236,7 +236,7 @@ namespace itl2
 		clamp(maxPos, Vec3sc(0, 0, 0), Vec3sc(image.dimensions()) - Vec3sc(1, 1, 1));
 
 		size_t filledCount = 0;
-#pragma omp parallel for if(!omp_in_parallel() && AABox(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+		#pragma omp parallel for if(!omp_in_parallel() && AABoxsc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
 		for (int32_t z = minPos.z; z <= maxPos.z; z++)
 		{
 			for (int32_t y = minPos.y; y <= maxPos.y; y++)
@@ -283,7 +283,7 @@ namespace itl2
 		clamp(maxPos, Vec3c(0, 0, 0), image.dimensions() - Vec3c(1, 1, 1));
 
 		size_t filledCount = 0;
-		#pragma omp parallel for if(!omp_in_parallel() && AABox(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+		#pragma omp parallel for if(!omp_in_parallel() && AABoxc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
 		for (coord_t z = minPos.z; z <= maxPos.z; z++)
 		{
 			for (coord_t y = minPos.y; y <= maxPos.y; y++)
@@ -384,7 +384,7 @@ namespace itl2
 
 			Vec3c c(x, y, z);
 			Vec3c r(rx, ry, rz);
-			draw(geom, AABox(c - r, c + r), (uint8_t)1);
+			draw(geom, AABoxc::fromMinMax(c - r, c + r), (uint8_t)1);
 		}
 
 	}
@@ -476,7 +476,7 @@ namespace itl2
 
 				Vec3c c(x, y, z);
 				Vec3c r(rx, ry, rz);
-				draw(geom, AABox(c - r, c + r), (uint8_t)1);
+				draw(geom, AABoxc::fromMinMax(c - r, c + r), (uint8_t)1);
 			}
 
 			n++;

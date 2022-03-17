@@ -202,6 +202,12 @@ namespace itl2
 				return false;
 			}
 
+			if (dimensions.min() <= 0)
+			{
+				reason = string("Invalid image dimensions: ") + toString(dimensions);
+				return false;
+			}
+
 			if (!fs::exists(filename))
 			{
 				reason = "Input file does not exist.";

@@ -198,9 +198,9 @@ namespace itl2
 
 			// Create "coordinate system" image
 			orig.ensureSize(100, 200, 300);
-			draw(orig, AABox(Vec3c(0, 0, 0), Vec3c(orig.width(), 10, 10)), (uint16_t)100);
-			draw(orig, AABox(Vec3c(0, 0, 0), Vec3c(10, orig.height(), 10)), (uint16_t)150);
-			draw(orig, AABox(Vec3c(0, 0, 0), Vec3c(10, 10, orig.depth())), (uint16_t)200);
+			draw(orig, AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(orig.width(), 10, 10)), (uint16_t)100);
+			draw(orig, AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(10, orig.height(), 10)), (uint16_t)150);
+			draw(orig, AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(10, 10, orig.depth())), (uint16_t)200);
 
 			tiff::writed(orig, "./reslice/orig");
 
@@ -240,7 +240,7 @@ namespace itl2
 			itl2::crop(img, part, pos);
 			tiff::writed(part, "./crop/part");
 
-			draw(img, AABox(pos, pos + part.dimensions()), (uint8_t)0);
+			draw(img, AABoxc::fromMinMax(pos, pos + part.dimensions()), (uint8_t)0);
 			tiff::writed(img, "./crop/orig_part_removed");
 
 			itl2::copyValues(img, part, pos);

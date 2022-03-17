@@ -316,7 +316,6 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="parseexception.h" />
     <ClInclude Include="particlescommands.h" />
     <ClInclude Include="pathcommands.h" />
-    <ClInclude Include="pick.h" />
     <ClInclude Include="pilib.h" />
     <ClInclude Include="pisystem.h" />
     <ClInclude Include="pointprocesscommands.h" />

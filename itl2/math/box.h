@@ -114,7 +114,7 @@ namespace itl2
 				maxc = max(maxc, corners[n]);
 			}
 
-			return AABox<double>(minc, maxc);
+			return AABox<double>::fromMinMax(minc, maxc);
 		}
 	};
 }

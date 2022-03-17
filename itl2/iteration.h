@@ -90,7 +90,7 @@ namespace itl2
 	template<typename F>
 	void forAllPixels(const ImageBase& img, F&& lambda, bool showProgressIndicator = false)
 	{
-		forAllInBox(AABox<coord_t>(Vec3c(), img.dimensions()), lambda, showProgressIndicator);
+		forAllInBox(AABox<coord_t>::fromMinMax(Vec3c(), img.dimensions()), lambda, showProgressIndicator);
 	}
 
 	/**

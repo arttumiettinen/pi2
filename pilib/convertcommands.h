@@ -2,7 +2,6 @@
 
 #include "pisystem.h"
 #include "conversions.h"
-#include "pick.h"
 #include "pointprocesscommands.h"
 
 namespace pilib

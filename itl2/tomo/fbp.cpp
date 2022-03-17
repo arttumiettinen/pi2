@@ -1754,7 +1754,7 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		{
 
 			Image<float32_t> slice(329, 33, 1);
-			draw(slice, AABox<coord_t>(Vec3c(50, 10, 0), Vec3c(250, 25, 1)), 0.95f);
+			draw(slice, AABoxc::fromMinMax(Vec3c(50, 10, 0), Vec3c(250, 25, 1)), 0.95f);
 
 			raw::writed(slice, "./fbp/before_paganin");
 			paganinSlice(slice, PadType::Mirror, 0, 0, 1000, 1, 1);

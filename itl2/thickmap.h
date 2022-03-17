@@ -832,12 +832,12 @@ namespace itl2
 			tmap2.ensureSize(dmap2);
 
 			Image<internals::RiStorageSet> ri(dmap2.dimensions());
-			internals::prepareSuper(dmap2, ri, AABox<coord_t>(Vec3c(0, 0, 0), dmap2.dimensions()));
+			internals::prepareSuper(dmap2, ri, AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), dmap2.dimensions()));
 			setValue(tmap2, 0);
 			double totalRiMem = 0;
 			for (size_t n = 0; n < ri.dimensionality(); n++)
 			{
-				internals::processDimensionSuper<pixel_t>(ri, n, dmap2, tmap2, showProgressInfo, AABox<coord_t>(Vec3c(0, 0, 0), dmap2.dimensions()), dmap2);
+				internals::processDimensionSuper<pixel_t>(ri, n, dmap2, tmap2, showProgressInfo, AABox<coord_t>::fromMinMax(Vec3c(0, 0, 0), dmap2.dimensions()), dmap2);
 
 				if (extraBytes || riCounts)
 				{

@@ -114,9 +114,6 @@
     <ClInclude Include="dmapcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pick.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="convertcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>

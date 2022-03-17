@@ -1136,7 +1136,7 @@ namespace itl2
 
 				if (e.verts[0] < 0) // verts[pi] < 0 means that we don't know where the edge is connected in this end.
 				{
-					AABox<int32_t> b(e.points.front(), e.points.front() + Vec3sc(1, 1, 1));
+					AABox<int32_t> b = AABox<int32_t>::fromMinMax(e.points.front(), e.points.front() + Vec3sc(1, 1, 1));
 					b.inflate(1);
 					m = min(m, b.minc);
 					M = max(M, b.maxc);
@@ -1144,7 +1144,7 @@ namespace itl2
 
 				if (e.verts[1] < 0) // verts[pi] < 0 means that we don't know where the edge is connected in this end.
 				{
-					AABox<int32_t> b(e.points.back(), e.points.back() + Vec3sc(1, 1, 1));
+					AABox<int32_t> b = AABox<int32_t>::fromMinMax(e.points.back(), e.points.back() + Vec3sc(1, 1, 1));
 					b.inflate(1);
 					m = min(m, b.minc);
 					M = max(M, b.maxc);

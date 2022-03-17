@@ -171,21 +171,21 @@ namespace itl2
 	{
 		if (dimension == 0)
 		{
-			forAllInBox(AABox(Vec3c(0, 0, 0), Vec3c(img.width() / 2, img.height(), img.depth())), [&](coord_t x, coord_t y, coord_t z)
+			forAllInBox(AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(img.width() / 2, img.height(), img.depth())), [&](coord_t x, coord_t y, coord_t z)
 			{
 				std::swap(img(x, y, z), img(img.width() - 1 - x, y, z));
 			});
 		}
 		else if (dimension == 1)
 		{
-			forAllInBox(AABox(Vec3c(0, 0, 0), Vec3c(img.width(), img.height() / 2, img.depth())), [&](coord_t x, coord_t y, coord_t z)
+			forAllInBox(AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(img.width(), img.height() / 2, img.depth())), [&](coord_t x, coord_t y, coord_t z)
 			{
 				std::swap(img(x, y, z), img(x, img.height() - 1 - y, z));
 			});
 		}
 		else if (dimension == 2)
 		{
-			forAllInBox(AABox(Vec3c(0, 0, 0), Vec3c(img.width(), img.height(), img.depth() / 2)), [&](coord_t x, coord_t y, coord_t z)
+			forAllInBox(AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(img.width(), img.height(), img.depth() / 2)), [&](coord_t x, coord_t y, coord_t z)
 			{
 				std::swap(img(x, y, z), img(x, y, img.depth() - 1 - z));
 			});
@@ -301,9 +301,9 @@ namespace itl2
 
 		setValue(out, out_t());
 
-		AABox inBox(Vec3c(0, 0, 0), in.dimensions());
-		AABox outBox(Vec3c(0, 0, 0), out.dimensions());
-		AABox clippedBox = outBox.translate(outPos).intersection(inBox).translate(-outPos);
+		AABoxc inBox = AABoxc::fromPosSize(Vec3c(0, 0, 0), in.dimensions());
+		AABoxc outBox = AABoxc::fromPosSize(Vec3c(0, 0, 0), out.dimensions());
+		AABoxc clippedBox = outBox.translate(outPos).intersection(inBox).translate(-outPos);
 
 		forAllInBox(clippedBox, [&](coord_t x, coord_t y, coord_t z)
 		{

@@ -13,7 +13,7 @@ namespace itl2
 			// Make an image
 			Image<uint32_t> geom(100, 100, 100);
 			draw(geom, Sphere(Vec3c(50, 13, 50), (coord_t)18), (uint32_t)255);
-			draw(geom, AABox(Vec3c(20, 30, 30), Vec3c(80, 70, 70)), (uint32_t)255);
+			draw(geom, AABoxc::fromMinMax(Vec3c(20, 30, 30), Vec3c(80, 70, 70)), (uint32_t)255);
 
 			raw::writed(geom, "maxima/geometry");
 

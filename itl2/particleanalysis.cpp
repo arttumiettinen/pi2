@@ -201,8 +201,8 @@ namespace itl2
 		{
 			Image<uint8_t> img(150, 150, 150);
 
-			AABox box1 = AABox(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
-			AABox box2 = AABox(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
+			AABoxc box1 = AABoxc::fromMinMax(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
+			AABoxc box2 = AABoxc::fromMinMax(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
 			draw(img, box1, (uint8_t)1);
 			draw(img, box2, (uint8_t)1);
 
@@ -330,8 +330,8 @@ namespace itl2
 		{
 			Image<uint8_t> img(150, 150, 150);
 
-			AABox box1 = AABox(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
-			AABox box2 = AABox(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
+			AABoxc box1 = AABoxc::fromMinMax(Vec3c(30, 30, 30), Vec3c(50, 50, 50));
+			AABoxc box2 = AABoxc::fromMinMax(Vec3c(60, 60, 60), Vec3c(150, 150, 150));
 			draw(img, box1, (uint8_t)1);
 			draw(img, box2, (uint8_t)1);
 

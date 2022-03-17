@@ -7,7 +7,6 @@
 #include <omp.h>
 #include "io/vol.h"
 #include "io/io.h"
-#include "pick.h"
 #include "pilibutilities.h"
 #include "whereamicpp.h"
 #include "commandmacros.h"

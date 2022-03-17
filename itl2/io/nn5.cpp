@@ -12,8 +12,6 @@ namespace itl2
 {
 	namespace nn5
 	{
-		//const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
-
 		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason)
 		{
 			dimensions = Vec3c();
@@ -191,6 +189,321 @@ namespace itl2
 
 				return filenames;
 			}
+
+			void check(const Vec3c& chunkSize)
+			{
+				if (chunkSize.min() <= 0)
+					throw ITLException(string("NN5 chunk size must be positive, but it is ") + toString(chunkSize));
+			}
+
+			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
+			{
+				check(chunkSize);
+
+				// Delete old dataset if it exists.
+				if (fs::exists(path))
+				{
+					bool oldIsNativeByteOrder;
+					Vec3c oldDimensions;
+					ImageDataType oldDataType;
+					Vec3c oldChunkSize;
+					NN5Compression oldCompression;
+					string dummyReason;
+					if (!nn5::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCompression, dummyReason))
+					{
+						// The path does not contain an NN5 dataset.
+						// If it is no know image, do not delete it.
+						if (!io::getInfo(path, oldDimensions, oldDataType, dummyReason))
+							throw ITLException(string("Unable to write an NN5 as the output folder already exists but cannot be verified to be an image: ") + path + " Consider removing the existing dataset manually.");
+
+						// Here the path does not contain NN5 but contains an image of known type.
+						// Delete the old image.
+						fs::remove_all(path);
+					}
+					else
+					{
+						// The path contains NN5 dataset.
+						// Delete it if we are not continuing a concurrent write.
+						if(!fs::exists(internals::concurrentTagFile(path)))
+							fs::remove_all(path);
+					}
+				}
+
+				fs::create_directories(path);
+
+				// Write metadata
+				internals::writeMetadata(path, imageDimensions, imageDataType, chunkSize, compression);
+			}
+		}
+
+		//size_t countWritersAt(const AABoxc& box, const std::vector<NN5Process>& processes)
+		//{
+		//	size_t count = 0;
+		//	for (const NN5Process& process : processes)
+		//	{
+		//		if (process.writeBlock.overlaps(box))
+		//			count++;
+		//	}
+		//	return count;
+		//}
+
+		/**
+		Finds out if a chunk (given its bounding box) is 'safe' or not.
+		Safe chunks can be written to without any synchronization or post-processing of the results.
+		*/
+		bool isChunkSafe(const AABoxc& box, const std::vector<NN5Process>& processes)
+		{
+			vector<size_t> readerIndices;
+			vector<size_t> writerIndices;
+			for (size_t n = 0; n < processes.size(); n++)
+			{
+				const auto& process = processes[n];
+				if (process.readBlock.overlaps(box))
+					readerIndices.push_back(n);
+				if (process.writeBlock.overlaps(box))
+					writerIndices.push_back(n);
+			}
+
+			if (writerIndices.size() <= 0)
+			{
+				// No writers, the chunk is never written to, so it is safe.
+				return true;
+			}
+			if (writerIndices.size() > 1)
+			{
+				// Multiple writers, the chunk is unsafe as the writers can write simultaneously.
+				return false;
+			}
+			else
+			{
+				// One writer.
+				if (readerIndices.size() <= 0)
+				{
+					// No readers, one writer, the chunk is safe.
+					return true;
+				}
+				else if (readerIndices.size() > 1)
+				{
+					// Multiple readers, one writer, the chunk is not safe as it can be read from and written to simultaneously.
+					return false;
+				}
+				else
+				{
+					// One reader, one writer.
+					
+					if (readerIndices[0] == writerIndices[0])
+					{
+						// Reader and writer are the same process.
+						// The chunk is safe as the reader/writer process should control its possibly overlapping reads and writes internally.
+						return true;
+					}
+					else
+					{
+						// Reader and writer are different processes.
+						// The chunk is not safe as the reader and the writer might access the chunk simultaneously.
+						return false;
+					}
+				}
+			}
+		}
+
+		void startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
+		{
+			// Find chunks that are
+			// * written to by separate processes, or
+			// * read from and written to by at least two separate processes,
+			// and tag those unsafe by creating writes folder into the chunk folder.
+
+			internals::beginWrite(imageDimensions, imageDataType, path, chunkSize, compression);
+
+			// Tag the image as concurrently processed
+			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
+
+			internals::forAllChunks(imageDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				{
+					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
+					fs::create_directories(chunkFolder);
+
+					string writesFolder = internals::writesFolder(chunkFolder);
+
+					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
+
+					if (!isChunkSafe(chunkBox, processes))
+					{
+						// Mark the chunk as unsafe by creating writes folder.
+						fs::create_directories(writesFolder);
+					}
+				});
+			
+		}
+
+		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
+		{
+			string chunkFolder = internals::chunkFolder(path, dimensionality, chunkIndex);
+			string writesFolder = internals::writesFolder(chunkFolder);
+			return fs::exists(writesFolder);
+		}
+
+		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
+		{
+			bool isNativeByteOrder;
+			Vec3c imageDimensions;
+			ImageDataType dataType;
+			Vec3c chunkSize;
+			NN5Compression compression;
+			string reason;
+			if (!getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+
+			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
+		}
+
+		namespace internals
+		{
+			/**
+			Reads block position [X, Y, Z] from a filename in format 'chunk_X-Y-Z_something' or 'chunk_X-Y-Z.something'.
+			*/
+			Vec3c parsePosition(const string& filename)
+			{
+				string name = fs::path(filename).filename().string();
+				vector<string> parts = split(name, false, '_');
+				if (parts.size() < 2)
+					throw ITLException(string("Invalid chunk writes name: ") + filename);
+				if (parts[0] != "chunk")
+					throw ITLException(string("Chunk filename does not begin with 'chunk_': ") + filename);
+				string part = parts[1];
+				parts = split(part, true, '-');
+				if (parts.size() < 3)
+					throw ITLException(string("Block coordinates do not contain three elements: ") + filename);
+				coord_t x = fromString<coord_t>(parts[0]);
+				coord_t y = fromString<coord_t>(parts[1]);
+				coord_t z = fromString<coord_t>(parts[2]);
+				return Vec3c(x, y, z);
+			}
+
+			template<typename pixel_t> void readAndAdd(Image<pixel_t>& img, const string& filename, NN5Compression compression)
+			{
+				Vec3c blockPos = parsePosition(filename);
+
+				Image<pixel_t> block;
+				readChunkFile(block, filename, compression);
+
+				copyValues(img, block, blockPos);
+			}
+
+			template<typename pixel_t> struct CombineChunkWrites
+			{
+			public:
+				static void run(const string& path, const Vec3c& datasetSize, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& chunkIndex)
+				{
+					string chunkFolder = internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
+					string writesFolder = internals::writesFolder(chunkFolder);
+
+					if (fs::exists(writesFolder))
+					{
+						// Find all files in the writes folder
+						vector<string> writesFiles = buildFileList(writesFolder + "/");
+
+						if (writesFiles.size() > 0)
+						{
+							Vec3c realChunkSize = internals::clampedChunkSize(chunkIndex, chunkSize, datasetSize);
+							Image<pixel_t> img(realChunkSize);
+
+							// Read old data if it exists.
+							// TODO: No need to read if the written blocks overwrite the chunk completely.
+							std::vector<string> originalFiles = getFileList(chunkFolder);
+							if (originalFiles.size() <= 0)
+							{
+								// No file => all pixels in the block are zeroes.
+								setValue(img, (pixel_t)0);
+							}
+							else if (originalFiles.size() == 1)
+							{
+								string filename = chunkFolder + "/" + originalFiles[0];
+								readChunkFile(img, filename, compression);
+							}
+							else
+							{
+								throw ITLException(string("Multiple image files found in block directory ") + chunkFolder + " while combining chunk writes.");
+							}
+
+							// Modify data with the new writes.
+							for (const string& file : writesFiles)
+							{
+								readAndAdd(img, file, compression);
+							}
+
+							// Write back to disk.
+							switch (compression)
+							{
+								case NN5Compression::Raw:
+								{
+									string filename = concatDimensions(chunkFolder + "/chunk", img.dimensions());
+									raw::write(img, filename);
+									break;
+								}
+								case NN5Compression::LZ4:
+								{
+									string filename = chunkFolder + "/chunk.lz4raw";
+									lz4::write(img, filename);
+									break;
+								}
+								default:
+								{
+									throw ITLException(string("Unsupported nn5 compression algorithm: ") + toString(compression));
+								}
+							}
+						}
+
+						// Remove the writes folder in order to mark this chunk processed.
+						fs::remove_all(writesFolder);
+					}
+				}
+			};
+
+			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& chunkIndex)
+			{
+				pick<internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, compression, chunkIndex);
+			}
+		}
+
+		
+
+		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
+		{
+			bool isNativeByteOrder;
+			Vec3c imageDimensions;
+			ImageDataType dataType;
+			Vec3c chunkSize;
+			NN5Compression compression;
+			string reason;
+			if (!getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+
+			internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
+		}
+
+		void endConcurrentWrite(const std::string& path)
+		{
+			bool isNativeByteOrder;
+			Vec3c fileDimensions;
+			ImageDataType dataType;
+			Vec3c chunkSize;
+			NN5Compression compression;
+			string reason;
+			if (!getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+			size_t dimensionality = getDimensionality(fileDimensions);
+
+			internals::forAllChunks(fileDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				{
+					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
+						internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
+				});
+			
+			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
+			// the endConcurrentWrite can continue simply by re-running it.
+			fs::remove_all(internals::concurrentTagFile(path));
 		}
 
 
@@ -320,6 +633,112 @@ namespace itl2
 
 				nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(40, 30, 20));
 				nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(40, 30, 20));
+			}
+
+
+			void concurrencyOneTest(NN5Compression compression, const Vec3c& chunkSize)
+			{
+				cout << "Chunk size = " << chunkSize << ", compression = " << toString(compression) << endl;
+
+				Vec3c dimensions(100, 200, 300);
+
+				Image<uint16_t> img(dimensions);
+				ramp3(img);
+
+				Vec3c blockStart(10, 20, 30);
+				Vec3c blockSize(50, 60, 70);
+
+				string entireImageFile = "./nn5_concurrency/entire_image";
+
+				// Write entire image and read.
+				fs::remove_all(entireImageFile);
+				{
+					vector<nn5::NN5Process> processes;
+
+					Vec3c processBlockSize(30, 30, 30);
+					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+						{
+							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
+						});
+
+					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
+					nn5::write(img, entireImageFile, chunkSize, compression);
+					nn5::endConcurrentWrite(entireImageFile);
+
+					Image<uint16_t> entireFromDisk;
+					nn5::read(entireFromDisk, entireImageFile);
+					testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle with concurrency enabled");
+				}
+
+				// Write in 2 blocks and read.
+				fs::remove_all(entireImageFile);
+				{
+					Vec3c block1Start(0, 0, 0);
+					Vec3c block1Size(dimensions.x / 2 + 3, dimensions.y, dimensions.z);
+					Vec3c block2Start(block1Size.x, 0, 0);
+					Vec3c block2Size(dimensions.x - block1Size.x, dimensions.y, dimensions.z);
+
+					vector<nn5::NN5Process> processes;
+					processes.push_back(NN5Process{ AABoxc::fromPosSize(block1Start, block1Size + Vec3c(10, 0, 0)), AABoxc::fromPosSize(block1Start, block1Size) });
+					processes.push_back(NN5Process{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
+
+					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
+					nn5::writeBlock(img, entireImageFile, chunkSize, compression, block1Start, dimensions, block1Start, block1Size);
+					nn5::writeBlock(img, entireImageFile, chunkSize, compression, block2Start, dimensions, block2Start, block2Size);
+					nn5::endConcurrentWrite(entireImageFile);
+
+					Image<uint16_t> entireFromDisk;
+					nn5::read(entireFromDisk, entireImageFile);
+					testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle in 2 pseudo-concurrent blocks");
+				}
+
+				// Write in multiple blocks and read.
+				{
+					vector<nn5::NN5Process> processes;
+
+					Vec3c processBlockSize(30, 31, 32);
+					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+						{
+							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
+						});
+
+					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
+					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+						{
+							nn5::writeBlock(img, entireImageFile, chunkSize, compression, processBlockStart, dimensions, processBlockStart, processBlockSize);
+						});
+					nn5::endConcurrentWrite(entireImageFile);
+
+					Image<uint16_t> entireFromDisk;
+					nn5::read(entireFromDisk, entireImageFile);
+					testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle with concurrency enabled");
+				}
+			}
+
+			void concurrency()
+			{
+				concurrencyOneTest(NN5Compression::Raw, Vec3c(40, 200, 300));
+				concurrencyOneTest(NN5Compression::LZ4, Vec3c(40, 200, 300));
+
+				concurrencyOneTest(NN5Compression::Raw, Vec3c(40, 30, 20));
+				concurrencyOneTest(NN5Compression::LZ4, Vec3c(40, 30, 20));
+			}
+
+			void concurrencyLong()
+			{
+				coord_t w = 100;
+				coord_t h = 200;
+				coord_t d = 300;
+
+				srand(1212);
+
+				for (coord_t n = 0; n < 100; n++)
+				{
+					Vec3c chunkSize(randc(10, w + 10), randc(10, h + 10), randc(10, d + 10));
+
+					concurrencyOneTest(NN5Compression::Raw, chunkSize);
+					concurrencyOneTest(NN5Compression::LZ4, chunkSize);
+				}
 			}
 		}
 	}

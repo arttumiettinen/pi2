@@ -115,7 +115,7 @@ namespace itl2
 			clamp(maxPos, Vec3c(0, 0, 0), image.dimensions() - Vec3c(1, 1, 1));
 
 			size_t filledCount = 0;
-			//#pragma omp parallel for if(!omp_in_parallel() && AABox(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+			//#pragma omp parallel for if(!omp_in_parallel() && AABoxc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
 			for (coord_t z = minPos.z; z <= maxPos.z; z++)
 			{
 				for (coord_t y = minPos.y; y <= maxPos.y; y++)

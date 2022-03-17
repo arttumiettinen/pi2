@@ -1000,8 +1000,8 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img(3, 2);
-				draw(img, AABox(Vec3c(), Vec3c(1, 1, 1)), (uint8_t)255);
-				draw(img, AABox(Vec3c(2, 1, 0), img.dimensions()), (uint8_t)255);
+				draw(img, AABoxc::fromMinMax(Vec3c(), Vec3c(1, 1, 1)), (uint8_t)255);
+				draw(img, AABoxc::fromMinMax(Vec3c(2, 1, 0), img.dimensions()), (uint8_t)255);
 
 				singleTest(img, Vec3c(0, 0, 0), Connectivity::AllNeighbours);
 				singleTest(img, Vec3c(0, 0, 0), Connectivity::NearestNeighbours);
@@ -1009,8 +1009,8 @@ namespace itl2
 
 			{
 				Image<uint8_t> img(3, 2);
-				draw(img, AABox(Vec3c(2, 0, 0), Vec3c(3, 1, 1)), (uint8_t)255);
-				draw(img, AABox(Vec3c(0, 1, 0), Vec3c(1, 2, 1)), (uint8_t)255);
+				draw(img, AABoxc::fromMinMax(Vec3c(2, 0, 0), Vec3c(3, 1, 1)), (uint8_t)255);
+				draw(img, AABoxc::fromMinMax(Vec3c(0, 1, 0), Vec3c(1, 2, 1)), (uint8_t)255);
 				
 
 				singleTest(img, Vec3c(0, 0, 0), Connectivity::AllNeighbours);

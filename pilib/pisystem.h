@@ -16,7 +16,6 @@
 #include "distributedimage.h"
 #include "stringutils.h"
 #include "commandlist.h"
-#include "pick.h"
 
 using namespace itl2;
 

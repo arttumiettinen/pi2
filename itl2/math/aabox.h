@@ -40,6 +40,18 @@ namespace itl2
 			return dx * dx + dy * dy + dz * dz;
 		}
 
+		/**
+		Constructor.
+		Creates box from minimum and maximum coordinates.
+		This constructor is private as otherwise it is easy to assume that the constructor constructs a box from position and size etc.
+		The user of the class must use the explicit box creation methods to avoid such bugs.
+		*/
+		AABox(const Vec3<T>& minc, const Vec3<T>& maxc) :
+			minc(minc),
+			maxc(maxc)
+		{
+		}
+
     public:
         /**
         Minimum and maximum coordinates of the box.
@@ -57,22 +69,20 @@ namespace itl2
 
 		/**
 		Constructor.
-		Creates box from minimum and maximum coordinates.
-		*/
-        AABox(const Vec3<T>& minc, const Vec3<T>& maxc) :
-            minc(minc),
-            maxc(maxc)
-        {
-        }
-
-		/**
-		Constructor.
 		Creates box from box of other type by rounding and casting the coordinates.
 		*/
 		template<typename other_t> AABox(const AABox<other_t>& r) :
 			minc(r.minc),
 			maxc(r.maxc)
 		{
+		}
+
+		/**
+		Constructs box from minimum and maximum bounds.
+		*/
+		static AABox<T> fromMinMax(const Vec3<T>& minc, const Vec3<T>& maxc)
+		{
+			return AABox(minc, maxc);
 		}
 
 		/**
@@ -245,8 +255,17 @@ namespace itl2
             return AABox(minc, maxc);
         }
 
+		/**
+		Converts this object to string.
+		*/
+		friend std::ostream& operator<<(std::ostream& stream, const AABox<T>& v)
+		{
+			stream << "(min = " << v.minc << ", max = " << v.maxc << ")";
+			return stream;
+		}
     };
 
 	typedef AABox<itl2::coord_t> AABoxc;
+	typedef AABox<int32_t> AABoxsc;
 
 }

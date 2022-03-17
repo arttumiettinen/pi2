@@ -208,7 +208,7 @@ namespace itl2
 			double dz = sqrt(m31 * m31 + m32 * m32 + m33 * m33);
 
 			Vec3d D(dx, dy, dz);
-			return AABox<double>(center - D, center + D);
+			return AABox<double>::fromMinMax(center - D, center + D);
 		}
 
 	};

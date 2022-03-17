@@ -625,7 +625,7 @@ namespace pilib
 			Distributor::BLOCK_ORIGIN_ARG_TYPE origin = pop<Distributor::BLOCK_ORIGIN_ARG_TYPE>(args);
 			pos -= origin;
 
-			draw(in, AABox<coord_t>(pos, pos + size), pixelRound<pixel_t>(value));
+			draw(in, AABoxc::fromMinMax(pos, pos + size), pixelRound<pixel_t>(value));
 		}
 	};
 
