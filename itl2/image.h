@@ -856,6 +856,17 @@ namespace itl2
 		}
 	};
 
+	extern template class Image<uint8_t>;
+	extern template class Image<uint16_t>;
+	extern template class Image<uint32_t>;
+	extern template class Image<uint64_t>;
+	extern template class Image<int8_t>;
+	extern template class Image<int16_t>;
+	extern template class Image<int32_t>;
+	extern template class Image<int64_t>;
+	extern template class Image<float32_t>;
+	extern template class Image<complex32_t>;
+
 	namespace tests
 	{
 		void image();

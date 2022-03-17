@@ -14,6 +14,16 @@ using namespace std;
 
 namespace pilib
 {
+	template class DistributedImage<uint8_t>;
+	template class DistributedImage<uint16_t>;
+	template class DistributedImage<uint32_t>;
+	template class DistributedImage<uint64_t>;
+	template class DistributedImage<int8_t>;
+	template class DistributedImage<int16_t>;
+	template class DistributedImage<int32_t>;
+	template class DistributedImage<int64_t>;
+	template class DistributedImage<float32_t>;
+	template class DistributedImage<complex32_t>;
 	
 	DistributedImageBase::DistributedImageBase(Distributor& distributor, const string& name, const Vec3c& dimensions, ImageDataType dataType, const string& sourceFilename) :
 		dims(dimensions),

@@ -20,6 +20,8 @@ using itl2::ImageBase;
 using itl2::ITLException;
 using itl2::endsWith;
 using itl2::Image;
+using itl2::float32_t;
+using itl2::complex32_t;
 
 namespace pilib
 {
@@ -519,4 +521,15 @@ namespace pilib
 				throw ITLException("This operation cannot be executed if the parameter images are the same.");
 		}
 	};
+
+	extern template class DistributedImage<uint8_t>;
+	extern template class DistributedImage<uint16_t>;
+	extern template class DistributedImage<uint32_t>;
+	extern template class DistributedImage<uint64_t>;
+	extern template class DistributedImage<int8_t>;
+	extern template class DistributedImage<int16_t>;
+	extern template class DistributedImage<int32_t>;
+	extern template class DistributedImage<int64_t>;
+	extern template class DistributedImage<float32_t>;
+	extern template class DistributedImage<complex32_t>;
 }

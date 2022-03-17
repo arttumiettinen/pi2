@@ -11,6 +11,17 @@ using namespace std;
 
 namespace itl2
 {
+	template class Image<uint8_t>;
+	template class Image<uint16_t>;
+	template class Image<uint32_t>;
+	template class Image<uint64_t>;
+	template class Image<int8_t>;
+	template class Image<int16_t>;
+	template class Image<int32_t>;
+	template class Image<int64_t>;
+	template class Image<float32_t>;
+
+	extern template class Image<complex32_t>;
 	namespace tests
 	{
 		void image()
