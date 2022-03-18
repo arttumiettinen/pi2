@@ -12,3 +12,4 @@ del *_defpoints_*.raw
 del *_world_to_local_shifts_*.raw
 del *_index.txt
 del *_done.tif
+rem Slurm I/O folder is not deleted here as Slurm is never available in Windows anyway.
