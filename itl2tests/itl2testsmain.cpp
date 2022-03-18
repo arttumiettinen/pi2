@@ -78,7 +78,7 @@ int main()
 	//test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
 	//test(raw::tests::expandFilename, "Raw filename expansion");
 	//test(raw::tests::raw, "Raw reader");
-	//test(io::tests::readWrite, "IO read");
+	test(io::tests::readWrite, "IO read");
 	//test(raw::tests::writeBlock, "Block based raw reader & writer");
 	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
@@ -260,7 +260,7 @@ int main()
 	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
 	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
 	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
-	test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
+	//test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
 	//test(itl2::nn5::tests::concurrencyLong, "NN5 concurrent I/O, long test");
 	
 	

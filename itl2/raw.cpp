@@ -133,22 +133,28 @@ namespace itl2
 				testAssert(equals(head, headBlocks), "by block-written image differs from original");
 			}
 
+			void expandSingleTest(const string& input, const string& gtFilename, const Vec3c& gtDimensions, ImageDataType gtDataType)
+			{
+				string expanded = input;
+				raw::internals::expandRawFilename(expanded);
+				testAssert(fs::path(expanded) == fs::path(gtFilename), string("raw filename expansion: ") + expanded + string(" != ") + gtFilename);
+
+				Vec3c dimensions;
+				ImageDataType dataType;
+				string reason;
+				raw::getInfo(input, dimensions, dataType, reason);
+				testAssert(dimensions == gtDimensions, string("dimensions: ") + input);
+				testAssert(dataType == gtDataType, string("data type: ") + input);
+			}
+
 			void expandFilename()
 			{
-				string f1 = "./input_data/t1-head";
-				string f2 = "./input_data/t1-head_bin";
-				string f3 = "./input_data/t1-head_bin_dmap";
-				string f4 = "./input_data/t1-head_";
-
-				raw::internals::expandRawFilename(f1);
-				raw::internals::expandRawFilename(f2);
-				raw::internals::expandRawFilename(f3);
-				raw::internals::expandRawFilename(f4);
-
-				testAssert(fs::path(f1) == fs::path(".\\input_data\\t1-head_256x256x129.raw"), "filename 1");
-				testAssert(fs::path(f2) == fs::path(".\\input_data\\t1-head_bin_256x256x129.raw"), "filename 2");
-				testAssert(fs::path(f3) == fs::path(".\\input_data\\t1-head_bin_dmap_256x256x129.raw"), "filename 3");
-				testAssert(fs::path(f4) == fs::path(".\\input_data\\t1-head_256x256x129.raw"), "filename 4");
+				expandSingleTest("./input_data/t1-head", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("./input_data/t1-head_", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("./input_data/t1-head_256x256x129", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("./input_data/t1-head_256x256x129.raw", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("./input_data/t1-head_bin", ".\\input_data\\t1-head_bin_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt8);
+				expandSingleTest("./input_data/t1-head_bin_dmap", ".\\input_data\\t1-head_bin_dmap_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::Float32);
 			}
 		}
 	}

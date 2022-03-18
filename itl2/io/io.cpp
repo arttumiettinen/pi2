@@ -57,8 +57,15 @@ namespace itl2
 			{
 				Image<uint8_t> img8;
 				Image<uint16_t> img;
+				
 				io::read(img8, "./input_data/uint8.png");
 				io::read(img8, "./input_data/t1-head_bin_");
+				
+				io::read(img, "./input_data/t1-head");
+				io::read(img, "./input_data/t1-head_");
+				io::read(img, "./input_data/t1-head_256x256x129");
+				io::read(img, "./input_data/t1-head_256x256x129.raw");
+				
 				io::read(img, "./input_data/t1-head.tif");
 
 				sequence::write(img, "./sequence/head/head_@(5)_test.tif");
