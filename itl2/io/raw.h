@@ -56,10 +56,35 @@ namespace itl2
 
 
 			/**
-			Tries to find pixel data type based on file size and dimensions.
+			Tries to find pixel data type based on file name, size and dimensions.
 			*/
 			inline ImageDataType estimateDataType(const std::string& filename, const Vec3c& dimensions, size_t& pixelSizeBytes)
 			{
+				// First try to find data type from file name.
+				string loname = filename;
+				toLower(loname);
+				if (contains(loname, toString(ImageDataType::UInt8)))
+					return ImageDataType::UInt8;
+				if (contains(loname, toString(ImageDataType::UInt16)))
+					return ImageDataType::UInt16;
+				if (contains(loname, toString(ImageDataType::UInt32)))
+					return ImageDataType::UInt32;
+				if (contains(loname, toString(ImageDataType::UInt64)))
+					return ImageDataType::UInt64;
+				if (contains(loname, toString(ImageDataType::Int8)))
+					return ImageDataType::Int8;
+				if (contains(loname, toString(ImageDataType::Int16)))
+					return ImageDataType::Int16;
+				if (contains(loname, toString(ImageDataType::Int32)))
+					return ImageDataType::Int32;
+				if (contains(loname, toString(ImageDataType::Int64)))
+					return ImageDataType::Int64;
+				if (contains(loname, toString(ImageDataType::Float32)))
+					return ImageDataType::Float32;
+				if (contains(loname, toString(ImageDataType::Complex32)))
+					return ImageDataType::Complex32;
+
+				// No data type information found from the file name, so try to estimate from file size.
 				size_t fileSize = (size_t)itl2::fileSize(filename);
 				return estimateDataType(fileSize, dimensions, pixelSizeBytes);
 			}

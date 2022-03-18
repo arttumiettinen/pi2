@@ -75,12 +75,12 @@ int main()
 	//test(itl2::tests::cgne, "CGNE");
 	//test(itl2::tests::image, "Image");
 
-	//test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
-	//test(raw::tests::expandFilename, "Raw filename expansion");
-	//test(raw::tests::raw, "Raw reader");
+	test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
+	test(raw::tests::expandFilename, "Raw filename expansion");
+	test(raw::tests::raw, "Raw reader");
 	test(io::tests::readWrite, "IO read");
-	//test(raw::tests::writeBlock, "Block based raw reader & writer");
-	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
+	test(raw::tests::writeBlock, "Block based raw reader & writer");
+	test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
