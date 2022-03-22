@@ -38,6 +38,11 @@ namespace itl2
 	bool contains(const string& str, const string& part);
 
 	/**
+	Tests if string str contains tring part, ignoring case of both strings.
+	*/
+	bool containsIgnoreCase(const string& str, const string& part);
+
+	/**
 	Convert all characters in the string to lower case.
 	*/
 	void toLower(string& str);

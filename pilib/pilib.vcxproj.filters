@@ -171,6 +171,9 @@
     <ClInclude Include="inpaintcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="distributedimagestoragetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">

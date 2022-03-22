@@ -41,6 +41,15 @@ namespace itl2
 		return str.find(part) != string::npos;
 	}
 
+	bool containsIgnoreCase(const string& str, const string& part)
+	{
+		string istr = str;
+		toLower(istr);
+		string ipart = part;
+		toLower(ipart);
+		return contains(istr, ipart);
+	}
+
 	void toLower(string& str)
 	{
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);

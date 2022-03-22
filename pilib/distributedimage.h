@@ -8,6 +8,7 @@
 #include "image.h"
 #include "io/raw.h"
 #include "io/io.h"
+#include "distributedimagestoragetype.h"
 
 
 using itl2::Vec3;
@@ -55,9 +56,19 @@ namespace pilib
 		std::string readSource;
 
 		/**
+		Storage type of the read source
+		*/
+		DistributedImageStorageType readSourceType;
+
+		/**
 		Filename where modified image data should be saved.
 		*/
 		std::string writeTarget;
+
+		/**
+		Storage type of the write target.
+		*/
+		DistributedImageStorageType writeTargetType;
 
 		/**
 		Names of temporary files where image data is stored temporarily.
@@ -74,13 +85,18 @@ namespace pilib
 		Pixel data type
 		*/
 		ImageDataType pixelDataType;
+		
+		/**
+		Chunk size to use when the backing store is an NN5 dataset.
+		*/
+		Vec3c nn5ChunkSize;
 
 		/**
 		Generate filename for temporary storage.
 		If source file is raw, the temp file is raw.
 		Otherwise, the temp file is folder containing an image sequence.
 		*/
-		void createTempFilenames();
+		void createTempFilenames(DistributedImageStorageType storageType);
 
 		/**
 		Changes the location where the image is read from.
@@ -101,6 +117,11 @@ namespace pilib
 
 	public:
 
+		/**
+		Suggest suitable storage type for image of given dimensions.
+		*/
+		static DistributedImageStorageType suggestStorageType(const Distributor& distributor, const Vec3c& dimensions);
+
         /**
         Returns true if the image has been saved to disk (it is not just created
         unprocessed new image)
@@ -112,17 +133,39 @@ namespace pilib
 
 		/**
 		Creates distributed image that points to given file.
+		@param storageType Type of storage used for temporary images. This does not have to match the type of the source file.
 		*/
-		DistributedImageBase(Distributor& distributor, const std::string& name, const Vec3c& dimensions, ImageDataType dataType, const std::string& sourceFilename);
+		DistributedImageBase(Distributor& distributor, const std::string& name, const Vec3c& dimensions, ImageDataType dataType, const std::string& sourceFilename, DistributedImageStorageType storageType);
+
+		/**
+		Creates distributed image that points to given file.
+		*/
+		DistributedImageBase(Distributor& distributor, const std::string& name, const Vec3c& dimensions, ImageDataType dataType, const std::string& sourceFilename) :
+			DistributedImageBase(distributor, name, dimensions, dataType, sourceFilename, suggestStorageType(distributor, dimensions))
+		{
+
+		}
+
+		/**
+		Creates distributed image using temporary file as storage.
+		@param storageType Type of storage used for temporary images. This does not have to match the type of the source file.
+		*/
+		DistributedImageBase(Distributor& distributor, const std::string& name, const Vec3c& dimensions, ImageDataType dataType, DistributedImageStorageType storageType) :
+			DistributedImageBase(distributor, name, dimensions, dataType, "", storageType)
+		{
+
+		}
 
 		/**
 		Creates distributed image using temporary file as storage.
 		*/
 		DistributedImageBase(Distributor& distributor, const std::string& name, const Vec3c& dimensions, ImageDataType dataType) :
-			DistributedImageBase(distributor, name, dimensions, dataType, "")
+			DistributedImageBase(distributor, name, dimensions, dataType, "", suggestStorageType(distributor, dimensions))
 		{
 
 		}
+
+		
 
 		virtual ~DistributedImageBase();
 
@@ -213,6 +256,21 @@ namespace pilib
 		std::string emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize) const;
 
 		/**
+		Start concurrent write process for given processes.
+		*/
+		size_t startConcurrentWrite(const std::vector<itl2::nn5::NN5Process>& processes);
+
+		/**
+		Retrieve a list of chunks for which it is necessary to execute pi2 code retrieved using emitEndConcurrentWrite.
+		*/
+		std::vector<Vec3c> getChunksThatNeedEndConcurrentWrite() const;
+
+		/**
+		Gets piece of pi2 code to end concurrent write for given chunk.
+		*/
+		std::string emitEndConcurrentWrite(const Vec3c& chunk) const;
+
+		/**
 		Call when all blocks of this image have been written.
 		*/
 		void writeComplete();
@@ -225,6 +283,11 @@ namespace pilib
 			return readSource;
 		}
 
+		DistributedImageStorageType currentReadSourceType() const
+		{
+			return readSourceType;
+		}
+
 		/**
 		Gets the file path where the changed image will be saved.
 		*/
@@ -233,11 +296,24 @@ namespace pilib
 			return writeTarget;
 		}
 
+		DistributedImageStorageType currentWriteTargetType() const
+		{
+			return writeTargetType;
+		}
+
 		/**
 		Enures that image writing process does not override old data (that might be needed by another processes if doing distribution with overlapping blocks).
 		Swaps between two write targets.
 		*/
-		void newWriteTarget();
+		void newWriteTarget(DistributedImageStorageType storageType);
+
+		/**
+		Just like other overload but does not change storage type.
+		*/
+		void newWriteTarget()
+		{
+			newWriteTarget(currentWriteTargetType());
+		}
 
 		/**
 		Gets a value indicating whether the current file read location is a temporary file.
@@ -258,9 +334,10 @@ namespace pilib
 		/**
 		Changes the file or location where the image is saved to.
 		*/
-		void setWriteTarget(const std::string& filename)
+		void setWriteTarget(const std::string& filename, DistributedImageStorageType storageType)
 		{
-		    writeTarget = filename;   
+		    writeTarget = filename;
+			writeTargetType = storageType;
 		}
 
 		/**
@@ -331,40 +408,40 @@ namespace pilib
 			checkSize(r.dimensions());
 		}
 		
-		/**
-		Tests if output file is .raw.
-		*/
-		bool isOutputRaw() const
-		{
-		    return endsWith(currentWriteTarget(), ".raw"); // The file does not need to exist, and write target is always .raw or sequence.
-			//Vec3c dims;
-			//ImageDataType dt;
-			//return raw::getInfo(currentWriteTarget(), dims, dt);
-		}
+		///**
+		//Tests if output file is .raw.
+		//*/
+		//bool isOutputRaw() const
+		//{
+		//    return endsWith(currentWriteTarget(), ".raw"); // The file does not need to exist, and write target is always .raw or sequence.
+		//	//Vec3c dims;
+		//	//ImageDataType dt;
+		//	//return raw::getInfo(currentWriteTarget(), dims, dt);
+		//}
 
-        /**
-        Tests if input file is raw.
-        */
-		bool isRaw() const
-		{
-			//return endsWith(currentReadSource(), ".raw");
-			Vec3c dims;
-			ImageDataType dt;
-			std::string reason;
-			return itl2::raw::getInfo(currentReadSource(), dims, dt, reason);
-		}
+  //      /**
+  //      Tests if input file is raw.
+  //      */
+		//bool isRaw() const
+		//{
+		//	//return endsWith(currentReadSource(), ".raw");
+		//	Vec3c dims;
+		//	ImageDataType dt;
+		//	std::string reason;
+		//	return itl2::raw::getInfo(currentReadSource(), dims, dt, reason);
+		//}
 
-        /**
-        Tests if input file is sequence.
-        */
-		bool isSequence() const
-		{
-			//return !isRaw();
-			Vec3c dims;
-			ImageDataType dt;
-			std::string reason;
-			return itl2::sequence::getInfo(currentReadSource(), dims, dt, reason);
-		}
+  //      /**
+  //      Tests if input file is sequence.
+  //      */
+		//bool isSequence() const
+		//{
+		//	//return !isRaw();
+		//	Vec3c dims;
+		//	ImageDataType dt;
+		//	std::string reason;
+		//	return itl2::sequence::getInfo(currentReadSource(), dims, dt, reason);
+		//}
 
 
 	};
@@ -375,11 +452,19 @@ namespace pilib
 		/**
 		Creates distributed image whose source points to the given file.
 		*/
-		DistributedImage(Distributor& distributor, const std::string& name, coord_t width, coord_t height, coord_t depth, const std::string& filename) :
-			DistributedImage(distributor, name, Vec3c(width, height, depth), filename)
+		//DistributedImage(Distributor& distributor, const std::string& name, coord_t width, coord_t height, coord_t depth, const std::string& filename) :
+		//	DistributedImage(distributor, name, Vec3c(width, height, depth), filename)
+		//{
+		//}
+
+		DistributedImage(Distributor& distributor, const std::string& name, const Vec3c& dimensions, const std::string& filename, DistributedImageStorageType storageType) :
+			DistributedImageBase(distributor, name, dimensions, imageDataType<pixel_t>(), filename, storageType)
 		{
 		}
 
+		/**
+		Creates distributed image whose source points to the given file.
+		*/
 		DistributedImage(Distributor& distributor, const std::string& name, const Vec3c& dimensions, const std::string& filename) :
 			DistributedImageBase(distributor, name, dimensions, imageDataType<pixel_t>(), filename)
 		{
@@ -388,8 +473,16 @@ namespace pilib
 		/**
 		Creates distributed image without source file.
 		*/
-		DistributedImage(Distributor& distributor, const std::string& name, coord_t width = 1, coord_t height = 1, coord_t depth = 1) :
-			DistributedImage(distributor, name, Vec3c(width, height, depth))
+		//DistributedImage(Distributor& distributor, const std::string& name, coord_t width = 1, coord_t height = 1, coord_t depth = 1) :
+		//	DistributedImage(distributor, name, Vec3c(width, height, depth))
+		//{
+		//}
+
+		/**
+		Creates distributed image without source file.
+		*/
+		DistributedImage(Distributor& distributor, const std::string& name, const Vec3c& dimensions, DistributedImageStorageType storageType) :
+			DistributedImageBase(distributor, name, dimensions, imageDataType<pixel_t>(), storageType)
 		{
 		}
 
@@ -499,14 +592,34 @@ namespace pilib
 
 			ensureSize(img.dimensions());
 
-			if (isOutputRaw())
+			switch (currentWriteTargetType())
+			{
+			case DistributedImageStorageType::NN5:
+			{
+				itl2::nn5::write(img, currentWriteTarget());
+				break;
+			}
+			case DistributedImageStorageType::Raw:
 			{
 				itl2::raw::write(img, currentWriteTarget());
+				break;
 			}
-			else
+			case DistributedImageStorageType::Sequence:
 			{
 				itl2::sequence::write(img, currentWriteTarget());
+				break;
 			}
+			default: throw ITLException("Invalid write target type.");
+			}
+
+			//if (isOutputRaw())
+			//{
+			//	itl2::raw::write(img, currentWriteTarget());
+			//}
+			//else
+			//{
+			//	itl2::sequence::write(img, currentWriteTarget());
+			//}
 
 			writeComplete();
 		}

@@ -6,6 +6,9 @@
 ; physical RAM.
 max_memory = 0
 
+; Chunk size for temporary NN5 datasets.
+;chunk_size = [1536, 1536, 1536]
+
 ; Set to true to allow delayed execution of commands in order to combine execution of multiple
 ; commands to save I/O and scratch disk space.
 ;allow_delaying = true

@@ -1574,7 +1574,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                     pi_script = (f"echo;"
                                  f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                                  f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle});"
-                                 f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                                 f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                                  f"newimage(marker, uint8, 1, 1, 1);"
                                  f"writetif(marker, {out_template}_{jobs_started}_done);"
                                 )
@@ -1583,8 +1583,8 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                              f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"newlikefile(goodnessimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle});"
-                             f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
-                             f"writerawblock(goodnessimg, {out_goodness_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                             f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
+                             f"writerawblock(goodnessimg, {out_goodness_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                              f"newimage(marker, uint8, 1, 1, 1);"
                              f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )

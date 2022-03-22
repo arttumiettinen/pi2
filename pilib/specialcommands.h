@@ -752,7 +752,7 @@ namespace pilib
 
 	inline std::string distributeSeeAlso()
 	{
-		return "distribute, delaying, maxmemory, printscripts";
+		return "distribute, delaying, maxmemory, chunksize, printscripts";
 	}
 
 	class DistributeCommand : virtual public Command, public TrivialDistributable
@@ -785,6 +785,28 @@ namespace pilib
 		MaxMemoryCommand() : Command("maxmemory", "Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm distribution mode).",
 			{
 				CommandArgument<double>(ParameterDirection::In, "maximum memory", "Maximum amount of memory to use, in megabytes. Specify zero to calculate the value automatically.", 0.0)
+			},
+			distributeSeeAlso())
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+	};
+
+
+	class ChunkSizeCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		ChunkSizeCommand() : Command("chunksize", "Sets the NN5 dataset chunk size used in distributed processing. This command overrides the value read from the configuration file.",
+			{
+				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "New NN5 dataset chunk size.", nn5::DEFAULT_CHUNK_SIZE)
 			},
 			distributeSeeAlso())
 		{

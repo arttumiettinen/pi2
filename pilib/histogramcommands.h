@@ -145,7 +145,7 @@ namespace pilib
 
 
 			// Run the block histograms using uint64_t data type
-			DistributedTempImage<uint64_t> dummy(distributor, "histogram_dummy", Vec3c(1, 1, 1));
+			DistributedTempImage<uint64_t> dummy(distributor, "histogram_dummy", Vec3c(1, 1, 1), DistributedImageStorageType::Raw);
 			std::vector<ParamVariant> args2 = { &in, &dummy.get(), &bins, hmin, hmax, bincount, tempFilename, Distributor::BLOCK_INDEX_ARG_TYPE() };
 
 			std::vector<std::string> output = distributor.distribute(&CommandList::get<HistogramCommand<pixel_t, uint64_t> >(), args2);

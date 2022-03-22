@@ -25,6 +25,9 @@ job_init_commands = hostname
 ; the minimum RAM in any node of the cluster.
 max_memory = 180000
 
+; Chunk size for temporary NN5 datasets.
+;chunk_size = [1536, 1536, 1536]
+
 ; Maximum number of re-tries that are done if a job fails.
 ; The job may fail, e.g., due to node failure, memory problems, or time limits.
 ; If you have specified different queues for different types of jobs (see

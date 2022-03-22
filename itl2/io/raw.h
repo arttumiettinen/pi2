@@ -61,28 +61,33 @@ namespace itl2
 			inline ImageDataType estimateDataType(const std::string& filename, const Vec3c& dimensions, size_t& pixelSizeBytes)
 			{
 				// First try to find data type from file name.
-				string loname = filename;
-				toLower(loname);
-				if (contains(loname, toString(ImageDataType::UInt8)))
-					return ImageDataType::UInt8;
-				if (contains(loname, toString(ImageDataType::UInt16)))
-					return ImageDataType::UInt16;
-				if (contains(loname, toString(ImageDataType::UInt32)))
-					return ImageDataType::UInt32;
-				if (contains(loname, toString(ImageDataType::UInt64)))
-					return ImageDataType::UInt64;
-				if (contains(loname, toString(ImageDataType::Int8)))
-					return ImageDataType::Int8;
-				if (contains(loname, toString(ImageDataType::Int16)))
-					return ImageDataType::Int16;
-				if (contains(loname, toString(ImageDataType::Int32)))
-					return ImageDataType::Int32;
-				if (contains(loname, toString(ImageDataType::Int64)))
-					return ImageDataType::Int64;
-				if (contains(loname, toString(ImageDataType::Float32)))
-					return ImageDataType::Float32;
-				if (contains(loname, toString(ImageDataType::Complex32)))
-					return ImageDataType::Complex32;
+				ImageDataType dt = ImageDataType::Unknown;
+				if (containsIgnoreCase(filename, toString(ImageDataType::UInt8)))
+					dt = ImageDataType::UInt8;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::UInt16)))
+					dt = ImageDataType::UInt16;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::UInt32)))
+					dt = ImageDataType::UInt32;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::UInt64)))
+					dt = ImageDataType::UInt64;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int8)))
+					dt = ImageDataType::Int8;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int16)))
+					dt = ImageDataType::Int16;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int32)))
+					dt = ImageDataType::Int32;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int64)))
+					dt = ImageDataType::Int64;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Float32)))
+					dt = ImageDataType::Float32;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Complex32)))
+					dt = ImageDataType::Complex32;
+
+				if (dt != ImageDataType::Unknown)
+				{
+					pixelSizeBytes = pixelSize(dt);
+					return dt;
+				}
 
 				// No data type information found from the file name, so try to estimate from file size.
 				size_t fileSize = (size_t)itl2::fileSize(filename);

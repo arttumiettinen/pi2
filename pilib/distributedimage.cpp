@@ -24,15 +24,24 @@ namespace pilib
 	template class DistributedImage<int64_t>;
 	template class DistributedImage<float32_t>;
 	template class DistributedImage<complex32_t>;
+
+	DistributedImageStorageType DistributedImageBase::suggestStorageType(const Distributor& distributor, const Vec3c& dimensions)
+	{
+		if (dimensions.product() >= distributor.getChunkSize().product())
+			return DistributedImageStorageType::NN5;
+		else
+			return DistributedImageStorageType::Raw;
+	}
 	
-	DistributedImageBase::DistributedImageBase(Distributor& distributor, const string& name, const Vec3c& dimensions, ImageDataType dataType, const string& sourceFilename) :
+	DistributedImageBase::DistributedImageBase(Distributor& distributor, const string& name, const Vec3c& dimensions, ImageDataType dataType, const string& sourceFilename, DistributedImageStorageType storageType) :
 		dims(dimensions),
 		name(name),
 		pixelDataType(dataType),
-		distributor(&distributor)
+		distributor(&distributor),
+		nn5ChunkSize(distributor.getChunkSize())
 	{
 		setReadSource(sourceFilename, false);
-		createTempFilenames();
+		createTempFilenames(storageType);
 	}
 
 	DistributedImageBase::~DistributedImageBase()
@@ -47,55 +56,100 @@ namespace pilib
 		distributor->flush();
 	}
 
-	void DistributedImageBase::newWriteTarget()
+	void DistributedImageBase::newWriteTarget(DistributedImageStorageType storageType)
 	{
-		// If input is raw, output should be raw, too.
-		// If input is sequence, output should be sequence, too.
-		// If temp file names are not .raw, convert them to .raw
-		// NOTE that if temps are not the same type than input file, the temps cannot be
-		// the input file and we can get rid of them.
-		if ((isRaw() && !endsWith(tempFilename1, ".raw")) ||
-			(!isRaw() && endsWith(tempFilename1, ".raw")))
+		
+		if (writeTargetType == storageType)
 		{
-			fs::remove_all(tempFilename1);
-			fs::remove_all(tempFilename2);
-
-			// This assigns writeTarget, too.
-			createTempFilenames();
-		}
-		else
-		{
-			// Just select new temp file.
+			// No change in write target storage type.
 			if (writeTarget == tempFilename1)
 				writeTarget = tempFilename2;
 			else
 				writeTarget = tempFilename1;
 		}
+		else
+		{
+			// Write target type changed.
+			// Create new temp files.
+			fs::remove_all(tempFilename1);
+			fs::remove_all(tempFilename2);
+			writeTargetType = storageType;
+			// This assigns writeTarget, too.
+			createTempFilenames(storageType);
+		}
+
+		//// Temporary files are always NN5, so here we just select new temp file.
+		//writeTargetType = DistributedImageStorageType::NN5;
+		//if (writeTarget == tempFilename1)
+		//	writeTarget = tempFilename2;
+		//else
+		//	writeTarget = tempFilename1;
+
+		// If input is raw, output should be raw, too.
+		// If input is sequence, output should be sequence, too.
+		// If temp file names are not .raw, convert them to .raw
+		// NOTE that if temps are not the same type than input file, the temps cannot be
+		// the input file and we can get rid of them.
+		//if ((isRaw() && !endsWith(tempFilename1, ".raw")) ||
+		//	(!isRaw() && endsWith(tempFilename1, ".raw")))
+		//{
+		//	fs::remove_all(tempFilename1);
+		//	fs::remove_all(tempFilename2);
+
+		//	// This assigns writeTarget, too.
+		//	createTempFilenames();
+		//}
+		//else
+		//{
+		//	// Just select new temp file.
+		//	if (writeTarget == tempFilename1)
+		//		writeTarget = tempFilename2;
+		//	else
+		//		writeTarget = tempFilename1;
+		//}
 	}
 
-	void DistributedImageBase::createTempFilenames()
+	void DistributedImageBase::createTempFilenames(DistributedImageStorageType storageType)
 	{
-		stringstream s1, s2;
 		string path = "./tmp_images/";
 		// Add randomness to the name so that two images with the same name do not get saved to same files.
 		// This may happen if image is cleared and re-created in PISystem but Distributor still keeps references to the cleared image.
 		// TODO: Name generated like this is not necessarily 100 % unique.
 		uniqName = name + "_" + itl2::toString(randc(10000));
 
-		//if (readSource == "" || isRaw())
-		if(!fs::exists(readSource) || isRaw())
+		//stringstream s1, s2;
+		//if(!fs::exists(readSource) || isRaw())
+		//{
+		//	s1 << path << uniqueName() << "-1_" << dims.x << "x" << dims.y << "x" << dims.z << ".raw";
+		//	s2 << path << uniqueName() << "-2_" << dims.x << "x" << dims.y << "x" << dims.z << ".raw";
+		//}
+		//else
+		//{
+		//	s1 << path << uniqueName() << "-1/";
+		//	s2 << path << uniqueName() << "-2/";
+		//}
+		
+		//// We will always use NN5 datasets as temporary files
+		//s1 << path << uniqueName() << "-1";
+		//s2 << path << uniqueName() << "-2";
+
+		//this->tempFilename1 = s1.str();
+		//this->tempFilename2 = s2.str();
+		//this->writeTargetType = DistributedImageStorageType::NN5;
+
+		if (storageType == DistributedImageStorageType::Raw)
 		{
-			s1 << path << uniqueName() << "-1_" << dims.x << "x" << dims.y << "x" << dims.z << ".raw";
-			s2 << path << uniqueName() << "-2_" << dims.x << "x" << dims.y << "x" << dims.z << ".raw";
+			this->tempFilename1 = concatDimensions(path + uniqueName() + "-1", dims);
+			this->tempFilename2 = concatDimensions(path + uniqueName() + "-2", dims);
 		}
 		else
 		{
-			s1 << path << uniqueName() << "-1/";
-			s2 << path << uniqueName() << "-2/";
+			this->tempFilename1 = path + uniqueName() + "-1";
+			this->tempFilename2 = path + uniqueName() + "-2";
 		}
-		this->tempFilename1 = s1.str();
-		this->tempFilename2 = s2.str();
+
 		this->writeTarget = this->tempFilename1;
+		this->writeTargetType = storageType;
 	}
 
 	void DistributedImageBase::ensureSize(const Vec3c& newDimensions)
@@ -106,32 +160,85 @@ namespace pilib
 			fs::remove_all(tempFilename1);
 			fs::remove_all(tempFilename2);
 			dims = newDimensions;
-			createTempFilenames();
+			createTempFilenames(currentWriteTargetType());
 		}
 	}
 
 	void DistributedImageBase::setReadSource(const string& filename, bool check)
 	{
 		readSource = filename;
+		// Reset read source type to some default even if input file does not exist.
+		readSourceType = DistributedImageStorageType::NN5;
 
         if(filename != "")
         {
 			ImageDataType dt;
 			Vec3c newDims;
 			string reason;
-			isNewImage = io::getInfo(filename, newDims, dt, reason) == false;
+
+			// Try NN5
+			isNewImage = nn5::getInfo(filename, newDims, dt, reason) == false;
 			if (!isNewImage)
 			{
-				dims = newDims;
-				// NOTE: This test is not good as getInfo will recognize uint32 files as float32 files etc.
-				//if (dt != dataType())
-				//	throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
 				if (check)
 				{
-					if (itl2::pixelSize(dt) != pixelSize())
+					if (dt != dataType())
 						throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
 				}
+				dims = newDims;
+				readSourceType = DistributedImageStorageType::NN5;
 			}
+			else
+			{
+				// Try Raw
+				isNewImage = raw::getInfo(filename, newDims, dt, reason) == false;
+				if (!isNewImage)
+				{
+					if (check)
+					{
+						if (itl2::pixelSize(dt) != pixelSize())
+							throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
+					}
+					dims = newDims;
+					readSourceType = DistributedImageStorageType::Raw;
+				}
+				else
+				{
+					// Try sequence
+					isNewImage = sequence::getInfo(filename, newDims, dt, reason) == false;
+					if (!isNewImage)
+					{
+						if (check)
+						{
+							if (dt != dataType())
+								throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
+						}
+						dims = newDims;
+						readSourceType = DistributedImageStorageType::Sequence;
+					}
+					else
+					{
+						// The input file is nothing supported. We'll assume it is a new file.
+					}
+				}
+			}
+
+			//ImageDataType dt;
+			//Vec3c newDims;
+			//string reason;
+			//isNewImage = io::getInfo(filename, newDims, dt, reason) == false;
+			//if (!isNewImage)
+			//{
+			//	dims = newDims;
+			//	// NOTE: This test is not good as getInfo will recognize uint32 files as float32 files etc.
+			//	//if (dt != dataType())
+			//	//	throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
+			//	if (check)
+			//	{
+			//		if (itl2::pixelSize(dt) != pixelSize())
+			//			throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
+			//	}
+			//}
 		}
 		else
 		{
@@ -144,11 +251,11 @@ namespace pilib
 		stringstream s;
 		if (!isNewImage && dataNeeded)
 		{
-			s << "readblock(\"" << uniqueName() << "\", \"" << currentReadSource() << "\", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ", " << toString(pixelDataType) << ");" << endl;
+			s << "readblock(\"" << uniqueName() << "\", \"" << currentReadSource() << "\", " << filePos << ", " << blockSize << ", " << toString(pixelDataType) << ");" << endl;
 		}
 		else
 		{
-			s << "newimage(\"" << uniqueName() << "\", \"" << toString(pixelDataType) << "\", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+			s << "newimage(\"" << uniqueName() << "\", \"" << toString(pixelDataType) << "\", " << blockSize << ");" << endl;
 		}
 		return s.str();
 	}
@@ -156,16 +263,66 @@ namespace pilib
 	string DistributedImageBase::emitWriteBlock(const Vec3c& filePos, const Vec3c& imagePos, const Vec3c& blockSize) const
 	{
 		stringstream s;
-		if(isOutputRaw())
-			s << "writerawblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
-		else
-			s << "writesequenceblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
-			
+		//if(isOutputRaw())
+		//	s << "writerawblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+		//else
+		//	s << "writesequenceblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos.x << ", " << filePos.y << ", " << filePos.z << ", " << dims.x << ", " << dims.y << ", " << dims.z << ", " << imagePos.x << ", " << imagePos.y << ", " << imagePos.z << ", " << blockSize.x << ", " << blockSize.y << ", " << blockSize.z << ");" << endl;
+		
+		switch (currentWriteTargetType())
+		{
+		case DistributedImageStorageType::NN5:
+		{
+			// TODO: No NN5 compression specified.
+			s << "writenn5block(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ", " << nn5ChunkSize << ");" << endl;
+			break;
+		}
+		case DistributedImageStorageType::Raw:
+		{
+			s << "writerawblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ");" << endl;
+			break;
+		}
+		case DistributedImageStorageType::Sequence:
+		{
+			s << "writesequenceblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ");" << endl;
+			break;
+		}
+		default: throw ITLException("Invalid write target type.");
+		}
+
 		return s.str();
+	}
+
+	size_t DistributedImageBase::startConcurrentWrite(const std::vector<nn5::NN5Process>& processes)
+	{
+		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
+		{
+			// TODO: NN5 compression defaults to LZ4
+			return nn5::startConcurrentWrite(dimensions(), dataType(), currentWriteTarget(), nn5ChunkSize, nn5::NN5Compression::LZ4, processes);
+		}
+		return 0;
+	}
+
+	string DistributedImageBase::emitEndConcurrentWrite(const Vec3c& chunk) const
+	{
+		return string("endconcurrentwrite(\"") + currentWriteTarget() + "\", " + toString(chunk) + ")";
+	}
+
+	vector<Vec3c> DistributedImageBase::getChunksThatNeedEndConcurrentWrite() const
+	{
+		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
+		{
+			return nn5::getChunksThatNeedEndConcurrentWrite(currentWriteTarget());
+		}
+		return vector<Vec3c>();
 	}
 
     void DistributedImageBase::writeComplete()
     {
+		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
+		{
+			nn5::endConcurrentWrite(currentWriteTarget(), false);
+		}
+
         // Temporary image corresponding to old read source is not needed anymore as it
         // is not up to date (unless read source and write target are the same).
         if(currentReadSource() != currentWriteTarget())

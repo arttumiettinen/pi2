@@ -307,7 +307,7 @@ namespace itl2
 			}
 		}
 
-		void startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
 		{
 			// Find chunks that are
 			// * written to by separate processes, or
@@ -319,7 +319,8 @@ namespace itl2
 			// Tag the image as concurrently processed
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
 
-			internals::forAllChunks(imageDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			size_t unsafeChunkCount = 0;
+			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
 					fs::create_directories(chunkFolder);
@@ -332,9 +333,10 @@ namespace itl2
 					{
 						// Mark the chunk as unsafe by creating writes folder.
 						fs::create_directories(writesFolder);
+						unsafeChunkCount++;
 					}
 				});
-			
+			return unsafeChunkCount;
 		}
 
 		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
@@ -356,6 +358,27 @@ namespace itl2
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
+		}
+
+		vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path)
+		{
+			bool isNativeByteOrder;
+			Vec3c imageDimensions;
+			ImageDataType dataType;
+			Vec3c chunkSize;
+			NN5Compression compression;
+			string reason;
+			if (!getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+
+			size_t dimensionality = getDimensionality(imageDimensions);
+			vector<Vec3c> result;
+			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				{
+					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
+						result.push_back(chunkIndex);
+				});
+			return result;
 		}
 
 		namespace internals
@@ -483,7 +506,7 @@ namespace itl2
 			internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
 		}
 
-		void endConcurrentWrite(const std::string& path)
+		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
 		{
 			bool isNativeByteOrder;
 			Vec3c fileDimensions;
@@ -495,7 +518,7 @@ namespace itl2
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 			size_t dimensionality = getDimensionality(fileDimensions);
 
-			internals::forAllChunks(fileDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
@@ -555,35 +578,67 @@ namespace itl2
 				cout << "Testing chunk size " << chunkSize << ", compression = " << toString(compression) << endl;
 
 				// Write
-				nn5::write(img, "./nn5_testimage", chunkSize, compression);
+				nn5::write(img, "./nn5_testimage", chunkSize, compression, true);
 
 				// Read
 				Image<uint16_t> read;
-				nn5::read(read, "./nn5_testimage");
+				nn5::read(read, "./nn5_testimage", true);
 
 				raw::writed(read, "./nn5_results/read_from_disk");
 
 				testAssert(equals(img, read), string("nn5 read image compared to written image, chunk size = ") + toString(chunkSize));
 			}
 
+			void nn5ioSimpleTest(const Vec3c& dimensions)
+			{
+				Image<uint16_t> img(dimensions);
+				ramp3(img);
+				add(img, 10);
+				nn5::write(img, "./nn5_results/simpletest");
+
+				Image<uint16_t> fromDisk;
+				nn5::read(fromDisk, "./nn5_results/simpletest");
+
+				testAssert(equals(img, fromDisk), string("NN5 simple test, dimensions = ") + toString(dimensions));
+			}
+
 			void nn5io()
 			{
-				coord_t w = 100;
-				coord_t h = 200;
-				coord_t d = 300;
+				// 0-dimensional image
+				nn5ioSimpleTest(Vec3c(1, 1, 1));
+				nn5ioSimpleTest(Vec3c(2, 1, 1));
+				nn5ioSimpleTest(Vec3c(2, 2, 1));
+				nn5ioSimpleTest(Vec3c(2, 2, 2));
 
-				Image<uint16_t> img(w, h, d);
-				ramp3(img);
-				raw::writed(img, "./nn5_results/true");
+				nn5ioSimpleTest(Vec3c(10, 1, 1));
+				nn5ioSimpleTest(Vec3c(20, 1, 1));
+				nn5ioSimpleTest(Vec3c(20, 20, 1));
+				nn5ioSimpleTest(Vec3c(20, 20, 20));
 
-				srand(1212);
+				nn5ioSimpleTest(Vec3c(10, 10, 10));
+				nn5ioSimpleTest(Vec3c(20, 10, 10));
+				nn5ioSimpleTest(Vec3c(20, 20, 10));
+				nn5ioSimpleTest(Vec3c(20, 20, 20));
 
-				for (coord_t n = 0; n < 100; n++)
+				// Different chunk sizes
 				{
-					Vec3c chunkSize(randc(10, w + 10), randc(10, h + 10), randc(10, d + 10));
+					coord_t w = 100;
+					coord_t h = 200;
+					coord_t d = 300;
 
-					onenn5ioTest(img, chunkSize, NN5Compression::Raw);
-					onenn5ioTest(img, chunkSize, NN5Compression::LZ4);
+					Image<uint16_t> img(w, h, d);
+					ramp3(img);
+					raw::writed(img, "./nn5_results/true");
+
+					srand(1212);
+
+					for (coord_t n = 0; n < 100; n++)
+					{
+						Vec3c chunkSize(randc(10, w + 10), randc(10, h + 10), randc(10, d + 10));
+
+						onenn5ioTest(img, chunkSize, NN5Compression::Raw);
+						onenn5ioTest(img, chunkSize, NN5Compression::LZ4);
+					}
 				}
 			}
 
@@ -628,11 +683,87 @@ namespace itl2
 
 			void nn5BlockIo()
 			{
-				nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(50, 102, 99));
-				nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(50, 102, 99));
+				// Some specific edge cases
+				if(false)
+				{
+					Image<uint16_t> img(256, 256, 129);
+					ramp3(img);
 
-				nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(40, 30, 20));
-				nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(40, 30, 20));
+					nn5::write(img, "./nn5_block_tests1/full_image", Vec3c(30, 32, 33), NN5Compression::LZ4);
+
+
+					Image<uint16_t> block(256, 256, 64);
+					nn5::readBlock(block, "./nn5_block_tests1/full_image", Vec3c(0, 0, 65));
+					//readblock("image_RJBTFVPJJR_1933", "./tmp_images/image_RJBTFVPJJR_1933-1", "[0, 0, 65]", "[256, 256, 64]", "float32")
+
+					raw::writed(block, "./nn5_block_tests1/read_block_written_as_full_raw_file");
+					raw::writeBlock(block, concatDimensions("./nn5_block_tests1/read_block_written_as_raw_block", img.dimensions()),
+						Vec3c(0, 0, 65), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 256, 64));
+					//writerawblock("image_RJBTFVPJJR_1933", "../../testing/pi2py2/head_rotate_img_result_0.5233333333333333_[1, 0, 0]_[128, 128, 64]_[128, 128, 64]_distributed_256x256x129.raw", "[0, 0, 65]", "[256, 256, 129]", "[0, 0, 0]", "[256, 256, 64]")
+				}
+
+				//{
+				//	Image<float32_t> img(256, 256, 129);
+				//	setValue(img, 100);
+				//	nn5::read(img, "./image_AJORPWGAZI_1933-1");
+				//	raw::writed(img, "./bugtest/fullread");
+				//}
+
+				if(false)
+				{
+					Image<uint16_t> img(256, 256, 129);
+					ramp3(img);
+
+					//raw::writeBlock(img, concatDimensions("./nn5_block_tests2/raw", img.dimensions()),
+					//	Vec3c(0,   0, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
+					//raw::writeBlock(img, concatDimensions("./nn5_block_tests2/raw", img.dimensions()),
+					//	Vec3c(0, 128, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
+
+					//vector<NN5Process> processes;
+					coord_t z = 0;
+					while (z < img.depth())
+					{
+						coord_t y = 0;
+						while (y < img.height())
+						{
+							//processes.push_back(NN5Process{ AABoxc::fromPosSize(Vec3c(), Vec3c()), AABoxc::fromPosSize(Vec3c(0, y, z), Vec3c(256, 128, 1)) });
+							
+							coord_t d = 2;
+							if (z + d >= img.depth())
+								d = 1;
+
+							nn5::writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
+								Vec3c(0, y, z), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, d));
+
+							y += 128;
+						}
+						z += 2;
+					}
+					//nn5::startConcurrentWrite(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4, processes);
+					//nn5::writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
+					//	Vec3c(0,   0, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
+					//nn5::writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
+					//	Vec3c(0, 128, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
+					//nn5::endConcurrentWrite("./nn5_block_tests2/nn5");
+
+
+
+					Image<uint16_t> imgRaw, imgNN5;
+					//raw::read(imgRaw, "./nn5_block_tests2/raw");
+					nn5::read(imgNN5, "./nn5_block_tests2/nn5");
+					raw::writed(imgNN5, "./nn5_block_tests2/nn5_to_raw");
+					testAssert(equals(img, imgNN5), "orig vs NN5 writeBlock");
+				}
+
+				// 'Normal' cases
+				if(false)
+				{
+					nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(50, 102, 99));
+					nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(50, 102, 99));
+
+					nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(40, 30, 20));
+					nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(40, 30, 20));
+				}
 			}
 
 
@@ -656,7 +787,7 @@ namespace itl2
 					vector<nn5::NN5Process> processes;
 
 					Vec3c processBlockSize(30, 30, 30);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
@@ -697,13 +828,13 @@ namespace itl2
 					vector<nn5::NN5Process> processes;
 
 					Vec3c processBlockSize(30, 31, 32);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							nn5::writeBlock(img, entireImageFile, chunkSize, compression, processBlockStart, dimensions, processBlockStart, processBlockSize);
 						});

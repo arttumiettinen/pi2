@@ -139,7 +139,11 @@ namespace pilib
 		throw ITLException(message);
 	}
 
-	Distributor::Distributor(PISystem* piSystem) : piSystem(piSystem)
+	Distributor::Distributor(PISystem* piSystem) :
+		piSystem(piSystem),
+		nn5ChunkSize(nn5::DEFAULT_CHUNK_SIZE),
+		showSubmittedScripts(false),
+		allowDelaying(false)
 	{
 		piCommand = findPi2().string();
 	}
@@ -149,6 +153,7 @@ namespace pilib
 	{
 		showSubmittedScripts = reader.get<bool>("show_submitted_scripts", false);
 		allowDelaying = reader.get<bool>("allow_delaying", true);
+		chunkSize(reader.get<Vec3c>("chunk_size", nn5::DEFAULT_CHUNK_SIZE));
 	}
 
 
@@ -586,14 +591,18 @@ namespace pilib
 		if (distributionDirection2 == distributionDirection1)
 			throw logic_error("Both distribution directions can't be the same.");
 
-		// If we need to distribute in two directions, check that all output images are (written to) .raw files.
-		// Otherwise distribution is not allowed as sequences can't be written to in parallel.
+		// If we need to distribute in two directions, check that all output images support it.
+		// Otherwise distribution is not allowed as e.g. sequences can't be written to in parallel.
 		bool distributionDirection2Allowed = true;
 		if (distributionDirection2 <= 2)
 		{
 			for (DistributedImageBase* img : outputImages)
 			{
-				if (!img->isOutputRaw())
+				// NOTE: Here we list the files that support distribution in all directions. This way it is not possible
+				// to induce a bug here by adding new DistributedImageStorageTypes.
+				if(img->currentWriteTargetType() != DistributedImageStorageType::NN5 &&
+					img->currentWriteTargetType() != DistributedImageStorageType::Raw)
+				//if (!img->isOutputRaw())
 				{
 					distributionDirection2Allowed = false;
 					break;
@@ -804,9 +813,9 @@ namespace pilib
 
 		
 		
-		//// No skipping jobs if there are InOut images for which
-		//// currentReadSource() and currentWriteTarget() data types are different, as in that case
-		//// we need to copy data from read source to write target with file type conversion.
+		// No skipping jobs if there are InOut images for which
+		// currentReadSource() and currentWriteTarget() data types are different, as in that case
+		// we need to copy data from read source to write target with file type conversion.
 		bool jobSkippingAllowed = true;
 		for (DistributedImageBase* img : inputImages)
 		{
@@ -826,15 +835,6 @@ namespace pilib
 					cout << "Job skipping is not allowed as there are in-place processed images that need to be copied from the input file to the output file." << endl;
 					jobSkippingAllowed = false;
 					break;
-
-					// This is commented as I don't want to support copying (without file type conversion) here.
-					// I don't know if it would be good to do it without submitting copy jobs, anyway?
-					//if (img->isRaw() != img->isOutputRaw())
-					//{
-					//	cout << "Job skipping is not allowed as there are in-place processed images that require file type conversion." << endl;
-					//	jobSkippingAllowed = false;
-					//	break;
-					//}
 				}
 			}
 		}
@@ -969,47 +969,56 @@ namespace pilib
 				}
 				cout << " were skipped as it was determined that the jobs will do nothing." << endl;
 			}
-
-					// This is commented as I don't want to support copying (without file type conversion) here.
-					// I don't know if it would be good to do it without submitting copy jobs, anyway?
-			// Copy data of InOut images from input file to output file before submitting jobs, if
-			// img->currentReadSource() != img->currentWriteTarget().
-			// This is required only if some jobs are skipped - otherwise the copying is made automatically
-			// in the jobs by reading and writing the image data.
-			// Copying required if skipping and there are InOut images. Simple copying is
-			// possible only if currentReadSource() and currentWriteTarget() data types are the same.
-			//if (jobSkippingAllowed)
-			//{
-			//	for (DistributedImageBase* img : inputImages)
-			//	{
-			//		if (outputImages.find(img) != outputImages.end())
-			//		{
-			//			// This is InOut image
-			//			if (img->currentReadSource() != img->currentWriteTarget())
-			//			{
-			//				// Read source and write target are different so we need to copy.
-			//				if (img->isRaw())
-			//				{
-			//					if (!img->isOutputRaw())
-			//						throw ITLException("Skipping jobs although in-place processed image file type conversion is required. This is a bug.");
-
-			//					copyFile(img->currentReadSource(), img->currentWriteTarget(), true);
-			//				}
-			//				else if (img->isSequence())
-			//				{
-			//					if(img->isOutputRaw())
-			//						throw ITLException("Skipping jobs although in-place processed image file type conversion is required. This is a bug.");
-
-			//					sequence::copySequence(img->currentReadSource(), img->currentWriteTarget());
-			//				}
-			//				else
-			//					throw ITLException("Distributed image is not raw nor sequence. This is a bug.");
-			//			}
-			//		}
-			//	}
-			//}
 		}
 
+		// Prepare images for concurrent writing
+		map<DistributedImageBase*, vector<nn5::NN5Process>> nn5processes;
+		for (size_t i = 0; i < jobCount; i++)
+		{
+			if (std::find(skippedJobs.begin(), skippedJobs.end(), i) != skippedJobs.end())
+			{
+				// The job i is not skipped
+				for (const auto& item : blocksPerImage)
+				{
+					DistributedImageBase* img = item.first;
+					const auto& valueList = item.second;
+					Vec3c readStart = get<0>(valueList[i]);
+					Vec3c readSize = get<1>(valueList[i]);
+					Vec3c writeFilePos = get<2>(valueList[i]);
+					Vec3c writeImPos = get<3>(valueList[i]);
+					Vec3c writeSize = get<4>(valueList[i]);
+					nn5::NN5Process proc{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) };
+					nn5processes[img].push_back(proc);
+				}
+			}
+		}
+
+		// Check for overlapping writes. Those must not happen.
+		for (DistributedImageBase* img : outputImages)
+		{
+			const auto& list = nn5processes[img];
+			for (size_t n = 0; n < list.size(); n++)
+			{
+				const auto& p1 = list[n];
+				for (size_t m = 0; m < list.size(); m++)
+				{
+					const auto& p2 = list[n];
+					if (n != m && p1.writeBlock.overlaps(p2.writeBlock))
+						throw ITLException(string("Multiple jobs would write to the same block in image ") + img->varName());
+				}
+			}
+		}
+
+		// Call startConcurrentWrite for all output images.
+		for (DistributedImageBase* img : outputImages)
+		{
+			const auto& list = nn5processes[img];
+			size_t unsafeCount = img->startConcurrentWrite(list);
+			if (unsafeCount > 0)
+				cout << "Image " << img->varName() << " has " << unsafeCount << " unsafe chunks." << endl;
+		}
+
+		// Submit jobs
 		for (auto& tup : jobsToSubmit)
 		{
 			string& script = get<0>(tup);
@@ -1024,7 +1033,6 @@ namespace pilib
 			submitJob(script, type);
 		}
 
-		
 		// Run jobs first and set writeComplete() only after the jobs have finished to make sure that
 		// the output image exists before writeComplete() is called.
 		// Additionally, this order ensures that if jobs fail, the input images still point to the correct files.
@@ -1033,6 +1041,32 @@ namespace pilib
 			cout << "Waiting for jobs to finish..." << endl;
 			lastOutput = waitForJobs();
 
+			// Submit endConcurrentWrite jobs
+			cout << "Submitting write finalization jobs..." << endl;
+			size_t finJobCount = 0;
+			for (DistributedImageBase* img : outputImages)
+			{
+				vector<Vec3c> chunks = img->getChunksThatNeedEndConcurrentWrite();
+				for (Vec3c& chunk : chunks)
+				{
+					string script = img->emitEndConcurrentWrite(chunk);
+					submitJob(script, JobType::Fast);
+					finJobCount++;
+				}
+			}
+
+			if (finJobCount > 0)
+			{
+				cout << "Waiting for jobs to finish..." << endl;
+				// NOTE: Do not assign last output here, as that would override the output of the real commands
+				// by the output of these new housekeeping jobs.
+				waitForJobs();
+			}
+			else
+			{
+				cout << "No write finalization jobs were necessary." << endl;
+			}
+			
 			for (DistributedImageBase* img : outputImages)
 			{
 				img->writeComplete();

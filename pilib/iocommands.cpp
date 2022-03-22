@@ -17,13 +17,14 @@ namespace pilib
 		ADD_ALL(WriteRawCommand);
 		ADD_ALL(WriteLZ4Command);
 		ADD_ALL(WriteNN5Command);
-		ADD_ALL(WriteRawBlockCommand);
+		//ADD_ALL(WriteRawBlockCommand);
 		ADD_ALL(WriteRawBlock2Command);
 		CommandList::add<WriteRGBRawCommand>();
 		ADD_ALL(WriteSequenceCommand);
-		ADD_ALL(WriteSequenceBlockCommand);
+		//ADD_ALL(WriteSequenceBlockCommand);
 		ADD_ALL(WriteSequenceBlock2Command);
-		ADD_ALL(WriteNN5BlockCommand);
+		//ADD_ALL(WriteNN5BlockCommand);
 		ADD_ALL(WriteNN5Block2Command);
+		CommandList::add<EndConcurrentWriteCommand>();
 	}
 }

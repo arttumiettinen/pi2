@@ -71,6 +71,10 @@ namespace pilib
 		*/
 		std::vector<string> lastOutput;
 
+		/**
+		Chunk size for NN5 datasets used in distributed mode.
+		*/
+		Vec3c nn5ChunkSize;
 
 		/**
 		Determines suitable block size etc. for running commands in delayedCommands list.
@@ -150,6 +154,21 @@ namespace pilib
 		void showScripts(bool enable)
 		{
 			showSubmittedScripts = enable;
+		}
+
+		/**
+		Sets chunk size for NN5 datasets.
+		*/
+		void chunkSize(Vec3c chunkSize)
+		{
+			if (chunkSize.min() <= 0)
+				throw ITLException("Chunk size cannot contain negative or zero elements.");
+			nn5ChunkSize = chunkSize;
+		}
+
+		Vec3c getChunkSize() const
+		{
+			return nn5ChunkSize;
 		}
 
 		/**

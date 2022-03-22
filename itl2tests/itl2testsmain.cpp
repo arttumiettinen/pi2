@@ -75,12 +75,12 @@ int main()
 	//test(itl2::tests::cgne, "CGNE");
 	//test(itl2::tests::image, "Image");
 
-	test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
-	test(raw::tests::expandFilename, "Raw filename expansion");
-	test(raw::tests::raw, "Raw reader");
-	test(io::tests::readWrite, "IO read");
-	test(raw::tests::writeBlock, "Block based raw reader & writer");
-	test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
+	//test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
+	//test(raw::tests::expandFilename, "Raw filename expansion");
+	//test(raw::tests::raw, "Raw reader");
+	//test(io::tests::readWrite, "IO read");
+	//test(raw::tests::writeBlock, "Block based raw reader & writer");
+	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
@@ -248,20 +248,25 @@ int main()
 	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
 	//test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");
 
+	
+	//test(itl2::lz4::tests::lz4io, "LZ4");
+	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
+	
+	//test(itl2::nn5::tests::nn5Metadata, "NN5 metadata");
+	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
+	test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
+	//test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
+	//test(itl2::nn5::tests::concurrencyLong, "NN5 concurrent I/O, long test");
+
+
+
+
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
 
 	//test(itl2::tests::createPlates, "Input geometry generation");
 	//test(itl2::tests::createMoreProjections, "Large number of projections");
 	//test(itl2::tests::fbp, "Filtered backprojection");
-	//test(itl2::tests::nn5Metadata, "NN5 metadata");
-	
-	//test(itl2::lz4::tests::lz4io, "LZ4");
-	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
-	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
-	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
-	//test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
-	//test(itl2::nn5::tests::concurrencyLong, "NN5 concurrent I/O, long test");
 	
 	
 	//test(itl2::tests::openCLBackProjection, "OpenCL filtered backprojection");

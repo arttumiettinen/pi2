@@ -20,6 +20,7 @@ namespace pilib
 		CommandList::add<ClearCommand>();
 		CommandList::add<DistributeCommand>();
 		CommandList::add<MaxMemoryCommand>();
+		CommandList::add<ChunkSizeCommand>();
 		CommandList::add<DelayingCommand>();
 		CommandList::add<PrintTaskScriptsCommand>();
 		CommandList::add<EchoCommandsCommand>();
@@ -1495,6 +1496,13 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		double maxMem = pop<double>(args);
 		if (system->getDistributor())
 			system->getDistributor()->allowedMemory(itl2::round(maxMem * 1024.0 * 1024.0));
+	}
+
+	void ChunkSizeCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		Vec3c chunkSize = pop<Vec3c>(args);
+		if (system->getDistributor())
+			system->getDistributor()->chunkSize(chunkSize);
 	}
 
 	void DistributeCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
