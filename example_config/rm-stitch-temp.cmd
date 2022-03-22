@@ -4,8 +4,6 @@ rem WARNING: Run only on directories that contain stitching projects, otherwise 
 rem unrelated files may be deleted (see del commands below)!
 
 del *_refpoints.txt
-del *-err.txt
-del *-out.txt
 del *_transformation.txt
 del *_gof_*.raw
 del *_defpoints_*.raw

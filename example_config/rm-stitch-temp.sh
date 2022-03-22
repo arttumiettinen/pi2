@@ -4,8 +4,6 @@
 # unrelated files may be deleted (see rm commands below)!
 
 rm ./*_refpoints.txt
-rm ./*-err.txt
-rm ./*-out.txt
 rm ./*_transformation.txt
 rm ./*_gof_*.raw
 rm ./*_defpoints_*.raw
