@@ -20,6 +20,7 @@ namespace itl2
 	template class Image<int32_t>;
 	template class Image<int64_t>;
 	template class Image<float32_t>;
+	template class Image<complex32_t>;
 
 	extern template class Image<complex32_t>;
 	namespace tests
