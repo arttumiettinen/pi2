@@ -82,6 +82,15 @@ normalize_in_blockmatch = True
 normalize_while_stitching = True
 
 
+# Set to true to mask each input image such that only pixels inside the maximum
+# inscribed circle that fits into each xy-slice of the image are taken into account
+# in stitching. This is useful if, e.g. tomographic slices contain bad values outside the
+# well-reconstructed region.
+# Note that currently masking is made after calculation of gray level normalization, see
+# also normalize_while_stitching and normalize_in_blockmatch settings.
+mask_to_max_circle = False
+
+
 # Threshold value for displacement filtering.
 # This is the T value in the filtering process that is done before determination of
 # similarity transformations and before mosaic assembly.

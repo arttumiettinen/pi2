@@ -1,6 +1,6 @@
 
 
-def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, cluster_name='None', normalize_while_stitching=False):
+def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, cluster_name='None', normalize_while_stitching=False, mask_to_max_circle=False):
     """
     Writes new stitch settings file to stitch_settings.txt.
     sample_name - prefix of output files.
@@ -84,6 +84,12 @@ normalize_in_blockmatch = True
 # assembly of the final mosaic. Enabling or disabling this option may cause global
 # or local gray-value gradients, respectively.
 normalize_while_stitching = {normalize_while_stitching}
+
+# Set to true to mask each input image such that only pixels inside the maximum
+# inscribed circle that fits into each xy-slice of the image are taken into account
+# in stitching. This is useful if, e.g. tomographic slices contain bad values outside the
+# well-reconstructed region.
+mask_to_max_circle = {mask_to_max_circle}
 
 
 # Threshold value for displacement filtering.

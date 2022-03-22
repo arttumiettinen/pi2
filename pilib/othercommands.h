@@ -603,7 +603,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output region."),
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
-				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
+				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true),
+				CommandArgument<bool>(ParameterDirection::In, "mask max circle", "Set to true to use only data in the maximum inscribed circle in each xy-slice of the input image.", false)
 			},
 			blockMatchSeeAlso())
 		{
@@ -628,12 +629,13 @@ namespace pilib
 			coord_t h = pop<coord_t>(args);
 			coord_t d = pop<coord_t>(args);
 			bool normalize = pop<bool>(args);
+			bool maxCircle = pop<bool>(args);
 
 			Vec3c pos(x, y, z);
 			Vec3c size(w, h, d);
 
 			//stitchVer2<pixel_t>(indexFile, pos, size, output, normalize);
-			stitchVer3<pixel_t>(indexFile, pos, size, output, nullptr, normalize);
+			stitchVer3<pixel_t>(indexFile, pos, size, output, nullptr, normalize, maxCircle);
 		}
 	};
 
@@ -653,7 +655,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output region."),
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
-				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
+				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true),
+				CommandArgument<bool>(ParameterDirection::In, "mask max circle", "Set to true to use only data in the maximum inscribed circle in each xy-slice of the input image.", false)
 			},
 			blockMatchSeeAlso())
 		{
@@ -678,11 +681,12 @@ namespace pilib
 			coord_t h = pop<coord_t>(args);
 			coord_t d = pop<coord_t>(args);
 			bool normalize = pop<bool>(args);
+			bool maxCircle = pop<bool>(args);
 
 			Vec3c pos(x, y, z);
 			Vec3c size(w, h, d);
 
-			stitchVer3<pixel_t>(indexFile, pos, size, output, &goodness, normalize);
+			stitchVer3<pixel_t>(indexFile, pos, size, output, &goodness, normalize, maxCircle);
 		}
 	};
 

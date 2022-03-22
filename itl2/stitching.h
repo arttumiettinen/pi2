@@ -12,6 +12,7 @@
 #include "registration.h"
 #include "conversions.h"
 #include "io/io.h"
+#include "generation.h"
 
 namespace itl2
 {
@@ -1116,7 +1117,7 @@ namespace itl2
 	//	convert(out, output);
 	//}
 
-	template<typename pixel_t> void stitchVer3(const string& indexFile, const Vec3c& outputPos, const Vec3c& outputSize, Image<pixel_t>& output, Image<pixel_t>* std, bool normalize)
+	template<typename pixel_t> void stitchVer3(const string& indexFile, const Vec3c& outputPos, const Vec3c& outputSize, Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, bool maskMaxCircle)
 	{
 
 		// Read index file
@@ -1200,6 +1201,15 @@ namespace itl2
 
 				Image<pixel_t> src(srcDimensions);
 				io::read(src, imgFile);
+
+				if (maskMaxCircle)
+				{
+					Image<pixel_t> mask(src.width(), src.height());
+					float32_t d = (float32_t)std::min(src.width(), src.height());
+					draw<pixel_t>(mask, Sphere<float32_t>(Vec3f(src.width() / 2.0f, src.height() / 2.0f, 0), d / 2.0f), (pixel_t)1);
+					multiply(src, mask, true);
+				}
+
 				internals::stitchOneVer3<pixel_t, float32_t>(src, refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
 			}
 		}

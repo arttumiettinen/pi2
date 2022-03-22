@@ -68,6 +68,12 @@ def overlaps(scan1, scan2):
 
     return overlaps_range(scan1.position[0], scan1.position[0] + scan1.dimensions[0], scan2.position[0], scan2.position[0] + scan2.dimensions[0]) and overlaps_range(scan1.position[1], scan1.position[1] + scan1.dimensions[1], scan2.position[1], scan2.position[1] + scan2.dimensions[1]) and overlaps_range(scan1.position[2], scan1.position[2] + scan1.dimensions[2], scan2.position[2], scan2.position[2] + scan2.dimensions[2])
 
+def to_bool(val):
+    """
+    Convert val to boolean.
+    """
+
+    return val in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
 
 
 def main():
@@ -119,26 +125,29 @@ def main():
     settings.fine_binning = int(get(config, 'fine_binning', 1))
 
     # Normalization flags
-    settings.normalize_in_blockmatch = get(config, 'normalize_in_blockmatch', True) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
-    settings.normalize_while_stitching = get(config, 'normalize_while_stitching', True) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    settings.normalize_in_blockmatch = to_bool(get(config, 'normalize_in_blockmatch', True))
+    settings.normalize_while_stitching = to_bool(get(config, 'normalize_while_stitching', True))
+
+    # Mask each input image to maximum inscribed circle?
+    settings.max_circle = to_bool(get(config, "mask_to_max_circle", False))
 
     # Allow global optimization of transformations?
-    settings.global_optimization = get(config, 'global_optimization', True) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    settings.global_optimization = to_bool(get(config, 'global_optimization', True))
 
     # Allow rotational transformation
-    settings.allow_rotation = get(config, 'allow_rotation', True) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    settings.allow_rotation = to_bool(get(config, 'allow_rotation', True))
 
     # Allow local tranformations
-    settings.allow_local_deformations = get(config, 'allow_local_deformations', True) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    settings.allow_local_deformations = to_bool(get(config, 'allow_local_deformations', True))
 
     # Threshold for displacement filtering
     settings.filter_threshold = float(get(config, 'displacement_filter_threshold', '3'))
 
     # Redo displacement fields?
-    settings.force_redo = get(config, 'redo', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    settings.force_redo = to_bool(get(config, 'redo', False))
 
     # Create stitch goodness output?
-    settings.create_goodness_file = get(config, 'create_goodness', False) in [True, 'true', 'True', 'TRUE', '1', 't', 'y', 'yes']
+    settings.create_goodness_file = to_bool(get(config, 'create_goodness', False))
 
     # Read image names and locations
     if not ('positions' in config):
@@ -214,7 +223,7 @@ def main():
         
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.force_redo)
+    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.force_redo)
 
     wait_for_cluster_jobs()
 
