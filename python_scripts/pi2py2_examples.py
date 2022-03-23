@@ -971,7 +971,7 @@ def find_surface():
     # Now find the surface.
     # We will stop at gray level 100 and perform 60 iterations
     # with surface tension 1.0.
-    pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, vis, img.get_height() / 2, 900)
+    pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, 1, vis, img.get_height() / 2, 900)
 
     # Save the result surface
     pi.writeraw(hmap, output_file('findsurface_height_map'))
@@ -983,7 +983,7 @@ def find_surface():
 
     # We can also draw the surface to the image
     surf_vis = pi.newimage()
-    pi.set(surf_vis, img)
+    pi.copy(img, surf_vis)
     pi.drawheightmap(surf_vis, hmap, 900)
     pi.writeraw(surf_vis, output_file('findsurface_full_vis'))
 
@@ -991,12 +991,12 @@ def find_surface():
     # This is useful to, e.g., get rid of background noise above
     # or below the surface of the sample.
     before_vis = pi.newimage()
-    pi.set(before_vis, img)
+    pi.copy(img, before_vis)
     pi.setbeforeheightmap(before_vis, hmap, 900)
     pi.writeraw(before_vis, output_file('findsurface_before_vis'))
 
     after_vis = pi.newimage()
-    pi.set(after_vis, img)
+    pi.copy(img, after_vis)
     pi.setafterheightmap(after_vis, hmap, 900)
     pi.writeraw(after_vis, output_file('findsurface_after_vis'))
 
@@ -1005,7 +1005,7 @@ def find_surface():
     pi.negate(hmap)
     temp = pi.newlike(hmap)
     pi.gaussfilter(hmap, temp, 1) # This smooths the surface map a little bit
-    pi.set(hmap, temp)
+    pi.copy(temp, hmap)
     pi.shiftz(img, hmap, True)
     pi.writeraw(img, output_file('findsurface_shiftz'))
 
