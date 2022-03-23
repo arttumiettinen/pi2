@@ -328,6 +328,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="structurecommands.h" />
     <ClInclude Include="thickmapcommands.h" />
     <ClInclude Include="thinandskeletoncommands.h" />
+    <ClInclude Include="timing.h" />
     <ClInclude Include="tomocommands.h" />
     <ClInclude Include="transformcommands.h" />
     <ClInclude Include="trivialdistributable.h" />
@@ -374,6 +375,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClCompile Include="structurecommands.cpp" />
     <ClCompile Include="thickmapcommands.cpp" />
     <ClCompile Include="thinandskeletoncommands.cpp" />
+    <ClCompile Include="timing.cpp" />
     <ClCompile Include="tomocommands.cpp" />
     <ClCompile Include="transformcommands.cpp" />
     <ClCompile Include="pilibutilities.cpp" />

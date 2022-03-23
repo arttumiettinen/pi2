@@ -27,10 +27,11 @@ namespace pilib
 
 	DistributedImageStorageType DistributedImageBase::suggestStorageType(const Distributor& distributor, const Vec3c& dimensions)
 	{
-		if (dimensions.product() >= distributor.getChunkSize().product())
-			return DistributedImageStorageType::NN5;
-		else
-			return DistributedImageStorageType::Raw;
+		return DistributedImageStorageType::NN5;
+		//if (dimensions.product() >= distributor.getChunkSize().product())
+		//	return DistributedImageStorageType::NN5;
+		//else
+		//	return DistributedImageStorageType::Raw;
 	}
 	
 	DistributedImageBase::DistributedImageBase(Distributor& distributor, const string& name, const Vec3c& dimensions, ImageDataType dataType, const string& sourceFilename, DistributedImageStorageType storageType) :
@@ -40,7 +41,7 @@ namespace pilib
 		distributor(&distributor),
 		nn5ChunkSize(distributor.getChunkSize())
 	{
-		setReadSource(sourceFilename, false);
+		setReadSourceInternal(sourceFilename, false);
 		createTempFilenames(storageType);
 	}
 
@@ -164,7 +165,7 @@ namespace pilib
 		}
 	}
 
-	void DistributedImageBase::setReadSource(const string& filename, bool check)
+	void DistributedImageBase::setReadSourceInternal(const string& filename, bool check)
 	{
 		readSource = filename;
 		// Reset read source type to some default even if input file does not exist.
@@ -201,6 +202,8 @@ namespace pilib
 					}
 					dims = newDims;
 					readSourceType = DistributedImageStorageType::Raw;
+					// This ensures that the file name is the full one, not the one without dimensions.
+					raw::internals::expandRawFilename(readSource);
 				}
 				else
 				{
@@ -304,7 +307,14 @@ namespace pilib
 
 	string DistributedImageBase::emitEndConcurrentWrite(const Vec3c& chunk) const
 	{
-		return string("endconcurrentwrite(\"") + currentWriteTarget() + "\", " + toString(chunk) + ")";
+		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
+		{
+			return string("endconcurrentwrite(\"") + currentWriteTarget() + "\", " + toString(chunk) + ")";
+		}
+		else
+		{
+			return "";
+		}
 	}
 
 	vector<Vec3c> DistributedImageBase::getChunksThatNeedEndConcurrentWrite() const
@@ -333,6 +343,6 @@ namespace pilib
                 fs::remove_all(this->tempFilename2);
         }
         
-	    setReadSource(currentWriteTarget());
+	    setReadSourceInternal(currentWriteTarget(), true);
     }
 }

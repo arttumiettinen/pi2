@@ -338,7 +338,7 @@ namespace pilib
 						// The image has been saved to a temporary file
 						// Just move the temporary file to new location (and name) and sets read source to that file.
 						moveFile(in.currentReadSource(), fname);
-						in.setReadSource(fname);
+						in.setReadSource(fname, false);
 					}
 					else
 					{
@@ -439,7 +439,7 @@ namespace pilib
 						// The image has been saved to a temporary file
 						// Just move the temporary file to new location (and name) and sets read source to that file.
 						moveFile(in.currentReadSource(), fname);
-						in.setReadSource(fname);
+						in.setReadSource(fname, false);
 					}
 					else
 					{
@@ -550,7 +550,7 @@ namespace pilib
 						// The image has been saved to temporary files
 						// Just move the temporary files to new location (and name) and set read source to that file.
 						sequence::moveSequence(in.currentReadSource(), fname);
-						in.setReadSource(fname);
+						in.setReadSource(fname, false);
 						return std::vector<std::string>();
 					}
 					else

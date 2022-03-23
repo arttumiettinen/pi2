@@ -13,6 +13,7 @@
 #endif
 #include <tuple>
 #include "filesystem.h"
+#include "timing.h"
 
 using namespace std;
 
@@ -196,6 +197,86 @@ namespace pilib
 		out_width = out_right - out_left;
 	}
 
+	vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > determineBlocksFromBlockSize(size_t refIndex, const Vec3c& margin, const Vec3c& blockSize, const Command* command, vector<ParamVariant>& args, const vector<ParamVariant>& argsForGetCorrespondingBlock)
+	{
+		// allBlocks[parameter index][block index] = tuple<read start, read size, output position in file, output start position in image, output region size>
+		vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > allBlocks(args.size(), vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> >());
+
+		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
+		Vec3c refDims = img->dimensions();
+
+		//for (coord_t iz = 0; iz < blockCounts.z; iz++)
+		//{
+		//	for (coord_t iy = 0; iy < blockCounts.y; iy++)
+		//	{
+		//		for (coord_t ix = 0; ix < blockCounts.x; ix++)
+		//		{
+					//// Select a block from reference image
+					//Vec3c refStart(ix * refSize.x, iy * refSize.y, iz * refSize.z);
+
+					//// ceiling in refSize calculation may cause bad blocks, skip those
+					//if (refStart.x >= refDims.x || refStart.y >= refDims.y || refStart.z >= refDims.z)
+					//	break;
+
+		nn5::internals::forAllChunks(refDims, blockSize, false, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
+			{
+
+				// Add margins to the reference block
+				Vec3c refStartMargins, refSizeMargins, refWriteImPos, refWriteImSize;
+				adjustBlockDimensions(refStart.x, blockSize.x, margin.x, refDims.x, refStartMargins.x, refSizeMargins.x, refWriteImPos.x, refWriteImSize.x);
+				adjustBlockDimensions(refStart.y, blockSize.y, margin.y, refDims.y, refStartMargins.y, refSizeMargins.y, refWriteImPos.y, refWriteImSize.y);
+				adjustBlockDimensions(refStart.z, blockSize.z, margin.z, refDims.z, refStartMargins.z, refSizeMargins.z, refWriteImPos.z, refWriteImSize.z);
+
+				if ((refWriteImSize.x > blockSize.x || refWriteImSize.y > blockSize.y || refWriteImSize.z > blockSize.z) ||
+					(refStart.x + refWriteImSize.x > refDims.x || refStart.y + refWriteImSize.y > refDims.y || refStart.z + refWriteImSize.z > refDims.z))
+					throw ITLException("Bug check 1 failed in distribution block size calculation.");
+
+				if (refWriteImSize.x < 0 || refWriteImSize.y < 0 || refWriteImSize.z < 0)
+					throw ITLException("Bug check 2 failed in distribution block size calculation.");
+
+				//vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > blocks;
+				for (size_t n = 0; n < args.size(); n++)
+				{
+					// Calculate corresponding block in image n
+					// for input image: file position where read operation should start
+					Vec3c readStart = refStartMargins;
+					// for input image: size of block to read
+					Vec3c readSize = refSizeMargins;
+
+					// for output image: file position where the data should be written
+					Vec3c writeFilePos = refStart;
+					// for output image: position of good data region in the output image
+					Vec3c writeImPos = refWriteImPos;
+					// for output image: size of block to write
+					Vec3c writeSize = refWriteImSize;
+
+					if (n != refIndex)
+					{
+						// Cast to reference so that exception is thrown on error.
+						dynamic_cast<const Distributable&>(*command).getCorrespondingBlock(argsForGetCorrespondingBlock, n, readStart, readSize, writeFilePos, writeImPos, writeSize);
+					}
+
+					allBlocks[n].push_back(make_tuple(readStart, readSize, writeFilePos, writeImPos, writeSize));
+				}
+			});
+		//		}
+		//	}
+		//}
+
+		return allBlocks;
+	}
+
+	Vec3c blockSizeFromBlockCounts(size_t refIndex, const Vec3c& blockCounts, const vector<ParamVariant>& args)
+	{
+		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
+		Vec3c refDims = img->dimensions();
+
+		// Block size in the reference image
+		Vec3c refSize = Vec3c(itl2::ceil((double)refDims.x / (double)blockCounts.x), itl2::ceil((double)refDims.y / (double)blockCounts.y), itl2::ceil((double)refDims.z / (double)blockCounts.z));
+		
+		return refSize;
+	}
+
 	/**
 	Divides input images into blocks for distributed processing.
 	@return Vector of block lists. Each list contains corresponding block of each argument. Each item has five fields:
@@ -204,71 +285,8 @@ namespace pilib
 	*/
 	vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > determineBlocks(size_t refIndex, const Vec3c& margin, const Vec3c& blockCounts, const Command* command, vector<ParamVariant>& args, const vector<ParamVariant>& argsForGetCorrespondingBlock)
 	{
-		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
-		Vec3c refDims = img->dimensions();
-
-		// Block size in the reference image
-		Vec3c refSize = Vec3c(itl2::ceil((double)refDims.x / (double)blockCounts.x), itl2::ceil((double)refDims.y / (double)blockCounts.y), itl2::ceil((double)refDims.z / (double)blockCounts.z));
-
-
-		// allBlocks[parameter index][block index] = tuple<read start, read size, output position in file, output start position in image, output region size>
-		vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > allBlocks(args.size(), vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> >());
-
-		for (coord_t iz = 0; iz < blockCounts.z; iz++)
-		{
-			for (coord_t iy = 0; iy < blockCounts.y; iy++)
-			{
-				for (coord_t ix = 0; ix < blockCounts.x; ix++)
-				{
-					// Select a block from reference image
-					Vec3c refStart(ix * refSize.x, iy * refSize.y, iz * refSize.z);
-
-					// ceiling in refSize calculation may cause bad blocks, skip those
-					if (refStart.x >= refDims.x || refStart.y >= refDims.y || refStart.z >= refDims.z)
-						break;
-
-					// Add margins to the reference block
-					Vec3c refStartMargins, refSizeMargins, refWriteImPos, refWriteImSize;
-					adjustBlockDimensions(refStart.x, refSize.x, margin.x, refDims.x, refStartMargins.x, refSizeMargins.x, refWriteImPos.x, refWriteImSize.x);
-					adjustBlockDimensions(refStart.y, refSize.y, margin.y, refDims.y, refStartMargins.y, refSizeMargins.y, refWriteImPos.y, refWriteImSize.y);
-					adjustBlockDimensions(refStart.z, refSize.z, margin.z, refDims.z, refStartMargins.z, refSizeMargins.z, refWriteImPos.z, refWriteImSize.z);
-
-					if ((refWriteImSize.x > refSize.x || refWriteImSize.y > refSize.y || refWriteImSize.z > refSize.z) ||
-						(refStart.x + refWriteImSize.x > refDims.x || refStart.y + refWriteImSize.y > refDims.y || refStart.z + refWriteImSize.z > refDims.z))
-						throw ITLException("Bug check 1 failed in distribution block size calculation.");
-
-					if (refWriteImSize.x < 0 || refWriteImSize.y < 0 || refWriteImSize.z < 0)
-						throw ITLException("Bug check 2 failed in distribution block size calculation.");
-					
-					//vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > blocks;
-					for (size_t n = 0; n < args.size(); n++)
-					{
-						// Calculate corresponding block in image n
-						// for input image: file position where read operation should start
-						Vec3c readStart = refStartMargins;
-						// for input image: size of block to read
-						Vec3c readSize = refSizeMargins;
-
-						// for output image: file position where the data should be written
-						Vec3c writeFilePos = refStart;
-						// for output image: position of good data region in the output image
-						Vec3c writeImPos = refWriteImPos;
-						// for output image: size of block to write
-						Vec3c writeSize = refWriteImSize;
-
-						if (n != refIndex)
-						{
-							// Cast to reference so that exception is thrown on error.
-							dynamic_cast<const Distributable&>(*command).getCorrespondingBlock(argsForGetCorrespondingBlock, n, readStart, readSize, writeFilePos, writeImPos, writeSize);
-						}
-
-						allBlocks[n].push_back(make_tuple(readStart, readSize, writeFilePos, writeImPos, writeSize));
-					}
-				}
-			}
-		}
-
-		return allBlocks;
+		Vec3c refSize = blockSizeFromBlockCounts(refIndex, blockCounts, args);
+		return determineBlocksFromBlockSize(refIndex, margin, refSize, command, args, argsForGetCorrespondingBlock);
 	}
 
 	/**
@@ -565,6 +583,25 @@ namespace pilib
 		runDelayedCommands();
 	}
 
+	/**
+	Checks if the output images can be written to in arbitrary blocks.
+	*/
+	bool canWriteArbitaryBlocks(set<DistributedImageBase*>& outputImages)
+	{
+		for (DistributedImageBase* img : outputImages)
+		{
+			// NOTE: Here we list the files that support distribution in all directions. This way it is not possible
+			// to induce a bug here by adding new DistributedImageStorageTypes.
+			if (img->currentWriteTargetType() != DistributedImageStorageType::NN5 &&
+				img->currentWriteTargetType() != DistributedImageStorageType::Raw)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 
 	void Distributor::determineDistributionConfiguration(Vec3c& margin, set<DistributedImageBase*>& inputImages, set<DistributedImageBase*>& outputImages, JobType& jobType, map<DistributedImageBase*, vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > >& blocksPerImage, size_t& memoryReq)
 	{
@@ -579,6 +616,16 @@ namespace pilib
 
 		// Get job type
 		jobType = getCombinedJobType(delayedCommands);
+
+		// Find NN5 chunk size and use that as preferred block size.
+		Vec3c preferredBlockSizeMultiple(1, 1, 1);
+		for (DistributedImageBase* p : outputImages)
+		{
+			if (p->currentWriteTargetType() == DistributedImageStorageType::NN5)
+			{
+				preferredBlockSizeMultiple = p->getChunkSize();
+			}
+		}
 
 
 		// Find distribution directions
@@ -596,18 +643,8 @@ namespace pilib
 		bool distributionDirection2Allowed = true;
 		if (distributionDirection2 <= 2)
 		{
-			for (DistributedImageBase* img : outputImages)
-			{
-				// NOTE: Here we list the files that support distribution in all directions. This way it is not possible
-				// to induce a bug here by adding new DistributedImageStorageTypes.
-				if(img->currentWriteTargetType() != DistributedImageStorageType::NN5 &&
-					img->currentWriteTargetType() != DistributedImageStorageType::Raw)
-				//if (!img->isOutputRaw())
-				{
-					distributionDirection2Allowed = false;
-					break;
-				}
-			}
+			if(!canWriteArbitaryBlocks(outputImages))
+				distributionDirection2Allowed = false;
 		}
 
         size_t preferredSubdivisions = getPreferredSubdivisions(delayedCommands);
@@ -619,16 +656,55 @@ namespace pilib
 		size_t lastMemoryReq = numeric_limits<size_t>::max();
 		while (true)
 		{
-			//string debugText;
-			//debugText += "delayedCommands.size() = " + itl2::toString(delayedCommands.size()) + "\n";
-
 			// Calculate block sizes for each command.
 			blocksPerImage.clear();
 			vector<size_t> extraMemPerCommand;
+			Vec3c refSize;
 			for (Delayed& d : delayedCommands)
 			{
 				// blocksPerParameter[parameter index][block index] = tuple<block definition>
-				vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > blocksPerParameter = determineBlocks(d.getRefIndex(), margin, subDivisions, d.getCommand(), d.getArgs(), d.getArgsForGetCorrespondingBlock());
+				//vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > blocksPerParameter = determineBlocks(d.getRefIndex(), margin, subDivisions, d.getCommand(), d.getArgs(), d.getArgsForGetCorrespondingBlock());
+
+				// Find block size, taking into account subdivisions and preferred block size multiple.
+				refSize = blockSizeFromBlockCounts(d.getRefIndex(), subDivisions, d.getArgs());
+
+				// Round block size down to the nearest preferred block size multiple.
+				Vec3c temp = preferredBlockSizeMultiple;
+				for (size_t n = 0; n < temp.size(); n++)
+				{
+					if (subDivisions[n] != 1)
+					{
+						if (temp[n] < refSize[n])
+						{
+							// preferredBlockSizeMultiple is smaller than refSize, so we can try to increase refSize
+							// in multiples of preferredBlockSizeMultiple
+							while (temp[n] + preferredBlockSizeMultiple[n] <= refSize[n])
+								temp[n] += preferredBlockSizeMultiple[n];
+						}
+						else
+						{
+							//// preferredBlockSizeMultiple is smaller than refSize. Reduce size until
+							//// it is smaller than refSize.
+							//while (temp[n] > refSize[n])
+							//	temp[n] /= 2;
+
+							//// If we fail, go back to original refSize.
+							//if (temp[n] < 1)
+							//	temp[n] = refSize[n];
+							temp[n] = refSize[n];
+						}
+					}
+					else
+					{
+						temp[n] = refSize[n];
+					}
+				}
+				
+				refSize = temp;
+
+				// blocksPerParameter[parameter index][block index] = tuple<block definition>
+				vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > blocksPerParameter = determineBlocksFromBlockSize(d.getRefIndex(), margin, refSize, d.getCommand(), d.getArgs(), d.getArgsForGetCorrespondingBlock());
+
 
 				// Store block size for each image.
 				// If some image gets multiple different block sizes, throw an error. The commands can't be executed together like that.
@@ -652,22 +728,6 @@ namespace pilib
 					}
 				}
 
-				// Calculate total memory requirement
-				//memoryReq += (size_t)ceil(calcRequiredMemory(blocksPerParameter, d.getCommand()) * (1 + d.calculateExtraMemory()));
-
-				// Calculate extra memory requirement for current command
-
-				//debugText += "blocksPerParameter = \n";
-				//for(const vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> >& v : blocksPerParameter)
-				//{
-				//	for (const auto& tup : v)
-				//	{
-				//		debugText += itl2::toString(get<0>(tup)) + ", " + itl2::toString(get<1>(tup)) + ", " + itl2::toString(get<2>(tup)) + ", " + itl2::toString(get<3>(tup)) + ", " + itl2::toString(get<4>(tup)) + "\n";
-				//	}
-				//}
-				//debugText += "calcRequiredMemory(blocksPerParameter, d.getCommand()) = " + itl2::toString(calcRequiredMemory(blocksPerParameter, d.getCommand())) + "\n";
-				//debugText += "d.calculateExtraMemory() = " + itl2::toString(d.calculateExtraMemory()) + "\n";
-
 				extraMemPerCommand.push_back(pixelRound<size_t>(std::ceil(calcRequiredMemory(blocksPerParameter, d.getCommand()) * d.calculateExtraMemory())));
 			}
 
@@ -683,7 +743,10 @@ namespace pilib
 
 
 			if (memoryReq <= allowedMemory())
+			{
+				cout << "Block size = " << refSize << ", preferred multiple = " << preferredBlockSizeMultiple << endl;
 				break;
+			}
 
 			// Check that distribution is sane
 			//bool failed = false;
@@ -731,7 +794,7 @@ namespace pilib
 			else
 			{
 				if (!distributionDirection2Allowed)
-					throw ITLException("The input images are so large that they must be distributed in two coordinate directions. Distribution in two directions is currently not supported for non-.raw image files. Consider saving all the input images as .raw before calling this command.");
+					throw ITLException("The input images are so large that they must be distributed in two coordinate directions. Distribution in two directions is currently not supported for current input image type.");
 
 				// Subdivide in 2 directions
 				if (subDivisions[distributionDirection2] < subDivisions[distributionDirection1])
@@ -971,6 +1034,9 @@ namespace pilib
 			}
 		}
 
+		Timer timer;
+		timer.start();
+
 		// Prepare images for concurrent writing
 		map<DistributedImageBase*, vector<nn5::NN5Process>> nn5processes;
 		for (size_t i = 0; i < jobCount; i++)
@@ -1028,6 +1094,8 @@ namespace pilib
 				cout << "Image " << img->varName() << " has " << unsafeCount << " unsafe chunks." << endl;
 		}
 
+		Timing::Add(TimeClass::WritePreparation, timer.lap());
+
 		// Submit jobs
 		for (auto& tup : jobsToSubmit)
 		{
@@ -1051,17 +1119,36 @@ namespace pilib
 			cout << "Waiting for jobs to finish..." << endl;
 			lastOutput = waitForJobs();
 
+			Timing::Add(TimeClass::JobsInclQueuing, timer.lap());
+
 			// Submit endConcurrentWrite jobs
+			// Limit the number of jobs to reduce queuing latency.
 			cout << "Submitting write finalization jobs..." << endl;
 			size_t finJobCount = 0;
 			for (DistributedImageBase* img : outputImages)
 			{
 				vector<Vec3c> chunks = img->getChunksThatNeedEndConcurrentWrite();
+				const size_t WRITE_FINALIZATION_JOB_COUNT = 8;
+				vector<string> scripts(WRITE_FINALIZATION_JOB_COUNT, "");
+				size_t n = 0;
 				for (Vec3c& chunk : chunks)
 				{
 					string script = img->emitEndConcurrentWrite(chunk);
-					submitJob(script, JobType::Fast);
-					finJobCount++;
+					if (script != "")
+					{
+						scripts[n] += script + "\n";
+						n++;
+						if (n >= scripts.size())
+							n = 0;
+					}
+				}
+				for (const string& script : scripts)
+				{
+					if (script != "")
+					{
+						submitJob(script, JobType::Normal);
+						finJobCount++;
+					}
 				}
 			}
 
@@ -1081,6 +1168,8 @@ namespace pilib
 			{
 				img->writeComplete();
 			}
+
+			Timing::Add(TimeClass::WriteFinalizationInclQueuing, timer.lap());
 		}
 		catch (...)
 		{

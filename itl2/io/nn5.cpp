@@ -235,7 +235,7 @@ namespace itl2
 					else
 					{
 						// The path contains an incompatible NN5 dataset. Delete it.
-						if (!fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
+						if (fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
 							throw ITLException(string("The output folder contains an incompatible NN5 dataset that is currently being processed concurrently."));
 						fs::remove_all(path);
 					}
@@ -654,17 +654,19 @@ namespace itl2
 				}
 			}
 
-			void nn5BlockIoOneTest(NN5Compression compression, const Vec3c& chunkSize)
+			void nn5BlockIoOneTest(NN5Compression compression, const Vec3c& chunkSize,
+				const Vec3c& blockStart,
+				const Vec3c& blockSize)
 			{
-				cout << "Chunk size = " << chunkSize << ", compression = " << toString(compression) << endl;
+				cout << "Chunk size = " << chunkSize << endl;
+				cout << "Compression = " << toString(compression) << endl;
+				cout << "Block start = " << blockStart << endl;
+				cout << "Block size = " << blockSize << endl;
 
 				Vec3c dimensions(100, 200, 300);
 
 				Image<uint16_t> img(dimensions);
 				ramp3(img);
-
-				Vec3c blockStart(10, 20, 30);
-				Vec3c blockSize(50, 60, 70);
 
 				// Write entire image and read
 				nn5::write(img, "./nn5_block_io/entire_image", chunkSize, compression);
@@ -692,44 +694,62 @@ namespace itl2
 				nn5::readBlock(readBlockResult, "./nn5_block_io/entire_image", blockStart);
 				testAssert(equals(readBlockResult, gtBlock), "NN5 readBlock");
 			}
+			
+			void nn5BlockIoOneTest(const Vec3c& chunkSize,
+				const Vec3c& blockStart,
+				const Vec3c& blockSize)
+			{
+				nn5BlockIoOneTest(NN5Compression::Raw, chunkSize, blockStart, blockSize);
+				nn5BlockIoOneTest(NN5Compression::LZ4, chunkSize, blockStart, blockSize);
+			}
+
+			void nn5BlockIoOneTest(
+				const Vec3c& blockStart,
+				const Vec3c& blockSize)
+			{
+				nn5BlockIoOneTest(Vec3c(50, 102, 99), blockStart, blockSize);
+				nn5BlockIoOneTest(Vec3c(50, 40, 65), blockStart, blockSize);
+				nn5BlockIoOneTest(Vec3c(40, 30, 20), blockStart, blockSize);
+			}
 
 			void nn5BlockIo()
 			{
-				// Some specific edge cases
-				if(false)
-				{
-					Image<uint16_t> img(256, 256, 129);
-					ramp3(img);
-
-					nn5::write(img, "./nn5_block_tests1/full_image", Vec3c(30, 32, 33), NN5Compression::LZ4);
-
-
-					Image<uint16_t> block(256, 256, 64);
-					nn5::readBlock(block, "./nn5_block_tests1/full_image", Vec3c(0, 0, 65));
-					//readblock("image_RJBTFVPJJR_1933", "./tmp_images/image_RJBTFVPJJR_1933-1", "[0, 0, 65]", "[256, 256, 64]", "float32")
-
-					raw::writed(block, "./nn5_block_tests1/read_block_written_as_full_raw_file");
-					raw::writeBlock(block, concatDimensions("./nn5_block_tests1/read_block_written_as_raw_block", img.dimensions()),
-						Vec3c(0, 0, 65), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 256, 64));
-					//writerawblock("image_RJBTFVPJJR_1933", "../../testing/pi2py2/head_rotate_img_result_0.5233333333333333_[1, 0, 0]_[128, 128, 64]_[128, 128, 64]_distributed_256x256x129.raw", "[0, 0, 65]", "[256, 256, 129]", "[0, 0, 0]", "[256, 256, 64]")
-				}
-
+				//// Some specific edge cases
+				//if(true)
 				//{
-				//	Image<float32_t> img(256, 256, 129);
-				//	setValue(img, 100);
-				//	nn5::read(img, "./image_AJORPWGAZI_1933-1");
-				//	raw::writed(img, "./bugtest/fullread");
+				//	Image<uint16_t> img(256, 256, 129);
+				//	ramp3(img);
+
+				//	nn5::write(img, "./nn5_block_tests1/full_image", Vec3c(30, 32, 33), NN5Compression::LZ4);
+
+
+				//	Image<uint16_t> block(256, 256, 64);
+				//	nn5::readBlock(block, "./nn5_block_tests1/full_image", Vec3c(0, 0, 65));
+
+				//	raw::writed(block, "./nn5_block_tests1/read_block_written_as_full_raw_file");
+				//	raw::writeBlock(block, concatDimensions("./nn5_block_tests1/read_block_written_as_raw_block", img.dimensions()),
+				//		Vec3c(0, 0, 65), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 256, 64));
+				//	//writerawblock("image_RJBTFVPJJR_1933", "../../testing/pi2py2/head_rotate_img_result_0.5233333333333333_[1, 0, 0]_[128, 128, 64]_[128, 128, 64]_distributed_256x256x129.raw", "[0, 0, 65]", "[256, 256, 129]", "[0, 0, 0]", "[256, 256, 64]")
 				//}
 
-				if(false)
+				if (true)
+				{
+					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(1, 200, 300));
+					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(100, 1, 300));
+					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(100, 200, 1));
+
+					nn5BlockIoOneTest(Vec3c(99, 0, 0), Vec3c(1, 200, 300));
+					nn5BlockIoOneTest(Vec3c(0, 199, 0), Vec3c(100, 1, 300));
+					nn5BlockIoOneTest(Vec3c(0, 0, 299), Vec3c(100, 200, 1));
+
+					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(50, 102, 99));
+					nn5BlockIoOneTest(Vec3c(1, 2, 3), Vec3c(50, 102, 99));
+				}
+
+				if(true)
 				{
 					Image<uint16_t> img(256, 256, 129);
 					ramp3(img);
-
-					//raw::writeBlock(img, concatDimensions("./nn5_block_tests2/raw", img.dimensions()),
-					//	Vec3c(0,   0, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
-					//raw::writeBlock(img, concatDimensions("./nn5_block_tests2/raw", img.dimensions()),
-					//	Vec3c(0, 128, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
 
 					//vector<NN5Process> processes;
 					coord_t z = 0;
@@ -745,7 +765,7 @@ namespace itl2
 								d = 1;
 
 							nn5::writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
-								Vec3c(0, y, z), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, d));
+								Vec3c(0, y, z), img.dimensions(), Vec3c(0, y, z), Vec3c(256, 128, d));
 
 							y += 128;
 						}
@@ -767,15 +787,6 @@ namespace itl2
 					testAssert(equals(img, imgNN5), "orig vs NN5 writeBlock");
 				}
 
-				// 'Normal' cases
-				if(false)
-				{
-					nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(50, 102, 99));
-					nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(50, 102, 99));
-
-					nn5BlockIoOneTest(NN5Compression::Raw, Vec3c(40, 30, 20));
-					nn5BlockIoOneTest(NN5Compression::LZ4, Vec3c(40, 30, 20));
-				}
 			}
 
 

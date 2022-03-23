@@ -102,7 +102,7 @@ namespace pilib
 		Changes the location where the image is read from.
 		@param check Set to false if calling from a constructor to avoid pure virtual call.
 		*/
-		void setReadSource(const std::string& filename, bool check);
+		void setReadSourceInternal(const std::string& filename, bool check);
 
 		/**
 		The distributor that owns this image.
@@ -115,17 +115,20 @@ namespace pilib
 		*/
 		void flush() const;
 
-		Vec3c getChunkSize() const
-		{
-			return nn5ChunkSize;
-		}
-
 	public:
 
 		/**
 		Suggest suitable storage type for image of given dimensions.
 		*/
 		static DistributedImageStorageType suggestStorageType(const Distributor& distributor, const Vec3c& dimensions);
+		
+		/**
+		Retrieves NN5 chunk size.
+		*/
+		Vec3c getChunkSize() const
+		{
+			return nn5ChunkSize;
+		}
 
         /**
         Returns true if the image has been saved to disk (it is not just created
@@ -330,10 +333,22 @@ namespace pilib
 
 		/**
 		Changes the location where the image is read from.
+		@param filename Name of the file that is the new read source.
+		@param ownsFile Set to true if the ownership of the file is transferred to this object. If true, the file will be deleted when it is not needed anymore.
 		*/
-		void setReadSource(const std::string& filename)
+		void setReadSource(const std::string& filename, bool ownsFile)
 		{
-			setReadSource(filename, true);
+			setReadSourceInternal(filename, true);
+			if (ownsFile)
+			{
+				// Set the filename to be one of the temp files.
+				// Do not override current write target if it is one of the temp files.
+				if (currentWriteTarget() == tempFilename1)
+					tempFilename2 = currentReadSource();
+				else
+					tempFilename1 = currentReadSource();
+
+			}
 		}
 		
 		/**

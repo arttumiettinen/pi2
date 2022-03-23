@@ -11,8 +11,25 @@ namespace pilib
 
 	inline std::string helpSeeAlso()
 	{
-		return "help, info, license, echo, print, waitreturn, hello";
+		return "help, info, license, echo, print, waitreturn, hello, timing";
 	}
+
+	class TimingCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		TimingCommand() : Command("timing", "Prints information about wall-clock time taken by various sub-processes.",
+			{
+			},
+			helpSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override;
+	};
+
 	
 	class HelloCommand : virtual public Command, public TrivialDistributable
 	{

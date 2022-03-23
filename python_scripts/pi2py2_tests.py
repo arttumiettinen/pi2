@@ -123,7 +123,7 @@ def test_difference_delaying(testname, script, resultname='result', tolerance=0.
 
 
 
-def test_difference_normal_distributed(opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[100, 101, 117]):
+def test_difference_normal_distributed(opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[100, 101, 102]):
     """
     Calculates operation normally and using distributed processing.
     Calculates difference between the results of the two versions and prints a message if the results do not match.
@@ -236,6 +236,7 @@ def trace_skeleton_test():
     """
     Tests skeleton tracing in normal and distributed mode.
     """
+    
 
     # Normal mode
     skele = pi2.read(input_file("real_skele_200x200x200.raw"))
@@ -261,6 +262,7 @@ def trace_skeleton_test():
     # Distributed mode
     pi2.distribute(Distributor.LOCAL)
     pi2.maxmemory(5)
+    pi2.chunksize([100, 100, 100])
 
     skele = pi2.read(input_file("real_skele_200x200x200.raw"))
     vertices = pi2.newimage()
@@ -1098,30 +1100,30 @@ pi2.echo(True, False)
 
 
 
-#morphorec_test()
-#fill_skeleton_test()
-#autothreshold()
-#tif_and_tiff()
-#get_pixels()
-#set_pixels()
-#distributed_numpy()
-#named_variables()
-#metadata()
-#set_overloads()
-#lz4_files()
-#nn5_files()
-#dead_pixels()
-#trace_skeleton_test()
-#multimax_test(0)
-#multimax_test(1)
-#multimax_test(2)
-#generate_particles()
-#analyze_particles()
-#analyze_labels()
-#dimension_broadcast()
-#rotate()
-#twoimage_distribution()
-#histogram()
+morphorec_test()
+fill_skeleton_test()
+autothreshold()
+tif_and_tiff()
+get_pixels()
+set_pixels()
+distributed_numpy()
+named_variables()
+metadata()
+set_overloads()
+lz4_files()
+nn5_files()
+dead_pixels()
+trace_skeleton_test()
+multimax_test(0)
+multimax_test(1)
+multimax_test(2)
+generate_particles()
+analyze_particles()
+analyze_labels()
+dimension_broadcast()
+rotate()
+twoimage_distribution()
+histogram()
 #for r in range(1, 10):
 #    test_difference_normal_distributed('maxfilter', ['img', 'result', r, True, 'ellipsoidal', 'zero'])
 #    test_difference_normal_distributed('maxfilter', ['img', 'result', r, True, 'ellipsoidal', 'nearest'])
@@ -1285,6 +1287,8 @@ test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32
 ## This test requires LSF cluster.
 ##lsf_cluster()
 
+
+pi2.timing()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

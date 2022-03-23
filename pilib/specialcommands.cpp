@@ -10,6 +10,7 @@
 #include "pilibutilities.h"
 #include "whereamicpp.h"
 #include "commandmacros.h"
+#include "timing.h"
 
 using namespace std;
 
@@ -34,6 +35,7 @@ namespace pilib
 		CommandList::add<ReadSequenceCommand>();
 		CommandList::add<ReadVolCommand>();
 		CommandList::add<WaitReturnCommand>();
+		CommandList::add<TimingCommand>();
 
 		CommandList::add<MapRawCommand>();
 		CommandList::add<MapRaw2Command>();
@@ -583,6 +585,11 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		cout << "Please see https://www.gnu.org/licenses/gpl-2.0.html for full license text." << endl;
 
 
+	}
+
+	void TimingCommand::run(vector<ParamVariant>& args) const
+	{
+		cout << Timing::toString() << endl;
 	}
 
 	void ListCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

@@ -941,8 +941,8 @@ namespace pilib
 			// Algorithm:
 			// make initial seeds file
 			//	Instead of collecting everything into single file, output seeds such that seeds with constant z coordinate go
-			//	to a single file(do not write z at all).Then gathering of seeds is not necessary, floodFillBlockCommand needs
-			//	to be run only for blocks for which seed file exists, and each job writes to 2 seed files(separate ones).
+			//	to a single file (do not write z at all).Then gathering of seeds is not necessary, floodFillBlockCommand needs
+			//	to be run only for blocks for which seed file exists, and each job writes to 2 seed files (separate ones).
 			// distribute (run only blocks that contain seeds)
 			//	each job:
 			//		read seeds files in the block
