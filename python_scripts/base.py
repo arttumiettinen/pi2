@@ -115,7 +115,8 @@ def wait_for_cluster_jobs():
     if not is_use_cluster():
         return
 
-    print("Waiting for cluster jobs to finish...")
+    # This print statement produces unnecessary output when there are no cluster jobs to wait for.
+    #print("Waiting for cluster jobs to finish...")
     pi.waitforjobs()
 
 
@@ -1421,6 +1422,31 @@ def save_transformation(sample_name, scan, relations):
     scan.transformation_file = file
 
 
+def is_transformation_ok(scan):
+    """
+    Tests if transformation file for given scan exists.
+    Assigns filename to scan.transformation_file if the file is OK.
+    """
+
+    scan_name = fix_directories(scan.rec_file)
+    filename = f"{scan_name}_transformation.txt"
+    if os.path.isfile(filename):
+        scan.transformation_file = filename
+        return True
+    else:
+        return False
+    
+
+def are_all_transformations_ok(comp):
+    """
+    Tests if all transformation files are OK.
+    """
+
+    for node in comp.nodes:
+        if not is_transformation_ok(node):
+            return False
+
+    return True
 
 
 def find_roots(tree):
@@ -1511,14 +1537,17 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
     #for node in comp.nodes:
     #    node.c = -node.position.reshape(-1, 1)
 
-    if global_optimization:
-        print("Finding globally optimal locations and orientations for the sub-images...")
-        optimize_transformations(comp, allow_rotation)
-        # TODO: Here we could do similar global optimization process for intensities, too.
+    if force_redo or not are_all_transformations_ok(comp):
 
-    # Save the transformations
-    for node in comp.nodes:
-        save_transformation(sample_name, node, comp)
+        if global_optimization:
+            print("Finding globally optimal locations and orientations for the sub-images...")
+            optimize_transformations(comp, allow_rotation)
+            # TODO: Here we could do similar global optimization process for intensities, too.
+
+        # Save the transformations
+        for node in comp.nodes:
+            save_transformation(sample_name, node, comp)
+
 
     # Calculate world to local grid transformations
     print("Calculating world to local transformation for each image...")
