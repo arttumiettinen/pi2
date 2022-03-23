@@ -157,12 +157,14 @@ namespace itl2
         
         /**
         Tests if this box and the given box overlap.
+		It is assumed that the faces that contain maxc (right bottom far corner) are not
+		part of the box, but faces containing the minc (left top near corner) are.
         */
         bool overlaps(const AABox<T>& r) const
         {
-            return maxc.x >= r.minc.x && r.maxc.x >= minc.x &&
-                    maxc.y >= r.minc.y && r.maxc.y >= minc.y &&
-                    maxc.z >= r.minc.z && r.maxc.z >= minc.z;
+            return maxc.x > r.minc.x && r.maxc.x > minc.x &&
+                    maxc.y > r.minc.y && r.maxc.y > minc.y &&
+                    maxc.z > r.minc.z && r.maxc.z > minc.z;
         }
 
 		/**
@@ -268,4 +270,8 @@ namespace itl2
 	typedef AABox<itl2::coord_t> AABoxc;
 	typedef AABox<int32_t> AABoxsc;
 
+	namespace tests
+	{
+		void aabox();
+	}
 }

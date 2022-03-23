@@ -254,10 +254,10 @@ int main()
 	
 	//test(itl2::nn5::tests::nn5Metadata, "NN5 metadata");
 	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
-	test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
+	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
 	//test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
 	//test(itl2::nn5::tests::concurrencyLong, "NN5 concurrent I/O, long test");
-
+	test(itl2::tests::aabox, "AABox");
 
 
 

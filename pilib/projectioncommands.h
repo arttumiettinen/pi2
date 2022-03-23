@@ -473,8 +473,10 @@ namespace pilib
 				readStart = Vec3c(0, 0, 0);																	
 				readSize = Vec3c(1, 1, 1);																	
 				writeFilePos = Vec3c(0, 0, 0);																
-				writeImPos = Vec3c(0, 0, 0);																
-				writeSize = Vec3c(1, 1, 1);																	
+				writeImPos = Vec3c(0, 0, 0);
+				// Set write size to zero as the result is not needed in the distributed mode,
+				// and each job should write to different location, and that is not possible at the moment.
+				writeSize = Vec3c(0, 0, 0);
 			}																								
 		}																									
 	};																										

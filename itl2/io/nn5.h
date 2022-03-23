@@ -457,8 +457,18 @@ namespace itl2
 
 			/**
 			Checks that provided NN5 information is correct and writes metadata.
+			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
-			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression);
+			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData);
+		
+
+			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData, bool showProgressInfo)
+			{
+				internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, compression, deleteOldData);
+
+				// Write data
+				internals::writeChunks(img, path, chunkSize, compression, img.dimensions(), showProgressInfo);
+			}
 		}
 
 		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason);
@@ -478,10 +488,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo = false)
 		{
-			internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, compression);
-			
-			// Write data
-			internals::writeChunks(img, path, chunkSize, compression, img.dimensions(), showProgressInfo);
+			internals::write(img, path, chunkSize, compression, false, showProgressInfo);
 		}
 
 

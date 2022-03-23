@@ -4,7 +4,7 @@ This file contains some of the tests of the pi2py2 library.
 
 
 
-
+import sys
 from pi2py2 import *
 import numpy as np
 pi2 = Pi2()
@@ -23,6 +23,7 @@ def output_file(name):
 
 total_tests = 0
 failed_tests = 0
+fail_fast = True
 
 def check_result(is_ok, msg, print_if_ok = True):
     """
@@ -43,6 +44,10 @@ def check_result(is_ok, msg, print_if_ok = True):
         print('-------')
 
         failed_tests = failed_tests + 1
+
+        if fail_fast:
+            print('Stopping further testing as requested by the fail_fast flag.')
+            sys.exit(1)
     else:
         if print_if_ok:
             print('-------')
@@ -118,7 +123,7 @@ def test_difference_delaying(testname, script, resultname='result', tolerance=0.
 
 
 
-def test_difference_normal_distributed(opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[30, 32, 33]):
+def test_difference_normal_distributed(opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[100, 101, 117]):
     """
     Calculates operation normally and using distributed processing.
     Calculates difference between the results of the two versions and prints a message if the results do not match.
@@ -923,6 +928,8 @@ def distributed_numpy():
 
     pi2.writeraw(nparr, output_file("np_distributed"))
 
+    pi2.distribute(Distributor.NONE)
+
 
 def memory():
     """
@@ -1082,38 +1089,50 @@ def lsf_cluster():
     pi2.add(img, 10)
     pi2.writeraw(img, output_file("lsf/result"))
 
+    pi2.distribute(Distributor.NONE)
+
 
 
 # Enable or disable echoing of commands and timing info on screen
 pi2.echo(True, False)
 
-# Test that local and distributed processing give the same results
 
 
-## NOTE: These commands are not guaranteed to give the same result in distributed and local processing
-## mode so they are not tested here. Despite that, they should give a valid result in both cases, but their
-## result is not unique.
-##test_difference_normal_distributed('surfacethin', ['result'])
-##test_difference_normal_distributed('surfaceskeleton', ['result'])
-##test_difference_normal_distributed('linethin', ['result'])
-##test_difference_normal_distributed('lineskeleton', ['result'])
-## This test involves pretty large dataset
-##test_difference_normal_distributed('scalelabels', ['img', 'result', 4])
-## This test will never succeed as the approximate bilateral filtering algorithm uses random numbers.
-##test_difference_normal_distributed('bilateralfilterapprox', ['img', 'result', 5, 200], 'result') 
-
+#morphorec_test()
+#fill_skeleton_test()
+#autothreshold()
+#tif_and_tiff()
+#get_pixels()
+#set_pixels()
+#distributed_numpy()
+#named_variables()
+#metadata()
+#set_overloads()
+#lz4_files()
+#nn5_files()
+#dead_pixels()
+#trace_skeleton_test()
+#multimax_test(0)
+#multimax_test(1)
+#multimax_test(2)
+#generate_particles()
+#analyze_particles()
+#analyze_labels()
+#dimension_broadcast()
+#rotate()
+#twoimage_distribution()
+#histogram()
 #for r in range(1, 10):
 #    test_difference_normal_distributed('maxfilter', ['img', 'result', r, True, 'ellipsoidal', 'zero'])
 #    test_difference_normal_distributed('maxfilter', ['img', 'result', r, True, 'ellipsoidal', 'nearest'])
 #    test_difference_normal_distributed('minfilter', ['img', 'result', r, True, 'ellipsoidal', 'zero'])
 #    test_difference_normal_distributed('minfilter', ['img', 'result', r, True, 'ellipsoidal', 'nearest'])
-
 #for r in range(1, 10):
 #    test_difference_normal_distributed('openingfilter', ['result', r, True, 'ellipsoidal', 'zero'])
 #    test_difference_normal_distributed('openingfilter', ['result', r, True, 'ellipsoidal', 'nearest'])
 #    test_difference_normal_distributed('closingfilter', ['result', r, True, 'ellipsoidal', 'zero'])
 #    test_difference_normal_distributed('closingfilter', ['result', r, True, 'ellipsoidal', 'nearest'])
-
+#test_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 100], 'img', input_file_bin(), maxmem=5)
 #test_difference_normal_distributed('gaussfilter', ['img', 'result', 2])
 #test_difference_normal_distributed('bin', ['img', 'result', 9])
 #test_difference_normal_distributed('scale', ['img', 'result', 0], tolerance=1)
@@ -1137,7 +1156,6 @@ pi2.echo(True, False)
 #test_difference_normal_distributed('scale', ['img', 'result', 2.1, True, Interpolation.CUBIC], tolerance=1)
 #test_difference_normal_distributed('scalelabels', ['img', 'result', 2])
 #test_difference_normal_distributed('scalelabels', ['img', 'result', 3], maxmem=50)
-
 #test_difference_normal_distributed('crop', ['img', 'result', '[10, 20, 30]', '[110, 120, 130]'])
 #test_difference_normal_distributed('sumproject', ['img', 'result', 2])
 #test_difference_normal_distributed('meanproject', ['img', 'result', 1])
@@ -1169,121 +1187,104 @@ pi2.echo(True, False)
 #test_difference_normal_distributed('hist2', ['img', 0, 1000, 1000, 'img', 0, 100, 100, 'result', 'temp1', 'temp2'], 'result')
 #test_difference_normal_distributed('whist2', ['img', 0, 1000, 1000, 'img', 0, 100, 100, 'img', 'result', 'temp1', 'temp2'], 'result', convert_to_type=ImageDataType.FLOAT32)
 #test_difference_normal_distributed('danielsson2', ['img', 'result'], 'result', input_file('t1-head_bin_dmap_256x256x129.raw'))
-#create_particle_labels_test()
-#test_difference_normal_distributed('growlabels', ['img', 1, 0], 'img', output_file('complicated_particles_point_labels'), maxmem=0.03)
-#morphorec_test()
-#fill_skeleton_test()
 #test_difference_normal_distributed('maskedmean', ['img', 'result', 0], 'result', input_file_bin(), convert_to_type=ImageDataType.FLOAT32)
-#test_difference_normal_distributed('tmap', ['img', 'result', 0, False, False], 'result', input_file_bin(), convert_to_type=ImageDataType.UINT16)
-#test_difference_normal_distributed('tmap', ['img', 'result', 0, False, False, '[50, 50, 50]'], 'result', input_file_bin(), convert_to_type=ImageDataType.UINT16)
-#multimax_test(0)
-#multimax_test(1)
-#multimax_test(2)
-#generate_particles()
-#analyze_particles()
-#analyze_labels()
-#dimension_broadcast()
-#rotate()
-#twoimage_distribution()
-#histogram()
-## We do this test in two parts (we still check only theta or phi and not both, but if one is ok, the other should be ok, too!)
-#test_difference_normal_distributed('cylinderorientation', ['img', 'result', 'result', 1, 1], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, maxmem=100)
-#test_difference_normal_distributed('cylinderorientation', ['img', 'result', 'result', 1, 1], 'img', input_file(), convert_to_type=ImageDataType.FLOAT32, maxmem=100)
-#test_difference_normal_distributed('rot90cw', ['img', 'result'], 'result', input_file(), maxmem=10)
-#test_difference_normal_distributed('rot90ccw', ['img', 'result'], 'result', input_file(), maxmem=10)
-#test_difference_normal_distributed('reslice', ['img', 'result', 'top'], 'result', input_file(), maxmem=3)
-#test_difference_normal_distributed('reslice', ['img', 'result', 'bottom'], 'result', input_file(), maxmem=3)
-#test_difference_normal_distributed('reslice', ['img', 'result', 'left'], 'result', input_file(), maxmem=3)
-#test_difference_normal_distributed('reslice', ['img', 'result', 'right'], 'result', input_file(), maxmem=3)
-#test_difference_normal_distributed('flip', ['img', 0], 'img', input_file(), maxmem=5)
-#test_difference_normal_distributed('flip', ['img', 1], 'img', input_file(), maxmem=5)
-#test_difference_normal_distributed('flip', ['img', 2], 'img', input_file(), maxmem=5)
-## General rotations involve interpolation so we expect images to match only to a small tolerance.
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [0, 0, 1], [128, 128, 64], [128, 128, 64]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 0, 0], [128, 128, 64], [128, 128, 64]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=20)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 1, 1], [128, 128, 64], [128, 128, 64]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [0, 0, 1], [10, 10, 0], [10, 10, 0]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 0, 0], [10, 10, 0], [10, 10, 0]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 1, 1], [10, 10, 0], [10, 10, 0]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [0, 0, 1], [10, 10, 0], [30, 20, 40]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 0, 0], [10, 10, 0], [30, 20, 40]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=20)
-#test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 1, 1], [10, 10, 0], [30, 20, 40]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
-#test_difference_normal_distributed('meancurvature', ['img', 'result', 1], 'result', maxmem=50)
-## Here we use tolerance as curvature seems to be sensitive to the origin of the calculation blocks in the distributed mode.
-#test_difference_normal_distributed('curvature', ['img', 10, 'result', 'result'], 'result', input_file_bin(), convert_to_type=ImageDataType.FLOAT32, maxmem=30, tolerance=0.15)
-#test_difference_normal_distributed('set', ['img', [100, 100, 100], 100], 'img', maxmem=5)
-#test_difference_normal_distributed('sphere', ['img', [100, 100, 100], 100, 200], 'img', maxmem=5)
-#test_difference_normal_distributed('box', ['img', [100, 100, 100], [100, 80, 60], 200], 'img', maxmem=5)
-#test_difference_normal_distributed('ellipsoid', ['img', [100, 100, 100], [100, 80, 60], 200, [1, 1, 1], [1, 1, -1]], 'img', maxmem=5)
-#test_difference_normal_distributed('box', ['img', [100, 100, 100], [100, 80, 60], 200, [1, 1, 1], [1, 1, -1]], 'img', maxmem=5)
-#test_difference_normal_distributed('ramp', ['img', 2], 'img', maxmem=5)
-#test_difference_normal_distributed('ramp', ['img', 1], 'img', maxmem=5)
-#test_difference_normal_distributed('ramp', ['img', 0], 'img', maxmem=5)
-#test_difference_normal_distributed('line', ['img', [10, 20, 30], [100, 200, 100], 200], 'img', maxmem=5)
-#test_difference_normal_distributed('capsule', ['img', [10, 20, 30], [100, 200, 100], 10, 200], 'img', maxmem=5)
-#autothreshold()
-#test_difference_normal_distributed('stddev', ['img', 'result'], 'result', maxmem=5, tolerance=1e-4)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.OTSU], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.HUANG], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.ISODATA], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.LI], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MAXENTROPY], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MEAN], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MINERROR], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MOMENTS], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.PERCENTILE], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.RENYI], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.SHANBHAG], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.TRIANGLE], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.YEN], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MEDIAN], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MIDGREY], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.NIBLACK], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.PHANSALKAR], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.SAUVOLA], 'img', maxmem=5)
-#test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.BERNSEN], 'img', maxmem=5)
-## These two do not succeed as the default settings assume the data is spread on the whole 16-bit value range
+test_difference_normal_distributed('tmap', ['img', 'result', 0, False, False], 'result', input_file_bin(), convert_to_type=ImageDataType.UINT16)
+test_difference_normal_distributed('tmap', ['img', 'result', 0, False, False, '[50, 50, 50]'], 'result', input_file_bin(), convert_to_type=ImageDataType.UINT16)
+create_particle_labels_test()
+test_difference_normal_distributed('growlabels', ['img', 1, 0], 'img', output_file('complicated_particles_point_labels'), maxmem=0.03)
+# We do this test in two parts (we still check only theta or phi and not both, but if one is ok, the other should be ok, too!)
+test_difference_normal_distributed('cylinderorientation', ['img', 'result', 'result', 1, 1], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, maxmem=100)
+test_difference_normal_distributed('cylinderorientation', ['img', 'result', 'result', 1, 1], 'img', input_file(), convert_to_type=ImageDataType.FLOAT32, maxmem=100)
+test_difference_normal_distributed('rot90cw', ['img', 'result'], 'result', input_file(), maxmem=10)
+test_difference_normal_distributed('rot90ccw', ['img', 'result'], 'result', input_file(), maxmem=10)
+test_difference_normal_distributed('reslice', ['img', 'result', 'top'], 'result', input_file(), maxmem=3)
+test_difference_normal_distributed('reslice', ['img', 'result', 'bottom'], 'result', input_file(), maxmem=3)
+test_difference_normal_distributed('reslice', ['img', 'result', 'left'], 'result', input_file(), maxmem=3)
+test_difference_normal_distributed('reslice', ['img', 'result', 'right'], 'result', input_file(), maxmem=3)
+test_difference_normal_distributed('flip', ['img', 0], 'img', input_file(), maxmem=5)
+test_difference_normal_distributed('flip', ['img', 1], 'img', input_file(), maxmem=5)
+test_difference_normal_distributed('flip', ['img', 2], 'img', input_file(), maxmem=5)
+# General rotations involve interpolation so we expect images to match only to a small tolerance.
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [0, 0, 1], [128, 128, 64], [128, 128, 64]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 0, 0], [128, 128, 64], [128, 128, 64]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=20)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 1, 1], [128, 128, 64], [128, 128, 64]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [0, 0, 1], [10, 10, 0], [10, 10, 0]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 0, 0], [10, 10, 0], [10, 10, 0]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 1, 1], [10, 10, 0], [10, 10, 0]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [0, 0, 1], [10, 10, 0], [30, 20, 40]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=10)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 0, 0], [10, 10, 0], [30, 20, 40]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=20)
+test_difference_normal_distributed('rotate', ['img', 'result', 30/180*3.14, [1, 1, 1], [10, 10, 0], [30, 20, 40]], 'result', input_file(), convert_to_type=ImageDataType.FLOAT32, tolerance=0.1, maxmem=40)
+test_difference_normal_distributed('meancurvature', ['img', 'result', 1], 'result', maxmem=50)
+# Here we use tolerance as curvature seems to be sensitive to the origin of the calculation blocks in the distributed mode.
+test_difference_normal_distributed('curvature', ['img', 10, 'result', 'result'], 'result', input_file_bin(), convert_to_type=ImageDataType.FLOAT32, maxmem=30, tolerance=0.15)
+test_difference_normal_distributed('set', ['img', [100, 100, 100], 100], 'img', maxmem=5)
+test_difference_normal_distributed('sphere', ['img', [100, 100, 100], 100, 200], 'img', maxmem=5)
+test_difference_normal_distributed('box', ['img', [100, 100, 100], [100, 80, 60], 200], 'img', maxmem=5)
+test_difference_normal_distributed('ellipsoid', ['img', [100, 100, 100], [100, 80, 60], 200, [1, 1, 1], [1, 1, -1]], 'img', maxmem=5)
+test_difference_normal_distributed('box', ['img', [100, 100, 100], [100, 80, 60], 200, [1, 1, 1], [1, 1, -1]], 'img', maxmem=5)
+test_difference_normal_distributed('ramp', ['img', 2], 'img', maxmem=5)
+test_difference_normal_distributed('ramp', ['img', 1], 'img', maxmem=5)
+test_difference_normal_distributed('ramp', ['img', 0], 'img', maxmem=5)
+test_difference_normal_distributed('line', ['img', [10, 20, 30], [100, 200, 100], 200], 'img', maxmem=5)
+test_difference_normal_distributed('capsule', ['img', [10, 20, 30], [100, 200, 100], 10, 200], 'img', maxmem=5)
+test_difference_normal_distributed('stddev', ['img', 'result'], 'result', maxmem=5, tolerance=1e-4)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.OTSU], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.HUANG], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.ISODATA], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.LI], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MAXENTROPY], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MEAN], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MINERROR], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MOMENTS], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.PERCENTILE], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.RENYI], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.SHANBHAG], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.TRIANGLE], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.YEN], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MEDIAN], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MIDGREY], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.NIBLACK], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.PHANSALKAR], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.SAUVOLA], 'img', maxmem=5)
+test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.BERNSEN], 'img', maxmem=5)
+test_difference_normal_distributed('localthreshold', ['img', 'result', [2, 2, 2], AutoThresholdMethod.OTSU], 'result', maxmem=5)
+test_difference_normal_distributed('add', ['result', 'img'], 'result', maxmem=5)
+test_difference_normal_distributed('eval', ['77', 'img'], 'img', maxmem=5)
+test_difference_normal_distributed('eval', ['x0+x1', 'result', 'img'], 'result', maxmem=5)
+test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'], 'result', maxmem=5)
+test_difference_normal_distributed('ramp3', ['img'], 'img', maxmem=5)
+infile = input_file()
+test_difference_delaying('delaying_1', f"read(img, {infile}); gaussfilter(img, out, 1); add(img, 100); clear(img); convert(out, conv, uint8);", 'conv');
+test_difference_delaying('delaying_2', f"read(img, {infile}); add(img, 100); crop(img, out, [0,0,0], [100, 100, 120]); subtract(out, 100);", 'out');
+test_difference_delaying('delaying_3', f"read(img, {infile}); convert(img, img32, float32); clear(img); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl');
+test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
+
+
+
+
+
+## These commands are not guaranteed to give the same result in distributed and local processing
+## mode so they are not tested here. Despite that, they should give a valid result in both cases, but their
+## result is not unique.
+##test_difference_normal_distributed('surfacethin', ['result'])
+##test_difference_normal_distributed('surfaceskeleton', ['result'])
+##test_difference_normal_distributed('linethin', ['result'])
+##test_difference_normal_distributed('lineskeleton', ['result'])
+## This test involves pretty large dataset
+##test_difference_normal_distributed('scalelabels', ['img', 'result', 4])
+## This test will never succeed as the approximate bilateral filtering algorithm uses random numbers.
+##test_difference_normal_distributed('bilateralfilterapprox', ['img', 'result', 5, 200], 'result') 
+## These two tests do not succeed as the default settings assume the data is spread on the whole 16-bit value range
 ##test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.INTERMODES], 'img', maxmem=5)
 ###test_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MINIMUM], 'img', maxmem=5)
-#test_difference_normal_distributed('localthreshold', ['img', 'result', [2, 2, 2], AutoThresholdMethod.OTSU], 'result', maxmem=5)
-#test_difference_normal_distributed('eval', ['77', 'img'], 'img', maxmem=5)
+## This test requires a lot of memory, currently at least 2 * 20 GB
+##big_tiff()
+## This is not 100 % reliable test for some reason. Sometimes it fails for no reason.
+##memory()
+## This test requires LSF cluster.
+##lsf_cluster()
 
-# Failing tests:
-#test_difference_normal_distributed('eval', ['x0+x1', 'result', 'img'], 'result', maxmem=5)
-test_difference_normal_distributed('add', ['result', 'img'], 'result', maxmem=5)
-
-
-
-#test_difference_normal_distributed('eval', ['x0+x1*x2', 'result', 'img', 'img'], 'result', maxmem=5)
-#test_difference_normal_distributed('ramp3', ['img'], 'img', maxmem=5)
-
-#infile = input_file()
-#test_difference_delaying('delaying_1', f"read(img, {infile}); gaussfilter(img, out, 1); add(img, 100); clear(img); convert(out, conv, uint8);", 'conv');
-#test_difference_delaying('delaying_2', f"read(img, {infile}); add(img, 100); crop(img, out, [0,0,0], [100, 100, 120]); subtract(out, 100);", 'out');
-#test_difference_delaying('delaying_3', f"read(img, {infile}); convert(img, img32, float32); clear(img); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl');
-#test_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
-
-#tif_and_tiff()
-#get_pixels()
-#set_pixels()
-#distributed_numpy()
-#memory()
-
-#named_variables()
-#metadata()
-#set_overloads()
-#big_tiff()
-#lz4_files()
-#nn5_files()
-
-#trace_skeleton_test()
-
-#test_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 100], 'img', input_file_bin(), maxmem=5)
-
-#dead_pixels()
-
-#lsf_cluster()
 
 print(f"{total_tests} checks run.")
 print(f"{failed_tests} checks failed.")

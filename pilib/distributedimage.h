@@ -115,6 +115,11 @@ namespace pilib
 		*/
 		void flush() const;
 
+		Vec3c getChunkSize() const
+		{
+			return nn5ChunkSize;
+		}
+
 	public:
 
 		/**
@@ -596,7 +601,8 @@ namespace pilib
 			{
 			case DistributedImageStorageType::NN5:
 			{
-				itl2::nn5::write(img, currentWriteTarget());
+				// TODO: NN5 compression default
+				itl2::nn5::internals::write(img, currentWriteTarget(), getChunkSize(), itl2::nn5::NN5Compression::LZ4, true, false);
 				break;
 			}
 			case DistributedImageStorageType::Raw:

@@ -196,7 +196,7 @@ namespace itl2
 					throw ITLException(string("NN5 chunk size must be positive, but it is ") + toString(chunkSize));
 			}
 
-			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
+			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData)
 			{
 				check(chunkSize);
 
@@ -220,12 +220,24 @@ namespace itl2
 						// Delete the old image.
 						fs::remove_all(path);
 					}
+					else if (oldDimensions == imageDimensions &&
+						oldIsNativeByteOrder == true &&
+						oldDataType == imageDataType &&
+						oldChunkSize == chunkSize &&
+						oldCompression == compression)
+					{
+						// The path contains a compatible NN5 dataset.
+						// Delete it if we are not continuing a concurrent write.
+						if (!fs::exists(internals::concurrentTagFile(path)))
+							if (deleteOldData)
+								fs::remove_all(path);
+					}
 					else
 					{
-						// The path contains NN5 dataset.
-						// Delete it if we are not continuing a concurrent write.
-						if(!fs::exists(internals::concurrentTagFile(path)))
-							fs::remove_all(path);
+						// The path contains an incompatible NN5 dataset. Delete it.
+						if (!fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
+							throw ITLException(string("The output folder contains an incompatible NN5 dataset that is currently being processed concurrently."));
+						fs::remove_all(path);
 					}
 				}
 
@@ -314,7 +326,7 @@ namespace itl2
 			// * read from and written to by at least two separate processes,
 			// and tag those unsafe by creating writes folder into the chunk folder.
 
-			internals::beginWrite(imageDimensions, imageDataType, path, chunkSize, compression);
+			internals::beginWrite(imageDimensions, imageDataType, path, chunkSize, compression, false);
 
 			// Tag the image as concurrently processed
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);

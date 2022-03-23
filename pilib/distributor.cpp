@@ -975,7 +975,7 @@ namespace pilib
 		map<DistributedImageBase*, vector<nn5::NN5Process>> nn5processes;
 		for (size_t i = 0; i < jobCount; i++)
 		{
-			if (std::find(skippedJobs.begin(), skippedJobs.end(), i) != skippedJobs.end())
+			if (std::find(skippedJobs.begin(), skippedJobs.end(), i) == skippedJobs.end())
 			{
 				// The job i is not skipped
 				for (const auto& item : blocksPerImage)
@@ -1000,10 +1000,10 @@ namespace pilib
 			for (size_t n = 0; n < list.size(); n++)
 			{
 				const auto& p1 = list[n];
-				for (size_t m = 0; m < list.size(); m++)
+				for (size_t m = n + 1; m < list.size(); m++)
 				{
-					const auto& p2 = list[n];
-					if (n != m && p1.writeBlock.overlaps(p2.writeBlock))
+					const auto& p2 = list[m];
+					if (p1.writeBlock.overlaps(p2.writeBlock))
 						throw ITLException(string("Multiple jobs would write to the same block in image ") + img->varName());
 				}
 			}
