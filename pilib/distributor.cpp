@@ -987,8 +987,18 @@ namespace pilib
 					Vec3c writeFilePos = get<2>(valueList[i]);
 					Vec3c writeImPos = get<3>(valueList[i]);
 					Vec3c writeSize = get<4>(valueList[i]);
-					nn5::NN5Process proc{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) };
-					nn5processes[img].push_back(proc);
+					if (img->currentReadSource() == img->currentWriteTarget())
+					{
+						// We are reading and writing the same file.
+						// => The NN5Process must contain both read and write region.
+						nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
+					}
+					else
+					{
+						// We are reading and writing different file.
+						// => The NN5Process must contain only the write region as no reads are made from the same file.
+						nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize)});
+					}
 				}
 			}
 		}

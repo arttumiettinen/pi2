@@ -124,7 +124,7 @@ namespace pilib
 		/**
 		This function is called for each of the blocks that are to be processed separately.
 		It returns a value that indicates whether the job corresponding to the block needs to be run.
-		This is to avoid submitting jobs that do nothing to queuing systems, as that might induce
+		This is to avoid submitting jobs that do nothing, as that might induce
 		unnecessary queueing time.
 		The arguments defining the block are given for the reference image.
 		@param args Command arguments.
