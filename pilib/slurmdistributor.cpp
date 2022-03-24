@@ -208,6 +208,9 @@ namespace pilib
 
 		string result = execute(squeueCommand, string("--noheader --jobs=") + slurmId);
 		trim(result);
+
+		// TODO: Sometimes empty result means that slurm is somehow intermittently unavailable, but jobs are
+		// still running. How to detect that? Perhaps wait a second and try again?
 		
 		// Empty result means the job is done
 		if(result.length() <= 0)

@@ -50,6 +50,11 @@ max_resubmit_count = 5
 ; Set to true to show automatically generated Pi2 work scripts.
 ;show_submitted_scripts = false
 
+; Use this to override the (path and) file name used to launch pi2.
+; This can be used, e.g., to run different pi2 build on compute nodes than in the login node.
+; The command cannot contain command line arguments.
+;pi2_command = pi2
+
 ; Use these to override standard SLURM commands.
 ; Some HPC environments use specific scripts in place of the standard commands,
 ; and these settings can be used to take advantage of those.

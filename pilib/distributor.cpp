@@ -152,6 +152,7 @@ namespace pilib
 
 	void Distributor::readSettings(INIReader& reader)
 	{
+		piCommand = reader.get<string>("pi2_command", piCommand);
 		showSubmittedScripts = reader.get<bool>("show_submitted_scripts", false);
 		allowDelaying = reader.get<bool>("allow_delaying", true);
 		chunkSize(reader.get<Vec3c>("chunk_size", nn5::DEFAULT_CHUNK_SIZE));
@@ -1128,7 +1129,7 @@ namespace pilib
 			for (DistributedImageBase* img : outputImages)
 			{
 				vector<Vec3c> chunks = img->getChunksThatNeedEndConcurrentWrite();
-				const size_t WRITE_FINALIZATION_JOB_COUNT = 8;
+				const size_t WRITE_FINALIZATION_JOB_COUNT = 16;
 				vector<string> scripts(WRITE_FINALIZATION_JOB_COUNT, "");
 				size_t n = 0;
 				for (Vec3c& chunk : chunks)
