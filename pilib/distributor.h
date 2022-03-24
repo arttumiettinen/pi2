@@ -60,6 +60,11 @@ namespace pilib
 		Path and filename of pi2 executable.
 		*/
 		std::string piCommand;
+
+		/**
+		Configuration directory
+		*/
+		fs::path configDir;
 		
 		/**
 		List of commands whose execution has been delayed.
@@ -104,11 +109,19 @@ namespace pilib
 		Distributor(PISystem* piSystem);
 
 		/**
-		Returns shell command (including absolute path) that is used to run pi2 program.
+		Returns shell command (including absolute path) that is used to run pi2 program when computing.
 		*/
-		std::string getPiCommand() const
+		std::string getJobPiCommand() const
 		{
 			return piCommand;
+		}
+
+		/**
+		Gets configuration directory.
+		*/
+		fs::path getConfigDirectory() const
+		{
+			return configDir;
 		}
 
 		/**

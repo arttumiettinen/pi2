@@ -146,6 +146,7 @@ namespace pilib
 		showSubmittedScripts(false),
 		allowDelaying(false)
 	{
+		configDir = findPi2().remove_filename();
 		piCommand = "\"" + findPi2().string() + "\"";
 	}
 

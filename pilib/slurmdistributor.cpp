@@ -25,35 +25,27 @@ namespace pilib
 		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
 		myName = itl2::toString(dist(rng));
 
-		// Read config file, try to read from the current folder and from the folder of pi2 executable.
-		fs::path configPath = getPiCommand();
-		size_t mem = 0;
-		if (configPath.has_filename())
-		{		
-			configPath = configPath.replace_filename("slurm_config.txt");
+		fs::path configPath = getConfigDirectory() / "slurm_config.txt";
 			
-			//cout << "Reading settings from " << configPath << endl;
+		//cout << "Reading settings from " << configPath << endl;
 
-			INIReader reader(configPath.string());
+		INIReader reader(configPath.string());
 
-			extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
-			extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
-			extraArgsSlowJobsSBatch = reader.get<string>("extra_args_slow_jobs_sbatch", "");
-			extraArgsFastJobsSInfo = reader.get<string>("extra_args_fast_jobs_sinfo", "");
-			extraArgsNormalJobsSInfo = reader.get<string>("extra_args_normal_jobs_sinfo", "");
-			extraArgsSlowJobsSInfo = reader.get<string>("extra_args_slow_jobs_sinfo", "");
-			jobInitCommands = reader.get<string>("job_init_commands", "");
-			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
-			maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
-			sbatchCommand = reader.get<string>("sbatch_command", "sbatch");
-			squeueCommand = reader.get<string>("squeue_command", "squeue");
-			scancelCommand = reader.get<string>("scancel_command", "scancel");
-			sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
+		extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
+		extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
+		extraArgsSlowJobsSBatch = reader.get<string>("extra_args_slow_jobs_sbatch", "");
+		extraArgsFastJobsSInfo = reader.get<string>("extra_args_fast_jobs_sinfo", "");
+		extraArgsNormalJobsSInfo = reader.get<string>("extra_args_normal_jobs_sinfo", "");
+		extraArgsSlowJobsSInfo = reader.get<string>("extra_args_slow_jobs_sinfo", "");
+		jobInitCommands = reader.get<string>("job_init_commands", "");
+		size_t mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
+		maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
+		sbatchCommand = reader.get<string>("sbatch_command", "sbatch");
+		squeueCommand = reader.get<string>("squeue_command", "squeue");
+		scancelCommand = reader.get<string>("scancel_command", "scancel");
+		sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
 
-			readSettings(reader);
-			
-			//cout << "done" << endl;
-		}
+		readSettings(reader);
 		
 		allowedMemory(mem);
 	}
@@ -145,10 +137,16 @@ namespace pilib
 		sbatchCode += "#SBATCH --job-name=" + jobName + "\n";
 		sbatchCode += "#SBATCH --output=" + outputName + "\n";
 		sbatchCode += "#SBATCH --error=" + errorName + "\n";
-		sbatchCode += "#SBATCH " + extraArgsSBatch(jobType) + "\n";
+		
+		string sbatchExtra = extraArgsSBatch(jobType);
+		if(!isWhitespace(sbatchExtra))
+			sbatchCode += "#SBATCH " + sbatchExtra + "\n";
 		sbatchCode += "\n";
-		sbatchCode += jobInitCommands + "\n";
-		sbatchCode += getPiCommand() + " \"" + inputName + "\"\n";
+		
+		if(!isWhitespace(jobInitCommands))
+			sbatchCode += jobInitCommands + "\n";
+		
+		sbatchCode += getJobPiCommand() + " \"" + inputName + "\"\n";
 		sbatchCode += "\n";
 		writeText(sbatchName, sbatchCode);
 
