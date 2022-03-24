@@ -146,7 +146,7 @@ namespace pilib
 		showSubmittedScripts(false),
 		allowDelaying(false)
 	{
-		piCommand = findPi2().string();
+		piCommand = "\"" + findPi2().string() + "\"";
 	}
 
 

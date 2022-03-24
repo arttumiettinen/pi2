@@ -49,7 +49,7 @@ namespace pilib
 			f << "print(Everything done.)" << endl;
 		}
 
-		string output = execute("\"" + getPiCommand() + "\"", "pi2_local_job.txt", true);
+		string output = execute(getPiCommand(), "pi2_local_job.txt", true);
 
 		outputs.push_back(output);
 	}

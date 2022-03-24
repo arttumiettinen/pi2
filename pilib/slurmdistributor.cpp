@@ -116,29 +116,44 @@ namespace pilib
 		return "./slurm-io-files/" + makeJobName(jobIndex) + "-err.txt";
 	}
 
+	string SLURMDistributor::makeSbatchName(size_t jobIndex) const
+	{
+		return "./slurm-io-files/" + makeJobName(jobIndex) + "-sbatch.sh";
+	}
+
 	void SLURMDistributor::resubmit(size_t jobIndex)
 	{
 		string jobName = makeJobName(jobIndex);
 		string inputName = makeInputName(jobIndex);
 		string outputName = makeOutputName(jobIndex);
 		string errorName = makeErrorName(jobIndex);
+		string sbatchName = makeSbatchName(jobIndex);
 		JobType jobType = get<1>(submittedJobs[jobIndex]);
 
 		fs::remove(outputName);
 		fs::remove(errorName);
 
-		string jobCmdLine;
-		if (jobInitCommands.length() > 0)
-			jobCmdLine = jobInitCommands + "; ";
-		jobCmdLine += "'" + getPiCommand() + "' " + inputName;
+		//string jobCmdLine;
+		//if (jobInitCommands.length() > 0)
+		//	jobCmdLine = jobInitCommands + "; ";
+		//jobCmdLine += "'" + getPiCommand() + "' " + inputName;
+		//string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgsSBatch(jobType) + " --wrap=\"" + jobCmdLine + "\"";
 
-		string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgsSBatch(jobType) + " --wrap=\"" + jobCmdLine + "\"";
+		string sbatchCode;
+		sbatchCode += "#!/bin/bash\n";
+		sbatchCode += "#SBATCH --no-requeue\n";
+		sbatchCode += "#SBATCH --job-name=" + jobName + "\n";
+		sbatchCode += "#SBATCH --output=" + outputName + "\n";
+		sbatchCode += "#SBATCH --error=" + errorName + "\n";
+		sbatchCode += "#SBATCH " + extraArgsSBatch(jobType) + "\n";
+		sbatchCode += "\n";
+		sbatchCode += jobInitCommands + "\n";
+		sbatchCode += getPiCommand() + " \"" + inputName + "\"\n";
+		sbatchCode += "\n";
+		writeText(sbatchName, sbatchCode);
 
-	//cout << "sbatch input: " << sbatchArgs << endl;
-
+		string sbatchArgs = sbatchName;
 		string result = execute(sbatchCommand, sbatchArgs);
-
-	//cout << "sbatch output: " << result << endl;
 
 		vector<string> lines = split(result);
 		if (lines.size() == 1)
