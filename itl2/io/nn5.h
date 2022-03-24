@@ -152,7 +152,6 @@ namespace itl2
 				}
 				else
 				{
-					// Write back to disk.
 					switch (compression)
 					{
 					case NN5Compression::Raw:

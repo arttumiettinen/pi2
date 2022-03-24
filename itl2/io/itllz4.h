@@ -166,8 +166,15 @@ namespace itl2
 					throw ITLException(string("LZ4 decompression buffer overflow while reading ") + filename);
 
 				if (srcPtr < srcEnd)
-					throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filename);
-
+				{
+					// TODO: This is merely a debugging hack
+					string debugTarget = "problematic_trailing_data_" + filename;
+					std::replace(debugTarget.begin(), debugTarget.end(), '/', '-');
+					std::replace(debugTarget.begin(), debugTarget.end(), '\\', '-');
+					fs::copy(filename, debugTarget);
+					std::cout << "Warning: Trailing data after LZ4 compressed frame in file " << filename << std::endl;
+					//throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filename);
+				}
 			}
 
 			if (dstRemaining > 0)
