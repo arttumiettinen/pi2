@@ -26,6 +26,90 @@ namespace itl2
 				dataType = (ImageDataType)internals::readSafe<int32_t>(in);
 				return true;
 			}
+
+			void decompress(std::ifstream& in, uint8_t* dst, size_t dstSizeBytes, const string& filenameForErrorMessages)
+			{
+				std::unique_ptr<uint8_t[]> pSrc = std::make_unique<uint8_t[]>(internals::LZ4_CHUNK_SIZE);
+
+				LZ4F_dctx* dctx;
+				size_t err = LZ4F_createDecompressionContext(&dctx, LZ4F_VERSION);
+				if (LZ4F_isError(err))
+					throw ITLException(string("Unable to create LZ4 decompression context: ") + LZ4F_getErrorName(err));
+				std::unique_ptr<LZ4F_dctx, decltype(LZ4F_freeDecompressionContext)*> pDctx(dctx, LZ4F_freeDecompressionContext);
+
+				// Frame header
+				in.read((char*)pSrc.get(), internals::LZ4_CHUNK_SIZE);
+				size_t readSize = in.gcount();
+				if (readSize <= 0 && !in)
+					throw ITLException(string("Unable to read LZ4 compressed data from file ") + filenameForErrorMessages);
+
+				LZ4F_frameInfo_t info;
+				size_t consumedSize = readSize;
+				err = LZ4F_getFrameInfo(dctx, &info, pSrc.get(), &consumedSize);
+				if (LZ4F_isError(err))
+					throw ITLException(string("getFrameInfo failed for file ") + filenameForErrorMessages + string(": ") + LZ4F_getErrorName(err));
+
+
+				// Decompress data
+
+				size_t filled = readSize - consumedSize;
+
+				//uint8_t* dst = (uint8_t*)target.getData();
+				coord_t dstRemaining = dstSizeBytes;
+
+				bool firstChunk = true;
+				size_t ret = 1;
+				while (ret != 0)
+				{
+					// Read more data
+					if (firstChunk)
+					{
+						readSize = filled;
+						firstChunk = false;
+					}
+					else
+					{
+						in.read((char*)pSrc.get(), internals::LZ4_CHUNK_SIZE);
+						readSize = in.gcount();
+					}
+
+					const void* srcPtr = (const char*)pSrc.get() + consumedSize;
+					consumedSize = 0;
+
+					const void* srcEnd = (const char*)srcPtr + readSize;
+
+					if (readSize <= 0 && !in)
+						throw ITLException(string("Not enough input data or unable to read file ") + filenameForErrorMessages);
+
+					// Decompress data
+					// NOTE: We must not test for dstRemaining > 0, as in some rare cases LZ4F_decompress will
+					// assume it is called again although the destination buffer is already filled.
+					while (srcPtr < srcEnd && ret != 0 /* && dstRemaining > 0*/)
+					{
+						size_t dstSize = dstRemaining;
+						size_t srcSize = (const char*)srcEnd - (const char*)srcPtr;
+
+						ret = LZ4F_decompress(dctx, dst, &dstSize, srcPtr, &srcSize, NULL);
+						if (LZ4F_isError(ret))
+							throw ITLException(string("LZ4 decompression error while reading ") + filenameForErrorMessages + string("; ") + LZ4F_getErrorName(ret));
+
+						dst += dstSize;
+						dstRemaining -= dstSize;
+						srcPtr = (const char*)srcPtr + srcSize;
+					}
+
+					if (srcPtr > srcEnd)
+						throw ITLException(string("LZ4 decompression buffer overflow while reading ") + filenameForErrorMessages);
+
+					if (srcPtr < srcEnd)
+						throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filenameForErrorMessages);
+				}
+
+				if (dstRemaining > 0)
+					throw ITLException(string("The LZ4 file did not contain enough data to fill the entire image: ") + filenameForErrorMessages);
+				if (dstRemaining < 0)
+					throw ITLException(string("LZ4 target buffer overflow: ") + filenameForErrorMessages);
+			}
 		}
 
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)

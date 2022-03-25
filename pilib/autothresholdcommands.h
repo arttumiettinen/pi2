@@ -14,6 +14,7 @@
 
 namespace pilib
 {
+
 	inline std::string autoThresholdMethodsHelp()
 	{
 		return

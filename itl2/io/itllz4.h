@@ -54,7 +54,17 @@ namespace itl2
 				{ 0, 0, 0 },  // reserved, must be set to 0
 			};
 
+			/**
+			Get LZ4Raw info from file stream.
+			*/
 			bool getInfo(std::ifstream& in, Vec3c& dimensions, ImageDataType& dataType, string& reason);
+
+			/**
+			Decompress LZ4 compressed bytes from given stream to the dst buffer.
+			Dst buffer size is dstSizeBytes.
+			File name is used only for error messages.
+			*/
+			void decompress(std::ifstream& in, uint8_t* dst, size_t dstSizeBytes, const string& filenameForErrorMessages);
 
 		}
 
@@ -70,7 +80,8 @@ namespace itl2
 		Tests if the given path points to a .lz4raw file.
 		*/
 		bool isFile(const std::string& filename);
-
+		
+		
 		/**
 		Reads an .lz4raw image from disk.
 		*/
@@ -95,93 +106,10 @@ namespace itl2
 
 			target.ensureSize(dimensions);
 
-			std::unique_ptr<uint8_t[]> pSrc = std::make_unique<uint8_t[]>(internals::LZ4_CHUNK_SIZE);
-
-			LZ4F_dctx* dctx;
-			size_t err = LZ4F_createDecompressionContext(&dctx, LZ4F_VERSION);
-			if (LZ4F_isError(err))
-				throw ITLException(string("Unable to create LZ4 decompression context: ") + LZ4F_getErrorName(err));
-			std::unique_ptr<LZ4F_dctx, decltype(LZ4F_freeDecompressionContext)*> pDctx(dctx, LZ4F_freeDecompressionContext);
-
-			// Frame header
-			in.read((char*)pSrc.get(), internals::LZ4_CHUNK_SIZE);
-			size_t readSize = in.gcount();
-			if (readSize <= 0 && !in)
-				throw ITLException(string("Unable to read LZ4 compressed data from file ") + filename);
-			
-			LZ4F_frameInfo_t info;
-			size_t consumedSize = readSize;
-			err = LZ4F_getFrameInfo(dctx, &info, pSrc.get(), &consumedSize);
-			if (LZ4F_isError(err))
-				throw ITLException(string("getFrameInfo failed for file ") + filename + string(": ") + LZ4F_getErrorName(err));
-
-
-			// Decompress data
-
-			size_t filled = readSize - consumedSize;
-
-			uint8_t* dst = (uint8_t*)target.getData();
-			coord_t dstRemaining = target.pixelCount() * target.pixelSize();
-
-			bool firstChunk = true;
-			size_t ret = 1;
-			while (ret != 0)
-			{
-				// Read more data
-				if (firstChunk)
-				{
-					readSize = filled;
-					firstChunk = false;
-				}
-				else
-				{
-					in.read((char*)pSrc.get(), internals::LZ4_CHUNK_SIZE);
-					readSize = in.gcount();
-				}
-
-				const void* srcPtr = (const char*)pSrc.get() + consumedSize;
-				consumedSize = 0;
-
-				const void* srcEnd = (const char*)srcPtr + readSize;
-				
-				if (readSize <= 0 && !in)
-					throw ITLException(string("Not enough input data or unable to read file ") + filename);
-
-				// Decompress data
-				while (srcPtr < srcEnd && ret != 0 && dstRemaining > 0)
-				{
-					size_t dstSize = dstRemaining;
-					size_t srcSize = (const char*)srcEnd - (const char*)srcPtr;
-					
-					ret = LZ4F_decompress(dctx, dst, &dstSize, srcPtr, &srcSize, NULL);
-					if (LZ4F_isError(ret))
-						throw ITLException(string("LZ4 decompression error while reading ") + filename + string("; ") + LZ4F_getErrorName(ret));
-					
-					dst += dstSize;
-					dstRemaining -= dstSize;
-					srcPtr = (const char*)srcPtr + srcSize;
-				}
-
-				if (srcPtr > srcEnd)
-					throw ITLException(string("LZ4 decompression buffer overflow while reading ") + filename);
-
-				if (srcPtr < srcEnd)
-				{
-					// TODO: This is merely a debugging hack
-					string debugTarget = "problematic_trailing_data_" + filename;
-					std::replace(debugTarget.begin(), debugTarget.end(), '/', '-');
-					std::replace(debugTarget.begin(), debugTarget.end(), '\\', '-');
-					fs::copy(filename, debugTarget);
-					std::cout << "Warning: Trailing data after LZ4 compressed frame in file " << filename << std::endl;
-					//throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filename);
-				}
-			}
-
-			if (dstRemaining > 0)
-				throw ITLException(string("The LZ4 file did not contain enough data to fill the entire image: ") + filename);
-			if (dstRemaining < 0)
-				throw ITLException(string("LZ4 target buffer overflow: ") + filename);
+			internals::decompress(in, (uint8_t*)target.getData(), target.pixelCount() * target.pixelSize(), filename);
 		}
+
+		
 
 		/**
 		Reads a part of a .lz4raw file to the given image.
