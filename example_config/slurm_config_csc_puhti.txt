@@ -9,19 +9,19 @@
 ; This item is used for fast jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_fast_jobs_sinfo = --partition=small
-extra_args_fast_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=180G --partition=small --time=04:00:00
+extra_args_fast_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=160G --partition=small --time=04:00:00
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for normal jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_normal_jobs_sinfo = --partition=small
-extra_args_normal_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=180G --partition=small --time=24:00:00
+extra_args_normal_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=160G --partition=small --time=24:00:00
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for slow jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_slow_jobs_sinfo = --partition=small
-extra_args_slow_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=180G --partition=small --time=72:00:00
+extra_args_slow_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=160G --partition=small --time=72:00:00
 
 ; Shell commands run on node before starting job.
 ; Use, e.g., to load modules or mount disks.
@@ -35,17 +35,30 @@ job_init_commands = export OMP_NUM_THREADS=12
 ; If the number of nodes is large, the sinfo call may be very slow.
 ; In that case one should specify the value in this file so that
 ; the sinfo call is never made.
-max_memory = 160000
+max_memory = 150000
 
 ; Maximum number of re-tries that are done if a job fails.
 ; The job may fail, e.g., due to node failure, memory problems, or time limits.
 ; If you have specified different queues for different types of jobs (see
 ; extra_args_*_jobs settings), specify here at least the number of different
 ; queues.
-max_resubmit_count = 1
+max_resubmit_count = 5
 
 ; Chunk size for temporary NN5 datasets.
 ;chunk_size = [1536, 1536, 1536]
+
+; Maximum number of jobs to submit in parallel. If this number is exceeded,
+; multiple jobs are combined into larger ones. Combination is done only for
+; fast and normal jobs, slow jobs are never combined.
+; Set to 0 to never combine jobs.
+max_parallel_submit_count = 10
+
+; When this many jobs have been combined, the job is promoted to the next
+; slower speed class. E.g., let promote_threshold = 3 and max_parallel_submit_count = 10.
+; If there are 30 jobs total, three jobs will be combined into one. If the slowest speed
+; class of the combined jobs is Fast, the combined job will have class Normal; if it was
+; Normal, it will become Slow.
+promote_threshold = 3
 
 ; Set to true to allow delayed execution of commands in order to combine execution of multiple
 ; commands to save I/O and scratch disk space.

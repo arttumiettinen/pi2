@@ -157,6 +157,8 @@ namespace pilib
 		showSubmittedScripts = reader.get<bool>("show_submitted_scripts", false);
 		allowDelaying = reader.get<bool>("allow_delaying", true);
 		chunkSize(reader.get<Vec3c>("chunk_size", nn5::DEFAULT_CHUNK_SIZE));
+		maxSubmittedJobCount = reader.get<size_t>("max_parallel_submit_count", 0);
+		promoteThreshold = reader.get<size_t>("promote_threshold", 3);
 	}
 
 
@@ -843,6 +845,54 @@ namespace pilib
 		}
 	}
 
+	/**
+	Combines jobs such that their number is approximately halved.
+	*/
+	vector<tuple<string, JobType>> combineSmallJobs(const vector<tuple<string, JobType>>& jobsToSubmit)
+	{
+		vector<tuple<string, JobType>> newJobs;
+		for (size_t n = 0; n < jobsToSubmit.size(); n += 2)
+		{
+			if (n + 1 < jobsToSubmit.size())
+			{
+				const auto& a = jobsToSubmit[n];
+				const auto& b = jobsToSubmit[n + 1];
+				string newScript = get<0>(a) + "\n\nclear();\n\n" + get<0>(b);
+				JobType at = get<1>(a);
+				JobType bt = get<1>(b);
+				// Never combine multiple slow jobs, but do combine faster jobs to slow ones.
+				if (at != JobType::Slow || bt != JobType::Slow)
+				{
+					// New job type will be the slower of the two job types.
+					JobType newType;
+					if (at == JobType::Slow || bt == JobType::Slow)
+						newType = JobType::Slow;
+					else if (at == JobType::Normal || bt == JobType::Normal)
+						newType = JobType::Normal;
+					else
+						newType = JobType::Fast;
+					newJobs.push_back(make_tuple(newScript, newType));
+				}
+			}
+			else
+			{
+				// Only one job left, so move that to the new job list.
+				newJobs.push_back(jobsToSubmit[n]);
+			}
+		}
+
+		return newJobs;
+	}
+
+	JobType promote(JobType t)
+	{
+		if (t == JobType::Fast)
+			return JobType::Normal;
+		if (t == JobType::Normal)
+			return JobType::Slow;
+		return JobType::Slow;
+	}
+
 	void Distributor::runDelayedCommands()
 	{
 		if (delayedCommands.size() <= 0)
@@ -1098,6 +1148,26 @@ namespace pilib
 
 		Timing::Add(TimeClass::WritePreparation, timer.lap());
 
+		// Combine small jobs
+		size_t combinationRounds = 0;
+		if (maxSubmittedJobCount > 0)
+		{
+			while (jobsToSubmit.size() > maxSubmittedJobCount)
+			{
+				size_t oldCount = jobsToSubmit.size();
+				jobsToSubmit = combineSmallJobs(jobsToSubmit);
+				
+				// Do not continue if no jobs could be combined.
+				if (jobsToSubmit.size() >= oldCount)
+					break;
+
+				combinationRounds++;
+			}
+		}
+
+		if (combinationRounds > 0)
+			cout << "Small jobs were combined into " << jobsToSubmit.size() << " jobs." << endl;
+
 		// Submit jobs
 		for (auto& tup : jobsToSubmit)
 		{
@@ -1109,6 +1179,10 @@ namespace pilib
 				cout << "Submitting pi2 script:" << endl;
 				cout << script << endl;
 			}
+
+			// Promote jobs to slower queues if they are combined a lot.
+			if (combinationRounds > promoteThreshold)
+				jobType = promote(jobType);
 
 			submitJob(script, type);
 		}
@@ -1130,8 +1204,12 @@ namespace pilib
 			for (DistributedImageBase* img : outputImages)
 			{
 				vector<Vec3c> chunks = img->getChunksThatNeedEndConcurrentWrite();
-				const size_t WRITE_FINALIZATION_JOB_COUNT = 16;
-				vector<string> scripts(WRITE_FINALIZATION_JOB_COUNT, "");
+				
+				size_t maxFinJobCount = maxSubmittedJobCount;
+				if (maxFinJobCount <= 0)
+					maxFinJobCount = 8;	// Some sane default value here.
+
+				vector<string> scripts(maxFinJobCount, "");
 				size_t n = 0;
 				for (Vec3c& chunk : chunks)
 				{

@@ -50,6 +50,17 @@ namespace pilib
 		*/
 		bool allowDelaying = false;
 
+		/**
+		Maximum number of jobs to submit at once.
+		Individual tasks are combined into larger jobs if there are more of them.
+		*/
+		size_t maxSubmittedJobCount = 16;
+
+		/**
+		If one combined job calculates more than this many individual tasks, promote it to the next job class.
+		*/
+		size_t promoteThreshold = 3;
+
 
 		/**
 		Pointer to the PI system object.

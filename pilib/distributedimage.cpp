@@ -27,11 +27,11 @@ namespace pilib
 
 	DistributedImageStorageType DistributedImageBase::suggestStorageType(const Distributor& distributor, const Vec3c& dimensions)
 	{
-		return DistributedImageStorageType::NN5;
-		//if (dimensions.product() >= distributor.getChunkSize().product())
-		//	return DistributedImageStorageType::NN5;
-		//else
-		//	return DistributedImageStorageType::Raw;
+		//return DistributedImageStorageType::NN5;
+		if (dimensions.product() >= distributor.getChunkSize().product())
+			return DistributedImageStorageType::NN5;
+		else
+			return DistributedImageStorageType::Raw;
 	}
 	
 	DistributedImageBase::DistributedImageBase(Distributor& distributor, const string& name, const Vec3c& dimensions, ImageDataType dataType, const string& sourceFilename, DistributedImageStorageType storageType) :
