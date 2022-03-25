@@ -2,30 +2,30 @@
 
 ; This is a template to be used at CSC Puhti supercluster.
 ; Please replace [PROJECT] with your project identifier, e.g. Project_2004xxx.
-; The file reserves 12 CPUs and 180G of memory per task.
+; The file reserves full nodes, as we are getting intermittent sigbus errors otherwise.
 
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for fast jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_fast_jobs_sinfo = --partition=small
-extra_args_fast_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=160G --partition=small --time=04:00:00
+extra_args_fast_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=01:00:00
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for normal jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_normal_jobs_sinfo = --partition=small
-extra_args_normal_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=160G --partition=small --time=24:00:00
+extra_args_normal_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=24:00:00
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for slow jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_slow_jobs_sinfo = --partition=small
-extra_args_slow_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=12 --mem=160G --partition=small --time=72:00:00
+extra_args_slow_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=72:00:00
 
 ; Shell commands run on node before starting job.
 ; Use, e.g., to load modules or mount disks.
-job_init_commands = export OMP_NUM_THREADS=12
+job_init_commands = export OMP_NUM_THREADS=40
 
 ; Maximum amount of memory to use per node in megabytes.
 ; Set to zero to determine the value automatically as 90 % of
