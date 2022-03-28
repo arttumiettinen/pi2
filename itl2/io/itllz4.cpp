@@ -54,7 +54,6 @@ namespace itl2
 
 				size_t filled = readSize - consumedSize;
 
-				//uint8_t* dst = (uint8_t*)target.getData();
 				coord_t dstRemaining = dstSizeBytes;
 
 				bool firstChunk = true;
@@ -102,7 +101,8 @@ namespace itl2
 						throw ITLException(string("LZ4 decompression buffer overflow while reading ") + filenameForErrorMessages);
 
 					if (srcPtr < srcEnd)
-						throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filenameForErrorMessages);
+						std::cout << "Warning: Trailing data after LZ4 compressed frame in file " << filenameForErrorMessages << ", dstRemaining = " << dstRemaining << std::endl;
+					//	throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filenameForErrorMessages);
 				}
 
 				if (dstRemaining > 0)
