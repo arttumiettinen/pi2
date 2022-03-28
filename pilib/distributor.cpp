@@ -644,8 +644,8 @@ namespace pilib
 
 		// If we need to distribute in two directions, check that all output images support it.
 		// Otherwise distribution is not allowed as e.g. sequences can't be written to in parallel.
-		bool distributionDirection2Allowed = true;
-		if (distributionDirection2 <= 2)
+		bool distributionDirection2Allowed = distributionDirection2 <= 2;
+		if (distributionDirection2Allowed)
 		{
 			if(!canWriteArbitaryBlocks(outputImages))
 				distributionDirection2Allowed = false;
@@ -658,6 +658,7 @@ namespace pilib
 		Vec3c subDivisions(1, 1, 1);
 		subDivisions[distributionDirection1] = preferredSubdivisions;
 		size_t lastMemoryReq = numeric_limits<size_t>::max();
+		Vec3<bool> preferredBlockSizeTested(false, false, false);
 		while (true)
 		{
 			// Calculate block sizes for each command.
@@ -680,26 +681,47 @@ namespace pilib
 					{
 						if (temp[n] < refSize[n])
 						{
-							// preferredBlockSizeMultiple is smaller than refSize, so we can try to increase refSize
-							// in multiples of preferredBlockSizeMultiple
+							// preferredBlockSizeMultiple is smaller than refSize, so we can try to increase block size
+							// in multiples of preferredBlockSizeMultiple until we go above refSize.
 							while (temp[n] + preferredBlockSizeMultiple[n] <= refSize[n])
 								temp[n] += preferredBlockSizeMultiple[n];
 						}
 						else
 						{
-							//// preferredBlockSizeMultiple is smaller than refSize. Reduce size until
-							//// it is smaller than refSize.
-							//while (temp[n] > refSize[n])
-							//	temp[n] /= 2;
+							// refSize is smaller than preferredBlockSizeMultiple
+							
+							// Find fraction of preferredBlockSizeMultiple that is smaller than the block size
+							coord_t preferredFraction = preferredBlockSizeMultiple[n];
+							while (preferredFraction > 1 && preferredFraction > refSize[n])
+								preferredFraction /= 2;
 
-							//// If we fail, go back to original refSize.
-							//if (temp[n] < 1)
-							//	temp[n] = refSize[n];
-							temp[n] = refSize[n];
+							// Find how many fractions we can take until we go above estimated refSize.
+							// Note that this way we might test e.g. size preferredBlockSizeMultiple[n]
+							// 2 times but that should not hurt.
+							coord_t val = 0;
+							while (val < refSize[n])
+								val += preferredFraction;
+							temp[n] = val;
+							
+							//if (!preferredBlockSizeTested[n])
+							//{
+							//	preferredBlockSizeTested[n] = true;
+							//	temp[n] = preferredBlockSizeMultiple[n];
+							//}
+							////  Reduce size until
+							////// it is smaller than refSize.
+							////while (temp[n] > refSize[n])
+							////	temp[n] /= 2;
+
+							////// If we fail, go back to original refSize.
+							////if (temp[n] < 1)
+							////	temp[n] = refSize[n];
+							//temp[n] = refSize[n];
 						}
 					}
 					else
 					{
+						// 1 subdivision equals the full size.
 						temp[n] = refSize[n];
 					}
 				}
@@ -752,16 +774,10 @@ namespace pilib
 				break;
 			}
 
-			// Check that distribution is sane
-			//bool failed = false;
-
 			// Condition 1: memory requirement must go down when we increase subdivisions.
 			if (memoryReq > lastMemoryReq)
 			{
-				//cout << debugText << endl;
-
 				throw ITLException(string("Unable to find suitable subdivision. Memory requirement does not decrease from ") + bytesToString((double)lastMemoryReq) + " when decreasing processing block size, and only " + bytesToString((double)allowedMemory()) + " is available for a single process. See also cluster configuration file max_memory setting.");
-				//failed = true;
 			}
 
 			// Condition 2: Images must not be subdivided more than their dimensions allow.
@@ -772,40 +788,66 @@ namespace pilib
 					(distributionDirection2 <= 2 && img->dimensions()[distributionDirection2] > 1 && subDivisions[distributionDirection2] >= img->dimensions()[distributionDirection2])
 					)
 				{
-					//cout << debugText << endl;
-
-					//cout << "subdivisions in 1. dir = " << subDivisions[distributionDirection1] << endl;
-					//cout << "subdivisions in 2. dir = " << subDivisions[distributionDirection2] << endl;
-
 					throw ITLException(string("Unable to find suitable subdivision. The smallest possible blocks of the input and output images require ") + bytesToString((double)memoryReq) + " of memory, but only " + bytesToString((double)allowedMemory()) + " is available for a single process. See also cluster configuration file max_memory setting.");
-					//failed = true;
-					//break;
 				}
 			}
 
-			//if(failed)
-			//	throw ITLException(string("Unable to find suitable subdivision. The smallest possible blocks of the input and output images require ") + bytesToString((double)memoryReq) + " of memory, but only " + bytesToString((double)allowedMemory()) + " is available for a single process. See also cluster configuration file max_memory setting.");
-
 			lastMemoryReq = memoryReq;
 
-			// TODO: Try replacing the subDivisions[distributionDirection1] < N condition by a condition that compares total pixel count in margins to total size of image.
-			if (distributionDirection2 > 2 || subDivisions[distributionDirection1] < 80)
-			{
-				// Distribution direction 2 is not available or there are only a few subdivisions in direction 1
-				// Favor direction 1 as it is often z and distributing in that direction is faster and more compatible than other directions.
-				subDivisions[distributionDirection1]++;
-			}
-			else
-			{
-				if (!distributionDirection2Allowed)
-					throw ITLException("The input images are so large that they must be distributed in two coordinate directions. Distribution in two directions is currently not supported for current input image type.");
+			// The logic below:
+			// If there is preferredBlockSizeMultiple:
+			// 	Divide in distributionDirection1 until refSize[distributionDirection1] <= preferredBlockSizeMultiple[distributionDirection1]
+			// 	Then divide in distributionDirection2 if it is available, until refSize[distributionDirection1] <= preferredBlockSizeMultiple[distributionDirection1]
+			//	Then divide the direction that has less subdivisions.
+			// else:
+			//	Divide in distributionDirection1 and 2 like before
+			// => Potentially less unsafe blocks than with just the "else" part.
 
-				// Subdivide in 2 directions
-				if (subDivisions[distributionDirection2] < subDivisions[distributionDirection1])
-					subDivisions[distributionDirection2]++;
-				else
+			Vec3c oldSubDivisions = subDivisions;
+			if (preferredBlockSizeMultiple != Vec3c(1, 1, 1))
+			{
+				if (refSize[distributionDirection1] > preferredBlockSizeMultiple[distributionDirection1])
+				{
 					subDivisions[distributionDirection1]++;
+				}
+				else
+				{
+					if (distributionDirection2Allowed)
+					{
+						if (refSize[distributionDirection2] > preferredBlockSizeMultiple[distributionDirection2])
+						{
+							subDivisions[distributionDirection2]++;
+						}
+					}
+				}
 			}
+			
+			if (subDivisions == oldSubDivisions)
+			{
+				// No preferred block size or we could not continue subdivisions accounting for preferred block size.
+				// Prefer distributing in first distribution direction.
+				
+				// TODO: Try replacing the subDivisions[distributionDirection1] < N condition by a condition that compares total pixel count in margins to total size of image.
+				if (!distributionDirection2Allowed || subDivisions[distributionDirection1] < 80)
+				{
+					// Distribution direction 2 is not available or there are only a few subdivisions in direction 1
+					// Favor direction 1 as it is often z and distributing in that direction is faster and more compatible than other directions.
+					subDivisions[distributionDirection1]++;
+				}
+				else
+				{
+					if (!distributionDirection2Allowed)
+						throw ITLException("The input images are so large that they must be distributed in two coordinate directions. Distribution in two directions is currently not supported for current input image type.");
+
+					// Subdivide in 2 directions
+					if (subDivisions[distributionDirection2] < subDivisions[distributionDirection1])
+						subDivisions[distributionDirection2]++;
+					else
+						subDivisions[distributionDirection1]++;
+				}
+			}
+
+			
 		}
 	}
 
@@ -1099,23 +1141,28 @@ namespace pilib
 				for (const auto& item : blocksPerImage)
 				{
 					DistributedImageBase* img = item.first;
-					const auto& valueList = item.second;
-					Vec3c readStart = get<0>(valueList[i]);
-					Vec3c readSize = get<1>(valueList[i]);
-					Vec3c writeFilePos = get<2>(valueList[i]);
-					Vec3c writeImPos = get<3>(valueList[i]);
-					Vec3c writeSize = get<4>(valueList[i]);
-					if (img->currentReadSource() == img->currentWriteTarget())
+					if (outputImages.find(img) != outputImages.end())
 					{
-						// We are reading and writing the same file.
-						// => The NN5Process must contain both read and write region.
-						nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
-					}
-					else
-					{
-						// We are reading and writing different file.
-						// => The NN5Process must contain only the write region as no reads are made from the same file.
-						nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize)});
+						const auto& valueList = item.second;
+						Vec3c readStart = get<0>(valueList[i]);
+						Vec3c readSize = get<1>(valueList[i]);
+						Vec3c writeFilePos = get<2>(valueList[i]);
+						Vec3c writeImPos = get<3>(valueList[i]);
+						Vec3c writeSize = get<4>(valueList[i]);
+						if (img->currentReadSource() == img->currentWriteTarget() &&
+							inputImages.find(img) != inputImages.end())
+						{
+							// We are reading and writing the same file.
+							// AND the image is used as input and output.
+							// => The NN5Process must contain both read and write region.
+							nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
+						}
+						else
+						{
+							// We are reading and writing different file.
+							// => The NN5Process must contain only the write region as no reads are made from the same file.
+							nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize) });
+						}
 					}
 				}
 			}

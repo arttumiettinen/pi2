@@ -770,7 +770,8 @@ namespace pilib
 			// Iterate block edge pixel values and save to a list.
 			std::vector<pixel_t> edgeValues;
 			edgeValues.reserve(in.width() * in.height() * 2);
-			for (coord_t z = 0; z < in.depth(); z += in.depth() - 1)
+			coord_t zStep = std::max<coord_t>(1, in.depth() - 1);
+			for (coord_t z = 0; z < in.depth(); z += zStep)
 			{
 				for (coord_t y = 0; y < in.height(); y++)
 				{
@@ -791,7 +792,7 @@ namespace pilib
 			std::vector<Vec3sc> beginNewSeeds;
 			std::vector<Vec3sc> endNewSeeds;
 			size_t n = 0;
-			for (coord_t z = 0; z < in.depth(); z += in.depth() - 1)
+			for (coord_t z = 0; z < in.depth(); z += zStep)
 			{
 				int32_t dz = 0;
 				std::vector<Vec3sc>* newSeeds;

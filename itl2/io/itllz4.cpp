@@ -101,7 +101,10 @@ namespace itl2
 						throw ITLException(string("LZ4 decompression buffer overflow while reading ") + filenameForErrorMessages);
 
 					if (srcPtr < srcEnd)
+					{
 						std::cout << "Warning: Trailing data after LZ4 compressed frame in file " << filenameForErrorMessages << ", dstRemaining = " << dstRemaining << std::endl;
+						fs::copy(filenameForErrorMessages, "./offending_lz4.lz4raw", fs::copy_options::overwrite_existing);
+					}
 					//	throw ITLException(string("Trailing data after LZ4 compressed frame in file ") + filenameForErrorMessages);
 				}
 
