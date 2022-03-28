@@ -513,8 +513,12 @@ namespace pilib
 			DistributedImage<pixel_t>& source = *std::get<DistributedImage<pixel_t>* >(args[1]);
 			target.ensureSize(source.dimensions());
 
-			// distribute in z, no overlap
 			return distributor.distribute(this, args);
+		}
+
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
+		{
+			return 1;
 		}
 	};
 
