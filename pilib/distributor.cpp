@@ -952,13 +952,16 @@ namespace pilib
 
 		// If overlap is nonzero, InOut images must be saved to different file from which they are loaded.
 		// Changing write targets should not cause bad state of image objects even if writeComplete() is not called.
-		if (margin != Vec3c(0, 0, 0))
+		//if (margin != Vec3c(0, 0, 0))
+		//{
+		for (DistributedImageBase* img : inputImages)
 		{
-			for (DistributedImageBase* img : inputImages)
+			if (outputImages.find(img) != outputImages.end())
 			{
-				if (outputImages.find(img) != outputImages.end())
+				// This is InOut image
+				if (img->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
+					margin != Vec3c(0, 0, 0))
 				{
-					// This is InOut image
 					if (img->currentReadSource() == img->currentWriteTarget())
 					{
 						img->newWriteTarget();
@@ -966,6 +969,7 @@ namespace pilib
 				}
 			}
 		}
+		//}
 
 
 		
