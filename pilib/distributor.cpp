@@ -959,6 +959,8 @@ namespace pilib
 			if (outputImages.find(img) != outputImages.end())
 			{
 				// This is InOut image
+
+				// TODO: NN5 should be able to support concurrent reading and writing. Is there some bug somewhere?
 				if (img->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
 					margin != Vec3c(0, 0, 0))
 				{
