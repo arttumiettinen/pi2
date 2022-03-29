@@ -24,7 +24,7 @@ def main():
         argsparser.add_argument('-b', '--binning', default=1, type=int, help='Binning that is to be applied before stitching.')
         argsparser.add_argument('-n', '--name', default='stitched', type=str, help='Sample name.')
         argsparser.add_argument('-r', '--recdir', default='', type=str, help='Try to find reconstructions from this directory. Use e.g. if the reconstructions were done in Ra and the original log files do not contain reconstruction folder. String %%s will be replaced by sub-scan name, e.g. /das/work/p1234/Data10/disk1/%%s/ may expand to /das/work/p1234/Data10/disk1/01_BigSample_B7/')
-        argsparser.add_argument('-m', '--mask', default=False, type=bool, help='Set to true to mask the input images to the maximum inscribed circle in each cross-section. Use this setting to erase possible bad data outside of the well-reconstructed region.')
+        argsparser.add_argument('-m', '--mask', action='store_true', type=bool, help='Set to true to mask the input images to the maximum inscribed circle in each cross-section. Use this setting to erase possible bad data outside of the well-reconstructed region.')
 
         args = argsparser.parse_args()
 
@@ -165,7 +165,7 @@ def main():
         if good_count > 1:
             print("Writing output to stitch_settings.txt...")
 
-            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', mask_to_max_circle=args.mask
+            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', mask_to_max_circle=args.mask)
             
             print('All done. Consider running nr_stitcher.py now.')
         else:
