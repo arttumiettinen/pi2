@@ -163,7 +163,7 @@ int main()
 	//test(itl2::tests::lineSkeleton, "Line skeleton");
 
 	//test(itl2::tests::traceSkeleton, "trace skeleton");
-	//test(itl2::tests::traceSkeletonRealData, "trace skeleton (real data)");
+	test(itl2::tests::traceSkeletonRealData, "trace skeleton (real data)");
 	//test(itl2::tests::networkio, "network I/O");
 	//test(itl2::tests::disconnections, "network connect, disconnect, degree, etc.");
 	//test(itl2::tests::disconnectStraightThroughPerformance, "network optimization performance");

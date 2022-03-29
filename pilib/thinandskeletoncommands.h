@@ -519,7 +519,7 @@ namespace pilib
 			// Create temp file path
 			string tempFilename = createTempFilename("skeleton_data");
 
-			// Command that traces skeleton without combining incomplete vertices, and saves every subnetwork to given file
+			// Run command that traces skeleton without combining incomplete vertices, and saves every subnetwork to given file
 			vector<string> output;
 			if (pOrig)
 			{
