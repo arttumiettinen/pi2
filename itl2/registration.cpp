@@ -44,10 +44,6 @@ namespace itl2
 		}
 
 
-		//raw::writed(u, "u");
-		//raw::writed(v, "v");
-		//raw::writed(w, "w");
-
 		// Subtract mean displacement
 		double Mu = mean(u);
 		double Mv = mean(v);
@@ -57,9 +53,6 @@ namespace itl2
 		subtract(v, Mv);
 		subtract(w, Mw);
 
-		//raw::writed(u, "u_meansub");
-		//raw::writed(v, "v_meansub");
-		//raw::writed(w, "w_meansub");
 
 		// Determine which values are bad by comparing to median
 		Image<double> uMed(u.dimensions());
@@ -82,28 +75,14 @@ namespace itl2
 		maskedMedianFilter(v, vMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
 		maskedMedianFilter(w, wMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
 
-		//raw::writed(gof, "gof");
-		//raw::writed(uMed, "u_med");
-		//raw::writed(vMed, "v_med");
-		//raw::writed(wMed, "w_med");
-
-		//subtract(u, uMed);
-		//subtract(v, vMed);
-		//subtract(w, wMed);
-		//abs(u);
-		//abs(v);
-		//abs(w);
-		//raw::writed(u, "u_cond");
-		//raw::writed(v, "v_cond");
-		//raw::writed(w, "w_cond");
 
 		coord_t badCount = 0;
 		constexpr double FLAG = numeric_limits<double>::signaling_NaN();
 		for (coord_t n = 0; n < u.pixelCount(); n++)
 		{
-			bool bad = (fabs(u(n) - uMed(n)) > threshold) |
-						(fabs(v(n) - vMed(n)) > threshold) |
-						(fabs(w(n) - wMed(n)) > threshold) |
+			bool bad = (fabs(u(n) - uMed(n)) > threshold) ||
+						(fabs(v(n) - vMed(n)) > threshold) ||
+						(fabs(w(n) - wMed(n)) > threshold) ||
 						(gof(n) <= 0);
 			if (bad)
 			{
