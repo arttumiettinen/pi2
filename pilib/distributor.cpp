@@ -1184,7 +1184,7 @@ namespace pilib
 				for (size_t m = n + 1; m < list.size(); m++)
 				{
 					const auto& p2 = list[m];
-					if (p1.writeBlock.overlaps(p2.writeBlock))
+					if (p1.writeBlock.overlapsExclusive(p2.writeBlock))
 						throw ITLException(string("Multiple jobs would write to the same block in image ") + img->varName());
 				}
 			}

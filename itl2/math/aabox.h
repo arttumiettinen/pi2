@@ -157,15 +157,26 @@ namespace itl2
         
         /**
         Tests if this box and the given box overlap.
-		It is assumed that the faces that contain maxc (right bottom far corner) are not
+		It is assumed that the faces that contain maxc (right bottom far corner) are NOT
 		part of the box, but faces containing the minc (left top near corner) are.
         */
-        bool overlaps(const AABox<T>& r) const
+        bool overlapsExclusive(const AABox<T>& r) const
         {
             return maxc.x > r.minc.x && r.maxc.x > minc.x &&
                     maxc.y > r.minc.y && r.maxc.y > minc.y &&
                     maxc.z > r.minc.z && r.maxc.z > minc.z;
         }
+
+		/**
+		Tests if this box and the given box overlap.
+		It is assumed that the faces that contain minc and maxc (right bottom far corner) are part of the box.
+		*/
+		bool overlapsInclusive(const AABox<T>& r) const
+		{
+			return maxc.x >= r.minc.x && r.maxc.x >= minc.x &&
+				maxc.y >= r.minc.y && r.maxc.y >= minc.y &&
+				maxc.z >= r.minc.z && r.maxc.z >= minc.z;
+		}
 
 		/**
 		Calculates intersection of this box and the given box.

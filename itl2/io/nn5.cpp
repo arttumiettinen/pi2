@@ -270,9 +270,9 @@ namespace itl2
 			for (size_t n = 0; n < processes.size(); n++)
 			{
 				const auto& process = processes[n];
-				if (process.readBlock.overlaps(box))
+				if (process.readBlock.overlapsExclusive(box))
 					readerIndices.push_back(n);
-				if (process.writeBlock.overlaps(box))
+				if (process.writeBlock.overlapsExclusive(box))
 					writerIndices.push_back(n);
 			}
 

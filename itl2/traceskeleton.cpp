@@ -243,7 +243,7 @@ namespace itl2
 							// false, and in that case we just do some extra work.
 							if (forest.find_set(n) != forest.find_set(m))
 							{
-								if (b1.overlaps(b2)) // Do bounding boxes overlap?
+								if (b1.overlapsInclusive(b2)) // Do bounding boxes overlap?
 								{
 									auto key = make_tuple(std::min(n, m), std::max(n, m));
 

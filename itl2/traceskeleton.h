@@ -1591,6 +1591,7 @@ namespace itl2
 				{
 					std::cout << "Warning: Incomplete edge between vertex indices " << toString(ie.verts[0]) << " and " << toString(ie.verts[1]) << " will be erased." << std::endl;
 					printVertex(ie.verts[0], net.vertices);
+					printVertex(ie.verts[1], net.vertices);
 					//throw ITLException("The incomplete edges of the network cannot be completed because one of them has unknown end point: " + toString(ie.verts[0]) + " to " + toString(ie.verts[1]));
 				}
 			}

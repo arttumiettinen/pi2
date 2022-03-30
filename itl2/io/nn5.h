@@ -267,7 +267,7 @@ namespace itl2
 						// We will need to update the chunk if the file block to be written (fileTargetBlock)
 						// overlaps the current chunk.
 						AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, chunkSize);
-						if (fileTargetBlock.overlaps(currentChunk))
+						if (fileTargetBlock.overlapsExclusive(currentChunk))
 						{
 							// The region of the current chunk that will be updated is the intersection of the current chunk and the
 							// file block to be written.
@@ -439,7 +439,7 @@ namespace itl2
 				internals::forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
-						if (currentChunk.overlaps(imageBox))
+						if (currentChunk.overlapsExclusive(imageBox))
 							readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), compression, temp);
 					});
 			}
