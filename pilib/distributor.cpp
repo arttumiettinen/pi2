@@ -899,7 +899,7 @@ namespace pilib
 			{
 				const auto& a = jobsToSubmit[n];
 				const auto& b = jobsToSubmit[n + 1];
-				string newScript = get<0>(a) + "\n\nclear();\n\n" + get<0>(b);
+				string newScript = get<0>(a) + "\n\n\n\n" + get<0>(b);
 				JobType at = get<1>(a);
 				JobType bt = get<1>(b);
 				// Never combine multiple slow jobs, but do combine faster jobs to slow ones.
@@ -933,6 +933,76 @@ namespace pilib
 		if (t == JobType::Normal)
 			return JobType::Slow;
 		return JobType::Slow;
+	}
+
+	/**
+	If multiple smaller jobs are combined into one, their output is also combined into one element in the job output array.
+	This output extract output for each individual job from the combined output.
+	*/
+	vector<string> separateCombinedJobOutput(const vector<string>& outputs, size_t originalJobCount, const string& jobStartLine)
+	{
+		vector<string> newOutput(originalJobCount, "");
+		for (string output : outputs)
+		{
+			vector<string> lines = itl2::split(output, true);
+
+			// Remove all lines that print jobStartLine
+			vector<string> lines2;
+			for (size_t n = 0; n < lines.size(); n++)
+			{
+				if (!startsWith(lines[n], string("print(\"") + jobStartLine))
+				{
+					// Normal line
+					lines2.push_back(lines[n]);
+				}
+				else
+				{
+					// This is a print statement that starts a new job. Remove preceding 'clear("")' if any
+					// Erase clear("") before the print, if any
+					if (lines2[lines2.size() - 1] == "clear(\"\")")
+						lines2.erase(lines2.begin() + lines2.size() - 1);
+				}
+			}
+
+			lines = lines2;
+
+			// Each "------ start of job X" line starts a new block of output
+			size_t currentLine = 0;
+			while (currentLine < lines.size())
+			{
+				// Check that we start with jobStartLine
+				if (!startsWith(lines[currentLine], jobStartLine))
+					throw ITLException("Invalid combined job output. No job start marker at the first line of a new block.");
+
+				// Extract job index
+				string indexStr = lines[currentLine].substr(jobStartLine.length());
+				itl2::trim(indexStr);
+				coord_t index = itl2::fromString<coord_t>(indexStr);
+
+				currentLine++;
+				
+				// Extract lines until the next jobStartLine
+				string content;
+				while (currentLine < lines.size() && !startsWith(lines[currentLine], jobStartLine))
+				{
+					content += lines[currentLine] + "\n";
+					currentLine++;
+				}
+
+				trim(content);
+
+				if (index < 0 || (size_t)index >= originalJobCount)
+					throw ITLException(string("Invalid job index ") + indexStr);
+
+				if (newOutput[index] != "")
+					throw ITLException(string("Multiple outputs for job ") + itl2::toString(index));
+
+				newOutput[index] = content;
+			}
+			
+		}
+
+		return newOutput;
 	}
 
 	void Distributor::runDelayedCommands()
@@ -1202,19 +1272,32 @@ namespace pilib
 		Timing::Add(TimeClass::WritePreparation, timer.lap());
 
 		// Combine small jobs
+		const string jobStartLine = "------ start of job";
 		size_t combinationRounds = 0;
+		size_t originalJobCount = jobsToSubmit.size();
 		if (maxSubmittedJobCount > 0)
 		{
-			while (jobsToSubmit.size() > maxSubmittedJobCount)
+			
+			if (jobsToSubmit.size() > maxSubmittedJobCount)
 			{
-				size_t oldCount = jobsToSubmit.size();
-				jobsToSubmit = combineSmallJobs(jobsToSubmit);
-				
-				// Do not continue if no jobs could be combined.
-				if (jobsToSubmit.size() >= oldCount)
-					break;
+				// Add clear command and job start marker to all the job scripts.
+				for (size_t n = 0; n < jobsToSubmit.size(); n++)
+				{
+					get<0>(jobsToSubmit[n]) = "clear();\nprint('" + jobStartLine + " " + itl2::toString(n) + "'); \n" + get<0>(jobsToSubmit[n]);
+				}
 
-				combinationRounds++;
+				// Combine jobs until the desired job count is reached.
+				while (jobsToSubmit.size() > maxSubmittedJobCount)
+				{
+					size_t oldCount = jobsToSubmit.size();
+					jobsToSubmit = combineSmallJobs(jobsToSubmit);
+
+					// Do not continue if no jobs could be combined.
+					if (jobsToSubmit.size() >= oldCount)
+						break;
+
+					combinationRounds++;
+				}
 			}
 		}
 
@@ -1303,6 +1386,14 @@ namespace pilib
 			}
 
 			Timing::Add(TimeClass::WriteFinalizationInclQueuing, timer.lap());
+
+
+			if (combinationRounds > 0)
+			{
+				// Multiple jobs were combined into one, so we need to separate job output
+				// so that each job has its own output in the lastOutput array.
+				lastOutput = separateCombinedJobOutput(lastOutput, originalJobCount, jobStartLine);
+			}
 		}
 		catch (...)
 		{

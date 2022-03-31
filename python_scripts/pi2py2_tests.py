@@ -88,6 +88,8 @@ def check_distribution_test_result(file1, file2, operation_name, compname, toler
     img1 = pi2.read(file1, data_type)
     img2 = pi2.read(file2, data_type)
 
+    check_result(np.array_equal(img1.dimensions(), img2.dimensions()), f"ERROR: Found difference in results of {compname} processing while testing {operation_name}. Image dimensions are not the same {file1} and {file2}.")
+
     M = calc_difference(img1, img2)
 
     # Check that the difference is zero
@@ -123,7 +125,7 @@ def test_difference_delaying(testname, script, resultname='result', tolerance=0.
 
 
 
-def test_difference_normal_distributed(opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[64, 64, 64]):
+def test_difference_normal_distributed(opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[64, 64, 64], max_jobs=0):
     """
     Calculates operation normally and using distributed processing.
     Calculates difference between the results of the two versions and prints a message if the results do not match.
@@ -148,6 +150,8 @@ def test_difference_normal_distributed(opname, args, resultname='result', infile
     pi2.distribute(Distributor.LOCAL)
     pi2.maxmemory(maxmem)
     pi2.chunksize(chunk_size)
+    pi2.maxjobs(max_jobs)
+
     img = pi2.read(infile)
     if convert_to_type != ImageDataType.UNKNOWN:
         pi2.convert(img, convert_to_type)
@@ -232,7 +236,7 @@ def create_particle_labels_test():
 
 
 
-def trace_skeleton_test():
+def trace_skeleton_test(max_jobs=0):
     """
     Tests skeleton tracing in normal and distributed mode.
     """
@@ -263,6 +267,7 @@ def trace_skeleton_test():
     pi2.distribute(Distributor.LOCAL)
     pi2.maxmemory(5)
     pi2.chunksize([100, 100, 100])
+    pi2.maxjobs(max_jobs)
 
     skele = pi2.read(input_file("real_skele_200x200x200.raw"))
     vertices = pi2.newimage()
@@ -486,13 +491,14 @@ def analyze_particles_local(analyzers):
 
     return pa
 
-def analyze_particles_distributed(analyzers):
+def analyze_particles_distributed(analyzers, max_jobs):
     """
     Helper for analyze_particles demo.
     """
 
     pi2.distribute(Distributor.LOCAL)
     pi2.maxmemory(50)
+    pi2.maxjobs(max_jobs)
 
     # Read generated data file
     img = pi2.read(output_file('particles'))
@@ -520,24 +526,36 @@ def check_column(a, b, n, msg, tol):
     max_diff = 0
     for i in range(0, a.shape[0]):
         if np.isnan(a[i, n]) and np.isnan(b[i, n]):
-            # OK
+            # Both nan, OK
             pass
         elif np.isposinf(a[i, n]) and np.isposinf(b[i, n]):
-            # OK
+            # Both +inf, OK
             pass
         elif np.isneginf(a[i, n]) and np.isneginf(b[i, n]):
-            # OK
+            # Both -inf, OK
             pass
+        elif np.isnan(a[i, n]) and abs(b[i, n]) < 0.001:
+            # OK: Allow one nan and one zero as those occur due to numerics.
+            pass
+        elif abs(a[i, n]) < 0.001 and np.isnan(b[i, n]):
+            # OK: Allow one nan and one zero as those occur due to numerics.
+            pass
+        elif np.isnan(a[i, n]) and not np.isnan(b[i, n]):
+            # One nan and one not, fail
+            max_diff = np.nan
+        elif not np.isnan(a[i, n]) and np.isnan(b[i, n]):
+            # One nan and one not, fail
+            max_diff = np.nan
         else:
             diff = np.abs(a[i, n] - b[i, n])
             if diff > max_diff:
                 max_diff = diff
 
 
-    check_result(max_diff <= tol, f"Local and distributed mode particle analysis differs in column {msg}, max absolute difference = {max_diff}")
+    check_result((not np.isnan(diff)) and (max_diff <= tol), f"Local and distributed mode particle analysis differs in column {msg}, max absolute difference = {max_diff}")
 
 
-def analyze_particles():
+def analyze_particles(max_jobs=0):
     """
     Demonstrates particle (i.e, region or blob) analysis, and some drawing commands.
     """
@@ -578,19 +596,28 @@ def analyze_particles():
 
     print(f"Local processing returned results array of size {pa_local.shape}")
 
-    pa_dist = analyze_particles_distributed(analyzers)
+    pa_dist = analyze_particles_distributed(analyzers, max_jobs)
     print(f"Distributed processing returned results array of size {pa_dist.shape}")
+
+
+    # Particle order may be different in local and distributed processing, so sort both result arrays
+    # before comparing.
+    # NOTE: This will sort each column. That is not what we want!
+    #pa_local.sort(0)
+    #pa_dist.sort(0)
+    # Sort according to volume and bounding box minx, miny, minz coordinates.
+    pa_local = pa_local[np.lexsort((pa_local[:, 8], pa_local[:, 4], pa_local[:, 6], pa_local[:, 0]))]
+    pa_dist = pa_dist[np.lexsort((pa_dist[:, 8], pa_dist[:, 4], pa_dist[:, 6], pa_dist[:, 0]))]
+
+    np.savetxt(output_file('particle_analysis_local.csv'), pa_local)
+    np.savetxt(output_file('particle_analysis_distributed.csv'), pa_dist)
+
 
     # Compare analysis results
     
     if not np.isclose(pa_local.shape, pa_dist.shape).all():
         check_result(False, 'Different number of results in local and distributed particle analysis.')
     else:
-        # Particle order may be different in local and distributed processing, so sort both result arrays
-        # before comparing.
-        pa_local.sort(0)
-        pa_dist.sort(0)
-
         # We need different tolerances for different columns!
         check_column(pa_local, pa_dist, 0, 'volume', 0)
         # Don't check X, Y, Z as those might differ as different points of the particle may be encountered first
@@ -828,7 +855,7 @@ def tif_and_tiff():
     check_result(M2 <= 0, f"ERROR: Difference in tif and tiff sequence reading.")
 
 
-def get_pixels():
+def get_pixels(max_jobs=0):
     """
     Checks that various ways of getting pixels from the (normal and distributed) images give the same result.
     """
@@ -864,6 +891,7 @@ def get_pixels():
     # Get pixels at positions (distributed)
     pi2.distribute(Distributor.LOCAL)
     pi2.maxmemory(0.25)
+    pi2.maxjobs(max_jobs)
 
     img = pi2.read(output_file("ramp"))
     out = pi2.newimage(img.get_data_type())
@@ -1104,7 +1132,8 @@ morphorec_test()
 fill_skeleton_test()
 autothreshold()
 tif_and_tiff()
-get_pixels()
+get_pixels(max_jobs=0)
+get_pixels(max_jobs=1)
 set_pixels()
 distributed_numpy()
 named_variables()
@@ -1113,12 +1142,14 @@ set_overloads()
 lz4_files()
 nn5_files()
 dead_pixels()
-trace_skeleton_test()
+trace_skeleton_test(max_jobs=0)
+trace_skeleton_test(max_jobs=1)
 multimax_test(0)
 multimax_test(1)
 multimax_test(2)
 generate_particles()
-analyze_particles()
+analyze_particles(max_jobs=0)
+analyze_particles(max_jobs=1)
 analyze_labels()
 dimension_broadcast()
 rotate()
@@ -1185,7 +1216,8 @@ test_difference_normal_distributed('dmap', ['img', 'img'], 'img', input_file_bin
 test_difference_normal_distributed('derivative', ['img', 'result', 1,  0], 'result', maxmem=20)
 test_difference_normal_distributed('derivative', ['img', 'result', 1,  1], 'result', maxmem=20)
 test_difference_normal_distributed('derivative', ['img', 'result', 1,  2], 'result', maxmem=20)
-test_difference_normal_distributed('canny', ['img', 1,  10, 100], 'img', maxmem=20)
+test_difference_normal_distributed('canny', ['img', 1,  10, 100], 'img', maxmem=20, max_jobs=0)
+test_difference_normal_distributed('canny', ['img', 1,  10, 100], 'img', maxmem=20, max_jobs=1)
 test_difference_normal_distributed('convert', ['img', 'out', ImageDataType.FLOAT32], 'out')
 test_difference_normal_distributed('convert', ['img', 'img', ImageDataType.FLOAT32], 'img')
 test_difference_normal_distributed('convert', ['img', ImageDataType.FLOAT32], 'img')

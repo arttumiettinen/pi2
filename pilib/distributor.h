@@ -190,6 +190,14 @@ namespace pilib
 			nn5ChunkSize = chunkSize;
 		}
 
+		/**
+		Sets number of jobs allowed to be submitted in parallel.
+		*/
+		void maxJobs(size_t count)
+		{
+			maxSubmittedJobCount = count;
+		}
+
 		Vec3c getChunkSize() const
 		{
 			return nn5ChunkSize;

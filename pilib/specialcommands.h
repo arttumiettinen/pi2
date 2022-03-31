@@ -769,7 +769,7 @@ namespace pilib
 
 	inline std::string distributeSeeAlso()
 	{
-		return "distribute, delaying, maxmemory, chunksize, printscripts";
+		return "distribute, delaying, maxmemory, maxjobs, chunksize, printscripts";
 	}
 
 	class DistributeCommand : virtual public Command, public TrivialDistributable
@@ -802,6 +802,28 @@ namespace pilib
 		MaxMemoryCommand() : Command("maxmemory", "Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm distribution mode).",
 			{
 				CommandArgument<double>(ParameterDirection::In, "maximum memory", "Maximum amount of memory to use, in megabytes. Specify zero to calculate the value automatically.", 0.0)
+			},
+			distributeSeeAlso())
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+	};
+
+
+	class MaxJobsCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		MaxJobsCommand() : Command("maxjobs", "Sets the maximum number of jobs that will be submitted in parallel in distributed mode. If there are more jobs to be submitted at once, the jobs are combined into larger jobs until the total number of jobs is below or equal to the speficied maximum. This command overrides max_parallel_submit_count value read from the distributor configuration file.",
+			{
+				CommandArgument<size_t>(ParameterDirection::In, "max number of jobs", "Maximum number of jobs to submit in parallel. If the analysis task requires more jobs than specified, the jobs are combined until only maximum number of jobs are left. Specify zero for unlimited number of jobs.", 0)
 			},
 			distributeSeeAlso())
 		{
