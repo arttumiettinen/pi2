@@ -15,13 +15,13 @@ extra_args_fast_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 -
 ; This item is used for normal jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_normal_jobs_sinfo = --partition=small
-extra_args_normal_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=24:00:00
+extra_args_normal_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=12:00:00
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for slow jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_slow_jobs_sinfo = --partition=small
-extra_args_slow_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=72:00:00
+extra_args_slow_jobs_sbatch = --account=[PROJECT] --tasks=1 --cpus-per-task=40 --mem=160G --partition=small --time=48:00:00
 
 ; Shell commands run on node before starting job.
 ; Use, e.g., to load modules or mount disks.
