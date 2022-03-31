@@ -972,32 +972,38 @@ namespace pilib
 			{
 				// Check that we start with jobStartLine
 				if (!startsWith(lines[currentLine], jobStartLine))
-					throw ITLException("Invalid combined job output. No job start marker at the first line of a new block.");
-
-				// Extract job index
-				string indexStr = lines[currentLine].substr(jobStartLine.length());
-				itl2::trim(indexStr);
-				coord_t index = itl2::fromString<coord_t>(indexStr);
-
-				currentLine++;
-				
-				// Extract lines until the next jobStartLine
-				string content;
-				while (currentLine < lines.size() && !startsWith(lines[currentLine], jobStartLine))
 				{
-					content += lines[currentLine] + "\n";
+					// Skip over extra output, e.g. from user commands before starting pi2.
 					currentLine++;
+					//throw ITLException("Invalid combined job output. No job start marker at the first line of a new block.");
 				}
+				else
+				{
+					// Extract job index
+					string indexStr = lines[currentLine].substr(jobStartLine.length());
+					itl2::trim(indexStr);
+					coord_t index = itl2::fromString<coord_t>(indexStr);
 
-				trim(content);
+					currentLine++;
 
-				if (index < 0 || (size_t)index >= originalJobCount)
-					throw ITLException(string("Invalid job index ") + indexStr);
+					// Extract lines until the next jobStartLine
+					string content;
+					while (currentLine < lines.size() && !startsWith(lines[currentLine], jobStartLine))
+					{
+						content += lines[currentLine] + "\n";
+						currentLine++;
+					}
 
-				if (newOutput[index] != "")
-					throw ITLException(string("Multiple outputs for job ") + itl2::toString(index));
+					trim(content);
 
-				newOutput[index] = content;
+					if (index < 0 || (size_t)index >= originalJobCount)
+						throw ITLException(string("Invalid job index ") + indexStr);
+
+					if (newOutput[index] != "")
+						throw ITLException(string("Multiple outputs for job ") + itl2::toString(index));
+
+					newOutput[index] = content;
+				}
 			}
 			
 		}
