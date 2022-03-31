@@ -334,7 +334,7 @@ namespace pilib
 					// Process this dimension
 					CommandList::get<DrawSpheres2ProcessDimensionCommand<pixel_t> >().runDistributed(distributor, { &dmap2, &result, dim, riPrefix, dmap2.currentReadSource(), dmap2.dimensions(), Distributor::BLOCK_ORIGIN_ARG_TYPE(), Distributor::BLOCK_INDEX_ARG_TYPE(), meanr });
 
-					std::cout << "Remove unncesessary temporary files..." << std::endl;
+					std::cout << "Remove unnecessary temporary files..." << std::endl;
 
 					// Delete temporary files from previous round
 					auto items = itl2::buildFileList(riPrefix + "_dim" + itl2::toString(dim - 1) + "_*");
