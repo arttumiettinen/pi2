@@ -127,37 +127,37 @@ class Scan:
 
     def __init__(self):
         # File that contains the image data
-        rec_file = ''
+        self.rec_file = ''
 
         # Index of the scan (first scan = 1, second scan = 2, ...)
-        index = -1
+        self.index = -1
 
         # Size of the image
-        dimensions = np.array([0, 0, 0])
+        self.dimensions = np.array([0, 0, 0])
 
         # Similarity transformation (rotation matrix, scaling factor, negative of position in stitched image)
-        R = np.eye(3)
-        a = 1
-        c = np.zeros((3, 1))
+        self.R = np.eye(3)
+        self.a = 1
+        self.c = np.zeros((3, 1))
 
         # Indicates if the similarity transformation has been set
-        transformation_set = False
+        self.transformation_set = False
 
         # Name of file where the total transformation of this scan has been stored
-        transformation_file = ''
+        self.transformation_file = ''
 
         # Filename prefix used while storing world to local transformation grid.
-        world_to_local_prefix = ''
+        self.world_to_local_prefix = ''
 
         # Approximate position of the first pixel of the image in world coordinates.
         # This member is used as initial guess of the position to determine approximately overlapping regions
         # of the sub-images.
-        position = np.array([0, 0, 0])
+        self.position = np.array([0, 0, 0])
 
         # Normalization factors for gray values
-        norm_fact = 0
-        norm_fact_std = 1
-        mean_def = 0
+        self.norm_fact = 0
+        self.norm_fact_std = 1
+        self.mean_def = 0
 
     def is_rec_ok(self):
         """

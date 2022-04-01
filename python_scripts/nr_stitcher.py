@@ -20,22 +20,22 @@ class NonGridStitchSettings:
     """
 
     def __init__(self):
-        sample_name = ''
-        binning = 1
-        dimensions = np.array([0, 0, 0])
-        point_spacing = 0
-        coarse_block_radius = ['', '', '']
-        coarse_binning = [0, 0, 0]
-        fine_block_radius = ['', '', '']
-        fine_binning = [0, 0, 0]
-        normalize_in_blockmatch = 0
-        normalize_while_stitching = 0
-        filter_threshold = '0'
-        global_optimization = True
-        allow_rotation = True
-        allow_local_shifts = True
-        allow_local_deformations = True
-        force_redo = False
+        self.sample_name = ''
+        self.binning = 1
+        self.dimensions = np.array([0, 0, 0])
+        self.point_spacing = 0
+        self.coarse_block_radius = ['', '', '']
+        self.coarse_binning = [0, 0, 0]
+        self.fine_block_radius = ['', '', '']
+        self.fine_binning = [0, 0, 0]
+        self.normalize_in_blockmatch = 0
+        self.normalize_while_stitching = 0
+        self.filter_threshold = '0'
+        self.global_optimization = True
+        self.allow_rotation = True
+        self.allow_local_shifts = True
+        self.allow_local_deformations = True
+        self.force_redo = False
 
 
 
