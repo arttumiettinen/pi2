@@ -1310,6 +1310,8 @@ namespace pilib
 		if (combinationRounds > 0)
 			cout << "Small jobs were combined into " << jobsToSubmit.size() << " jobs." << endl;
 
+		double tasksPerJob = (double)originalJobCount / (double)jobsToSubmit.size();
+
 		// Submit jobs
 		for (auto& tup : jobsToSubmit)
 		{
@@ -1323,7 +1325,7 @@ namespace pilib
 			}
 
 			// Promote jobs to slower queues if they are combined a lot.
-			if (combinationRounds > promoteThreshold)
+			if (tasksPerJob >= promoteThreshold)
 				jobType = promote(jobType);
 
 			submitJob(script, type);
