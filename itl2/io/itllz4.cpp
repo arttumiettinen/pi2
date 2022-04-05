@@ -120,7 +120,7 @@ namespace itl2
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 			if (!in)
 			{
-				reason = std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage();
+				reason = getStreamErrorMessage();
 				return false;
 			}
 
