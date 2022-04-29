@@ -1,0 +1,28 @@
+.. _maxjobs:
+
+maxjobs
+*******
+
+
+**Syntax:** :code:`maxjobs(max number of jobs)`
+
+Sets the maximum number of jobs that will be submitted in parallel in distributed mode. If there are more jobs to be submitted at once, the jobs are combined into larger jobs until the total number of jobs is below or equal to the speficied maximum. This command overrides max_parallel_submit_count value read from the distributor configuration file.
+
+This command can be used in the distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+max number of jobs [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Maximum number of jobs to submit in parallel. If the analysis task requires more jobs than specified, the jobs are combined until only maximum number of jobs are left. Specify zero for unlimited number of jobs.
+
+See also
+--------
+
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`maxjobs`, :ref:`chunksize`, :ref:`printscripts`

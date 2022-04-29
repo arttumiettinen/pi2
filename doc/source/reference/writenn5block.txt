@@ -1,12 +1,12 @@
-.. _writesequenceblock:
+.. _writenn5block:
 
-writesequenceblock
-******************
+writenn5block
+*************
 
 
-**Syntax:** :code:`writesequenceblock(input image, filename, position, file dimensions, source position, source block size)`
+**Syntax:** :code:`writenn5block(input image, filename, position, file dimensions, source position, source block size, chunk size)`
 
-Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.
+Write an image to a specified position in an NN5 dataset. Optionally can write only a block of the source image.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
@@ -25,7 +25,7 @@ filename [input]
 
 **Data type:** string
 
-Name (and path) of the file to write.
+Name (and path) of the dataset to write.
 
 position [input]
 ~~~~~~~~~~~~~~~~
@@ -60,4 +60,13 @@ source block size [input]
 **Default value:** "[0, 0, 0]"
 
 Size of the block to write. Specify zero to write the whole source image.
+
+chunk size [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[1536, 1536, 1536]"
+
+Size of chunks in the NN5 dataset.
 

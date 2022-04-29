@@ -25,4 +25,4 @@ Set to 'SLURM' to use SLURM workload manager; set to 'LOCAL' to process tasks se
 See also
 --------
 
-:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`maxjobs`, :ref:`chunksize`, :ref:`printscripts`

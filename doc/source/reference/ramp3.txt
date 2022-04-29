@@ -1,12 +1,12 @@
-.. _capsule:
+.. _ramp3:
 
-capsule
-*******
+ramp3
+*****
 
 
-**Syntax:** :code:`capsule(image, start, end, radius, value, block origin)`
+**Syntax:** :code:`ramp3(image, block origin)`
 
-Draws a capsule (with rounded ends) into the image.
+Fills image with ramp in all three dimensions, i.e. performs img[r] = ||r||_1.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
@@ -19,42 +19,6 @@ image [input & output]
 **Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
 
 Image to process.
-
-start [input]
-~~~~~~~~~~~~~
-
-**Data type:** 3-component real vector
-
-**Default value:** "[0, 0, 0]"
-
-Start position of the line.
-
-end [input]
-~~~~~~~~~~~
-
-**Data type:** 3-component real vector
-
-**Default value:** "[1, 1, 1]"
-
-End position of the line.
-
-radius [input]
-~~~~~~~~~~~~~~
-
-**Data type:** real
-
-**Default value:** 5
-
-Radius of the capsule
-
-value [input]
-~~~~~~~~~~~~~
-
-**Data type:** real
-
-**Default value:** 1
-
-Value for pixels inside the capsule.
 
 block origin [input]
 ~~~~~~~~~~~~~~~~~~~~

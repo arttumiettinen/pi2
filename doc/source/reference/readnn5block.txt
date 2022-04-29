@@ -1,14 +1,14 @@
-.. _readsequenceblock:
+.. _readnn5block:
 
-readsequenceblock
-*****************
+readnn5block
+************
 
 There are 2 forms of this command.
 
-:code:`readsequenceblock(image name, filename, x, y, z, block width, block height, block depth)`
-================================================================================================
+:code:`readnn5block(image name, filename, x, y, z, block width, block height, block depth)`
+===========================================================================================
 
-Reads a block of an image sequence.
+Reads a block of an NN5 dataset.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
@@ -27,7 +27,7 @@ filename [input]
 
 **Data type:** string
 
-Name (and path) of file to read.
+Name (and path) of the dataset to read.
 
 x [input]
 ~~~~~~~~~
@@ -72,10 +72,10 @@ block depth [input]
 Depth of block to read.
 
 
-:code:`readsequenceblock(image name, filename, position, block size)`
-=====================================================================
+:code:`readnn5block(image name, filename, position, block size)`
+================================================================
 
-Reads a block of an image sequence.
+Reads a block of an NN5 dataset.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
@@ -94,7 +94,7 @@ filename [input]
 
 **Data type:** string
 
-Name (and path) of file to read.
+Name (and path) of the dataset to read.
 
 position [input]
 ~~~~~~~~~~~~~~~~

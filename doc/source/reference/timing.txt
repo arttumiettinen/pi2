@@ -1,12 +1,12 @@
-.. _license:
+.. _timing:
 
-license
-*******
+timing
+******
 
 
-**Syntax:** :code:`license()`
+**Syntax:** :code:`timing()`
 
-Displays license of this program and PI system.
+Prints information about wall-clock time taken by various sub-processes.
 
 This command can be used in the distributed processing mode, but it does not participate in distributed processing.
 
