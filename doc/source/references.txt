@@ -6,11 +6,10 @@ If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
 * Truong M. et al., Sub-micrometer morphology of human atherosclerotic plaque revealed by synchrotron radiation-based μCT—A comparison with histology. PLoS ONE 17(4), e0265598. https://doi.org/10.1371/journal.pone.0265598
 * Blaskovic A. et al., Early life exposure to nicotine modifies lung gene response after elastase-induced emphysema. Respiratory Research 23, 2022. https://doi.org/10.1186/s12931-022-01956-4
-* Romano M., et al., X-Ray Phase Contrast 3D Virtual Histology:Evaluation of Lung Alterations AfterMicrobeam Irradiation. Radiation Oncology, Biology, Physics, 2022. https://doi.org/10.1016/j.ijrobp.2021.10.009
+* Romano M., et al., X-Ray Phase Contrast 3D Virtual Histology:Evaluation of Lung Alterations After Microbeam Irradiation. Radiation Oncology, Biology, Physics, 2022. https://doi.org/10.1016/j.ijrobp.2021.10.009
 * Eckermann M. et al., Three-dimensional virtual histology of the human hippocampus based on phase-contrast computed tomography, PNAS 118(48), 2021.
 * Wälchli T. et al., Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Nature Protocols 16, 2021. https://doi.org/10.1038/s41596-021-00587-1
 * Bosch C. et al., Functional and multiscale 3D structural investigation of brain tissue through correlative in vivo physiology, synchrotron micro-tomography and volume electron microscopy. Pre-print available at https://www.biorxiv.org/content/10.1101/2021.01.13.426503v1.full.
-* Truong M. et al., Submicrometer morphology of human atherosclerotic plaque revealed by synchrotron radiation-based μCT - a comparison with histology. In press.
 * Miettinen A. et al., Micrometer-resolution reconstruction and analysis of whole mouse brain vasculature by synchrotron-based phase-contrast tomographic microscopy. In press, preprint available at https://www.biorxiv.org/content/10.1101/2021.03.16.435616v1.abstract.
 * Karakoç A. et al., Effective elastic properties of biocomposites using 3D computational homogenization and X-ray microcomputed tomography, Composite Structures 273, 2021.
 * Longo E. et al., X-ray Zernike phase contrast tomography: 3D ROI visualization of mm-sized mice organ tissues down to sub-cellular components, Biomedical Optics Express 11(10), 2020.
