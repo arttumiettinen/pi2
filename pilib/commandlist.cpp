@@ -39,6 +39,7 @@ namespace pilib
 	void addEvalCommands();
 	void addDistributeCommands();
 	void addInpaintCommands();
+	void addFloodfillCommands();
 
 	vector<unique_ptr<Command> > CommandList::commands;
 
@@ -50,6 +51,7 @@ namespace pilib
 		addSpecialCommands();
 		addIOCommands();
 		addOtherCommands();
+		addFloodfillCommands();
 		addPointProcessCommands();
 		addThinAndSkeletonCommands();
 		addSpecialSystemCommands();

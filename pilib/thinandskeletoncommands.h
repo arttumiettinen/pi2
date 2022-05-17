@@ -9,7 +9,7 @@
 #include "surfaceskeleton.h"
 #include "commandlist.h"
 #include "fillskeleton.h"
-#include "othercommands.h"
+#include "floodfillcommands.h"
 #include "traceskeletonpoints.h"
 
 namespace pilib

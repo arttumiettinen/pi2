@@ -301,6 +301,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="evalcommands.h" />
     <ClInclude Include="exeutils.h" />
     <ClInclude Include="filtercommands.h" />
+    <ClInclude Include="floodfillcommands.h" />
     <ClInclude Include="generationcommands.h" />
     <ClInclude Include="helpformat.h" />
     <ClInclude Include="histogramcommands.h" />
@@ -354,6 +355,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClCompile Include="evalcommands.cpp" />
     <ClCompile Include="exeutils.cpp" />
     <ClCompile Include="filtercommands.cpp" />
+    <ClCompile Include="floodfillcommands.cpp" />
     <ClCompile Include="generationcommands.cpp" />
     <ClCompile Include="histogramcommands.cpp" />
     <ClCompile Include="infocommand.cpp" />

@@ -10,7 +10,7 @@
 #include "regionremoval.h"
 #include "csa.h"
 
-#include "othercommands.h"
+#include "floodfillcommands.h"
 #include "pointprocesscommands.h"
 #include "specialcommands.h"
 #include "commandlist.h"
