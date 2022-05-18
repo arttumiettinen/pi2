@@ -6,6 +6,7 @@
 #include "image.h"
 #include "math/aabox.h"
 #include "progress.h"
+#include "connectivity.h"
 
 namespace itl2
 {
@@ -166,7 +167,7 @@ namespace itl2
 
 	/**
 	Call lambda(x, y, z) for all (x, y, z) in the edges of the box that spans [block.minc, block.maxc[.
-	This function is not multi-threaded and processes the edge points in the same order.
+	This function is not multi-threaded and processes the edge points in the same order every time.
 	Each edge point is processed once.
 	@param boxDimensionality If 1, fills only x-directional edges. If 2, fills x- and y-directional edges. If 3, fills x-, y-, and z-directional edges.
 	*/
@@ -207,6 +208,62 @@ namespace itl2
 			{
 				internals::forEdgesHelperXY(block, lambda, z, boxDimensionality);
 			}
+		}
+	}
+
+	/**
+	Call lambda(x, y, z) for all (x, y, z) that are neighbours of the given point, considering the given connectivity.
+	The calls of the lambda are made sequentially and every time in the same order.
+	Does not call the lambda for the central point itself, only for the neighbours.
+	*/
+	template<typename F>
+	void forNeighbours(const Vec3c& point, Connectivity connectivity, F&& lambda)
+	{
+		switch(connectivity)
+		{
+		case Connectivity::NearestNeighbours:
+			lambda(point.x, point.y, point.z - 1);
+			lambda(point.x - 1, point.y, point.z);
+			lambda(point.x + 1, point.y, point.z);
+			lambda(point.x, point.y - 1, point.z);
+			lambda(point.x, point.y + 1, point.z);
+			lambda(point.x, point.y, point.z + 1);
+
+			break;
+		case Connectivity::AllNeighbours:
+			lambda(point.x - 1, point.y - 1, point.z - 1);
+			lambda(point.x, point.y - 1, point.z - 1);
+			lambda(point.x + 1, point.y - 1, point.z - 1);
+			lambda(point.x - 1, point.y, point.z - 1);
+			lambda(point.x, point.y, point.z - 1);
+			lambda(point.x + 1, point.y, point.z - 1);
+			lambda(point.x - 1, point.y + 1, point.z - 1);
+			lambda(point.x, point.y + 1, point.z - 1);
+			lambda(point.x + 1, point.y + 1, point.z - 1);
+
+			lambda(point.x - 1, point.y - 1, point.z);
+			lambda(point.x, point.y - 1, point.z);
+			lambda(point.x + 1, point.y - 1, point.z);
+			lambda(point.x - 1, point.y, point.z);
+			//lambda(point.x    , point.y    , point.z    ); // This is the central point, not a neighbour
+			lambda(point.x + 1, point.y, point.z);
+			lambda(point.x - 1, point.y + 1, point.z);
+			lambda(point.x, point.y + 1, point.z);
+			lambda(point.x + 1, point.y + 1, point.z);
+
+			lambda(point.x - 1, point.y - 1, point.z + 1);
+			lambda(point.x, point.y - 1, point.z + 1);
+			lambda(point.x + 1, point.y - 1, point.z + 1);
+			lambda(point.x - 1, point.y, point.z + 1);
+			lambda(point.x, point.y, point.z + 1);
+			lambda(point.x + 1, point.y, point.z + 1);
+			lambda(point.x - 1, point.y + 1, point.z + 1);
+			lambda(point.x, point.y + 1, point.z + 1);
+			lambda(point.x + 1, point.y + 1, point.z + 1);
+
+			break;
+		default:
+			throw ITLException("Invalid connectivity in forNeighbours.");
 		}
 	}
 	

@@ -366,6 +366,7 @@ namespace pilib
 			{
 				// The input is not stored as .nn5 dataset so actual copying must be made.
 
+				auto oldStorageType = in.currentWriteTargetType();
 				in.setWriteTarget(fname, DistributedImageStorageType::NN5);
 
 				std::vector<ParamVariant> args2;
@@ -373,7 +374,12 @@ namespace pilib
 				p = &in;
 				args2.push_back(p);
 				auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-				return cmd.runDistributed(distributor, args2);
+				auto& result = cmd.runDistributed(distributor, args2);
+
+				// Ensure that following operations do not write to the same file.
+				// Retain old write target storage type.
+				in.newWriteTarget(oldStorageType);
+				return result;
 			}
 
 			return std::vector<std::string>();
@@ -465,8 +471,9 @@ namespace pilib
 			}
 			else
 			{
-				// The input is not stored as .raw file so actual copying must be made.
+				// The input is not stored as a .raw file so actual copying must be made.
 				
+				auto oldStorageType = in.currentWriteTargetType();
 				in.setWriteTarget(fname, DistributedImageStorageType::Raw);
 				
 				std::vector<ParamVariant> args2;
@@ -474,7 +481,12 @@ namespace pilib
 				p = &in;
 				args2.push_back(p);
 				auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-				return cmd.runDistributed(distributor, args2);
+				auto& result = cmd.runDistributed(distributor, args2);
+
+				// Ensure that following operations do not write to the same file.
+				// Retain old write target storage type.
+				in.newWriteTarget(oldStorageType);
+				return result;
 			}
 
 			return std::vector<std::string>();
@@ -576,6 +588,7 @@ namespace pilib
 				}
 			}
 			
+			auto oldStorageType = in.currentWriteTargetType();
 			in.setWriteTarget(fname, DistributedImageStorageType::Sequence);
 
 			std::vector<ParamVariant> args2;
@@ -583,7 +596,12 @@ namespace pilib
 			p = &in;
 			args2.push_back(p);
 			auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-			return cmd.runDistributed(distributor, args2);
+			auto& result = cmd.runDistributed(distributor, args2);
+
+			// Ensure that following operations do not write to the same file.
+			// Retain old write target storage type.
+			in.newWriteTarget(oldStorageType);
+			return result;
 		}
 	};
 

@@ -34,6 +34,70 @@ namespace pilib
 	void showProgressBar(const std::string& bar, size_t& barLength);
 
 	/**
+	Stores information about chunks of images used in distributed processing.
+	*/
+	struct DistributionChunk
+	{
+	public:
+		/**
+		For input image: File position where read operation should start.
+		*/
+		Vec3c readStart;
+
+		/**
+		For input image: Size of block to read.
+		*/
+		Vec3c readSize;
+
+		/**
+		For output image: File position where the data should be written to.
+		*/
+		Vec3c writeFilePos;
+
+		/**
+		For output image: Position of good data region in the output image. This image position corresponds to the writeFilePos in the output file.
+		*/
+		Vec3c writeImPos;
+
+		/**
+		For output image: Size of block to write.
+		*/
+		Vec3c writeSize;
+
+		/**
+		3-component index of the chunk.
+		*/
+		Vec3c chunkIndex3;
+
+		DistributionChunk(const Vec3c& readStart, const Vec3c& readSize,
+			const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize,
+			const Vec3c& chunkIndex3) :
+			readStart(readStart), readSize(readSize),
+			writeFilePos(writeFilePos), writeImPos(writeImPos), writeSize(writeSize),
+			chunkIndex3(chunkIndex3)
+		{
+		}
+
+		bool operator==(const DistributionChunk& r) const
+		{
+			return readStart == r.readStart &&
+				readSize == r.readSize &&
+				writeFilePos == r.writeFilePos &&
+				writeImPos == r.writeImPos &&
+				writeSize == r.writeSize &&
+				chunkIndex3 == r.chunkIndex3;
+		}
+
+		/**
+		Inequality, tests for strict inequality even for numeric storage types.
+		*/
+		bool operator!=(const DistributionChunk& r) const
+		{
+			return !(*this == r);
+		}
+	};
+
+	/**
 	Base class for objects that are used to distribute commands to multiple processes.
 	*/
 	class Distributor
@@ -96,7 +160,7 @@ namespace pilib
 		Determines suitable block size etc. for running commands in delayedCommands list.
 		Throws exception if the commands cannot be run together.
 		*/
-		void determineDistributionConfiguration(Vec3c& margin, std::set<DistributedImageBase*>& inputImages, std::set<DistributedImageBase*>& outputImages, JobType& jobType, std::map<DistributedImageBase*, std::vector<std::tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > >& blocksPerImage, size_t& memoryReq);
+		void determineDistributionConfiguration(Vec3c& margin, std::set<DistributedImageBase*>& inputImages, std::set<DistributedImageBase*>& outputImages, JobType& jobType, std::map<DistributedImageBase*, std::vector<DistributionChunk> >& blocksPerImage, size_t& memoryReq);
 
 		/**
 		Runs commands that have been accumulated to the delayed command list.
@@ -160,6 +224,12 @@ namespace pilib
 		*/
 		typedef coord_t BLOCK_INDEX_ARG_TYPE;
 		inline static const std::string BLOCK_INDEX_ARG_NAME = "block index";
+
+		/**
+		3-component block index command parameter type and name.
+		*/
+		typedef Vec3c BLOCK_INDEX3_ARG_TYPE;
+		inline static const std::string BLOCK_INDEX3_ARG_NAME = "block index 3";
 
 		/**
 		Enables or disables delaying.
