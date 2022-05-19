@@ -60,9 +60,6 @@
     <Compile Include="pi2py2_examples.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="pi2py2_tests.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="stitch_settings_from_phoenix_scans.py">
       <SubType>Code</SubType>
     </Compile>
