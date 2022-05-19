@@ -593,22 +593,31 @@ class Pi2:
         setattr(self, cmd_name, func)
 
 
-    def __init__(self):
+    def __init__(self, library_path = ''):
+        """
+        Wraps Pi2 library.
+        Pass path to pi.dll or libpi.so as an argument library_path, if the file is not located in
+        the same directory than pi2py2.py.
+        """
 
-        # (No docstring as it is visible in IPython class documentation.)
-        # Finds commands that are available from the pilib and adds them as methods of the class instance.
+        # NOTE: Docstring is visible in IPython.
+        # This method finds commands that are available from the pilib and adds them as methods of the class instance.
 
         self.piobj = None
+
+        # Default path to folder containing pi.dll or libpi.so is the folder of this file.
+        if library_path == '':
+            library_path = os.path.dirname(__file__)
 
         # Create pilib instance
         if os.name == 'nt':
             # Windows
-            os.environ['PATH'] = os.path.dirname(__file__) + ';' + os.environ['PATH']
-            self.pilib = WinDLL(f"{os.path.dirname(__file__)}\\pi.dll")
+            os.environ['PATH'] = library_path + ';' + os.environ['PATH']
+            self.pilib = WinDLL(os.path.join(library_path, "pi.dll"))
         else:
             # Linux
-            #os.environ['PATH'] = os.path.dirname(__file__) + ':' + os.environ['PATH']
-            self.pilib = CDLL(f"{os.path.dirname(__file__)}/libpi.so")
+            #os.environ['PATH'] = library_path + ':' + os.environ['PATH']
+            self.pilib = CDLL(os.path.join(library_path, "libpi.so"))
 
         self.pilib.createPI.restype = c_void_p
 
