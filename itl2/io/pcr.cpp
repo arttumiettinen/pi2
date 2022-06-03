@@ -115,10 +115,10 @@ namespace itl2
 			void read()
 			{
 				Image<uint16_t> img;
-				raw::read(img, "./input_data/t1-head");
+				raw::read(img, "../test_input_data/t1-head");
 
 				Image<uint16_t> img2;
-				pcr::read(img2, "./input_data/t1-head.pcr");
+				pcr::read(img2, "../test_input_data/t1-head.pcr");
 
 				testAssert(equals(img, img2), "PCR read");
 			}

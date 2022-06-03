@@ -706,6 +706,16 @@ class Pi2:
             self.raise_last_error()
 
 
+    def make_safe(self, argument):
+        """
+        Escapes bad characters from a string that is to be an argument for run_script command.
+        """
+
+        argument = str(argument)
+        argument = argument.replace('\n', '\\n')
+        return argument
+
+
     def run_command(self, cmd_name, args):
         """
         Runs pilib command, given its name and arguments.
@@ -739,6 +749,10 @@ class Pi2:
                 # Argument is something else... Just convert it to string.
                 arg_as_string = str(arg)
 
+            # Remove newlines
+            arg_as_string = self.make_safe(arg_as_string)
+            
+            # Add quotes
             arg_as_string = f"'{arg_as_string}'"
 
             if len(arg_line) > 0:
@@ -846,7 +860,7 @@ class Pi2:
         """
 
         name = self.generate_value_name()
-        value = value.replace("\"", "\\\"")
+        value = self.make_safe(value.replace("\"", "\\\""))
         self.run_script(f"newvalue({name}, \"string\", \"{value}\")")
         return Pi2Value(self, name)
 
@@ -869,7 +883,7 @@ class Pi2:
         """
         
         temp_image = self.newimage()
-
+        filename = self.make_safe(filename)
         self.run_script(f"isimagefile({filename}, {temp_image.name})")
 
         return temp_image.get_value() != 0
@@ -890,7 +904,7 @@ class Pi2:
         if target_image == None:
             image_name = self.generate_image_name()
             target_image = Pi2Image(self, image_name)
-
+        filename = self.make_safe(filename)
         self.run_script(f"read({target_image.name}, \"{filename}\", {data_type_override})")
         return target_image
         
@@ -903,6 +917,7 @@ class Pi2:
         """
 
         image_name = self.generate_image_name()
+        filename = self.make_safe(filename)
         self.run_script(f"mapraw({image_name}, {filename}, {data_type}, [{width}, {height}, {depth}])")
         return Pi2Image(self, image_name)
 

@@ -156,6 +156,7 @@ namespace pilib
 		piCommand = reader.get<string>("pi2_command", piCommand);
 		showSubmittedScripts = reader.get<bool>("show_submitted_scripts", false);
 		allowDelaying = reader.get<bool>("allow_delaying", true);
+		useNN5 = reader.get<bool>("use_nn5", true);
 		chunkSize(reader.get<Vec3c>("chunk_size", nn5::DEFAULT_CHUNK_SIZE));
 		maxSubmittedJobCount = reader.get<size_t>("max_parallel_submit_count", 0);
 		promoteThreshold = reader.get<size_t>("promote_threshold", 3);

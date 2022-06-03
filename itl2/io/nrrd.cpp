@@ -212,7 +212,7 @@ namespace itl2
 			void readWrite()
 			{
 				Image<uint16_t> img;
-				raw::read(img, "./input_data/t1-head");
+				raw::read(img, "../test_input_data/t1-head");
 
 				nrrd::writed(img, "./nrrd/t1-head");
 

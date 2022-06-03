@@ -157,6 +157,11 @@ namespace pilib
 		Vec3c nn5ChunkSize;
 
 		/**
+		Set to false to prefer Raw files over NN5 datasets.
+		*/
+		bool useNN5;
+
+		/**
 		Determines suitable block size etc. for running commands in delayedCommands list.
 		Throws exception if the commands cannot be run together.
 		*/
@@ -268,6 +273,17 @@ namespace pilib
 			maxSubmittedJobCount = count;
 		}
 
+		/**
+		Gets a value indicating whether NN5 should be preferred over Raw files.
+		*/
+		bool getUseNN5() const
+		{
+			return useNN5;
+		}
+
+		/**
+		Gets chunk size for NN5 files.
+		*/
 		Vec3c getChunkSize() const
 		{
 			return nn5ChunkSize;

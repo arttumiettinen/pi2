@@ -695,12 +695,12 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> tmp;
-			raw::read(tmp, "./input_data/t1-head_256x256x129.raw");
+			raw::read(tmp, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> reference;
 			convert(tmp, reference);
 
-			raw::read(tmp, "./input_data/t1-head_rot_trans_256x256x129.raw");
+			raw::read(tmp, "../test_input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed;
 			convert(tmp, deformed);
@@ -719,7 +719,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -768,7 +768,7 @@ namespace itl2
 		void fourierTransformPair()
 		{
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 			
 			//Image<float32_t> head(head16.dimensions());
 			//convert(head16, head);
@@ -795,7 +795,7 @@ namespace itl2
 		void dctPair()
 		{
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -819,7 +819,7 @@ namespace itl2
 			// NOTE: No asserts
 
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);

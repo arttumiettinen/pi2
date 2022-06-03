@@ -416,7 +416,7 @@ namespace pilib
 				{
 					if (doConversion)
 						result = v;
-					return 1;
+					return 2;
 				}
 			}
 			if (trySimpleConversion<Vec3c>(dt, value, doConversion, result, reason))
@@ -428,7 +428,7 @@ namespace pilib
 				{
 					if (doConversion)
 						result = round(v);
-					return 1;
+					return 2;
 				}
 			}
 			if (trySimpleConversion<coord_t>(dt, value, doConversion, result, reason))

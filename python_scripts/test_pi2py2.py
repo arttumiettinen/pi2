@@ -103,7 +103,7 @@ class Test_basic:
 
 
 
-    def check_difference_normal_distributed(self, opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[64, 64, 64], max_jobs=0):
+    def check_difference_normal_distributed(self, opname, args, resultname='result', infile=input_file(), tolerance=0.00001, convert_to_type=ImageDataType.UNKNOWN, maxmem=15, chunk_size=[64, 64, 64], max_jobs=0, out_prefix="out"):
         """
         Calculates operation normally and using distributed processing.
         Calculates difference between the results of the two versions and prints a message if the results do not match.
@@ -120,8 +120,9 @@ class Test_basic:
 
         argstr = '_'.join(str(e) for e in args)
         argstr = argstr.replace('*', '_') # Remove non-filename characters
-        outfile_normal = output_file(f"head_{opname}_{argstr}_normal")
-        outfile_distributed = output_file(f"head_{opname}_{argstr}_distributed")
+        argstr = argstr.replace('\n', '')
+        outfile_normal = output_file(f"{out_prefix}_{opname}_{argstr}_normal")
+        outfile_distributed = output_file(f"{out_prefix}_{opname}_{argstr}_distributed")
 
     
 
@@ -1232,6 +1233,65 @@ class Test_basic:
     def test_floodfill_dist(self):
         self.check_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 100], 'img', input_file_bin(), maxmem=5)
     
+    def generate_floodfill_geometry(self):
+        pi = self.pi2
+
+        # Generate geometry
+        img = pi.newimage(ImageDataType.UInt8, 200, 200, 200)
+        pi.box(img, [10, 0, 0], [30, 150, 200], 128)
+        pi.box(img, [10, 130, 0], [150, 20, 200], 128)
+        geom_file = output_file('floodfill_geometry1')
+        pi.writeraw(img, geom_file)
+        return geom_file
+
+    def generate_floodfill_geometry_closed(self):
+        pi = self.pi2
+
+        # Generate geometry
+        img = pi.newimage(ImageDataType.UInt8, 200, 200, 200)
+        pi.box(img, [10, 0, 0], [30, 150, 200], 128)
+        pi.box(img, [10, 130, 0], [500, 20, 200], 128)
+        pi.box(img, [10, 0, 0], [500, 150, 10], 128)
+        geom_file = output_file('floodfill_geometry2')
+        pi.writeraw(img, geom_file)
+        return geom_file
+
+
+    def test_floodfill_2_dist(self):
+        geom_file = self.generate_floodfill_geometry()
+        self.check_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 200], 'img', geom_file, maxmem=2, chunk_size=[100, 100, 100], out_prefix="chunk_100")
+        
+    def test_floodfill_3_dist(self):
+        geom_file = self.generate_floodfill_geometry()  
+        self.check_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 200], 'img', geom_file, maxmem=2, chunk_size=[64, 64, 64], out_prefix="chunk_64")
+        
+    def test_floodfill_4_dist(self):
+        geom_file = self.generate_floodfill_geometry()
+        self.check_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 200], 'img', geom_file, maxmem=2, chunk_size=[60, 100, 200], out_prefix="chunk_mix")
+        
+    def test_floodfill_5_dist(self):
+        geom_file = self.generate_floodfill_geometry_closed()
+        self.check_difference_normal_distributed('floodfill', ['img', [0, 0, 0], 200], 'img', geom_file, maxmem=2, chunk_size=[60, 100, 200], out_prefix="chunk_mix_closed")
+
+
+    def test_floodfill_multiseed_dist_1(self):
+        geom_file = self.generate_floodfill_geometry()
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [199, 199, 199]], dtype=np.float32), 200], 'img', geom_file, maxmem=4, chunk_size=[100, 100, 100], out_prefix="multiseed")
+
+    def test_floodfill_multiseed_dist_2(self):
+        geom_file = self.generate_floodfill_geometry()
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [12, 1, 1]], dtype=np.float32), 200], 'img', geom_file, maxmem=4,  chunk_size=[100, 100, 100], out_prefix="multiseed")
+
+
+    def test_floodfill_multiseed_dist_3(self):
+        geom_file = self.generate_floodfill_geometry_closed()
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [199, 199, 199]], dtype=np.float32), 200], 'img', geom_file, maxmem=4, chunk_size=[100, 100, 100], out_prefix="multiseed_closed")
+
+    def test_floodfill_multiseed_dist_4(self):
+        geom_file = self.generate_floodfill_geometry_closed()
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [12, 1, 1]], dtype=np.float32), 200], 'img', geom_file, maxmem=4,  chunk_size=[100, 100, 100], out_prefix="multiseed_closed")
+
+
     def test_gauss_dist(self):
         self.check_difference_normal_distributed('gaussfilter', ['img', 'result', 2])
     

@@ -424,8 +424,8 @@ namespace pilib
 "The pixel data type must be able to contain large enough values; usually uint8 is too small. Uint32 or uint64 are recommended. "
 "\n\n"
 "The algorithm selection depends on the value of the 'save memory' argument. "
-"If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model - Independent Assessment of Thickness in Three-Dimensional Images is used. "
-"If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte - scale volume images is applied. "
+"If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model-Independent Assessment of Thickness in Three-Dimensional Images is used."
+"If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte-scale volume images is applied. "
 "The separable algorithm is usually much faster than the Hildebrand algorithm, but requires much more RAM (normal mode) or temporary disk space (distributed mode). ",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Input image where background is marked with background value given by the third argument."),

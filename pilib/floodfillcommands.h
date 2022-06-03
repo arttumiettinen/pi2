@@ -7,6 +7,7 @@
 #include "pilibutilities.h"
 #include "io/vectorio.h"
 #include "pointprocesscommands.h"
+#include "listandimage.h"
 
 namespace pilib
 {
@@ -560,7 +561,7 @@ namespace pilib
 			{
 				CommandArgument<string>(ParameterDirection::In, "seeds source filename prefix", "Filename prefix for seeds input files."),
 				CommandArgument<string>(ParameterDirection::In, "seeds target filename prefix", "Filename prefix for seeds output files."),
-				CommandArgument<Vec3c>(ParameterDirection::In, "start point", "Starting point for the fill. This is the initial start point for the entire distributed fill - not the start point for any block. Seeds for each block are given in seed input files."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "start points", "List of start points for the fill."),
 				CommandArgument<double>(ParameterDirection::In, "original color", "Original color that we are filling. (the color of the region where the fill is allowed to proceed)"),
 				CommandArgument<double>(ParameterDirection::In, "fill color", "Fill color."),
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the region to fill. ") + connectivityHelp(), Connectivity::AllNeighbours),
@@ -620,7 +621,8 @@ namespace pilib
 		{
 			string seedsSourcePrefix = pop<string>(args);
 			string seedsTargetPrefix = pop<string>(args);
-			Vec3c startPoint = pop<Vec3c>(args);
+			//Vec3c startPoint = pop<Vec3c>(args);
+			Image<float32_t>& origSeeds = *pop<Image<float32_t>*>(args);
 			pixel_t origColor = pixelRound<pixel_t>(pop<double>(args));
 			pixel_t fillColor = pixelRound<pixel_t>(pop<double>(args));
 			Connectivity connectivity = pop<Connectivity>(args);
@@ -636,9 +638,18 @@ namespace pilib
 			vector<Vec3sc> seeds;
 			readInputFiles(seedsSourcePrefix, blockIndex, seeds);
 
-			// Add possible start point to the seeds list.
-			if (startPoint.max() >= 0)
-				seeds.push_back(Vec3sc(startPoint));
+			// Add possible start points to the seeds list.
+			//if (startPoint.max() >= 0)
+			//	seeds.push_back(Vec3sc(startPoint));
+			vector<Vec3f> origSeedsList;
+			imageToList(origSeeds, origSeedsList);
+			vector<Vec3sc> finalOrigSeedList = cast<Vec3sc>(roundv<Vec3c, Vec3f>(origSeedsList));
+			for (Vec3sc startPoint : finalOrigSeedList)
+			{
+				if (startPoint.max() >= 0)
+					seeds.push_back(startPoint);
+			}
+
 
 			// Convert seeds to block coordinates
 			for (Vec3sc& seed : seeds)
@@ -718,11 +729,27 @@ namespace pilib
 			return true;
 		}
 
+		virtual void getCorrespondingBlock(const std::vector<ParamVariant>& args, size_t argIndex, Vec3c& readStart, Vec3c& readSize, Vec3c& writeFilePos, Vec3c& writeImPos, Vec3c& writeSize) const override
+		{
+			if (argIndex == 3)
+			{
+				// Read entire seeds image
+				DistributedImage<float32_t>& seeds = *std::get<DistributedImage<float32_t>* >(args[3]);
+
+				if (seeds.width() != 3)
+					throw ITLException("Start points image width must be 3.");
+
+				readStart = Vec3c(0, 0, 0);
+				readSize = seeds.dimensions();
+			}
+		}
+
 		virtual bool needsToRunBlock(const std::vector<ParamVariant>& args, const Vec3c& readStart, const Vec3c& readSize, const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize, size_t blockNumber, const Vec3c& blockIndex3) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>*>(args[0]);
 			string seedsSourcePrefix = std::get<string>(args[1]);
-			Vec3c startPoint = std::get<Vec3c>(args[3]);
+			//Vec3c startPoint = std::get<Vec3c>(args[3]);
+			DistributedImage<float32_t>& seeds = *std::get<DistributedImage<float32_t>*>(args[3]);
 
 			//These values are not available here. Block origin equals readStart argument and block index 3 equals blockIndex3 argument.
 			//Distributor::BLOCK_INDEX3_ARG_TYPE blockIndex = std::get<Distributor::BLOCK_INDEX3_ARG_TYPE >(args[8]);
@@ -731,8 +758,20 @@ namespace pilib
 			// We need to run if we have start point(s) and if they are in this block
 			AABoxc blockBounds = in.bounds();
 			blockBounds.translate(readStart);
-			if (startPoint.max() >= 0 && blockBounds.contains(startPoint))
-				return true;
+			
+			Image<float32_t> seedsLocal;
+			seeds.readToNoFlush(seedsLocal);
+			vector<Vec3f> seedList;
+			imageToList(seedsLocal, seedList);
+			vector<Vec3sc> finalSeedList = cast<Vec3sc>(roundv<Vec3c, Vec3f>(seedList));
+
+			for (Vec3sc startPoint : finalSeedList)
+			{
+				if (startPoint.max() >= 0 && blockBounds.contains(Vec3c(startPoint)))
+					return true;
+			}
+			//if (startPoint.max() >= 0 && blockBounds.contains(startPoint))
+			//	return true;
 
 			// We need to run if there are input files available for this block.
 			return getInputFiles(seedsSourcePrefix, blockIndex3).size() > 0;
@@ -789,7 +828,8 @@ namespace pilib
 
 		FloodFillCommand() : OneImageInPlaceCommand<pixel_t>("floodfill", "Performs flood fill. Fills start point and all its neighbours and their neighbours etc. recursively as long as the color of the pixel to be filled equals color of the start point.",
 			{
-				CommandArgument<Vec3c>(ParameterDirection::In, "start point", "Starting point for the fill."),
+				//CommandArgument<Vec3c>(ParameterDirection::In, "start point", "Starting point for the fill."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "start points", "List of start points for the fill."),
 				CommandArgument<double>(ParameterDirection::In, "fill value", "Fill color."),
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the region to fill. ") + connectivityHelp(), Connectivity::AllNeighbours),
 			},
@@ -800,36 +840,76 @@ namespace pilib
 	public:
 		virtual void run(Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
 		{
-			Vec3c startPoint = pop<Vec3c>(args);
+			//Vec3c startPoint = pop<Vec3c>(args);
+			Image<float32_t>& seeds = *pop<Image<float32_t>*>(args);
 			pixel_t color = pixelRound<pixel_t>(pop<double>(args));
 			Connectivity connectivity = pop<Connectivity>(args);
 
-			floodfill(in, startPoint, color, color, connectivity);
+			vector<Vec3f> seedList;
+			imageToList(seeds, seedList);
+			
+			vector<Vec3sc> finalSeedList = cast<Vec3sc>(roundv<Vec3c, Vec3f>(seedList));
+
+			pixel_t origColor;
+			bool found = false;
+			for (Vec3sc p : finalSeedList)
+			{
+				if (in.isInImage(p))
+				{
+					origColor = in(p);
+					found = true;
+					break;
+				}
+			}
+
+			// No seed point is in the image.
+			if (!found)
+				return;
+
+			floodfill(in, finalSeedList, origColor, color, color, connectivity);
 		}
+
+		using Distributable::runDistributed;
 
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
 		{
 			// Algorithm:
-			// make initial seeds file
-			//	Instead of collecting everything into single file, output seeds such that seeds with constant z coordinate go
-			//	to a single file (do not write z at all). Then gathering of seeds is not necessary, floodFillBlockCommand needs
-			//	to be run only for blocks for which seed file exists, and each job writes to 2 seed files (separate ones).
-			// distribute (run only blocks that contain seeds)
-			//	each job:
-			//		read seeds files in the block
+			// In addition to processing the initial seeds, each job processes seeds in files that point to
+			// the block.
+			// each job:
+			//		read seeds files pointing to the block
 			//		run flood fill
-			//		write seed files if there are seeds
+			//		write seed files pointing to the neighbouring blocks if there are such seeds
 			// if there are any output seed files, repeat distribute
 
 			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>*>(args);
-			Vec3c startPoint = pop<Vec3c>(args);
+			DistributedImage<float32_t>& seeds = *pop<DistributedImage<float32_t>*>(args);
+			//Vec3c startPoint = pop<Vec3c>(args);
 			pixel_t fillColor = pixelRound<pixel_t>(pop<double>(args));
 			Connectivity connectivity = pop<Connectivity>(args);
 
-			if (!img.isInImage(startPoint))
-				return vector<string>();
+			//if (!img.isInImage(startPoint))
+			//	return vector<string>();
+			//pixel_t origColor = img.getPixel(startPoint);
+			Image<float32_t> seedsLocal;
+			seeds.readToNoFlush(seedsLocal);
+			vector<Vec3f> seedList;
+			imageToList(seedsLocal, seedList);
+			vector<Vec3sc> finalSeedList = cast<Vec3sc>(roundv<Vec3c, Vec3f>(seedList));
+			pixel_t origColor;
+			bool found = false;
+			for (Vec3sc p : finalSeedList)
+			{
+				if (img.isInImage(p))
+				{
+					origColor = img.getPixel(Vec3c(p));
+					found = true;
+					break;
+				}
+			}
 
-			pixel_t origColor = img.getPixel(startPoint);
+			if (!found)
+				return vector<string>();
 
 			if (origColor == fillColor)
 				return vector<string>();
@@ -837,11 +917,13 @@ namespace pilib
 			string seedsSourceFilenamePrefix = createTempFilename("flood_fill_seeds1");
 			string seedsTargetFilenamePrefix = createTempFilename("flood_fill_seeds2");
 
-			// Create initial seed file
-			//string seedsSourceFilename = seedsSourceFilenamePrefix + itl2::toString(startPoint.z);
-			//vector<Vec3sc> seeds;
-			//seeds.push_back(Vec3sc(startPoint));
-			//FloodFillBlockCommand<pixel_t>::writeOutputFile(seedsSourceFilenamePrefix + "_from_initiator", seeds);
+			// Create empty seeds image for use in second and further iterations.
+			DistributedTempImage<float32_t> emptySeeds(distributor, "empty_seed_points", Vec3c(3, 1, 1), DistributedImageStorageType::Raw);
+			Image<float32_t> emptySeedsLocal(3, 1, 1);
+			emptySeedsLocal(0, 0, 0) = -1;
+			emptySeedsLocal(1, 0, 0) = -1;
+			emptySeedsLocal(2, 0, 0) = -1;
+			emptySeeds.get().setData(emptySeedsLocal);
 			
 			size_t it = 0;
 			while (true)
@@ -850,13 +932,17 @@ namespace pilib
 				std::cout << "Iteration " << it << std::endl;
 
 				// Run distributed fill
+				DistributedImage<float32_t>* seedPointer;
+				if (it <= 1)
+					seedPointer = &seeds;
+				else
+					seedPointer = &emptySeeds.get();
+
 				CommandList::get<FloodFillBlockCommand<pixel_t>>().runDistributed(distributor, { &img, seedsSourceFilenamePrefix, seedsTargetFilenamePrefix,
-																				startPoint, (double)origColor, (double)fillColor, connectivity,
+																				seedPointer, (double)origColor, (double)fillColor, connectivity,
 																				img.dimensions(), Distributor::BLOCK_INDEX3_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() });
 
-				// Erase intial start point
-				startPoint = Vec3c(-1, -1, -1);
-
+				
 				// Delete sources (seedsSourceFilenamePrefix*)
 				auto items = itl2::buildFileList(seedsSourceFilenamePrefix + "_*");
 				for (const string& file : items)
@@ -881,4 +967,59 @@ namespace pilib
 			return false;
 		}
 	};
+
+
+
+
+
+	template<typename pixel_t> class FloodFillSingleCommand : public OneImageInPlaceCommand<pixel_t>, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		FloodFillSingleCommand() : OneImageInPlaceCommand<pixel_t>("floodfill", "Performs flood fill. Fills start point and all its neighbours and their neighbours etc. recursively as long as the color of the pixel to be filled equals color of the start point.",
+			{
+				CommandArgument<Vec3c>(ParameterDirection::In, "start point", "Starting point for the fill."),
+				CommandArgument<double>(ParameterDirection::In, "fill value", "Fill color."),
+				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the region to fill. ") + connectivityHelp(), Connectivity::AllNeighbours),
+			},
+			floodfillSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
+		{
+			Vec3c startPoint = pop<Vec3c>(args);
+			pixel_t color = pixelRound<pixel_t>(pop<double>(args));
+			Connectivity connectivity = pop<Connectivity>(args);
+
+			floodfill(in, startPoint, color, color, connectivity);
+		}
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
+		{
+			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>*>(args);
+			Vec3c startPoint = pop<Vec3c>(args);
+			double fillColor = pop<double>(args);
+			Connectivity connectivity = pop<Connectivity>(args);
+
+			vector<Vec3f> seedsList;
+			seedsList.push_back(Vec3f(startPoint));
+			Image<float32_t> seedsLocal;
+			listToImage(seedsList, seedsLocal);
+
+			DistributedTempImage<float32_t> seeds(distributor, "seed_points", Vec3c(3, 1, 1), DistributedImageStorageType::Raw);
+			seeds.get().setData(seedsLocal);
+			
+			return CommandList::get<FloodFillCommand<pixel_t>>().runDistributed(distributor, { &img, &(seeds.get()), fillColor, connectivity });
+		}
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
+	};
+
+
 }

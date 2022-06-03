@@ -136,24 +136,24 @@ namespace itl2
 				ImageDataType dt;
 				string reason;
 
-				png::getInfo("./input_data/uint8.png", w, h, dt, reason);
+				png::getInfo("../test_input_data/uint8.png", w, h, dt, reason);
 				testAssert(w == 100, "png width");
 				testAssert(h == 200, "png height");
 				testAssert(dt == ImageDataType::UInt8, "png data type (uint8)");
 
 				Image<uint8_t> img1(w, h);
-				png::read(img1, "./input_data/uint8.png", 0);
+				png::read(img1, "../test_input_data/uint8.png", 0);
 				raw::writed(img1, "./png/uint8");
 				png::writed(img1, "./png/uint8_out", 0);
 
 
-				png::getInfo("./input_data/uint16.png", w, h, dt, reason);
+				png::getInfo("../test_input_data/uint16.png", w, h, dt, reason);
 				testAssert(w == 100, "png width");
 				testAssert(h == 200, "png height");
 				testAssert(dt == ImageDataType::UInt16, "png data type (uint16)");
 
 				Image<uint16_t> img2(w, h);
-				png::read(img2, "./input_data/uint16.png", 0);
+				png::read(img2, "../test_input_data/uint16.png", 0);
 				raw::writed(img2, "./png/uint16");
 				png::writed(img2, "./png/uint16_out", 0);
 

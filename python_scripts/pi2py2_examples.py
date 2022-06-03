@@ -1530,7 +1530,6 @@ def seeded_distance_map():
 
 
 
-
 # Please uncomment the examples you wish to run:
 pi2_numpy_dimensions()
 create_and_access_images()

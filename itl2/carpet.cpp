@@ -10,7 +10,7 @@ namespace itl2
 		void carpet()
 		{
 			Image<uint16_t> orig;
-			raw::read(orig, "./input_data/t1-head");
+			raw::read(orig, "../test_input_data/t1-head");
 
 			// Crop smaller piece so that the carpet does not fall through the head as there's nothing in the edges
 			// of the image.

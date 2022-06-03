@@ -8,6 +8,7 @@ namespace pilib
 	{
 		ADD_REAL(FloodFillBlockCommand);
 		ADD_REAL(FloodFillCommand);
+		ADD_REAL(FloodFillSingleCommand);
 		ADD_REAL(GrowCommand);
 		ADD_REAL2(GrowPriorityCommand);
 		ADD_REAL(GrowLabelsCommand);

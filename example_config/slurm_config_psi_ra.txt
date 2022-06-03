@@ -40,6 +40,9 @@ max_memory = 180000
 ; queues.
 max_resubmit_count = 5
 
+; Set to true to enable saving temporary images as NN5 datasets.
+use_nn5 = False
+
 ; Chunk size for temporary NN5 datasets.
 ;chunk_size = [1536, 1536, 1536]
 

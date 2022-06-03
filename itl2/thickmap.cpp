@@ -1198,7 +1198,7 @@ namespace itl2
 		{
 			// This generates comparison data for Fiji implementation
 			Image<uint8_t> geometry;
-			raw::read(geometry, "./input_data/t1-head_bin_256x256x129.raw");
+			raw::read(geometry, "../test_input_data/t1-head_bin_256x256x129.raw");
 			raw::writed(geometry, "./tmap_processing_phases/geometry");
 
 			Image<float32_t> dmap2;
@@ -1227,7 +1227,7 @@ namespace itl2
 			int algo = 13; // dimred super
 
 			{
-				raw::read(geometry, "./input_data/t1-head_bin_256x256x129.raw");
+				raw::read(geometry, "../test_input_data/t1-head_bin_256x256x129.raw");
 				linearMap(geometry, Vec4d(0, 1, 1, 0));
 				
 				auto stats = testThickmap(geometry, algo, algorithmName(algo) + "_no_rounding", false);
@@ -1235,7 +1235,7 @@ namespace itl2
 			}
 
 			{
-				raw::read(geometry, "./input_data/t1-head_bin_256x256x129.raw");
+				raw::read(geometry, "../test_input_data/t1-head_bin_256x256x129.raw");
 				linearMap(geometry, Vec4d(0, 1, 1, 0));
 
 				auto stats = testThickmap(geometry, algo, algorithmName(algo) + "_with_rounding", true);

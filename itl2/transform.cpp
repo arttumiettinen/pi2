@@ -30,7 +30,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			scaleHelper(head16, 255);
 
@@ -50,7 +50,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			add(head16, 1);
 
@@ -77,7 +77,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<uint16_t> headb;
 			itl2::binning(head16, headb, 2);
@@ -101,7 +101,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16, headb;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			vector<Vec3f> refPoints, defPoints;
 			defPoints.push_back(Vec3f(0, 0, 64));
@@ -135,7 +135,7 @@ namespace itl2
 			// Larger test
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/t1-head_bin");
+				raw::read(img, "../test_input_data/t1-head_bin");
 
 				Image<uint8_t> out;
 				itl2::scaleLabels(img, out, true, Vec3c(5, 5, 5));
@@ -173,7 +173,7 @@ namespace itl2
 		void rotate()
 		{
 			Image<uint16_t> orig;
-			raw::read(orig, "./input_data/t1-head");
+			raw::read(orig, "../test_input_data/t1-head");
 
 			Image<uint16_t> out(orig.dimensions());
 			rotate(orig, out, degToRad(45));

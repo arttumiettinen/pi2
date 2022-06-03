@@ -1150,7 +1150,7 @@ namespace itl2
 		void autothreshold()
 		{
 			Image<uint16_t> img(256, 256, 129);
-			raw::read(img, "./input_data/t1-head_256x256x129.raw");
+			raw::read(img, "../test_input_data/t1-head_256x256x129.raw");
 
 			double th = autoThreshold(img);
 
@@ -1163,7 +1163,7 @@ namespace itl2
 		void localThreshold()
 		{
 			Image<uint16_t> img(256, 256, 129);
-			raw::read(img, "./input_data/t1-head_256x256x129.raw");
+			raw::read(img, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<uint16_t> out;
 			itl2::localThreshold(img, out);

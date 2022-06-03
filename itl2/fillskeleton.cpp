@@ -13,7 +13,7 @@ namespace itl2
 		void fillSkeleton()
 		{
 			Image<uint8_t> skele, skele2, orig;
-			raw::read(skele, "./input_data/real_skele_200x200x200.raw");
+			raw::read(skele, "../test_input_data/real_skele_200x200x200.raw");
 			Network net;
 			traceLineSkeleton(skele, false, 1.0, 1.0, net);
 
@@ -23,14 +23,14 @@ namespace itl2
 			Image<int32_t> points;
 			net.toImage(verts, edges, &meas, &points);
 
-			raw::read(skele, "./input_data/real_skele_200x200x200.raw");
+			raw::read(skele, "../test_input_data/real_skele_200x200x200.raw");
 			itl2::fillSkeleton(skele, net, EDGE_LENGTH);
 			raw::writed(skele, "./fillskeleton/filled_length");
 
 			Network net2;
 			net2.fromImage(verts, edges, &meas, &points);
 
-			raw::read(skele2, "./input_data/real_skele_200x200x200.raw");
+			raw::read(skele2, "../test_input_data/real_skele_200x200x200.raw");
 			itl2::fillSkeleton(skele2, net2, EDGE_LENGTH);
 			raw::writed(skele2, "./fillskeleton/filled_length_comp");
 

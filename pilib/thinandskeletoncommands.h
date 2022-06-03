@@ -11,6 +11,7 @@
 #include "fillskeleton.h"
 #include "floodfillcommands.h"
 #include "traceskeletonpoints.h"
+#include "listandimage.h"
 
 namespace pilib
 {
@@ -838,14 +839,15 @@ namespace pilib
 			getPointsAndLines(net, pointsv, linesv, sigma, maxDisplacement);
 
 			// Convert lists to images
-			points.ensureSize(3, pointsv.size());
-			for(size_t n = 0; n < pointsv.size(); n++)
-			{
-				const auto& v = pointsv[n];
-				points(0, n) = v.x;
-				points(1, n) = v.y;
-				points(2, n) = v.z;
-			}
+			//points.ensureSize(3, pointsv.size());
+			//for(size_t n = 0; n < pointsv.size(); n++)
+			//{
+			//	const auto& v = pointsv[n];
+			//	points(0, n) = v.x;
+			//	points(1, n) = v.y;
+			//	points(2, n) = v.z;
+			//}
+			listToImage(pointsv, points);
 
 			// Count total number of entries in lines lists
 			size_t total = 0;

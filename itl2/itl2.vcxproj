@@ -57,6 +57,7 @@
     <ClInclude Include="io\pcr.h" />
     <ClInclude Include="io\vectorio.h" />
     <ClInclude Include="iteration.h" />
+    <ClInclude Include="listandimage.h" />
     <ClInclude Include="lz4\lz4.h" />
     <ClInclude Include="lz4\lz4frame.h" />
     <ClInclude Include="lz4\lz4hc.h" />
@@ -149,6 +150,7 @@
     <ClCompile Include="diskmappedbuffer.cpp" />
     <ClCompile Include="io\itllz4.cpp" />
     <ClCompile Include="io\nn5.cpp" />
+    <ClCompile Include="listandimage.cpp" />
     <ClCompile Include="lz4\lz4.c" />
     <ClCompile Include="lz4\lz4frame.c" />
     <ClCompile Include="lz4\lz4hc.c" />

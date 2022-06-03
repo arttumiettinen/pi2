@@ -267,13 +267,13 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> reference(head16.dimensions());
 			convert(head16, reference);
 
 			Image<uint16_t> deformed16;
-			raw::read(deformed16, "./input_data/t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "../test_input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -342,7 +342,7 @@ namespace itl2
 			Vec3c referenceDimensions(256, 256, 129);
 
 			Image<uint16_t> deformed16;
-			raw::read(deformed16, "./input_data/t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "../test_input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -408,7 +408,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -503,7 +503,7 @@ namespace itl2
 		void mipMatch()
 		{
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);

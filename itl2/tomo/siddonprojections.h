@@ -222,7 +222,7 @@ namespace itl2
 	{
 		inline void projectionConsistency()
 		{
-			string filename = "input_data/plates";
+			string filename = "../test_input_data/plates";
 			Image<float32_t> img(100, 100, 100);
 			raw::read(img, filename);
 
@@ -352,7 +352,7 @@ namespace itl2
 
 		inline void create36ProjectionsSheppLogan()
 		{
-			string filename = "input_data/shepp-logan_179x179x179.raw";
+			string filename = "../test_input_data/shepp-logan_179x179x179.raw";
 			Vec2f angularRange(-180, 180);
 			Vec2f tiltRange(0, 0);
 			float32_t sourceDistance = 300;

@@ -6,6 +6,9 @@
 ; physical RAM.
 max_memory = 0
 
+; Set to true to enable saving temporary images as NN5 datasets.
+;use_nn5 = True
+
 ; Chunk size for temporary NN5 datasets.
 ;chunk_size = [1536, 1536, 1536]
 
