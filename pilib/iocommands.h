@@ -373,8 +373,8 @@ namespace pilib
 				ParamVariant p;
 				p = &in;
 				args2.push_back(p);
-				auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-				auto& result = cmd.runDistributed(distributor, args2);
+				NopSingleImageCommand<pixel_t>& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
+				std::vector<std::string> result = cmd.runDistributed(distributor, args2);
 
 				// Ensure that following operations do not write to the same file.
 				// Retain old write target storage type.
@@ -480,8 +480,8 @@ namespace pilib
 				ParamVariant p;
 				p = &in;
 				args2.push_back(p);
-				auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-				auto& result = cmd.runDistributed(distributor, args2);
+				NopSingleImageCommand<pixel_t>& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
+				std::vector<std::string> result = cmd.runDistributed(distributor, args2);
 
 				// Ensure that following operations do not write to the same file.
 				// Retain old write target storage type.
@@ -595,8 +595,8 @@ namespace pilib
 			ParamVariant p;
 			p = &in;
 			args2.push_back(p);
-			auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-			auto& result = cmd.runDistributed(distributor, args2);
+			NopSingleImageCommand<pixel_t>& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
+			std::vector<std::string> result = cmd.runDistributed(distributor, args2);
 
 			// Ensure that following operations do not write to the same file.
 			// Retain old write target storage type.
