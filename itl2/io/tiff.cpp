@@ -285,6 +285,9 @@ namespace itl2
 
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
+			if (!fs::exists(filename))
+				reason = "File not found.";
+
 			internals::initTIFF();
 			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 			TIFF* tif = tifObj.get();

@@ -90,7 +90,7 @@ namespace itl2
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if (!in)
-				throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+				throw ITLException(std::string("Unable to open file. ") + getStreamErrorMessage());
 
 			Vec3c dimensions;
 			ImageDataType fileDT;
