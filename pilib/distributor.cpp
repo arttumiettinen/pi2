@@ -1082,6 +1082,15 @@ namespace pilib
 						img->newWriteTarget();
 					}
 				}
+				// TODO: This seems to work in tests, too, but is not more efficient unless lineskeleton
+				// etc commands are altered such that they can skip unnecessary (copy-only) jobs.
+				//if(img->currentWriteTargetType() != DistributedImageStorageType::NN5 && margin != Vec3c(0, 0 ,0))
+				//{
+				//	if (img->currentReadSource() == img->currentWriteTarget())
+				//	{
+				//		img->newWriteTarget();
+				//	}
+				//}
 			}
 		}
 		//}
@@ -1279,6 +1288,9 @@ namespace pilib
 							// We are reading and writing the same file.
 							// AND the image is used as input and output.
 							// => The NN5Process must contain both read and write region.
+
+							cout << "DEBUG: NN5Process will contain both read and write region." << endl;
+
 							nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
 						else

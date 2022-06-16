@@ -117,6 +117,8 @@ namespace itl2
 
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
+std::cout << "DEBUG: LZ4 get info of file " << filename << std::endl;
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 			if (!in)
 			{

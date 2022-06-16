@@ -87,6 +87,8 @@ namespace itl2
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& target, const std::string& filename)
 		{
+std::cout << "DEBUG: LZ4 read file " << filename << std::endl;
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if (!in)
@@ -121,6 +123,8 @@ namespace itl2
 		*/
 		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& filePos, Image<pixel_t>& temp)
 		{
+std::cout << "DEBUG: LZ4 read block from file " << filename << ", filePos = " << filePos << ", size = " << img.dimensions() << std::endl;
+
 			Vec3c fileDimensions;
 			ImageDataType fileDT;
 			std::string reason;
@@ -159,6 +163,8 @@ namespace itl2
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& source, const std::string& filename)
 		{
+std::cout << "DEBUG: LZ4 writing file " << filename << std::endl;
+
 			createFoldersFor(filename);
 
 			std::ofstream out(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
@@ -307,6 +313,8 @@ namespace itl2
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions)
 		{
+std::cout << "DEBUG: LZ4 write block to file " << filename << ", filePos = " << filePosition << ", size = " << blockDimensions << std::endl;
+
 
 			if (!img.isInImage(imagePosition))
 				throw ITLException("Block start position must be inside the image.");
