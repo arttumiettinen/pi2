@@ -119,6 +119,12 @@ namespace itl2
 		{
 std::cout << "DEBUG: LZ4 get info of file " << filename << std::endl;
 
+			//if (!fs::is_regular_file(filename))
+			//{
+			//	reason = "Not a file.";
+			//	return false;
+			//}
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 			if (!in)
 			{

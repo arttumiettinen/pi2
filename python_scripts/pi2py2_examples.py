@@ -20,13 +20,13 @@ pi = Pi2()
 # Define convenience functions that return input and output file names.
 # This is just to avoid copying the paths to all the examples in case they change.
 def input_file(filename='t1-head_256x256x129.raw'):
-    return '../../testing/input_data/' + filename
+    return '../../test_input_data/' + filename
 
 def input_file_bin():
-    return '../../testing/input_data/t1-head_bin_256x256x129.raw'
+    return '../../test_input_data/t1-head_bin_256x256x129.raw'
 
 def output_file(name):
-    return '../../testing/pi2py2/' + name
+    return '../../test_output_data/pi2py2/' + name
 
 
 
