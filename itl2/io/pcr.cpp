@@ -35,6 +35,13 @@ namespace itl2
 			isBigEndian = false;
 			dataType = ImageDataType::Unknown;
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+			{
+				failReason = "Not a file.";
+				return false;
+			}
+
 			if (fs::path(filename).extension().string() != ".pcr")
 			{
 				failReason = "Not a .pcr file.";

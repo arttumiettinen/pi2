@@ -43,6 +43,13 @@ namespace itl2
 			height = 0;
 			dataType = ImageDataType::Unknown;
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+			{
+				reason = "Not a file.";
+				return false;
+			}
+
 			FILE* f;
 			if (fopen_s(&f, filename.c_str(), "rb") != 0)
 			{

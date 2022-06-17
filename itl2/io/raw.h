@@ -296,6 +296,10 @@ namespace itl2
 		*/
 		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 		{
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException(std::string("Not a file: ") + filename);
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if(!in)
@@ -361,6 +365,9 @@ namespace itl2
 				return;
 			}
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException(std::string("Not a file: ") + filename);
 
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 

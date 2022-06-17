@@ -89,6 +89,10 @@ namespace itl2
 		{
 std::cout << "DEBUG: LZ4 read file " << filename << std::endl;
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException("Not a file.");
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if (!in)

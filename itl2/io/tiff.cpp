@@ -288,6 +288,13 @@ namespace itl2
 			if (!fs::exists(filename))
 				reason = "File not found.";
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+			{
+				reason = "Not a file.";
+				return false;
+			}
+
 			internals::initTIFF();
 			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 			TIFF* tif = tifObj.get();
