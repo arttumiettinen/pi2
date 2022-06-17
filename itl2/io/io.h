@@ -146,6 +146,7 @@ namespace itl2
 		namespace tests
 		{
 			void readWrite();
+			void badnn5();
 		}
 	}
 }

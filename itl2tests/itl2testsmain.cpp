@@ -55,25 +55,10 @@
 using namespace itl2;
 using namespace std;
 
-namespace itl2
-{
-	namespace tests
-	{
-		void badnn5test()
-		{
-			string path = "./bad_nn5/0/0/0";
-			fs::create_directories(path);
-
-			Image<uint8_t> img;
-			io::read(img, path);
-		}
-	}
-}
-
 
 int main()
 {
-	test(itl2::tests::badnn5test, "reading bad nn5");
+	test(itl2::io::tests::badnn5, "reading bad nn5");
 
 	//test(itl2::tests::progress, "progress indicator");
 

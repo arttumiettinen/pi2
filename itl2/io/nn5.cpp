@@ -156,6 +156,25 @@ namespace itl2
 		{
 			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression)
 			{
+				// Do not re-write the data if it does not change. This is the case
+				// in concurrent writeBlock processing and there the metadata file must not be changed.
+				bool oldIsNativeByteOrder;
+				Vec3c oldDimensions;
+				ImageDataType oldDataType;
+				Vec3c oldChunkSize;
+				NN5Compression oldCompression;
+				string dummyReason;
+				if (getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCompression, dummyReason))
+				{
+					if (oldDimensions == dimensions &&
+						oldIsNativeByteOrder == true &&
+						oldDataType == dataType &&
+						oldChunkSize == chunkSize &&
+						oldCompression == compression)
+						// No changes, so don't write a new file.
+						return;
+				}
+
 				nlohmann::json j;
 				j["Dimensions"][0] = dimensions[0];
 				j["Dimensions"][1] = dimensions[1];

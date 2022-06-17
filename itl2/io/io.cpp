@@ -75,6 +75,20 @@ namespace itl2
 
 				testAssert(equals(img, seq), "read and written sequence are not equal.");
 			}
+
+			void badnn5()
+			{
+				string path = "./bad_nn5/0/0/0";
+				fs::create_directories(path);
+
+				Vec3c dimensions;
+				ImageDataType dt;
+				string reason;
+				bool result = io::getInfo(path, dimensions, dt, reason);
+				std::cout << reason << std::endl;
+				testAssert(result == false, "reading bad nn5");
+
+			}
 		}
 	}
 }
