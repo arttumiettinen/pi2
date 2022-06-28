@@ -13,6 +13,7 @@ namespace pilib
 		CommandList::add<ShowRawInfoCommand>();
 		CommandList::add<ShowSequenceInfoCommand>();
 		ADD_ALL(WriteTiffCommand);
+		ADD_ALL(WritePngCommand);
 		ADD_ALL(WriteNRRDCommand);
 		ADD_ALL(WriteRawCommand);
 		ADD_ALL(WriteLZ4Command);

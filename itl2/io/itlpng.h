@@ -232,7 +232,7 @@ namespace itl2
 
 		/*
 		Get information from .png image file.
-		Supports only 8- and 16-bit grayscale images.
+		Supports 8- and 16-bit grayscale images only.
 		@param width, height Dimensions of the image
 		@param dataType Pixel data type of the image.
 		@return True if the file seems to be an existing, valid .png file with supported pixel data type.
@@ -254,7 +254,7 @@ namespace itl2
 
 		/*
 		Write a .png file.
-		Supports only 8- and 16-bit grayscale images.
+		Supports 8- and 16-bit grayscale images only.
 		@param z Z-coordinate of the slice that will be written.
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const string& filename, coord_t z = 0)
@@ -266,7 +266,7 @@ namespace itl2
 
 		/*
 		Write a .png file, adds .png to the file name.
-		Supports only 8- and 16-bit grayscale images.
+		Supports 8- and 16-bit grayscale images only.
 		@param z Z-coordinate of the slice that will be written.
 		*/
 		template<typename pixel_t> void writed(const Image<pixel_t>& img, const string& filename, coord_t z = 0)

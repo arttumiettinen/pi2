@@ -240,6 +240,33 @@ namespace pilib
 	};
 
 
+	template<typename pixel_t> class WritePngCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WritePngCommand() : Command("writepng", "Write an image to a .png file. This command supports 1- and 2-dimensional images only.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the file to write. If the file exists, its current contents are erased. Extension .png is automatically appended to the name of the file.")
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			if (in.depth() > 1)
+				throw ITLException("3-dimensional images cannot be saved to a .png file. Consider saving to an image sequence instead.");
+
+			itl2::png::writed(in, fname);
+		}
+	};
+
+
 	template<typename pixel_t> class WriteNRRDCommand : public Command
 	{
 	protected:
