@@ -188,6 +188,10 @@ def get_image_size(filename):
     s = s.decode('ASCII')
     lines = s.splitlines()
     if len(lines) == 3:
+        
+        if lines[-1] == 'Unknown':
+            raise RuntimeError("Unsupported image file type or pixel data type: " + filename)
+
         return from_string(lines[1])
 
     raise RuntimeError("Unable to read dimensions from image file " + filename)

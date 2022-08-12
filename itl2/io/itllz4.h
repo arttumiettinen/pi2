@@ -87,7 +87,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void read(Image<pixel_t>& target, const std::string& filename)
 		{
-std::cout << "DEBUG: LZ4 read file " << filename << std::endl;
+//std::cout << "DEBUG: LZ4 read file " << filename << std::endl;
 
 			// This is required in some Linux systems to differentiate files from directories.
 			if (!fs::is_regular_file(filename))
@@ -127,7 +127,7 @@ std::cout << "DEBUG: LZ4 read file " << filename << std::endl;
 		*/
 		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& filePos, Image<pixel_t>& temp)
 		{
-std::cout << "DEBUG: LZ4 read block from file " << filename << ", filePos = " << filePos << ", size = " << img.dimensions() << std::endl;
+//std::cout << "DEBUG: LZ4 read block from file " << filename << ", filePos = " << filePos << ", size = " << img.dimensions() << std::endl;
 
 			Vec3c fileDimensions;
 			ImageDataType fileDT;
@@ -167,7 +167,7 @@ std::cout << "DEBUG: LZ4 read block from file " << filename << ", filePos = " <<
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& source, const std::string& filename)
 		{
-std::cout << "DEBUG: LZ4 writing file " << filename << std::endl;
+//std::cout << "DEBUG: LZ4 writing file " << filename << std::endl;
 
 			createFoldersFor(filename);
 
@@ -317,7 +317,7 @@ std::cout << "DEBUG: LZ4 writing file " << filename << std::endl;
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions)
 		{
-std::cout << "DEBUG: LZ4 write block to file " << filename << ", filePos = " << filePosition << ", size = " << blockDimensions << std::endl;
+//std::cout << "DEBUG: LZ4 write block to file " << filename << ", filePos = " << filePosition << ", size = " << blockDimensions << std::endl;
 
 
 			if (!img.isInImage(imagePosition))

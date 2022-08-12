@@ -1289,7 +1289,7 @@ namespace pilib
 							// AND the image is used as input and output.
 							// => The NN5Process must contain both read and write region.
 
-							cout << "DEBUG: NN5Process will contain both read and write region." << endl;
+							//cout << "DEBUG: NN5Process will contain both read and write region." << endl;
 
 							nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
