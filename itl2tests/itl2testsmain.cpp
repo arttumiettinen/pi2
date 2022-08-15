@@ -13,6 +13,7 @@
 #include "sphere.h"
 #include "testutils.h"
 #include "io/itlpng.h"
+#include "io/itljpeg.h"
 #include "neighbourhood.h"
 #include "misc.h"
 #include "filters.h"
@@ -58,7 +59,7 @@ using namespace std;
 
 int main()
 {
-	test(itl2::io::tests::badnn5, "reading bad nn5");
+	//test(itl2::io::tests::badnn5, "reading bad nn5");
 
 	//test(itl2::tests::progress, "progress indicator");
 
@@ -81,6 +82,7 @@ int main()
 	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
+//	test(itl2::jpeg::tests::jpeg, "Jpeg read");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
@@ -123,9 +125,8 @@ int main()
 	//test(itl2::tests::byteOrder, "byte order swaps");
 
 
-	//test(itl2::tests::phaseCorrelation, "phase correlation");
+	test(itl2::tests::phaseCorrelation, "phase correlation");
 	//test(itl2::tests::modulo, "modulo function");
-
 	//test(itl2::tests::phaseCorrelation2, "phase correlation 2 (rotation)");
 
 	//test(itl2::tests::blockMatch1, "block match 1");

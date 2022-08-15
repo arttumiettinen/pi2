@@ -304,7 +304,7 @@ namespace itl2
 			}
 
 			// Perform block matching
-			blockMatch(reference, deformed, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(reference, deformed, refPoints, defPoints, fitGoodness, compRadius, SubpixelAccuracy::Centroid);
 
 			// Output shifts
 			int w = 8;
@@ -377,7 +377,7 @@ namespace itl2
 			maxXY.x = refP.width() / 2;
 			maxXY.y = refP.height() / 2;
 			maxXY.z = 0;
-			Vec3d shiftXY = phaseCorrelation(refP, defP, maxXY, goodness);
+			Vec3d shiftXY = phaseCorrelationShift(refP, defP, maxXY, SubpixelAccuracy::Centroid, goodness);
 
 			raw::writed(refP, "./registration/mipmatch_xy_correlation");
 
@@ -392,7 +392,7 @@ namespace itl2
 			maxYZ.x = refP.width() / 2;
 			maxYZ.y = refP.height() / 2;
 			maxYZ.z = 0;
-			Vec3d shiftYZ = phaseCorrelation(refP, defP, maxYZ, goodness);
+			Vec3d shiftYZ = phaseCorrelationShift(refP, defP, maxYZ, SubpixelAccuracy::Centroid, goodness);
 
 			raw::writed(refP, "./registration/mipmatch_yz_correlation");
 
@@ -448,7 +448,7 @@ namespace itl2
 			}
 			
 			// Perform block matching
-			blockMatch(head, headShifted, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(head, headShifted, refPoints, defPoints, fitGoodness, compRadius, SubpixelAccuracy::Centroid);
 
 
 			// Output shifts, calculate average shift
@@ -558,7 +558,7 @@ namespace itl2
 				}
 			}
 
-			blockMatch(img1, img2, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(img1, img2, refPoints, defPoints, fitGoodness, compRadius, SubpixelAccuracy::Centroid);
 
 
 			for (coord_t z = 0; z < defPoints.depth(); z++)

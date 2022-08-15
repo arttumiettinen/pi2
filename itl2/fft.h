@@ -6,6 +6,7 @@
 
 #include "image.h"
 #include "math/vec3.h"
+#include "utilities.h"
 
 namespace itl2
 {
@@ -80,6 +81,65 @@ namespace itl2
 	*/
 	void powerSpectrum(const Image<complex32_t>& img, Image<float32_t>& pwr);
 
+	/*
+	Calculates cross-correlogram of the given images with phase correlation.
+	The output is stored in img1.
+	*/
+	void correlogram(Image<float32_t>& img1, Image<float32_t>& img2);
+
+	/*
+	Sub-pixel accuracy modes for peak location determination.
+	*/
+	enum class SubpixelAccuracy
+	{
+		/*
+		No sub-pixel accuracy.
+		This is the least accurate mode.
+		*/
+		None,
+
+		/*
+		Quadratic fit method for sub-pixel accuracy.
+		The sub-pixel location is the location of the maximum of a second degree polynomial fitted to the 27-neighbourhood of the peak.
+		*/
+		Quadratic,
+
+		/*
+		Centroid method for sub-pixel accuracy.
+		The sub-pixel location is the centroid of pixels around the peak.
+		This is the most accurate mode in the ideal case, but quadratic might be better in practical cases.
+		*/
+		Centroid
+	};
+
+	template<>
+	inline std::string toString(const SubpixelAccuracy& x)
+	{
+		switch (x)
+		{
+		case SubpixelAccuracy::None: return "None";
+		case SubpixelAccuracy::Quadratic: return "Quadratic";
+		case SubpixelAccuracy::Centroid: return "Centroid";
+		}
+		throw ITLException("Invalid sub-pixel accuracy mode.");
+	}
+
+	template<>
+	inline SubpixelAccuracy fromString(const string& dt)
+	{
+		string str = dt;
+		trim(str);
+		toLower(str);
+		if (str == "none")
+			return SubpixelAccuracy::None;
+		if (str == "quadratic")
+			return SubpixelAccuracy::Quadratic;
+		if (str == "centroid")
+			return SubpixelAccuracy::Centroid;
+
+		throw ITLException("Invalid sub-pixel accuracy mode: " + dt);
+	}
+
 	/**
 	Calculates shift between the two images with phase correlation method.
 	@param img1 Reference image. This image is used as temporary storage so it will be modified.
@@ -88,7 +148,7 @@ namespace itl2
 	@param goodness Estimate of goodness of fit between img1 and shifted img2.
 	@return Shift between img1 and img2.
 	*/
-	Vec3d phaseCorrelation(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, double& goodness);
+	Vec3d phaseCorrelationShift(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, SubpixelAccuracy mode, double& goodness);
 
 	namespace tests
 	{

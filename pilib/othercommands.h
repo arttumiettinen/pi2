@@ -48,7 +48,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "zstep", "Step between calculation points in z-direction."),
 				CommandArgument<Vec3d>(ParameterDirection::In, "initial shift", "Initial shift between the images."),
 				CommandArgument<std::string>(ParameterDirection::In, "file name prefix", "Prefix (and path) of files to write. The command will save point grid in the reference image, corresponding points in the deformed image, and goodness-of-fit. If the files exists, the current contents are erased."),
-				CommandArgument<Vec3c>(ParameterDirection::In, "comparison radius", "Radius of comparison region.", Vec3c(25, 25, 25))
+				CommandArgument<Vec3c>(ParameterDirection::In, "comparison radius", "Radius of comparison region.", Vec3c(25, 25, 25)),
+				CommandArgument<std::string>(ParameterDirection::In, "subpixel accuracy", "Subpixel accuracy mode. Can be 'none', 'quadratic', or 'centroid'.", "centroid")
 			},
 			blockMatchSeeAlso())
 		{
@@ -71,6 +72,7 @@ namespace pilib
 			Vec3d initialShift = pop<Vec3d>(args);
 			std::string fname = pop<std::string>(args);
 			Vec3c compRadius = pop<Vec3c>(args);
+			SubpixelAccuracy mode = fromString<SubpixelAccuracy>(pop<string>(args));
 
 			PointGrid3D<coord_t> refPoints(PointGrid1D<coord_t>(xmin, xmax, xstep), PointGrid1D<coord_t>(ymin, ymax, ystep), PointGrid1D<coord_t>(zmin, zmax, zstep));
 			Image<Vec3d> defPoints(refPoints.pointCounts());
@@ -88,7 +90,7 @@ namespace pilib
 				}
 			}
 
-			blockMatch(ref, def, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(ref, def, refPoints, defPoints, fitGoodness, compRadius, mode);
 
 			//filterDisplacements(refPoints, defPoints, fitGoodness);
 			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, 0, 1, 0);
@@ -114,6 +116,7 @@ namespace pilib
 				CommandArgument<size_t>(ParameterDirection::In, "coarse binning", "Amount of resolution reduction in coarse matching phase.", 2),
 				CommandArgument<Vec3c>(ParameterDirection::In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
 				CommandArgument<size_t>(ParameterDirection::In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 1),
+				CommandArgument<std::string>(ParameterDirection::In, "subpixel accuracy", "Subpixel accuracy mode. Can be 'none', 'quadratic', or 'centroid'.", "centroid")
 			},
 			blockMatchSeeAlso())
 		{
@@ -133,6 +136,7 @@ namespace pilib
 			size_t coarseBinning = pop<size_t>(args);
 			Vec3c fineCompRadius = pop<Vec3c>(args);
 			size_t fineBinning = pop<size_t>(args);
+			SubpixelAccuracy mode = fromString<SubpixelAccuracy>(pop<string>(args));
 
 			coord_t xmin = xGrid.x;
 			coord_t xmax = xGrid.y;
@@ -160,7 +164,7 @@ namespace pilib
 				}
 			}
 
-			blockMatchMulti(ref, def, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning);
+			blockMatchMulti(ref, def, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, mode);
 
 			// TODO: Instead of writing to disk, return the values in images.
 
@@ -194,7 +198,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "coarse binning", "Amount of resolution reduction in coarse matching phase.", 2),
 				CommandArgument<Vec3c>(ParameterDirection::In, "fine comparison radius", "Radius of comparison region for fine (full-resolution) matching.", Vec3c(10, 10, 10)),
 				CommandArgument<coord_t>(ParameterDirection::In, "fine binning", "Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.", 2),
-				CommandArgument<bool>(ParameterDirection::In, "normalize", "Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.", true)
+				CommandArgument<bool>(ParameterDirection::In, "normalize", "Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.", true),
+				CommandArgument<string>(ParameterDirection::In, "subpixel accuracy", "Subpixel accuracy mode. Can be 'none', 'quadratic', or 'centroid'.", "centroid")
 			},
 			blockMatchSeeAlso())
 		{
@@ -221,6 +226,7 @@ namespace pilib
 			Vec3c fineCompRadius = pop<Vec3c>(args);
 			coord_t fineBinning = pop<coord_t>(args);
 			bool normalize = pop<bool>(args);
+			SubpixelAccuracy mode = fromString<SubpixelAccuracy>(pop<string>(args));
 
 			Vec3c refDimensions;
 			ImageDataType refDT;
@@ -273,17 +279,18 @@ namespace pilib
 				}
 			}
 
+
 			if (refDT == ImageDataType::UInt8)
 			{
-				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef);
+				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
 			}
 			else if (refDT == ImageDataType::UInt16)
 			{
-				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef);
+				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
 			}
 			else if (refDT == ImageDataType::Float32)
 			{
-				blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef);
+				blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
 			}
 			else
 				throw ParseException("Unsupported image data type (Please add the data type to BlockMatchPartialLoadCommand in commands.h file).");
