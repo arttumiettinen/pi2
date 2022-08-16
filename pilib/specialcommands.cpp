@@ -90,6 +90,12 @@ namespace pilib
 
 		cout << endl << endl;
 		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This software is based in part on the work of the Independent JPEG Group." << endl;
+		cout << endl;
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
 		cout << "This program contains code from the LZ4 library, licensed" << endl;
 		cout << "under the license shown below." << endl;
 		cout << "See also https://github.com/lz4/lz4" << endl;
