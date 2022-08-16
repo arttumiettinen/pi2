@@ -47,6 +47,7 @@
     <ClInclude Include="getslice.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="imagemetadata.h" />
+    <ClInclude Include="io\fopen_s.h" />
     <ClInclude Include="io\ini.h" />
     <ClInclude Include="io\inireader.h" />
     <ClInclude Include="io\itljpeg.h" />

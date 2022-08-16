@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
-#include "image.h"
+#include <csetjmp>
 
+#include "image.h"
 #include "jpeglib.h"
+#include "io/fopen_s.h"
 
 namespace itl2
 {

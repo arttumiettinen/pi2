@@ -4,23 +4,13 @@
 #include "png.h"
 #include "image.h"
 #include "io/imagedatatype.h"
+#include "io/fopen_s.h"
 
 namespace itl2
 {
 
 	namespace png
 	{
-
-#ifndef _WIN32	
-		inline int fopen_s(FILE **f, const char *name, const char *mode)
-		{
-			int ret = 0;
-			*f = fopen(name, mode);
-			if (!*f)
-				ret = errno;
-			return ret;
-		}
-#endif
 
 		namespace internals
 		{
