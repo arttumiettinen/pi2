@@ -411,6 +411,9 @@
     <ClInclude Include="listandimage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="io\itljpeg.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="test.cpp">
@@ -625,6 +628,9 @@
     </ClCompile>
     <ClCompile Include="listandimage.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\itljpeg.cpp">
+      <Filter>Source Files\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

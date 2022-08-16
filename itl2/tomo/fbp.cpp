@@ -1970,8 +1970,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			raw::writed(output3, "./rec/fibre_reconstruction_mid_gpu_output_projection_blocks");
 
 
-			testAssert(equals(output, output2, 1e-4f), "images reconstructed in whole and in projection blocks do not match.");
-			testAssert(equals(output, output3, 1e-4f), "images reconstructed in whole and in output and projection blocks do not match.");
+			testAssert(equalsTol(output, output2, 1e-4f), "images reconstructed in whole and in projection blocks do not match.");
+			testAssert(equalsTol(output, output3, 1e-4f), "images reconstructed in whole and in output and projection blocks do not match.");
 #endif
 		}
 

@@ -45,7 +45,7 @@ namespace itl2
 				FILE* f;
 				if (fopen_s(&f, filename.c_str(), "rb") != 0)
 				{
-					errorMessage = string("Unable to open file ") + filename + ".";
+					errorMessage = "Unable to open file.";
 					return false;
 				}
 
@@ -80,9 +80,12 @@ namespace itl2
 					int colorType;
 					png_get_IHDR(png, pngInfo, &pngWidth, &pngHeight, &bitDepth, &colorType, nullptr, nullptr, nullptr);
 
+					if (img.width() != pngWidth || img.height() != pngHeight)
+						img.ensureSize(pngWidth, pngHeight, img.depth());
+
 					// Check that image size is correct.
-					if (img.width() == pngWidth && img.height() == pngHeight)
-					{
+					//if (img.width() == pngWidth && img.height() == pngHeight)
+					//{
 
 						// Make sure that image data type and png file data type match.
 						if (colorType == PNG_COLOR_TYPE_GRAY)
@@ -132,11 +135,11 @@ namespace itl2
 						{
 							errorMessage = "Png file does not contain a grayscale image.";
 						}
-					}
-					else
-					{
-						errorMessage = "Image width and height do not match to file width and height.";
-					}
+					//}
+					//else
+					//{
+					//	errorMessage = "Image width and height do not match to file width and height.";
+					//}
 				}
 				else
 				{
@@ -176,7 +179,7 @@ namespace itl2
 				FILE *f;
 				if (fopen_s(&f, filename.c_str(), "wb") != 0)
 				{
-					errorMessage = string("Unable to open file ") + filename + " for writing.";
+					errorMessage = "Unable to open file for writing.";
 					return false;
 				}
 
@@ -238,6 +241,15 @@ namespace itl2
 		@return True if the file seems to be an existing, valid .png file with supported pixel data type.
 		*/
 		bool getInfo(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType, string& reason);
+
+		inline bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
+		{
+			coord_t w, h;
+			bool result = getInfo(filename, w, h, dataType, reason);
+			if (result)
+				dimensions = Vec3c(w, h, 1);
+			return true;
+		}
 
 		/*
 		Read a .png file.

@@ -82,13 +82,13 @@ int main()
 	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
-//	test(itl2::jpeg::tests::jpeg, "Jpeg read");
+	//test(itl2::jpeg::tests::jpeg, "Jpeg read");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
 	//test(itl2::pcr::tests::read, "PCR read");
 	
-
+	test(itl2::sequence::tests::singleImages, "Single images as sequences");
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
 	//test(itl2::sequence::tests::fileFormats, "Sequence file formats");
@@ -125,7 +125,7 @@ int main()
 	//test(itl2::tests::byteOrder, "byte order swaps");
 
 
-	test(itl2::tests::phaseCorrelation, "phase correlation");
+	//test(itl2::tests::phaseCorrelation, "phase correlation");
 	//test(itl2::tests::modulo, "modulo function");
 	//test(itl2::tests::phaseCorrelation2, "phase correlation 2 (rotation)");
 

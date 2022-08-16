@@ -16,22 +16,6 @@ namespace itl2
 		namespace internals
 		{
 			
-
-			
-
-			///*
-			//Separates directory and filename parts of a sequence template.
-			//*/
-			//void separatePathAndFileTemplate(const string& templ, fs::path& dir, string& fileTemplate)
-			//{
-			//	fs::path p;
-			//	separatePathAndFileTemplate(templ, p, fileTemplate);
-			//	dir = p.string();
-			//}
-
-			
-			
-			
 			bool getInfo2D(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType, string& reason)
 			{
 				// TODO: Add other formats here.
@@ -52,6 +36,10 @@ namespace itl2
 					reason = "The sequence contains 3D tiff files.";
 					return false;
 				}
+
+				// Jpeg files are supported
+				if (jpeg::getInfo(filename, width, height, dataType, reason))
+					return true;
 
 				reason = "Sequence slices could not be determined to be in any supported file format.";
 				return false;
@@ -137,6 +125,16 @@ namespace itl2
 				itl2::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq\\test_sequence@.png");
 				itl2::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq\\");
 				itl2::buildFileList("C:\\mytemp\\dev\\itl2\\testing\\sequence\\test_seq");
+			}
+
+			void singleImages()
+			{
+				Vec3c dims;
+				ImageDataType dt;
+				string reason;
+				testAssert(sequence::getInfo("../test_input_data/uint8.jpg", dims, dt, reason) == true, "sequence getInfo return value");
+				testAssert(dims == Vec3c(100, 200, 1), "sequence dims");
+				testAssert(dt == ImageDataType::UInt8, "sequence datatype");
 			}
 
 			void sequence()

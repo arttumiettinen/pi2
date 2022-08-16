@@ -8,6 +8,7 @@ fftw-3.3.5-dll64/*
 libpng-1.6.34/*
 tiff-4.0.10/*
 zlib-1.2.11/*
+jpeg-9e/*
 
 # Test data folders
 test_input_data/*

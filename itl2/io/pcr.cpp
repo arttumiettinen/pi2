@@ -58,7 +58,7 @@ namespace itl2
 
 			if (reader.parseError() < 0)
 			{
-				failReason = string("Unable to open file ") + filename;
+				failReason = "Unable to open file.";
 				return false;
 			}
 

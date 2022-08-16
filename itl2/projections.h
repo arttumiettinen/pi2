@@ -8,6 +8,7 @@
 #include <set>
 #include <unordered_set>
 #include <limits>
+#include <type_traits>
 
 namespace itl2
 {
@@ -298,7 +299,17 @@ namespace itl2
 	Determines if pixel values in the two images are equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel1_t, typename pixel2_t> bool equals(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
+	template<
+		typename pixel1_t,
+		typename pixel2_t
+		//typename = std::enable_if_t<		// Not available for floating point types.
+		//	std::conjunction_v<
+		//		std::negation<std::is_floating_point<pixel1_t> >,
+		//		std::negation<std::is_floating_point<pixel2_t> >
+		//	>
+		//>
+	>
+	bool equals(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
 	{
 		a.checkSize(b);
 
@@ -319,7 +330,17 @@ namespace itl2
 	Determines if pixel values in the two images are not equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel1_t, typename pixel2_t> bool differs(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
+	template<
+		typename pixel1_t,
+		typename pixel2_t
+		//typename = std::enable_if_t<		// Not available for floating point types.
+		//	std::conjunction_v<
+		//		std::negation<std::is_floating_point<pixel1_t> >,
+		//		std::negation<std::is_floating_point<pixel2_t> >
+		//	>
+		//>
+	>
+	bool differs(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
 	{
 		return !equals(a, b);
 	}
@@ -329,7 +350,7 @@ namespace itl2
 	Determines if pixel values in the two images are equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel_t, typename = std::enable_if_t<std::is_floating_point_v<pixel_t> > > bool equals(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
+	template<typename pixel_t> bool equalsTol(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
 	{
 		a.checkSize(b);
 
@@ -337,7 +358,8 @@ namespace itl2
 #pragma omp parallel for if(a.pixelCount() > PARALLELIZATION_THRESHOLD)
 		for (coord_t n = 0; n < a.pixelCount(); n++)
 		{
-			if (eq && !NumberUtils<pixel_t>::equals(a(n), b(n), tolerance))
+			//if (eq && !NumberUtils<pixel_t>::equals(a(n), b(n), tolerance))
+			if(eq && abs(a(n) - b(n)) >= tolerance) // Note: NumberUtils equals does not use tolerance for integer types.
 				eq = false;
 
 			// Showing progress info here would induce more processing than is done in the whole loop.
@@ -350,9 +372,9 @@ namespace itl2
 	Determines if pixel values in the two images are not equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel_t, typename = std::enable_if_t<std::is_floating_point_v<pixel_t> > > bool differs(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
+	template<typename pixel_t> bool differsTol(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
 	{
-		return !equals(a, b, tolerance);
+		return !equalsTol(a, b, tolerance);
 	}
 
 

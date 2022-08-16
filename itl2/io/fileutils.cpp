@@ -355,8 +355,6 @@ namespace itl2
 		vector<string> results = buildFileList(templ);
 
 		// Remove non-images
-		//coord_t w, h;
-		//ImageDataType dt;
 		for (size_t n = 0; n < results.size(); n++)
 		{
 			// This is too slow!
@@ -367,7 +365,11 @@ namespace itl2
 			toLower(exts);
 
 			// TODO: Add other formats here.
-			if(ext != ".tif" && ext != ".tiff" && ext != ".png")
+			if(ext != ".tif" &&
+				ext != ".tiff" &&
+				ext != ".png" &&
+				ext != ".jpg" &&
+				ext != ".jpeg")
 			{
 				results.erase(results.begin() + n);
 				n--;
