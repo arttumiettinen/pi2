@@ -16,9 +16,12 @@ Type                        Reading  Writing  Reading blocks  Writing blocks
 `.tif (2D & 3D)`_           Yes      Yes      Yes             Yes                
 `.nrrd`_                    Yes      Yes      No              No
 `.vol/.longvol`_            Yes      No       Yes             No
+.pcr                        Yes      No       Yes             No
 `.tif`_ sequence            Yes      Yes      Yes             Yes
 `.png`_ sequence            Yes      Yes      Yes             Yes
-.pcr                        Yes      No       Yes             No
+.jpg sequence               Yes      No       No              No
+.png (2D)                   Yes      Yes      Yes             Yes
+.jpg (2D)                   Yes      No       No              No
 ==========================  =======  =======  ==============  ==============
 
 .. _`.tif (2D & 3D)`: https://download.osgeo.org/libtiff/doc/TIFF6.pdf
