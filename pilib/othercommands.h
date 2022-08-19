@@ -92,7 +92,6 @@ namespace pilib
 
 			blockMatch(ref, def, refPoints, defPoints, fitGoodness, compRadius, mode);
 
-			//filterDisplacements(refPoints, defPoints, fitGoodness);
 			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, 0, 1, 0);
 		}
 	};
@@ -494,68 +493,6 @@ namespace pilib
 	};
 
 
-	//template<typename pixel_t> class StitchCommand : public Command
-	//{
-	//public:
-	//	StitchCommand() : Command("stitch", "Stitches subimages to one big image, given geometric transformation for each subimage. NOTE: The size of the output image does not need to be correct. Pass in image of size (1, 1, 1) to save memory during the process and to let the command allocate the image after processing.",
-	//		{
-	//			CommandArgument<Image<pixel_t> >(ParameterDirection::In, "output image", "Output image."),
-	//			//CommandArgument(ParameterDirection::In, ipt<uint8_t>(), "output weight image", "Output weight image."),
-	//			CommandArgument<std::string>(ParameterDirection::In, "file list", "File name of index file that lists the files to be stitched."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "x", "X-coordinate of the region of the stitched image that will be output."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-coordinate of the region of the stitched image that will be output."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-coordinate of the region of the stitched image that will be output."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output region."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output region."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
-	//			CommandArgument(ParameterDirection::In, Bool, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true)
-	//		})
-	//	{
-	//	}
-
-	//	virtual void run(std::vector<ParamVariant>& args) const override
-	//	{
-	//		Image<pixel_t>* output = pop<Image<pixel_t>* >(args);
-	//		//Image<uint8_t>* outputWeight = pop<Image<uint8_t>* >(args);
-	//		std::string indexFile = pop<std::string>(args);
-	//		coord_t x = pop<coord_t>(args);
-	//		coord_t y = pop<coord_t>(args);
-	//		coord_t z = pop<coord_t>(args);
-	//		coord_t w = pop<coord_t>(args);
-	//		coord_t h = pop<coord_t>(args);
-	//		coord_t d = pop<coord_t>(args);
-	//		bool normalize = pop<bool>(args);
-
-	//		Vec3c pos(x, y, z);
-	//		Vec3c size(w, h, d);
-
-	//		// Read index file
-	//		ifstream in(indexFile);
-	//		std::vector<std::string> images;
-	//		std::vector<std::string> transformations;
-	//		//std::vector<std::string> srcWeights;
-	//		while (in.good())
-	//		{
-	//			std::string imgFile;
-	//			std::string transfFile;
-	//			std::string weightFile;
-	//			getline(in, imgFile);
-	//			getline(in, transfFile);
-	//			//getline(in, weightFile);
-	//			if (imgFile.length() > 0 && transfFile.length() > 0)
-	//			{
-	//				images.push_back(imgFile);
-	//				transformations.push_back(transfFile);
-	//				//srcWeights.push_back(weightFile);
-	//			}
-	//		}
-	//		
-	//		
-	//		//stitch<pixel_t>(images, transformations, srcWeights, pos, size, output, outputWeight, normalize);
-	//		stitch<pixel_t>(images, transformations, pos, size, output, normalize);
-	//	}
-	//};
-
 
 	class DetermineWorldToLocalCommand : public Command
 	{
@@ -599,7 +536,6 @@ namespace pilib
 		StitchVer2Command() : Command("stitch_ver2", "Helper for non-rigid stitching script. Stitches subimages to one big image, given geometric transformation for each subimage. NOTE: The size of the output image does not need to be correct. Pass in image of size (1, 1, 1) to save memory during the process and to let the command allocate the image after processing.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::InOut, "output image", "Output image."),
-				//CommandArgument(ParameterDirection::In, ipt<uint8_t>(), "output weight image", "Output weight image."),
 				CommandArgument<std::string>(ParameterDirection::In, "file list", "File name of index file that lists the files to be stitched."),
 				CommandArgument<coord_t>(ParameterDirection::In, "x", "X-coordinate of the region of the stitched image that will be output."),
 				CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-coordinate of the region of the stitched image that will be output."),
@@ -624,7 +560,6 @@ namespace pilib
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
 			Image<pixel_t>& output = *pop<Image<pixel_t>* >(args);
-			//Image<uint8_t>* outputWeight = pop<Image<uint8_t>* >(args);
 			std::string indexFile = pop<std::string>(args);
 			coord_t x = pop<coord_t>(args);
 			coord_t y = pop<coord_t>(args);
@@ -638,7 +573,6 @@ namespace pilib
 			Vec3c pos(x, y, z);
 			Vec3c size(w, h, d);
 
-			//stitchVer2<pixel_t>(indexFile, pos, size, output, normalize);
 			stitchVer3<pixel_t>(indexFile, pos, size, output, nullptr, normalize, maxCircle);
 		}
 	};
