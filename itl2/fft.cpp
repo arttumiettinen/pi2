@@ -15,6 +15,7 @@
 #include "noise.h"
 #include "math/mathutils.h"
 #include "math/matrix.h"
+#include "generation.h"
 
 using namespace std;
 
@@ -500,7 +501,7 @@ namespace itl2
 		/**
 		Finds location of peak in correlation image.
 		*/
-		Vec3d findPeak(Image<float32_t>& img, const Vec3c& maxShift, SubpixelAccuracy mode, float32_t& maxVal)
+		Vec3d findPeak(const Image<float32_t>& img, const Vec3c& maxShift, SubpixelAccuracy mode, float32_t& maxVal)
 		{
 			// Find position of maximum
 			Vec3c maxPos(0, 0, 0);
@@ -746,10 +747,7 @@ namespace itl2
 		//raw::writed(img1, "correlation");
 	}
 
-	/*
-	Calculates shift between img1 and img2 using phase correlation.
-	@param maxShift Maximal shift that is considered.
-	*/
+	
 	Vec3d phaseCorrelationShift(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, SubpixelAccuracy mode, double& goodness)
 	{
 		correlogram(img1, img2);
@@ -815,6 +813,55 @@ namespace itl2
 			testAssert((shift - Vec3d(-15, -5, 0)).max() < 1, "shift (centroid) is invalid");
 			testAssert((shift_fit - Vec3d(-15, -5, 0)).max() < 1, "shift (quadratic) is invalid");
 
+		}
+
+		void phaseCorrelationBoundary()
+		{
+			// Shows how an edge affects phase correlation.
+			// Result for both constant-value outside of the boundary and noise outside of the boundary
+			// are shown.
+			// NOTE: Not a real assert-test.
+			float32_t blockColor = 200;
+			double noiseStd = 200;
+
+			Image<uint16_t> head;
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
+
+			Image<float32_t> head32(head.dimensions());
+			convert(head, head32);
+
+			
+			draw(head32, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), blockColor);
+			raw::writed(head32, "./pc_boundary/original");
+
+			Vec3d shiftGT(15.5, 12, 0);
+
+			Image<float32_t> headShifted(head.dimensions());
+			translate(head, headShifted, shiftGT);
+
+			draw(headShifted, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), blockColor);
+			
+			raw::writed(headShifted, "./pc_boundary/shifted");
+
+			double goodness;
+			Vec3d shift = phaseCorrelationShift(head32, headShifted, 20 * Vec3c(1, 1, 1), SubpixelAccuracy::Centroid, goodness);
+
+			convert(head, head32);
+			draw(head32, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), blockColor);
+
+			
+			noise(head32, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), 0, noiseStd);
+			raw::writed(head32, "./pc_boundary/original_noise");
+			noise(headShifted, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), 0, noiseStd);
+			raw::writed(headShifted, "./pc_boundary/shifted_noise");
+
+			double goodness2;
+			Vec3d shiftNoise = phaseCorrelationShift(head32, headShifted, 20 * Vec3c(1, 1, 1), SubpixelAccuracy::Centroid, goodness2);
+
+
+			cout << "Ground truth shift   = " << -shiftGT << endl;
+			cout << "Measured (black box) = " << shift << endl;
+			cout << "Measured (noise box) = " << shiftNoise << endl;
 		}
 
 		void phaseCorrelationSingleTest(SubpixelAccuracy mode, double tolerance)

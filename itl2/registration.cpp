@@ -499,7 +499,6 @@ namespace itl2
 			raw::writed(headPullback, "./registration/blockmatch1_head_pullback");
 		}
 
-
 		void mipMatch()
 		{
 			Image<uint16_t> head16;
@@ -583,6 +582,62 @@ namespace itl2
 
 			cout << "Reference point = " << p1 << endl;
 			cout << "Deformed point = " << points[0] << endl;
+		}
+
+		void reverseDeformation()
+		{
+			PointGrid3D<coord_t> refPoints = PointGrid3D<coord_t>(
+				PointGrid1D<coord_t>(0, 255, 255),
+				PointGrid1D<coord_t>(0, 255, 255),
+				PointGrid1D<coord_t>(0, 128, 128));
+			Image<Vec3d> defPoints(refPoints.pointCounts());
+
+			// Rotation
+			defPoints(0, 0, 0) = Vec3d(refPoints(1, 0, 0));
+			defPoints(1, 0, 0) = Vec3d(refPoints(1, 1, 0));
+			defPoints(1, 1, 0) = Vec3d(refPoints(0, 1, 0));
+			defPoints(0, 1, 0) = Vec3d(refPoints(0, 0, 0));
+
+			defPoints(0, 0, 1) = Vec3d(refPoints(1, 0, 1));
+			defPoints(1, 0, 1) = Vec3d(refPoints(1, 1, 1));
+			defPoints(1, 1, 1) = Vec3d(refPoints(0, 1, 1));
+			defPoints(0, 1, 1) = Vec3d(refPoints(0, 0, 1));
+
+			// Shear
+			//Vec3d delta = Vec3d(30, 0, 0);
+			//defPoints(0, 0, 0) = Vec3d(refPoints(0, 0, 0));
+			//defPoints(1, 0, 0) = Vec3d(refPoints(1, 0, 0));
+			//defPoints(1, 1, 0) = Vec3d(refPoints(1, 1, 0)) + delta;
+			//defPoints(0, 1, 0) = Vec3d(refPoints(0, 1, 0)) + delta;
+
+			//defPoints(0, 0, 1) = Vec3d(refPoints(0, 0, 1));
+			//defPoints(1, 0, 1) = Vec3d(refPoints(1, 0, 1));
+			//defPoints(1, 1, 1) = Vec3d(refPoints(1, 1, 1)) + delta;
+			//defPoints(0, 1, 1) = Vec3d(refPoints(0, 1, 1)) + delta;
+
+
+			Image<uint16_t> head;
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
+
+			Image<float32_t> deformed(head.dimensions());
+			convert(head, deformed);
+
+			// Full image
+			Image<float32_t> pullback(256, 256, 129);
+			reverseDeformation(deformed, pullback, refPoints, defPoints);
+			raw::writed(pullback, "./registration/reverse_deformation");
+
+			// Small block
+			Image<float32_t> pullback2(20, 20, 20);
+			Vec3d pos(100, 100, 60); // NOTE: pos components must be integer for the test to work.
+			reverseDeformation(deformed, pullback2, refPoints, defPoints, pos);
+			raw::writed(pullback2, "./registration/reverse_deformation_block");
+			
+			// Test that reverseDeformation outputted the correct block.
+			Image<float32_t> comp(20, 20, 20);
+			itl2::crop(pullback, comp, round(pos));
+
+			testAssert(equals(pullback2, comp), "pullback and crop");
 		}
 	}
 }

@@ -88,7 +88,7 @@ int main()
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
 	//test(itl2::pcr::tests::read, "PCR read");
 	
-	test(itl2::sequence::tests::singleImages, "Single images as sequences");
+	//test(itl2::sequence::tests::singleImages, "Single images as sequences");
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
 	//test(itl2::sequence::tests::fileFormats, "Sequence file formats");
@@ -128,10 +128,12 @@ int main()
 	//test(itl2::tests::phaseCorrelation, "phase correlation");
 	//test(itl2::tests::modulo, "modulo function");
 	//test(itl2::tests::phaseCorrelation2, "phase correlation 2 (rotation)");
+	//test(itl2::tests::phaseCorrelationBoundary, "phase correlation boundary");
 
 	//test(itl2::tests::blockMatch1, "block match 1");
 	//test(itl2::tests::blockMatch2Match, "block match 2 (match)");
 	//test(itl2::tests::blockMatch2Pullback, "block match 2 (pullback)");
+	test(itl2::tests::reverseDeformation, "reverse deformation");
 
 	//test(itl2::tests::inpaintNearest, "Inpainting");
 	//test(itl2::tests::inpaintGarcia, "Inpainting (Garcia)");

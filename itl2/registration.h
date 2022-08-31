@@ -495,15 +495,14 @@ namespace itl2
 	@param pullback Result image. This image will contain deformed image reversed to the coordinates of the original, non-deformed, image. Size of this image must be set by the caller.
 	@param refPoints Points in the reference image whose locations in the deformed image have been be determined.
 	@param defPoints Locations of points in the deformed image corresponding to the reference points.
+	@param pullbackPos Position of the pullback image in the deformed image coordinates.
 	*/
-	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
 	{
 		deformed.mustNotBe(pullback);
 
 		if (refGrid.pointCounts() != defPoints.dimensions())
 			throw ITLException("Arguments refGrid and defPoints must have the same dimensions.");
-
-		// TODO: determine region of pullback that must be processed
 
 		Image<Vec3d> shifts(defPoints.dimensions());
 		internals::pointsToShifts(shifts, refGrid, defPoints);
@@ -519,6 +518,8 @@ namespace itl2
 				for (coord_t x = 0; x < pullback.width(); x++)
 				{
 					Vec3d xRef((double)x, (double)y, (double)z);
+					xRef += pullbackPos;
+
 					Vec3d shift = internals::projectPointToDeformed(xRef, refGrid, shifts, shiftInterpolator);
 					
 					Vec3d xDef = xRef + shift;
@@ -529,6 +530,11 @@ namespace itl2
 
 			showThreadProgress(counter, pullback.depth());
 		}
+	}
+
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
+	{
+		reverseDeformation<def_t, result_t>(deformed, pullback, refGrid, defPoints, Vec3d(0, 0, 0), interpolator);
 	}
 
 	/*
@@ -553,5 +559,6 @@ namespace itl2
 		void blockMatch2Pullback();
 		void mipMatch();
 		void pointsToDeformed();
+		void reverseDeformation();
 	}
 }

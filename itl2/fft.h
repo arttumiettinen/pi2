@@ -142,7 +142,7 @@ namespace itl2
 
 	/**
 	Calculates shift between the two images with phase correlation method.
-	@param img1 Reference image. This image is used as temporary storage so it will be modified.
+	@param img1 Reference image. Cross-correlogram will be stored in this image at output.
 	@param img2 Shifted image. This image is not modified.
 	@param maxShift Maximal shift that is to be recognized.
 	@param goodness Estimate of goodness of fit between img1 and shifted img2.
@@ -157,6 +157,7 @@ namespace itl2
 		void bandpass();
 		void phaseCorrelation();
 		void phaseCorrelation2();
+		void phaseCorrelationBoundary();
 		void modulo();
 	}
 }
