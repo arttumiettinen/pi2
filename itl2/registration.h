@@ -495,7 +495,7 @@ namespace itl2
 	@param pullback Result image. This image will contain deformed image reversed to the coordinates of the original, non-deformed, image. Size of this image must be set by the caller.
 	@param refPoints Points in the reference image whose locations in the deformed image have been be determined.
 	@param defPoints Locations of points in the deformed image corresponding to the reference points.
-	@param pullbackPos Position of the pullback image in the deformed image coordinates.
+	@param pullbackPos Position of the pullback image in the reference image coordinates.
 	*/
 	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
 	{

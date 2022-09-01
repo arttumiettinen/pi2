@@ -400,7 +400,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 	
-		PullbackNoDiskCommand() : Command("pullback", "Applies reverse of a deformation (calculated, e.g., using the blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.",
+		PullbackNoDiskCommand() : Command("pullback", "Applies reverse of a deformation (calculated, e.g., using the blockmatch command) to image. In other words, performs pull-back operation.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image that will be pulled back, i.e. the deformed image."),
 				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "pullback image", "Will store the result of the pullback operation, i.e. the deformed image transformed to coordinates of the reference image."),
@@ -411,6 +411,8 @@ namespace pilib
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "y", "Y-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::In, "z", "Z-coordinate of each reference grid point in the coordinates of the deformed image. Dimensions of this image must equal point counts in the reference grid."),
 				CommandArgument<InterpolationMode>(ParameterDirection::In, "interpolation mode", string("Interpolation mode. ") + interpolationHelp(), InterpolationMode::Cubic),
+				CommandArgument<Vec3d>(ParameterDirection::In, "pullback position", "Position of region to be pulled back in reference image coordinates.", Vec3d(0, 0, 0)),
+				CommandArgument<Vec3c>(ParameterDirection::In, "pullback size", "Size of the region to be pulled back. Specify zeroes to default to the size of the deformed image.", Vec3c(0, 0, 0))
 			},
 			blockMatchSeeAlso())
 		{
@@ -429,6 +431,8 @@ namespace pilib
 			Image<float32_t>& z = *pop<Image<float32_t>*>(args);
 			InterpolationMode imode = pop<InterpolationMode>(args);
 			auto interp = createInterpolator<pixel_t, pixel_t, double, double>(imode, BoundaryCondition::Zero);
+			Vec3d pullbackPos = pop<Vec3d>(args);
+			Vec3c pullbackSize = pop<Vec3c>(args);
 
 			PointGrid3D<coord_t> refPoints(
 				PointGrid1D<coord_t>(gridStart.x, gridEnd.x, gridStep.x),
@@ -446,9 +450,12 @@ namespace pilib
 			for (coord_t n = 0; n < defPoints.pixelCount(); n++)
 				defPoints(n) = Vec3d(x(n), y(n), z(n));
 
-			pullback.ensureSize(deformed);
+			if (pullbackSize == Vec3c(0, 0, 0))
+				pullbackSize = deformed.dimensions();
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp, false);
+			pullback.ensureSize(pullbackSize);
+
+			reverseDeformation(deformed, pullback, refPoints, defPoints, pullbackPos, *interp, false);
 		}
 	};
 
