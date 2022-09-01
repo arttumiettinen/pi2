@@ -57,17 +57,51 @@ def create_and_access_images():
     print(f"img3 is {img3}")
 
     # The data in the image can be retrieved as a NumPy array
-    data = img1.get_data()
-    print(f"When converted to a NumPy array, the shape of the image is {data.shape} and data type is {data.dtype}.")
+    data = img1.to_numpy()
+    print(f"When converted from pi2 to a NumPy array, the shape of the image is {data.shape} and data type is {data.dtype}.")
 
     # Image data can also be set from a NumPy array
-    data = np.eye(100, 100)
-    img1.set_data(data)
-
+    shape = (10, 20, 30)
+    data = np.zeros(shape)
+    idx = np.arange(shape[0])
+    data[idx, idx, :] = 1 
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+    
     # This writes img1 to disk as a .raw file.
     # The dimensions of the image and the .raw suffix are automatically appended to
     # the image name given as second argument.
     pi.writeraw(img1, output_file("img1"))
+
+
+    # Images of other sizes and dimensions should retain their size, too.
+    data = np.zeros((1, 100, 200))
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.zeros((100, 1, 200))
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.zeros((1, 1, 200))
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+
+    data = np.eye(100, 200)
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.eye(1, 100)
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.eye(100, 1)
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+
+    data = np.eye(100, 200)
 
     # NumPy arrays can be used directly as input in commands.
     # Changes made by Pi2 are NOT reflected in the NumPy arrays as
@@ -78,7 +112,7 @@ def create_and_access_images():
 
 
 
-def pi2_numpy_dimensions():
+def pi2_numpy_dimensions_deprecated():
     """
     Demonstrates how image dimensions are converted between pi2 and NumPy.
     """
@@ -112,6 +146,45 @@ def pi2_numpy_dimensions():
     print(f"pi2 dimensions: {img1}")
     print(f"numpy dimensions: {img1.get_data().shape}")
 
+
+
+def pi2_numpy_dimensions():
+    """
+    Demonstrates how image dimensions are converted between pi2 and NumPy.
+    """
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    pi.set(img1, [2, 4, 6], 255)
+    print(f"This should be 255: {img1.to_numpy()[2, 4, 6]}")
+
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 1, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 20, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 1, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 1, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 1, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
 
 
 def read_and_write_image():
@@ -1531,8 +1604,15 @@ def seeded_distance_map():
 
 
 # Please uncomment the examples you wish to run:
-pi2_numpy_dimensions()
+#pi2_numpy_dimensions_deprecated()
+#pi2_numpy_dimensions()
 create_and_access_images()
+
+# TODO: Convert the examples below to the new to_numpy/from_numpy/width/etc. format.
+die()
+
+
+
 read_and_write_image()
 help()
 math()

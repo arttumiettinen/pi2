@@ -6,7 +6,7 @@
     <ProjectHome>
     </ProjectHome>
     <StartupFile>pi2py2_examples.py</StartupFile>
-    <SearchPath>..\x64\Debug\</SearchPath>
+    <SearchPath>..\x64\Release\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
