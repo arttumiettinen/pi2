@@ -497,7 +497,7 @@ namespace itl2
 	@param defPoints Locations of points in the deformed image corresponding to the reference points.
 	@param pullbackPos Position of the pullback image in the deformed image coordinates.
 	*/
-	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
 	{
 		deformed.mustNotBe(pullback);
 
@@ -528,13 +528,13 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, pullback.depth());
+			showThreadProgress(counter, pullback.depth(), showProgressInfo);
 		}
 	}
 
-	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
 	{
-		reverseDeformation<def_t, result_t>(deformed, pullback, refGrid, defPoints, Vec3d(0, 0, 0), interpolator);
+		reverseDeformation<def_t, result_t>(deformed, pullback, refGrid, defPoints, Vec3d(0, 0, 0), interpolator, showProgressInfo);
 	}
 
 	/*

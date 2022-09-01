@@ -336,7 +336,7 @@ namespace pilib
 
 			pullback.ensureSize(deformed);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp);
+			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp, false);
 		}
 	};
 
@@ -400,7 +400,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 	
-		PullbackNoDiskCommand() : Command("pullback", "Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.",
+		PullbackNoDiskCommand() : Command("pullback", "Applies reverse of a deformation (calculated, e.g., using the blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "image", "Image that will be pulled back, i.e. the deformed image."),
 				CommandArgument<Image<pixel_t> >(ParameterDirection::Out, "pullback image", "Will store the result of the pullback operation, i.e. the deformed image transformed to coordinates of the reference image."),
@@ -448,7 +448,7 @@ namespace pilib
 
 			pullback.ensureSize(deformed);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp);
+			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp, false);
 		}
 	};
 
