@@ -9,8 +9,9 @@
 #include "surfaceskeleton.h"
 #include "commandlist.h"
 #include "fillskeleton.h"
-#include "othercommands.h"
+#include "floodfillcommands.h"
 #include "traceskeletonpoints.h"
+#include "listandimage.h"
 
 namespace pilib
 {
@@ -452,15 +453,6 @@ namespace pilib
 			raw::writed(measurementsLocal, measurementsFilename);
 			raw::writed(pointsLocal, pointsFilename);
 		}
-
-		//using Distributable::runDistributed;
-
-		//virtual vector<string> runDistributed(Distributor & distributor, vector<ParamVariant> & args) const override
-		//{
-		//	
-
-		//	return vector<string>();
-		//}
 	};
 
 
@@ -528,7 +520,7 @@ namespace pilib
 			// Create temp file path
 			string tempFilename = createTempFilename("skeleton_data");
 
-			// Command that traces skeleton without combining incomplete vertices, and saves every subnetwork to given file
+			// Run command that traces skeleton without combining incomplete vertices, and saves every subnetwork to given file
 			vector<string> output;
 			if (pOrig)
 			{
@@ -554,49 +546,6 @@ namespace pilib
 				string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
 				fs::remove(fname);
 			}
-
-			///////////////////
-   //         
-   //         std::cout << "Loading data..." << std::endl;
-			//// Load the data files and combine all the graphs
-			//vector<Network> nets;
-			//for (size_t n = 0; n < output.size(); n++)
-			//{
-			//	vector<Network> subnets;
-			//	string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
-			//	
-			//	std::cout << "Reading " << fname << std::endl;
-			//	Network::read(fname, subnets);
-			//	//std::cout << "Read " << subnets.size() << " subgraphs." << std::endl;
-			//	nets.insert(nets.end(), subnets.begin(), subnets.end());
-			//	fs::remove(fname);
-			//}
-			//
-			////std::cout << "Reading done." << std::endl;
-
-			//Network fullnet;
-			//itl2::internals::combineTracedBlocks<pixel_t>(nets, fullnet, in.dimensions(), true, nullptr, true, storeAllEdgePoints, smoothingSigma, maxDisplacement);
-			//itl2::internals::finalize(fullnet);
-
-			//// Now fullnet contains the whole network (and nets contains empty networks)
-			//// Convert it to images locally and set it to the outputs.
-			//Image<float32_t> verticesLocal;
-			//Image<uint64_t> edgesLocal;
-			//Image<float32_t> measurementsLocal;
-			//Image<int32_t> pointsLocal;
-			//vertices.readTo(verticesLocal);
-			//edges.readTo(edgesLocal);
-			//measurements.readTo(measurementsLocal);
-
-
-			//fullnet.toImage(verticesLocal, edgesLocal, &measurementsLocal, &pointsLocal);
-
-			//vertices.setData(verticesLocal);
-			//edges.setData(edgesLocal);
-			//measurements.setData(measurementsLocal);
-			//points.setData(pointsLocal);
-
-			///////////////////////////
 
 			return vector<string>();
 		}
@@ -643,47 +592,52 @@ namespace pilib
 			distributor.submitJob(script.str(), JobType::Normal);
 			distributor.waitForJobs();
 
-			// Get sizes of temp images
-			Vec3c verticesDims, edgesDims, measurementsDims, pointsDims;
-			ImageDataType dummy;
-			string dummyString;
-			raw::getInfo(verticesFilename, verticesDims, dummy, dummyString);
-			raw::getInfo(edgesFilename, edgesDims, dummy, dummyString);
-			raw::getInfo(measurementsFilename, measurementsDims, dummy, dummyString);
-			raw::getInfo(pointsFilename, pointsDims, dummy, dummyString);
+			vertices.setReadSource(verticesFilename, true);
+			edges.setReadSource(edgesFilename, true);
+			measurements.setReadSource(measurementsFilename, true);
+			points.setReadSource(pointsFilename, true);
 
-			// Set sizes of output DistributedImages
-			vertices.ensureSize(verticesDims);
-			edges.ensureSize(edgesDims);
-			measurements.ensureSize(measurementsDims);
-			points.ensureSize(pointsDims);
+			//// Get sizes of temp images
+			//Vec3c verticesDims, edgesDims, measurementsDims, pointsDims;
+			//ImageDataType dummy;
+			//string dummyString;
+			//raw::getInfo(verticesFilename, verticesDims, dummy, dummyString);
+			//raw::getInfo(edgesFilename, edgesDims, dummy, dummyString);
+			//raw::getInfo(measurementsFilename, measurementsDims, dummy, dummyString);
+			//raw::getInfo(pointsFilename, pointsDims, dummy, dummyString);
 
-			// File system move temp images to CurrentReadSource of DistributedImages
-			// => No temp images are in RAM + no temp images need to be read (file rename is enough)
+			//// Set sizes of output DistributedImages
+			//vertices.ensureSize(verticesDims);
+			//edges.ensureSize(edgesDims);
+			//measurements.ensureSize(measurementsDims);
+			//points.ensureSize(pointsDims);
 
-			raw::internals::expandRawFilename(verticesFilename);
-			raw::internals::expandRawFilename(edgesFilename);
-			raw::internals::expandRawFilename(measurementsFilename);
-			raw::internals::expandRawFilename(pointsFilename);
+			//// File system move temp images to CurrentReadSource of DistributedImages
+			//// => No temp images are in RAM + no temp images need to be read (file rename is enough)
 
-			std::cout << "Removing " << vertices.currentWriteTarget() << std::endl;
-			
-			fs::remove(vertices.currentWriteTarget());
-			fs::remove(edges.currentWriteTarget());
-			fs::remove(measurements.currentWriteTarget());
-			fs::remove(points.currentWriteTarget());
-			
-			std::cout << "Renaming " << verticesFilename << " to " << vertices.currentWriteTarget() << std::endl;
+			//raw::internals::expandRawFilename(verticesFilename);
+			//raw::internals::expandRawFilename(edgesFilename);
+			//raw::internals::expandRawFilename(measurementsFilename);
+			//raw::internals::expandRawFilename(pointsFilename);
 
-			fs::rename(verticesFilename, vertices.currentWriteTarget());
-			fs::rename(edgesFilename, edges.currentWriteTarget());
-			fs::rename(measurementsFilename, measurements.currentWriteTarget());
-			fs::rename(pointsFilename, points.currentWriteTarget());
+			//std::cout << "Removing " << vertices.currentWriteTarget() << std::endl;
+			//
+			//fs::remove(vertices.currentWriteTarget());
+			//fs::remove(edges.currentWriteTarget());
+			//fs::remove(measurements.currentWriteTarget());
+			//fs::remove(points.currentWriteTarget());
+			//
+			//std::cout << "Renaming " << verticesFilename << " to " << vertices.currentWriteTarget() << std::endl;
 
-			vertices.writeComplete();
-			edges.writeComplete();
-			measurements.writeComplete();
-			points.writeComplete();
+			//fs::rename(verticesFilename, vertices.currentWriteTarget());
+			//fs::rename(edgesFilename, edges.currentWriteTarget());
+			//fs::rename(measurementsFilename, measurements.currentWriteTarget());
+			//fs::rename(pointsFilename, points.currentWriteTarget());
+
+			//vertices.writeComplete();
+			//edges.writeComplete();
+			//measurements.writeComplete();
+			//points.writeComplete();
 		}
 	};
 
@@ -885,14 +839,15 @@ namespace pilib
 			getPointsAndLines(net, pointsv, linesv, sigma, maxDisplacement);
 
 			// Convert lists to images
-			points.ensureSize(3, pointsv.size());
-			for(size_t n = 0; n < pointsv.size(); n++)
-			{
-				const auto& v = pointsv[n];
-				points(0, n) = v.x;
-				points(1, n) = v.y;
-				points(2, n) = v.z;
-			}
+			//points.ensureSize(3, pointsv.size());
+			//for(size_t n = 0; n < pointsv.size(); n++)
+			//{
+			//	const auto& v = pointsv[n];
+			//	points(0, n) = v.x;
+			//	points(1, n) = v.y;
+			//	points(2, n) = v.z;
+			//}
+			listToImage(pointsv, points);
 
 			// Count total number of entries in lines lists
 			size_t total = 0;

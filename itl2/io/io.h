@@ -130,9 +130,9 @@ namespace itl2
 			}
 			else if (nn5::getInfo(filename, dimensions, dt, nn5Reason))
 			{
-				nn5::readBlock(img, filename, blockStart);
+				nn5::readBlock(img, filename, blockStart, showProgressInfo);
 			}
-			else if (lz4::getInfo(filename, dimensions, dt, nn5Reason))
+			else if (lz4::getInfo(filename, dimensions, dt, lz4Reason))
 			{
 				lz4::readBlock(img, filename, blockStart);
 			}
@@ -146,6 +146,7 @@ namespace itl2
 		namespace tests
 		{
 			void readWrite();
+			void badnn5();
 		}
 	}
 }

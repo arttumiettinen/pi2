@@ -44,10 +44,6 @@ namespace itl2
 		}
 
 
-		//raw::writed(u, "u");
-		//raw::writed(v, "v");
-		//raw::writed(w, "w");
-
 		// Subtract mean displacement
 		double Mu = mean(u);
 		double Mv = mean(v);
@@ -57,9 +53,6 @@ namespace itl2
 		subtract(v, Mv);
 		subtract(w, Mw);
 
-		//raw::writed(u, "u_meansub");
-		//raw::writed(v, "v_meansub");
-		//raw::writed(w, "w_meansub");
 
 		// Determine which values are bad by comparing to median
 		Image<double> uMed(u.dimensions());
@@ -82,28 +75,14 @@ namespace itl2
 		maskedMedianFilter(v, vMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
 		maskedMedianFilter(w, wMed, filterRadius, MEDIAN_FLAG, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
 
-		//raw::writed(gof, "gof");
-		//raw::writed(uMed, "u_med");
-		//raw::writed(vMed, "v_med");
-		//raw::writed(wMed, "w_med");
-
-		//subtract(u, uMed);
-		//subtract(v, vMed);
-		//subtract(w, wMed);
-		//abs(u);
-		//abs(v);
-		//abs(w);
-		//raw::writed(u, "u_cond");
-		//raw::writed(v, "v_cond");
-		//raw::writed(w, "w_cond");
 
 		coord_t badCount = 0;
 		constexpr double FLAG = numeric_limits<double>::signaling_NaN();
 		for (coord_t n = 0; n < u.pixelCount(); n++)
 		{
-			bool bad = (fabs(u(n) - uMed(n)) > threshold) |
-						(fabs(v(n) - vMed(n)) > threshold) |
-						(fabs(w(n) - wMed(n)) > threshold) |
+			bool bad = (fabs(u(n) - uMed(n)) > threshold) ||
+						(fabs(v(n) - vMed(n)) > threshold) ||
+						(fabs(w(n) - wMed(n)) > threshold) ||
 						(gof(n) <= 0);
 			if (bad)
 			{
@@ -288,13 +267,13 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> reference(head16.dimensions());
 			convert(head16, reference);
 
 			Image<uint16_t> deformed16;
-			raw::read(deformed16, "./input_data/t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "../test_input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -325,7 +304,7 @@ namespace itl2
 			}
 
 			// Perform block matching
-			blockMatch(reference, deformed, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(reference, deformed, refPoints, defPoints, fitGoodness, compRadius, SubpixelAccuracy::Centroid);
 
 			// Output shifts
 			int w = 8;
@@ -363,7 +342,7 @@ namespace itl2
 			Vec3c referenceDimensions(256, 256, 129);
 
 			Image<uint16_t> deformed16;
-			raw::read(deformed16, "./input_data/t1-head_rot_trans_256x256x129.raw");
+			raw::read(deformed16, "../test_input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed(deformed16.dimensions());
 			convert(deformed16, deformed);
@@ -398,7 +377,7 @@ namespace itl2
 			maxXY.x = refP.width() / 2;
 			maxXY.y = refP.height() / 2;
 			maxXY.z = 0;
-			Vec3d shiftXY = phaseCorrelation(refP, defP, maxXY, goodness);
+			Vec3d shiftXY = phaseCorrelationShift(refP, defP, maxXY, SubpixelAccuracy::Centroid, goodness);
 
 			raw::writed(refP, "./registration/mipmatch_xy_correlation");
 
@@ -413,7 +392,7 @@ namespace itl2
 			maxYZ.x = refP.width() / 2;
 			maxYZ.y = refP.height() / 2;
 			maxYZ.z = 0;
-			Vec3d shiftYZ = phaseCorrelation(refP, defP, maxYZ, goodness);
+			Vec3d shiftYZ = phaseCorrelationShift(refP, defP, maxYZ, SubpixelAccuracy::Centroid, goodness);
 
 			raw::writed(refP, "./registration/mipmatch_yz_correlation");
 
@@ -429,7 +408,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -469,7 +448,7 @@ namespace itl2
 			}
 			
 			// Perform block matching
-			blockMatch(head, headShifted, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(head, headShifted, refPoints, defPoints, fitGoodness, compRadius, SubpixelAccuracy::Centroid);
 
 
 			// Output shifts, calculate average shift
@@ -520,11 +499,10 @@ namespace itl2
 			raw::writed(headPullback, "./registration/blockmatch1_head_pullback");
 		}
 
-
 		void mipMatch()
 		{
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -579,7 +557,7 @@ namespace itl2
 				}
 			}
 
-			blockMatch(img1, img2, refPoints, defPoints, fitGoodness, compRadius);
+			blockMatch(img1, img2, refPoints, defPoints, fitGoodness, compRadius, SubpixelAccuracy::Centroid);
 
 
 			for (coord_t z = 0; z < defPoints.depth(); z++)
@@ -604,6 +582,62 @@ namespace itl2
 
 			cout << "Reference point = " << p1 << endl;
 			cout << "Deformed point = " << points[0] << endl;
+		}
+
+		void reverseDeformation()
+		{
+			PointGrid3D<coord_t> refPoints = PointGrid3D<coord_t>(
+				PointGrid1D<coord_t>(0, 255, 255),
+				PointGrid1D<coord_t>(0, 255, 255),
+				PointGrid1D<coord_t>(0, 128, 128));
+			Image<Vec3d> defPoints(refPoints.pointCounts());
+
+			// Rotation
+			defPoints(0, 0, 0) = Vec3d(refPoints(1, 0, 0));
+			defPoints(1, 0, 0) = Vec3d(refPoints(1, 1, 0));
+			defPoints(1, 1, 0) = Vec3d(refPoints(0, 1, 0));
+			defPoints(0, 1, 0) = Vec3d(refPoints(0, 0, 0));
+
+			defPoints(0, 0, 1) = Vec3d(refPoints(1, 0, 1));
+			defPoints(1, 0, 1) = Vec3d(refPoints(1, 1, 1));
+			defPoints(1, 1, 1) = Vec3d(refPoints(0, 1, 1));
+			defPoints(0, 1, 1) = Vec3d(refPoints(0, 0, 1));
+
+			// Shear
+			//Vec3d delta = Vec3d(30, 0, 0);
+			//defPoints(0, 0, 0) = Vec3d(refPoints(0, 0, 0));
+			//defPoints(1, 0, 0) = Vec3d(refPoints(1, 0, 0));
+			//defPoints(1, 1, 0) = Vec3d(refPoints(1, 1, 0)) + delta;
+			//defPoints(0, 1, 0) = Vec3d(refPoints(0, 1, 0)) + delta;
+
+			//defPoints(0, 0, 1) = Vec3d(refPoints(0, 0, 1));
+			//defPoints(1, 0, 1) = Vec3d(refPoints(1, 0, 1));
+			//defPoints(1, 1, 1) = Vec3d(refPoints(1, 1, 1)) + delta;
+			//defPoints(0, 1, 1) = Vec3d(refPoints(0, 1, 1)) + delta;
+
+
+			Image<uint16_t> head;
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
+
+			Image<float32_t> deformed(head.dimensions());
+			convert(head, deformed);
+
+			// Full image
+			Image<float32_t> pullback(256, 256, 129);
+			reverseDeformation(deformed, pullback, refPoints, defPoints);
+			raw::writed(pullback, "./registration/reverse_deformation");
+
+			// Small block
+			Image<float32_t> pullback2(20, 20, 20);
+			Vec3d pos(100, 100, 60); // NOTE: pos components must be integer for the test to work.
+			reverseDeformation(deformed, pullback2, refPoints, defPoints, pos);
+			raw::writed(pullback2, "./registration/reverse_deformation_block");
+			
+			// Test that reverseDeformation outputted the correct block.
+			Image<float32_t> comp(20, 20, 20);
+			itl2::crop(pullback, comp, round(pos));
+
+			testAssert(equals(pullback2, comp), "pullback and crop");
 		}
 	}
 }

@@ -70,12 +70,30 @@ namespace pilib
 		{
 			return mean<result_t, result_t>(vals, counts);
 		}
+
+
+		/**
+		This is used to select suitable distributed accumulator type for sum projections.
+		The difference to itl2::sum_intermediate_type is that we must use float32_t instead of double
+		in the final accumulation for floating-point images as pi2 does not currently support double/float64_t pixels.
+		*/
+		template<class pixel_t> struct sum_distributed_intermediate_type {
+			using type = typename std::conditional <
+				std::is_floating_point_v<pixel_t>,
+				float32_t,  // floating-point pixels -> float32_t accumulator
+				typename std::conditional<std::is_signed_v<pixel_t>,
+				int64_t, // signed integer pixels -> int64 accumulator
+				uint64_t // unsigned integer pixels -> uint64 accumulator
+				>::type
+			>::type;
+		};
 	}
 
 #define CONCAT(str1, str2) #str1 #str2
-#define DEF_PROJECT(classname, funcname, cmdname, result_type) \
-	template<typename in_t, typename result_t = result_type, typename temp_t = result_type> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
+#define DEF_PROJECT_ALL(classname, funcname, cmdname, result_type) \
+	template<typename in_t, typename result_t = result_type> class classname##AllPixelsCommand : public TwoImageInputOutputCommand<in_t, result_t>, public Distributable	\
 	{																										\
+	using temp_t = typename internals::sum_distributed_intermediate_type<in_t>::type;						\
 	protected:																								\
 		friend class CommandList;																			\
 																											\
@@ -105,7 +123,7 @@ namespace pilib
 			bool print = std::get<bool>(args[2]);															\
 			out.ensureSize(1, 1, 1);																		\
 																											\
-			DistributedTempImage<temp_t> dummy(distributor, "project_all_pixels_dummy", Vec3c(1, 1, 1));	\
+			DistributedTempImage<temp_t> dummy(distributor, "project_all_pixels_dummy", Vec3c(1, 1, 1), DistributedImageStorageType::Raw);	\
 																											\
 			vector<ParamVariant> args2;																		\
 			args2.push_back(args[0]);																		\
@@ -114,7 +132,7 @@ namespace pilib
 			p = true;																						\
 			args2.push_back(p);																				\
 																											\
-			auto& cmd = CommandList::get<classname##AllPixelsCommand<in_t, temp_t, temp_t> >();				\
+			auto& cmd = CommandList::get<classname##AllPixelsCommand<in_t, temp_t> >();						\
 			vector<string> results = distributor.distribute(&cmd, args2);									\
 			vector<temp_t> vals;																			\
 			vector<size_t> counts;																			\
@@ -150,7 +168,9 @@ namespace pilib
 				readSize = Vec3c(1, 1, 1);																	\
 				writeFilePos = Vec3c(0, 0, 0);																\
 				writeImPos = Vec3c(0, 0, 0);																\
-				writeSize = Vec3c(1, 1, 1);																	\
+				/* Zero write size as the result is not needed in the distributed mode. */						\
+				/* We even don't know where to write it, and no processes should write to the same location */	\
+				writeSize = Vec3c(0, 0, 0);																	\
 			}																								\
 		}																									\
 																											\
@@ -159,7 +179,8 @@ namespace pilib
 			return JobType::Fast;																			\
 		}																									\
 	};																										\
-																											\
+
+#define DEF_PROJECT(classname, funcname, cmdname, result_type)												\
 	template<typename in_t> class classname##ProjectCommand : public TwoImageInputOutputCommand<in_t, result_type>, public Distributable	\
 	{																										\
 	protected:																								\
@@ -340,16 +361,22 @@ namespace pilib
 
 #undef min
 #undef max
+	DEF_PROJECT_ALL(Sum, sum, sum, float32_t)
 	DEF_PROJECT(Sum, sum, sum, float32_t)
+	DEF_PROJECT_ALL(SquareSum, squareSum, squaresum, float32_t)
 	DEF_PROJECT(SquareSum, squareSum, squaresum, float32_t)
 
+	DEF_PROJECT_ALL(Min, min, minval, in_t)
 	DEF_PROJECT(Min, min, minval, in_t)
+	DEF_PROJECT_ALL(Max, max, maxval, in_t)
 	DEF_PROJECT(Max, max, maxval, in_t)
-	DEF_PROJECT(Mean, mean, mean, float32_t)
-
+	
 	DEF_PROJECT_2IMAGE(Min, min, minval, in_t)
 	DEF_PROJECT_2IMAGE(Max, max, maxval, in_t)
 
+	// Mean project all pixels is defined separately using sum project. This cuts down the
+	// required number of commands.
+	DEF_PROJECT(Mean, mean, mean, float32_t)
 
 
 	template<typename in_t> class MaskedMeanAllPixelsCommand : public TwoImageInputOutputCommand<in_t, float32_t>, public Distributable	
@@ -446,8 +473,10 @@ namespace pilib
 				readStart = Vec3c(0, 0, 0);																	
 				readSize = Vec3c(1, 1, 1);																	
 				writeFilePos = Vec3c(0, 0, 0);																
-				writeImPos = Vec3c(0, 0, 0);																
-				writeSize = Vec3c(1, 1, 1);																	
+				writeImPos = Vec3c(0, 0, 0);
+				// Set write size to zero as the result is not needed in the distributed mode,
+				// and each job should write to different location, and that is not possible at the moment.
+				writeSize = Vec3c(0, 0, 0);
 			}																								
 		}																									
 	};																										
@@ -481,7 +510,6 @@ namespace pilib
 	//};
 
 	// TODO: Standard deviation projection is not available at the moment
-	// TODO: Standard deviation is not distributed at the moment
 	template<typename in_t> class StdDevAllPixelsCommand : public TwoImageInputOutputCommand<in_t, float32_t>, public Distributable
 	{
 	protected:
@@ -519,10 +547,10 @@ namespace pilib
 			DistributedImage<float32_t>& out = *pop<DistributedImage<float32_t>*>(args);
 			double doPrint = pop<bool>(args);
 			
-			CommandList::get<SumAllPixelsCommand<in_t>>().runDistributed(distributor, { &in, &out, false });
+			CommandList::get<SumAllPixelsCommand<in_t, float32_t>>().runDistributed(distributor, { &in, &out, false });
 			double total = out.getValue();
 
-			CommandList::get<SquareSumAllPixelsCommand<in_t>>().runDistributed(distributor, {&in, &out, false});
+			CommandList::get<SquareSumAllPixelsCommand<in_t, float32_t>>().runDistributed(distributor, {&in, &out, false});
 			double total2 = out.getValue();
 
 			double pixelCount = (double)in.pixelCount();
@@ -533,6 +561,60 @@ namespace pilib
 			out.setData(temp);
 
 			print(doPrint, (float32_t)std, in.pixelCount());
+
+			return std::vector<string>();
+		}
+	};
+
+
+	template<typename in_t> class MeanAllPixelsCommand : public TwoImageInputOutputCommand<in_t, float32_t>, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		MeanAllPixelsCommand() : TwoImageInputOutputCommand<in_t, float32_t>("mean", "Calculates mean of all pixels in the input image. The output is a 1x1x1 image.",
+			{
+				CommandArgument<bool>(ParameterDirection::In, "print to log", "Set to true to print the results to the log.", false)
+			}) {}
+
+		static void print(bool doPrint, float32_t stddev, coord_t pixelCount)
+		{
+			if (doPrint)
+			{
+				std::cout << "mean = " << stddev << std::endl;
+				std::cout << "count = " << pixelCount << std::endl;
+			}
+		}
+
+	public:
+		virtual void run(Image<in_t>& in, Image<float32_t>& out, vector<ParamVariant>& args) const override
+		{
+			bool doPrint = pop<bool>(args);
+			double res = (double)itl2::mean(in);
+			out.ensureSize(1, 1, 1);
+			out(0) = (float32_t)res;
+			print(doPrint, out(0), in.pixelCount());
+		}
+
+		using Distributable::runDistributed;
+
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		{
+			DistributedImage<in_t>& in = *pop<DistributedImage<in_t>*>(args);
+			DistributedImage<float32_t>& out = *pop<DistributedImage<float32_t>*>(args);
+			double doPrint = pop<bool>(args);
+
+			CommandList::get<SumAllPixelsCommand<in_t, float32_t>>().runDistributed(distributor, { &in, &out, false });
+			double total = out.getValue();
+			double pixelCount = (double)in.pixelCount();
+
+			double mean = total / pixelCount;
+
+			Image<float32_t> temp;
+			temp(0) = (float32_t)mean;
+			out.setData(temp);
+
+			print(doPrint, (float32_t)mean, in.pixelCount());
 
 			return std::vector<string>();
 		}

@@ -10,7 +10,7 @@
 #include "regionremoval.h"
 #include "csa.h"
 
-#include "othercommands.h"
+#include "floodfillcommands.h"
 #include "pointprocesscommands.h"
 #include "specialcommands.h"
 #include "commandlist.h"
@@ -759,7 +759,7 @@ namespace pilib
 			//string datatype = "float32";
 			//CommandList::get<NewImageCommand>().runDistributed(distributor, { tempName, datatype, (coord_t)1, (coord_t)1, (coord_t)1 });
 			//DistributedImage<float32_t>& results = *(DistributedImage<float32_t>*)distributor.getSystem()->getDistributedImage(tempName);
-			DistributedTempImage<float32_t> resultsImg(distributor, "regionremoval_particle_analysis_results");
+			DistributedTempImage<float32_t> resultsImg(distributor, "regionremoval_particle_analysis_results", 1, DistributedImageStorageType::Raw);
 			DistributedImage<float32_t>& results = resultsImg.get();
 
 			// Find small particles using particle analysis

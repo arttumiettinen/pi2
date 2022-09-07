@@ -20,13 +20,13 @@ pi = Pi2()
 # Define convenience functions that return input and output file names.
 # This is just to avoid copying the paths to all the examples in case they change.
 def input_file(filename='t1-head_256x256x129.raw'):
-    return '../../testing/input_data/' + filename
+    return '../../test_input_data/' + filename
 
 def input_file_bin():
-    return '../../testing/input_data/t1-head_bin_256x256x129.raw'
+    return '../../test_input_data/t1-head_bin_256x256x129.raw'
 
 def output_file(name):
-    return '../../testing/pi2py2/' + name
+    return '../../test_output_data/pi2py2/' + name
 
 
 
@@ -57,17 +57,51 @@ def create_and_access_images():
     print(f"img3 is {img3}")
 
     # The data in the image can be retrieved as a NumPy array
-    data = img1.get_data()
-    print(f"When converted to a NumPy array, the shape of the image is {data.shape} and data type is {data.dtype}.")
+    data = img1.to_numpy()
+    print(f"When converted from pi2 to a NumPy array, the shape of the image is {data.shape} and data type is {data.dtype}.")
 
     # Image data can also be set from a NumPy array
-    data = np.eye(100, 100)
-    img1.set_data(data)
-
+    shape = (10, 20, 30)
+    data = np.zeros(shape)
+    idx = np.arange(shape[0])
+    data[idx, idx, :] = 1 
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+    
     # This writes img1 to disk as a .raw file.
     # The dimensions of the image and the .raw suffix are automatically appended to
     # the image name given as second argument.
     pi.writeraw(img1, output_file("img1"))
+
+
+    # Images of other sizes and dimensions should retain their size, too.
+    data = np.zeros((1, 100, 200))
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.zeros((100, 1, 200))
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.zeros((1, 1, 200))
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+
+    data = np.eye(100, 200)
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.eye(1, 100)
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+    data = np.eye(100, 1)
+    img1.from_numpy(data)
+    print(f"After setting img1 from NumPy array of shape {data.shape}, image dimensions are {img1.dimensions()} and data type is {img1.data_type()}.")
+
+
+    data = np.eye(100, 200)
 
     # NumPy arrays can be used directly as input in commands.
     # Changes made by Pi2 are NOT reflected in the NumPy arrays as
@@ -78,7 +112,7 @@ def create_and_access_images():
 
 
 
-def pi2_numpy_dimensions():
+def pi2_numpy_dimensions_deprecated():
     """
     Demonstrates how image dimensions are converted between pi2 and NumPy.
     """
@@ -112,6 +146,45 @@ def pi2_numpy_dimensions():
     print(f"pi2 dimensions: {img1}")
     print(f"numpy dimensions: {img1.get_data().shape}")
 
+
+
+def pi2_numpy_dimensions():
+    """
+    Demonstrates how image dimensions are converted between pi2 and NumPy.
+    """
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    pi.set(img1, [2, 4, 6], 255)
+    print(f"This should be 255: {img1.to_numpy()[2, 4, 6]}")
+
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 1, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 20, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 1, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 10, 1, 30)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
+
+    img1 = pi.newimage(ImageDataType.UINT8, 1, 1, 1)
+    print(f"pi2 dimensions: {img1}")
+    print(f"numpy dimensions: {img1.to_numpy().shape}")
 
 
 def read_and_write_image():
@@ -971,7 +1044,7 @@ def find_surface():
     # Now find the surface.
     # We will stop at gray level 100 and perform 60 iterations
     # with surface tension 1.0.
-    pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, vis, img.get_height() / 2, 900)
+    pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, 1, vis, img.get_height() / 2, 900)
 
     # Save the result surface
     pi.writeraw(hmap, output_file('findsurface_height_map'))
@@ -983,7 +1056,7 @@ def find_surface():
 
     # We can also draw the surface to the image
     surf_vis = pi.newimage()
-    pi.set(surf_vis, img)
+    pi.copy(img, surf_vis)
     pi.drawheightmap(surf_vis, hmap, 900)
     pi.writeraw(surf_vis, output_file('findsurface_full_vis'))
 
@@ -991,12 +1064,12 @@ def find_surface():
     # This is useful to, e.g., get rid of background noise above
     # or below the surface of the sample.
     before_vis = pi.newimage()
-    pi.set(before_vis, img)
+    pi.copy(img, before_vis)
     pi.setbeforeheightmap(before_vis, hmap, 900)
     pi.writeraw(before_vis, output_file('findsurface_before_vis'))
 
     after_vis = pi.newimage()
-    pi.set(after_vis, img)
+    pi.copy(img, after_vis)
     pi.setafterheightmap(after_vis, hmap, 900)
     pi.writeraw(after_vis, output_file('findsurface_after_vis'))
 
@@ -1005,7 +1078,7 @@ def find_surface():
     pi.negate(hmap)
     temp = pi.newlike(hmap)
     pi.gaussfilter(hmap, temp, 1) # This smooths the surface map a little bit
-    pi.set(hmap, temp)
+    pi.copy(temp, hmap)
     pi.shiftz(img, hmap, True)
     pi.writeraw(img, output_file('findsurface_shiftz'))
 
@@ -1530,33 +1603,39 @@ def seeded_distance_map():
 
 
 
-
 # Please uncomment the examples you wish to run:
+#pi2_numpy_dimensions_deprecated()
 #pi2_numpy_dimensions()
-#create_and_access_images()
-#read_and_write_image()
-#help()
-#math()
-#convert_format()
-#filtering()
-#thickmap()
-#watershed()
-#skeleton_vtk()
-#big_endian_and_little_endian()
-#greedy_coloring()
-#linefilters()
-#binning_scaling()
-#rotations()
-#analyze_particles()
-#fill_particles()
-#histogram()
-#bivariate_histogram()
-#particle_segmentation()
-#levelset_fill_cavity()
-#find_surface()
-#orientation_analysis()
-#montage()
-#skeleton_types()
-#fibre_properties()
-#vessel_tracing()
+create_and_access_images()
+
+# TODO: Convert the examples below to the new to_numpy/from_numpy/width/etc. format.
+die()
+
+
+
+read_and_write_image()
+help()
+math()
+convert_format()
+filtering()
+thickmap()
+watershed()
+skeleton_vtk()
+big_endian_and_little_endian()
+greedy_coloring()
+linefilters()
+binning_scaling()
+rotations()
+analyze_particles()
+fill_particles()
+histogram()
+bivariate_histogram()
+particle_segmentation()
+levelset_fill_cavity()
+find_surface()
+orientation_analysis()
+montage()
+skeleton_types()
+fibre_properties()
+vessel_tracing()
 seeded_distance_map()

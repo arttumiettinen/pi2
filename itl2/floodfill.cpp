@@ -1019,7 +1019,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> full;
-				raw::read(full, "./input_data/complicated_particles_1");
+				raw::read(full, "../test_input_data/complicated_particles_1");
 
 				Image<uint8_t> img(full.width(), full.height(), 10);
 				itl2::crop(full, img, Vec3c(0, 0, 10));
@@ -1030,7 +1030,7 @@ namespace itl2
 			
 			{
 				Image<uint8_t> full;
-				raw::read(full, "./input_data/complicated_particles_1");
+				raw::read(full, "../test_input_data/complicated_particles_1");
 
 				Image<uint8_t> img(full, 10, 19); // view of full image
 
@@ -1042,7 +1042,7 @@ namespace itl2
 		void growPriority()
 		{
 			Image<uint16_t> weights;
-			raw::read(weights, "./input_data/t1-head_256x256x129.raw");
+			raw::read(weights, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<uint8_t> labels(weights.dimensions());
 
@@ -1059,7 +1059,7 @@ namespace itl2
 		void growAll()
 		{
 			Image<uint8_t> img;
-			//raw::read(img, "./input_data/t1-head_bin_256x256x129.raw");
+			//raw::read(img, "../test_input_data/t1-head_bin_256x256x129.raw");
 			img.ensureSize(1000, 1000, 1000);
 			setValue(img, 255);
 

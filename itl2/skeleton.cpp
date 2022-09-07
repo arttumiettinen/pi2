@@ -18,7 +18,7 @@ namespace itl2
 				// NOTE: No asserts!
 
 				Image<uint8_t> head;
-				raw::read(head, "./input_data/t1-head_bin_256x256x129.raw");
+				raw::read(head, "../test_input_data/t1-head_bin_256x256x129.raw");
 
 				experimental::surfaceSkeleton2(head);
 
@@ -42,7 +42,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint8_t> img;
-			raw::read(img, "./input_data/t1-head_bin_256x256x129.raw");
+			raw::read(img, "../test_input_data/t1-head_bin_256x256x129.raw");
 			//raw::read(img, "./skeleton/in/planes");
 
 			surfaceSkeleton(img);
@@ -61,7 +61,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint8_t> head;
-			raw::read(head, "./input_data/t1-head_bin_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_bin_256x256x129.raw");
 			
 			lineSkeleton(head);
 

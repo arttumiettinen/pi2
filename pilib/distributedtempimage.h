@@ -33,19 +33,21 @@ namespace pilib
 		@param purpose Free-form purpose string. This string will be shown in the name of the temporary file(s) corresponding to this image.
 		@param dimensions Dimensions of the temp image.
 		*/
-		DistributedTempImage(Distributor& distributor, const std::string& purpose, const Vec3c& dimensions) :
+		DistributedTempImage(Distributor& distributor, const std::string& purpose, const Vec3c& dimensions, DistributedImageStorageType storageType) :
 			distributor(distributor),
 			name(purpose + "_" + itl2::toString(randc(10000)))
 		{
 			std::string dts = itl2::toString(imageDataType<pixel_t>());
 
-			CommandList::get<NewImageCommand>().runDistributed(distributor, { name, dts, dimensions.x, dimensions.y, dimensions.z });
+			CommandList::get<NewImage2Command>().runDistributed(distributor, { name, dts, dimensions });
 			
 			dimg = (DistributedImage<pixel_t>*)distributor.getSystem()->getDistributedImage(name);
+
+			dimg->newWriteTarget(storageType);
 		}
 
-		DistributedTempImage(Distributor& distributor, const std::string& purpose, coord_t width = 1, coord_t height = 1, coord_t depth = 1) :
-			DistributedTempImage(distributor, purpose, Vec3c(width, height, depth))
+		DistributedTempImage(Distributor& distributor, const std::string& purpose, coord_t width = 1, DistributedImageStorageType storageType = DistributedImageStorageType::Raw) :
+			DistributedTempImage(distributor, purpose, Vec3c(width, 1, 1), storageType)
 		{
 
 		}

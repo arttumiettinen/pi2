@@ -46,6 +46,17 @@ namespace itl2
 		}
 
 		/**
+		Re-starts the timer and returns the elapsed time in seconds.
+		*/
+		double lap()
+		{
+			stop();
+			double result = getSeconds();
+			start();
+			return result;
+		}
+
+		/**
 		 * Get time between start and this call or start and stop if stop has been called.
 		 * Returns time in milliseconds.
 		 */
@@ -120,6 +131,17 @@ namespace itl2
 		{
 			QueryPerformanceCounter(&m_endTime);
 			isRunning = false;
+		}
+
+		/**
+		Re-starts the timer and returns the elapsed time in seconds.
+		*/
+		double lap()
+		{
+			stop();
+			double result = getSeconds();
+			start();
+			return result;
 		}
 
 		/**

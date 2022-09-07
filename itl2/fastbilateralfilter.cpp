@@ -13,7 +13,7 @@ namespace itl2
 		//void fastBilateralGaussPolynomial()
 		//{
 		//	Image<uint16_t> head16(256, 256, 129);
-		//	raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+		//	raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 		//	// This is needed if test below is enabled.
 		//	//Image<uint16_t> filtered;
@@ -40,7 +40,7 @@ namespace itl2
 		void fastBilateralSampling()
 		{
 			Image<uint16_t> head16Full(256, 256, 129);
-			raw::read(head16Full, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16Full, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<uint16_t> head16(256, 256, 10);
 			crop(head16Full, head16, Vec3c(0, 0, 60));

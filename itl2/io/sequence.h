@@ -4,6 +4,7 @@
 #include "io/imagedatatype.h"
 #include "io/itlpng.h"
 #include "io/itltiff.h"
+#include "io/itljpeg.h"
 #include "utilities.h"
 #include "ompatomic.h"
 
@@ -28,18 +29,15 @@ namespace itl2
 			template<typename pixel_t> void read2D(Image<pixel_t>& image, const std::string& filename, coord_t z)
 			{
 				// TODO: Add other formats here.
-
-				//Vec3c dimensions;
-				//coord_t width, height;
-				//ImageDataType dataType;
-				//std::string reason;
-
-				//if (png::getInfo(filename, width, height, dataType, reason))
+				
+				// NOTE: getInfo calls have been observed to be too slow here, in some cases, so
+				// we use file extensions to identify file types.
 				if (endsWithIgnoreCase(filename, ".png"))
 					png::read(image, filename, z);
-				//else if (tiff::getInfo(filename, dimensions, dataType, reason))
 				else if (endsWithIgnoreCase(filename, ".tif") || endsWithIgnoreCase(filename, ".tiff"))
 					tiff::read2D(image, filename, z, false);
+				else if (endsWithIgnoreCase(filename, ".jpg") || endsWithIgnoreCase(filename, ".jpeg"))
+					jpeg::read(image, filename, z);
 				else
 					throw ITLException(std::string("Unsupported sequence input file format (") + filename + ").");
 			}
@@ -593,6 +591,7 @@ namespace itl2
 			void readWriteBlock();
 			void readWriteBlockOptimization();
 			void fileFormats();
+			void singleImages();
 		}
 	}
 

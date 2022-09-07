@@ -110,7 +110,13 @@ namespace itl2
 		Get the value of a pixel at specific coordinates converted to double.
 		If the pixel type cannot be converted to double (e.g. vector type or complex type), zero should be returned.
 		*/
-		virtual double getf(coord_t x, coord_t y = 0, coord_t z = 0) const = 0;
+		virtual double getf(coord_t x, coord_t y, coord_t z) const = 0;
+
+		/**
+		Get the value of n:th pixel in the image converted to double.
+		If the pixel type cannot be converted to double (e.g. vector type or complex type), zero should be returned.
+		*/
+		virtual double getf(coord_t n) const = 0;
 
 		/**
 		Metadata of this image.
@@ -848,6 +854,18 @@ namespace itl2
 			if constexpr (std::is_arithmetic_v<pixel_t>)
 			{
 				return (double)operator()(x, y, z);
+			}
+			else
+			{
+				return 0.0;
+			}
+		}
+
+		virtual double getf(coord_t n) const override
+		{
+			if constexpr (std::is_arithmetic_v<pixel_t>)
+			{
+				return (double)operator()(n);
 			}
 			else
 			{

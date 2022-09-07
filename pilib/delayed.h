@@ -80,13 +80,15 @@ namespace pilib
 
 		size_t getDistributionDirection2() const;
 
+		size_t getDistributionDirection3() const;
+
 		size_t getRefIndex() const;
 
 		double calculateExtraMemory() const;
 
 		JobType getJobType() const;
 
-		bool needsToRun(const Vec3c& readStart, const Vec3c& readSize, const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize, size_t blockIndex) const;
+		bool needsToRun(const Vec3c& readStart, const Vec3c& readSize, const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize, size_t blockIndex, const Vec3c& blockIndex3) const;
 	};
 
 }

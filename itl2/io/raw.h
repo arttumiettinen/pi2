@@ -61,28 +61,33 @@ namespace itl2
 			inline ImageDataType estimateDataType(const std::string& filename, const Vec3c& dimensions, size_t& pixelSizeBytes)
 			{
 				// First try to find data type from file name.
-				string loname = filename;
-				toLower(loname);
-				if (contains(loname, toString(ImageDataType::UInt8)))
-					return ImageDataType::UInt8;
-				if (contains(loname, toString(ImageDataType::UInt16)))
-					return ImageDataType::UInt16;
-				if (contains(loname, toString(ImageDataType::UInt32)))
-					return ImageDataType::UInt32;
-				if (contains(loname, toString(ImageDataType::UInt64)))
-					return ImageDataType::UInt64;
-				if (contains(loname, toString(ImageDataType::Int8)))
-					return ImageDataType::Int8;
-				if (contains(loname, toString(ImageDataType::Int16)))
-					return ImageDataType::Int16;
-				if (contains(loname, toString(ImageDataType::Int32)))
-					return ImageDataType::Int32;
-				if (contains(loname, toString(ImageDataType::Int64)))
-					return ImageDataType::Int64;
-				if (contains(loname, toString(ImageDataType::Float32)))
-					return ImageDataType::Float32;
-				if (contains(loname, toString(ImageDataType::Complex32)))
-					return ImageDataType::Complex32;
+				ImageDataType dt = ImageDataType::Unknown;
+				if (containsIgnoreCase(filename, toString(ImageDataType::UInt8)))
+					dt = ImageDataType::UInt8;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::UInt16)))
+					dt = ImageDataType::UInt16;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::UInt32)))
+					dt = ImageDataType::UInt32;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::UInt64)))
+					dt = ImageDataType::UInt64;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int8)))
+					dt = ImageDataType::Int8;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int16)))
+					dt = ImageDataType::Int16;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int32)))
+					dt = ImageDataType::Int32;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Int64)))
+					dt = ImageDataType::Int64;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Float32)))
+					dt = ImageDataType::Float32;
+				else if (containsIgnoreCase(filename, toString(ImageDataType::Complex32)))
+					dt = ImageDataType::Complex32;
+
+				if (dt != ImageDataType::Unknown)
+				{
+					pixelSizeBytes = pixelSize(dt);
+					return dt;
+				}
 
 				// No data type information found from the file name, so try to estimate from file size.
 				size_t fileSize = (size_t)itl2::fileSize(filename);
@@ -156,50 +161,59 @@ namespace itl2
 			*/
 			inline bool parseDimensions(const ::std::string& filename, Vec3c& dimensions)
 			{
-				::std::string::size_type temppos = filename.find_last_of('.');
-				if (temppos != ::std::string::npos)
-					temppos = temppos - 1;
-				::std::string::size_type startpos = filename.find_last_not_of("0123456789x", temppos);
-				if (startpos == ::std::string::npos)
-					return false;
-
-				::std::string::size_type endpos = filename.find('x', startpos);
-				if (endpos == ::std::string::npos)
-					return false;
-
-				::std::string ws = filename.substr(startpos + 1, endpos - startpos - 1);
-				size_t w = itl2::fromString<size_t>(ws);
-
-				::std::string::size_type startpos2 = endpos;
-				::std::string::size_type endpos2 = filename.find('x', startpos2 + 1);
-				if (endpos2 == ::std::string::npos)
+				try
 				{
-					// 2D image
-					endpos2 = filename.find('.', startpos);
-					if (endpos2 == ::std::string::npos)
+					::std::string::size_type temppos = filename.find_last_of('.');
+					if (temppos != ::std::string::npos)
+						temppos = temppos - 1;
+					::std::string::size_type startpos = filename.find_last_not_of("0123456789x", temppos);
+					if (startpos == ::std::string::npos)
 						return false;
 
+					::std::string::size_type endpos = filename.find('x', startpos);
+					if (endpos == ::std::string::npos)
+						return false;
+
+					::std::string ws = filename.substr(startpos + 1, endpos - startpos - 1);
+					size_t w = itl2::fromString<size_t>(ws);
+
+					::std::string::size_type startpos2 = endpos;
+					::std::string::size_type endpos2 = filename.find('x', startpos2 + 1);
+					if (endpos2 == ::std::string::npos)
+					{
+						// 2D image
+						endpos2 = filename.find('.', startpos);
+						if (endpos2 == ::std::string::npos)
+							return false;
+
+
+						::std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
+						size_t h = itl2::fromString<size_t>(hs);
+						dimensions = Vec3c((coord_t)w, (coord_t)h, 1);
+
+						return true;
+					}
 
 					::std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
 					size_t h = itl2::fromString<size_t>(hs);
-					dimensions = Vec3c((coord_t)w, (coord_t)h, 1);
 
+					::std::string::size_type startpos3 = endpos2;
+					::std::string::size_type endpos3 = filename.find('.', startpos3 + 1);
+					if (endpos3 == ::std::string::npos)
+						return false;
+
+					::std::string ds = filename.substr(startpos3 + 1, endpos3 - startpos3 - 1);
+					size_t d = itl2::fromString<size_t>(ds);
+
+					dimensions = Vec3c((coord_t)w, (coord_t)h, (coord_t)d);
 					return true;
 				}
-
-				::std::string hs = filename.substr(startpos2 + 1, endpos2 - startpos2 - 1);
-				size_t h = itl2::fromString<size_t>(hs);
-
-				::std::string::size_type startpos3 = endpos2;
-				::std::string::size_type endpos3 = filename.find('.', startpos3 + 1);
-				if (endpos3 == ::std::string::npos)
+				catch (ITLException)
+				{
+					// This is a conversion error. The file name contains suitable set of _ and x and . etc. but
+					// no valid numbers between them.
 					return false;
-
-				::std::string ds = filename.substr(startpos3 + 1, endpos3 - startpos3 - 1);
-				size_t d = itl2::fromString<size_t>(ds);
-
-				dimensions = Vec3c((coord_t)w, (coord_t)h, (coord_t)d);
-				return true;
+				}
 			}
 		}
 
@@ -282,6 +296,10 @@ namespace itl2
 		*/
 		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 		{
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException(std::string("Not a file: ") + filename);
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if(!in)
@@ -347,6 +365,9 @@ namespace itl2
 				return;
 			}
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException(std::string("Not a file: ") + filename);
 
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 

@@ -4,6 +4,7 @@
 
 namespace pilib
 {
+
 	void addAutoThresholdCommands()
 	{
 		ADD_REAL(AutoThresholdCommand);

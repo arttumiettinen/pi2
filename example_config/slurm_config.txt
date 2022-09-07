@@ -40,12 +40,36 @@ max_memory = 180000
 ; queues.
 max_resubmit_count = 5
 
+; Set to true to enable saving temporary images as NN5 datasets.
+;use_nn5 = True
+
+; Chunk size for temporary NN5 datasets.
+;chunk_size = [1536, 1536, 1536]
+
+; Maximum number of jobs to submit in parallel. If this number is exceeded,
+; multiple jobs are combined into larger ones. Combination is done only for
+; fast and normal jobs, slow jobs are never combined.
+; Set to 0 to never combine jobs.
+;max_parallel_submit_count = 0
+
+; When this many jobs have been combined, the job is promoted to the next
+; slower speed class. E.g., let promote_threshold = 3 and max_parallel_submit_count = 10.
+; If there are 30 jobs total, three jobs will be combined into one. If the slowest speed
+; class of the combined jobs is Fast, the combined job will have class Normal; if it was
+; Normal, it will become Slow.
+;promote_threshold = 3
+
 ; Set to true to allow delayed execution of commands in order to combine execution of multiple
 ; commands to save I/O and scratch disk space.
 ;allow_delaying = true
 
 ; Set to true to show automatically generated Pi2 work scripts.
 ;show_submitted_scripts = false
+
+; Use this to override the (path and) file name used to launch pi2.
+; This can be used, e.g., to run different pi2 build on compute nodes than in the login node.
+; The command cannot contain command line arguments.
+;pi2_command = pi2
 
 ; Use these to override standard SLURM commands.
 ; Some HPC environments use specific scripts in place of the standard commands,

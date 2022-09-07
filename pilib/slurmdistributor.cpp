@@ -25,35 +25,27 @@ namespace pilib
 		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
 		myName = itl2::toString(dist(rng));
 
-		// Read config file, try to read from the current folder and from the folder of pi2 executable.
-		fs::path configPath = getPiCommand();
-		size_t mem = 0;
-		if (configPath.has_filename())
-		{		
-			configPath = configPath.replace_filename("slurm_config.txt");
+		fs::path configPath = getConfigDirectory() / "slurm_config.txt";
 			
-			//cout << "Reading settings from " << configPath << endl;
+		//cout << "Reading settings from " << configPath << endl;
 
-			INIReader reader(configPath.string());
+		INIReader reader(configPath.string());
 
-			extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
-			extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
-			extraArgsSlowJobsSBatch = reader.get<string>("extra_args_slow_jobs_sbatch", "");
-			extraArgsFastJobsSInfo = reader.get<string>("extra_args_fast_jobs_sinfo", "");
-			extraArgsNormalJobsSInfo = reader.get<string>("extra_args_normal_jobs_sinfo", "");
-			extraArgsSlowJobsSInfo = reader.get<string>("extra_args_slow_jobs_sinfo", "");
-			jobInitCommands = reader.get<string>("job_init_commands", "");
-			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
-			maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
-			sbatchCommand = reader.get<string>("sbatch_command", "sbatch");
-			squeueCommand = reader.get<string>("squeue_command", "squeue");
-			scancelCommand = reader.get<string>("scancel_command", "scancel");
-			sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
+		extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
+		extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
+		extraArgsSlowJobsSBatch = reader.get<string>("extra_args_slow_jobs_sbatch", "");
+		extraArgsFastJobsSInfo = reader.get<string>("extra_args_fast_jobs_sinfo", "");
+		extraArgsNormalJobsSInfo = reader.get<string>("extra_args_normal_jobs_sinfo", "");
+		extraArgsSlowJobsSInfo = reader.get<string>("extra_args_slow_jobs_sinfo", "");
+		jobInitCommands = reader.get<string>("job_init_commands", "");
+		size_t mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
+		maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
+		sbatchCommand = reader.get<string>("sbatch_command", "sbatch");
+		squeueCommand = reader.get<string>("squeue_command", "squeue");
+		scancelCommand = reader.get<string>("scancel_command", "scancel");
+		sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
 
-			readSettings(reader);
-			
-			//cout << "done" << endl;
-		}
+		readSettings(reader);
 		
 		allowedMemory(mem);
 	}
@@ -116,29 +108,50 @@ namespace pilib
 		return "./slurm-io-files/" + makeJobName(jobIndex) + "-err.txt";
 	}
 
+	string SLURMDistributor::makeSbatchName(size_t jobIndex) const
+	{
+		return "./slurm-io-files/" + makeJobName(jobIndex) + "-sbatch.sh";
+	}
+
 	void SLURMDistributor::resubmit(size_t jobIndex)
 	{
 		string jobName = makeJobName(jobIndex);
 		string inputName = makeInputName(jobIndex);
 		string outputName = makeOutputName(jobIndex);
 		string errorName = makeErrorName(jobIndex);
+		string sbatchName = makeSbatchName(jobIndex);
 		JobType jobType = get<1>(submittedJobs[jobIndex]);
 
 		fs::remove(outputName);
 		fs::remove(errorName);
 
-		string jobCmdLine;
-		if (jobInitCommands.length() > 0)
-			jobCmdLine = jobInitCommands + "; ";
-		jobCmdLine += "'" + getPiCommand() + "' " + inputName;
+		//string jobCmdLine;
+		//if (jobInitCommands.length() > 0)
+		//	jobCmdLine = jobInitCommands + "; ";
+		//jobCmdLine += "'" + getPiCommand() + "' " + inputName;
+		//string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgsSBatch(jobType) + " --wrap=\"" + jobCmdLine + "\"";
 
-		string sbatchArgs = string("--no-requeue") + " --job-name=" + jobName + " --output=" + outputName + " --error=" + errorName + " " + extraArgsSBatch(jobType) + " --wrap=\"" + jobCmdLine + "\"";
+		string sbatchCode;
+		sbatchCode += "#!/bin/bash\n";
+		sbatchCode += "#SBATCH --no-requeue\n";
+		sbatchCode += "#SBATCH --job-name=" + jobName + "\n";
+		sbatchCode += "#SBATCH --output=" + outputName + "\n";
+		sbatchCode += "#SBATCH --error=" + errorName + "\n";
+		
+		string sbatchExtra = extraArgsSBatch(jobType);
+		if(!isWhitespace(sbatchExtra))
+			sbatchCode += "#SBATCH " + sbatchExtra + "\n";
+		sbatchCode += "\n";
+		
+		if(!isWhitespace(jobInitCommands))
+			sbatchCode += jobInitCommands + "\n";
+		
+		sbatchCode += getJobPiCommand() + " \"" + inputName + "\"\n";
+		sbatchCode += "\n";
+		writeText(sbatchName, sbatchCode);
 
-	//cout << "sbatch input: " << sbatchArgs << endl;
-
+		string sbatchArgs = sbatchName;
 		string result = execute(sbatchCommand, sbatchArgs);
-
-	//cout << "sbatch output: " << result << endl;
 
 		vector<string> lines = split(result);
 		if (lines.size() == 1)
@@ -208,6 +221,9 @@ namespace pilib
 
 		string result = execute(squeueCommand, string("--noheader --jobs=") + slurmId);
 		trim(result);
+
+		// TODO: Sometimes empty result means that slurm is somehow intermittently unavailable, but jobs are
+		// still running. How to detect that? Perhaps wait a second and try again?
 		
 		// Empty result means the job is done
 		if(result.length() <= 0)

@@ -409,7 +409,7 @@ namespace itl2
 		void sphereMaxSpeed()
 		{
 			Image<uint16_t> head;
-			raw::read(head, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<uint16_t> result(head.dimensions());
 
@@ -423,7 +423,7 @@ namespace itl2
 			cout << "Decomposed approximate max takes " << timer.getSeconds() << " s" << endl;
 			raw::writed(head, "filters/max_sphere_decomp");
 
-			raw::read(head, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 			timer.start();
 			//maxFilter(head, result, r, NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);
 			filter<uint16_t, uint16_t, internals::maxOp<uint16_t> >(head, result, Vec3c(r, r, r), NeighbourhoodType::Ellipsoidal, BoundaryCondition::Nearest);

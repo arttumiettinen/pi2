@@ -14,18 +14,11 @@ namespace pilib
 {
 	LocalDistributor::LocalDistributor(PISystem* piSystem) : Distributor(piSystem), allowedMem(0)
 	{
-		fs::path configPath = getPiCommand();
-		size_t mem = 0;
-		if (configPath.has_filename())
-		{
-			configPath = configPath.replace_filename("local_config.txt");
+		fs::path configPath = getConfigDirectory() / "local_config.txt";
 
-			INIReader reader(configPath.string());
-
-			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
-			
-			readSettings(reader);
-		}
+		INIReader reader(configPath.string());
+		size_t mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
+		readSettings(reader);
 
 		allowedMemory(mem);
 	}
@@ -49,7 +42,7 @@ namespace pilib
 			f << "print(Everything done.)" << endl;
 		}
 
-		string output = execute("\"" + getPiCommand() + "\"", "pi2_local_job.txt", true);
+		string output = execute(getJobPiCommand(), "pi2_local_job.txt", true);
 
 		outputs.push_back(output);
 	}

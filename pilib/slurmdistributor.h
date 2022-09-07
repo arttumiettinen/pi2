@@ -130,6 +130,11 @@ namespace pilib
 		*/
 		std::string makeErrorName(size_t jobIndex) const;
 
+		/**
+		Creates sbatch file name.
+		*/
+		std::string makeSbatchName(size_t jobIndex) const;
+
 	public:
 		SLURMDistributor(PISystem* system);
 

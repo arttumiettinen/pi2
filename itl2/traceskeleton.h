@@ -1571,6 +1571,14 @@ namespace itl2
 			internals::combineIncompleteEdges(net, completedVertices, pOriginal, isFinal, storeAllEdgePoints, smoothingSigma, maxDisplacement);
 		}
 	
+		inline void printVertex(coord_t vertIndex, const std::vector<Vec3f>& vertList)
+		{
+			if (vertIndex < 0 || (size_t)vertIndex >= vertList.size())
+				std::cout << "Vertex " << vertIndex << " = ? (vertex list size = " << vertList.size() << ")" << std::endl;
+			else
+				std::cout << "Vertex " << vertIndex << " = " << toString(vertList[vertIndex]) << std::endl;
+		}
+
 		/**
 		Moves incomplete vertices and edges to the complete vertices and edges lists.
 		Throws exception if the network contains edges with unknown end points.
@@ -1580,14 +1588,20 @@ namespace itl2
 			for (const IncompleteEdge& ie : net.incompleteEdges)
 			{
 				if (ie.verts[0] < 0 || ie.verts[1] < 0)
-					throw ITLException("The incomplete edges of the network cannot be completed because one of them has unknown end point: " + toString(ie.verts[0]) + " to " + toString(ie.verts[1]));
+				{
+					std::cout << "Warning: Incomplete edge between vertex indices " << toString(ie.verts[0]) << " and " << toString(ie.verts[1]) << " will be erased." << std::endl;
+					printVertex(ie.verts[0], net.vertices);
+					printVertex(ie.verts[1], net.vertices);
+					//throw ITLException("The incomplete edges of the network cannot be completed because one of them has unknown end point: " + toString(ie.verts[0]) + " to " + toString(ie.verts[1]));
+				}
 			}
 
 			net.incompleteVertices.clear();
 
 			for (const IncompleteEdge& ie : net.incompleteEdges)
 			{
-				net.edges.push_back(Edge(ie.verts[0], ie.verts[1], ie.properties));
+				if (ie.verts[0] >= 0 && ie.verts[1] >= 0)
+					net.edges.push_back(Edge(ie.verts[0], ie.verts[1], ie.properties));
 			}
 
 			net.incompleteEdges.clear();

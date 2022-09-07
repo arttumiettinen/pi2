@@ -10,6 +10,7 @@
 #include "pilibutilities.h"
 #include "whereamicpp.h"
 #include "commandmacros.h"
+#include "timing.h"
 
 using namespace std;
 
@@ -20,6 +21,8 @@ namespace pilib
 		CommandList::add<ClearCommand>();
 		CommandList::add<DistributeCommand>();
 		CommandList::add<MaxMemoryCommand>();
+		CommandList::add<MaxJobsCommand>();
+		CommandList::add<ChunkSizeCommand>();
 		CommandList::add<DelayingCommand>();
 		CommandList::add<PrintTaskScriptsCommand>();
 		CommandList::add<EchoCommandsCommand>();
@@ -33,6 +36,7 @@ namespace pilib
 		CommandList::add<ReadSequenceCommand>();
 		CommandList::add<ReadVolCommand>();
 		CommandList::add<WaitReturnCommand>();
+		CommandList::add<TimingCommand>();
 
 		CommandList::add<MapRawCommand>();
 		CommandList::add<MapRaw2Command>();
@@ -82,6 +86,12 @@ namespace pilib
 			cout << "Please see LICENSE.txt bundled with this software or" << endl;
 			cout << "https://www.gnu.org/licenses/gpl-3.0.html for full license text." << endl;
 		}
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This software is based in part on the work of the Independent JPEG Group." << endl;
+		cout << endl;
 
 
 		cout << endl << endl;
@@ -582,6 +592,11 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		cout << "Please see https://www.gnu.org/licenses/gpl-2.0.html for full license text." << endl;
 
 
+	}
+
+	void TimingCommand::run(vector<ParamVariant>& args) const
+	{
+		cout << Timing::toString() << endl;
 	}
 
 	void ListCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
@@ -1495,6 +1510,20 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		double maxMem = pop<double>(args);
 		if (system->getDistributor())
 			system->getDistributor()->allowedMemory(itl2::round(maxMem * 1024.0 * 1024.0));
+	}
+
+	void MaxJobsCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		size_t n = pop<size_t>(args);
+		if (system->getDistributor())
+			system->getDistributor()->maxJobs(n);
+	}
+
+	void ChunkSizeCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		Vec3c chunkSize = pop<Vec3c>(args);
+		if (system->getDistributor())
+			system->getDistributor()->chunkSize(chunkSize);
 	}
 
 	void DistributeCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

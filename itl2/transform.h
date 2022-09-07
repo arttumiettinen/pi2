@@ -332,27 +332,29 @@ namespace itl2
 		AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
 		AABox<coord_t> clippedBox = sourceBox.translate(pos).intersection(targetBox).translate(-pos);
 
-		if (pos.x == 0 && pos.y == 0 && block.dimensions().x == target.dimensions().x && block.dimensions().y == target.dimensions().y)
-		{
-			// Shift in z only. This can be done very fast as memory copy-style operation.
+		// TODO: This optimization is not correct at the moment. It does not account for clipping above.
+		//			I will remove it for now, and debug it later if it is really necessary.
+		//if (pos.x == 0 && pos.y == 0 && block.dimensions().x == target.dimensions().x && block.dimensions().y == target.dimensions().y)
+		//{
+		//	// Shift in z only. This can be done very fast as memory copy-style operation.
 
-			size_t targetStartIndex = target.getLinearIndex(0, 0, pos.z);
+		//	size_t targetStartIndex = target.getLinearIndex(0, 0, pos.z);
 
-			#pragma omp parallel for if(block.pixelCount() > PARALLELIZATION_THRESHOLD)
-			for (coord_t n = 0; n < block.pixelCount(); n++)
-			{
-				target(targetStartIndex + n) = pixelRound<pixel_t, out_t>(block(n));
-			}
-		}
-		else
-		{
+		//	#pragma omp parallel for if(block.pixelCount() > PARALLELIZATION_THRESHOLD)
+		//	for (coord_t n = 0; n < block.pixelCount(); n++)
+		//	{
+		//		target(targetStartIndex + n) = pixelRound<pixel_t, out_t>(block(n));
+		//	}
+		//}
+		//else
+		//{
 			// General shift
 			forAllInBox(clippedBox, [&](coord_t x, coord_t y, coord_t z)
 			{
 				Vec3c xi = Vec3c(x, y, z) + pos;
 				target(xi) = pixelRound<pixel_t>(block(x, y, z));
 			});
-		}
+		//}
 	}
 
 

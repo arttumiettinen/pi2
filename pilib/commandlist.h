@@ -68,7 +68,7 @@ namespace pilib
 					return *c;
 			}
 
-			throw std::logic_error("Unknown command type.");
+			throw std::logic_error(string("Unknown command type: ") + typeid(command_t).name());
 		}
 
 		/**

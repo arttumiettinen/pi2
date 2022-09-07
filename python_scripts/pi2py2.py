@@ -361,10 +361,13 @@ class Pi2Image(Pi2Object):
 
         return self.get_info()
 
+
+
     def get_data_pointer(self):
         """
         Gets pointer to the image data stored in the Pi2 system as NumPy array.
         The data is not copied so it might become unavailable when next Pi2 calls are made.
+        NOTE: This function is deprecated and will be removed. Use to_numpy_pointer() instead.
         """
 
         ptr, w, h, d, dt = self.get_raw_pointer()
@@ -406,6 +409,105 @@ class Pi2Image(Pi2Object):
 
         return np.reshape(arr, (1))
 
+    def get_data(self):
+        """
+        Gets a copy of the pixel data of this image as a NumPy array.
+        NOTE: This function is deprecated and will be removed. Use to_numpy() instead.
+        """
+
+        return np.copy(self.get_data_pointer())
+
+    def set_data(self, numpy_array):
+        """
+        Sets pixels, size and pixel data type of this image from a NumPy array.
+        The image will be in the same format than the NumPy array.
+        Not all data types supported in NumPy work.
+        Only 1-, 2-, and 3-dimensional NumPy arrays are supported.
+        NOTE: This function is deprecated and will be removed. Use from_numpy() instead.
+        """
+
+        w = 1
+        h = 1
+        d = 1
+
+        w = numpy_array.shape[0]
+        if len(numpy_array.shape) >= 2:
+            h = numpy_array.shape[1]
+        if len(numpy_array.shape) >= 3:
+            d = numpy_array.shape[2]
+        if len(numpy_array.shape) >= 4:
+            raise RuntimeError("Maximum 3-dimensional arrays can be transferred to pi2.")
+
+        dtype = numpy_array.dtype
+        if numpy_array.dtype == np.float64:
+            dtype = ImageDataType.FLOAT32
+
+        self.pi2.run_script(f"newimage({self.name}, {dtype}, {h}, {w}, {d})")
+        target_array = self.get_data_pointer()
+        if numpy_array.size > 0:
+            target_array.squeeze()[:] = numpy_array.squeeze()[:]
+
+        self.flush_pointer()
+
+
+
+
+
+
+
+    def to_numpy_pointer(self):
+        """
+        Gets a pointer to the image data stored in the Pi2 system as NumPy array.
+        The data is not copied so it might become unavailable when next Pi2 calls are made.
+        Singleton dimensions in the end of the dimensions list are squeezed away.
+        """
+
+        ptr, w, h, d, dt = self.get_raw_pointer()
+
+        if dt == 0:
+            raise RuntimeError("Unable to retrieve image data because pixel data type is not supported.")
+        elif dt == 1:
+            ptr = cast(ptr, POINTER(c_uint8))
+        elif dt == 2:
+            ptr = cast(ptr, POINTER(c_uint16))
+        elif dt == 3:
+            ptr = cast(ptr, POINTER(c_uint32))
+        elif dt == 4:
+            ptr = cast(ptr, POINTER(c_uint64))
+        elif dt == 5:
+            ptr = cast(ptr, POINTER(c_float))
+        elif dt == 6:
+            ptr = cast(ptr, POINTER(c_float))
+            w = 2 * w
+            print("Warning: complex32 image is output as float32 image with twice the width of the original.")
+        elif dt == 7:
+            ptr = cast(ptr, POINTER(c_int8))
+        elif dt == 8:
+            ptr = cast(ptr, POINTER(c_int16))
+        elif dt == 9:
+            ptr = cast(ptr, POINTER(c_int32))
+        elif dt == 10:
+            ptr = cast(ptr, POINTER(c_int64))
+        else:
+            raise RuntimeError("pilib returned unsupported image data type.")
+
+        arr = np.ctypeslib.as_array(ptr, shape=(d, h, w))
+        
+        if d > 1:
+            return np.swapaxes(arr, 0, 2) # swapaxes should always return view of original data
+        elif h > 1:
+            return np.swapaxes(arr, 1, 2).squeeze(axis=0) # swapaxes and squeeze should always return view of original data
+        elif w > 1:
+            return arr.squeeze()
+
+        return np.reshape(arr, (1))
+
+    def to_numpy(self):
+        """
+        Gets a copy of the pixel data of this image as a NumPy array.
+        """
+
+        return np.copy(self.to_numpy_pointer())
 
     def flush_pointer(self):
         """
@@ -415,27 +517,19 @@ class Pi2Image(Pi2Object):
 
         if not self.pi2.pilib.finishUpdate(self.pi2.piobj, self.name.encode('UTF-8')):
             self.pi2.raise_last_error()
-
-
-    def get_data(self):
-        """
-        Gets a copy of the pixel data of this image as a NumPy array.
-        """
-
-        return np.copy(self.get_data_pointer())
-
-
-
+            
     def get_value(self):
         """
         Returns the value of the first pixel in the image.
         """
 
-        M = self.get_data_pointer()
+        M = self.to_numpy_pointer()
         return float(M[0])
 
 
-    def set_data(self, numpy_array):
+
+
+    def from_numpy(self, numpy_array):
         """
         Sets pixels, size and pixel data type of this image from a NumPy array.
         The image will be in the same format than the NumPy array.
@@ -459,8 +553,9 @@ class Pi2Image(Pi2Object):
         if numpy_array.dtype == np.float64:
             dtype = ImageDataType.FLOAT32
 
-        self.pi2.run_script(f"newimage({self.name}, {dtype}, {h}, {w}, {d})")
-        target_array = self.get_data_pointer()
+        self.pi2.run_script(f"newimage({self.name}, {dtype}, {w}, {h}, {d})")
+        target_array = self.to_numpy_pointer()
+
         if numpy_array.size > 0:
             target_array.squeeze()[:] = numpy_array.squeeze()[:]
 
@@ -593,22 +688,31 @@ class Pi2:
         setattr(self, cmd_name, func)
 
 
-    def __init__(self):
+    def __init__(self, library_path = ''):
+        """
+        Wraps Pi2 library.
+        Pass path to pi.dll or libpi.so as an argument library_path, if the file is not located in
+        the same directory than pi2py2.py.
+        """
 
-        # (No docstring as it is visible in IPython class documentation.)
-        # Finds commands that are available from the pilib and adds them as methods of the class instance.
+        # NOTE: Docstring is visible in IPython.
+        # This method finds commands that are available from the pilib and adds them as methods of the class instance.
 
         self.piobj = None
+
+        # Default path to folder containing pi.dll or libpi.so is the folder of this file.
+        if library_path == '':
+            library_path = os.path.dirname(__file__)
 
         # Create pilib instance
         if os.name == 'nt':
             # Windows
-            os.environ['PATH'] = os.path.dirname(__file__) + ';' + os.environ['PATH']
-            self.pilib = WinDLL(f"{os.path.dirname(__file__)}\\pi.dll")
+            os.environ['PATH'] = library_path + ';' + os.environ['PATH']
+            self.pilib = WinDLL(os.path.join(library_path, "pi.dll"))
         else:
             # Linux
-            #os.environ['PATH'] = os.path.dirname(__file__) + ':' + os.environ['PATH']
-            self.pilib = CDLL(f"{os.path.dirname(__file__)}/libpi.so")
+            #os.environ['PATH'] = library_path + ':' + os.environ['PATH']
+            self.pilib = CDLL(os.path.join(library_path, "libpi.so"))
 
         self.pilib.createPI.restype = c_void_p
 
@@ -697,6 +801,16 @@ class Pi2:
             self.raise_last_error()
 
 
+    def make_safe(self, argument):
+        """
+        Escapes bad characters from a string that is to be an argument for run_script command.
+        """
+
+        argument = str(argument)
+        argument = argument.replace('\n', '\\n')
+        return argument
+
+
     def run_command(self, cmd_name, args):
         """
         Runs pilib command, given its name and arguments.
@@ -730,6 +844,10 @@ class Pi2:
                 # Argument is something else... Just convert it to string.
                 arg_as_string = str(arg)
 
+            # Remove newlines
+            arg_as_string = self.make_safe(arg_as_string)
+            
+            # Add quotes
             arg_as_string = f"'{arg_as_string}'"
 
             if len(arg_line) > 0:
@@ -837,7 +955,7 @@ class Pi2:
         """
 
         name = self.generate_value_name()
-        value = value.replace("\"", "\\\"")
+        value = self.make_safe(value.replace("\"", "\\\""))
         self.run_script(f"newvalue({name}, \"string\", \"{value}\")")
         return Pi2Value(self, name)
 
@@ -860,7 +978,7 @@ class Pi2:
         """
         
         temp_image = self.newimage()
-
+        filename = self.make_safe(filename)
         self.run_script(f"isimagefile({filename}, {temp_image.name})")
 
         return temp_image.get_value() != 0
@@ -881,7 +999,7 @@ class Pi2:
         if target_image == None:
             image_name = self.generate_image_name()
             target_image = Pi2Image(self, image_name)
-
+        filename = self.make_safe(filename)
         self.run_script(f"read({target_image.name}, \"{filename}\", {data_type_override})")
         return target_image
         
@@ -894,6 +1012,7 @@ class Pi2:
         """
 
         image_name = self.generate_image_name()
+        filename = self.make_safe(filename)
         self.run_script(f"mapraw({image_name}, {filename}, {data_type}, [{width}, {height}, {depth}])")
         return Pi2Image(self, image_name)
 

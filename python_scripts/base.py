@@ -126,38 +126,39 @@ class Scan:
     Holds information about one sub-scan.
     """
 
-    # File that contains the image data
-    rec_file = ''
+    def __init__(self):
+        # File that contains the image data
+        self.rec_file = ''
 
-    # Index of the scan (first scan = 1, second scan = 2, ...)
-    index = -1
+        # Index of the scan (first scan = 1, second scan = 2, ...)
+        self.index = -1
 
-    # Size of the image
-    dimensions = np.array([0, 0, 0])
+        # Size of the image
+        self.dimensions = np.array([0, 0, 0])
 
-    # Similarity transformation (rotation matrix, scaling factor, negative of position in stitched image)
-    R = np.eye(3)
-    a = 1
-    c = np.zeros((3, 1))
+        # Similarity transformation (rotation matrix, scaling factor, negative of position in stitched image)
+        self.R = np.eye(3)
+        self.a = 1
+        self.c = np.zeros((3, 1))
 
-    # Indicates if the similarity transformation has been set
-    transformation_set = False
+        # Indicates if the similarity transformation has been set
+        self.transformation_set = False
 
-    # Name of file where the total transformation of this scan has been stored
-    transformation_file = ''
+        # Name of file where the total transformation of this scan has been stored
+        self.transformation_file = ''
 
-    # Filename prefix used while storing world to local transformation grid.
-    world_to_local_prefix = ''
+        # Filename prefix used while storing world to local transformation grid.
+        self.world_to_local_prefix = ''
 
-    # Approximate position of the first pixel of the image in world coordinates.
-    # This member is used as initial guess of the position to determine approximately overlapping regions
-    # of the sub-images.
-    position = np.array([0, 0, 0])
+        # Approximate position of the first pixel of the image in world coordinates.
+        # This member is used as initial guess of the position to determine approximately overlapping regions
+        # of the sub-images.
+        self.position = np.array([0, 0, 0])
 
-    # Normalization factors for gray values
-    norm_fact = 0
-    norm_fact_std = 1
-    mean_def = 0
+        # Normalization factors for gray values
+        self.norm_fact = 0
+        self.norm_fact_std = 1
+        self.mean_def = 0
 
     def is_rec_ok(self):
         """
@@ -188,6 +189,10 @@ def get_image_size(filename):
     s = s.decode('ASCII')
     lines = s.splitlines()
     if len(lines) == 3:
+        
+        if lines[-1] == 'Unknown':
+            raise RuntimeError("Unsupported image file type or pixel data type: " + filename)
+
         return from_string(lines[1])
 
     raise RuntimeError("Unable to read dimensions from image file " + filename)
@@ -1603,7 +1608,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                     pi_script = (f"echo;"
                                  f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                                  f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle});"
-                                 f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                                 f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                                  f"newimage(marker, uint8, 1, 1, 1);"
                                  f"writetif(marker, {out_template}_{jobs_started}_done);"
                                 )
@@ -1612,8 +1617,8 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                              f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"newlikefile(goodnessimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle});"
-                             f"writerawblock(outimg, {out_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
-                             f"writerawblock(goodnessimg, {out_goodness_file}, {xstart - minx}, {ystart - miny}, {zstart - minz}, {out_width}, {out_height}, {out_depth});"
+                             f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
+                             f"writerawblock(goodnessimg, {out_goodness_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                              f"newimage(marker, uint8, 1, 1, 1);"
                              f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )

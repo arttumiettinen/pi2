@@ -25,29 +25,23 @@ namespace pilib
 		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
 		myName = itl2::toString(dist(rng));
 
-		// Read config file, try to read from the current folder and from the folder of pi2 executable.
-		fs::path configPath = getPiCommand();
-		size_t mem = 0;
-		if (configPath.has_filename())
-		{
-			configPath = configPath.replace_filename("lsf_config.txt");
+		fs::path configPath = getConfigDirectory() / "lsf_config.txt";
 
-			//cout << "Reading settings from " << configPath << endl;
+		//cout << "Reading settings from " << configPath << endl;
 
-			INIReader reader(configPath.string());
+		INIReader reader(configPath.string());
 
-			extraArgsFastJobs = reader.get<string>("extra_args_fast_jobs", "");
-			extraArgsNormalJobs = reader.get<string>("extra_args_normal_jobs", "");
-			extraArgsSlowJobs = reader.get<string>("extra_args_slow_jobs", "");
-			jobInitCommands = reader.get<string>("job_init_commands", "");
-			mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
-			maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
-			bsubCommand = reader.get<string>("bsub_command", "bsub");
-			bjobsCommand = reader.get<string>("bjobs_command", "bjobs");
-			bkillCommand = reader.get<string>("bkill_command", "bkill");
+		extraArgsFastJobs = reader.get<string>("extra_args_fast_jobs", "");
+		extraArgsNormalJobs = reader.get<string>("extra_args_normal_jobs", "");
+		extraArgsSlowJobs = reader.get<string>("extra_args_slow_jobs", "");
+		jobInitCommands = reader.get<string>("job_init_commands", "");
+		size_t mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
+		maxSubmissions = reader.get<size_t>("max_resubmit_count", 5) + 1;
+		bsubCommand = reader.get<string>("bsub_command", "bsub");
+		bjobsCommand = reader.get<string>("bjobs_command", "bjobs");
+		bkillCommand = reader.get<string>("bkill_command", "bkill");
 
-			readSettings(reader);
-		}
+		readSettings(reader);
 
 		allowedMemory(mem);
 	}
@@ -140,7 +134,7 @@ namespace pilib
 		string initStr = " ";
 		if (jobInitCommands.length() > 0)
 			initStr = string(" -E ") + jobInitCommands + " ";
-		string jobCmdLine = "'" + getPiCommand() + "' " + inputName;
+		string jobCmdLine = getJobPiCommand() + " " + inputName;
 
 		string bsubArgs = string("") + "-J " + jobName + " -o " + outputName + " -e " + errorName + " -Ne " + initStr + extraArgs(jobType) + " " + jobCmdLine;
 

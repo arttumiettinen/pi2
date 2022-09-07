@@ -62,12 +62,12 @@ In those cases you will get an 'Illegal instruction'-runtime error. To fix the p
 
 ### Windows
 
-* FFTW, libpng, zlib, and libtiff are required. It's easiest to download all the dependencies from the binary download page, see above. Either use pre-built binaries and place them to folders fftw-3.3.5-dll64, libpng-1.6.34, zlib-1.2.11, and tiff-4.0.10, or build them from sources using default Release Library x64 build settings. In particular, libtiff must be built with nmake from x64 Developer Command Prompt using command
+* FFTW, libpng, zlib, libtiff, and libjpeg are required. It's easiest to download all the dependencies from the binary download page, see above. Either use pre-built binaries and place them to folders fftw-3.3.5-dll64, libpng-1.6.34, zlib-1.2.11, tiff-4.0.10, and jpeg-9e, or build them from sources using default Release Library x64 build settings. In particular, libtiff must be built with nmake from x64 Developer Command Prompt using command
 ```
 [path-to-base-folder]\tiff-4.0.5> nmake /f makefile.vc
 ```
 Before building edit nmake.opt file and change OPTFLAGS value /MD and /MDd to /MT and /MTd, for debug and release builds, respectively.
-* Build everything in itl2.sln solution file, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available. The output is placed to x64 folder.
+* Build everything in itl2.sln solution file, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available. The output is placed to the x64 folder.
 
 
 ## License

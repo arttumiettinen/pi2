@@ -4,23 +4,13 @@
 #include "png.h"
 #include "image.h"
 #include "io/imagedatatype.h"
+#include "io/fopen_s.h"
 
 namespace itl2
 {
 
 	namespace png
 	{
-
-#ifndef _WIN32	
-		inline int fopen_s(FILE **f, const char *name, const char *mode)
-		{
-			int ret = 0;
-			*f = fopen(name, mode);
-			if (!*f)
-				ret = errno;
-			return ret;
-		}
-#endif
 
 		namespace internals
 		{
@@ -45,7 +35,7 @@ namespace itl2
 				FILE* f;
 				if (fopen_s(&f, filename.c_str(), "rb") != 0)
 				{
-					errorMessage = string("Unable to open file ") + filename + ".";
+					errorMessage = "Unable to open file.";
 					return false;
 				}
 
@@ -80,9 +70,12 @@ namespace itl2
 					int colorType;
 					png_get_IHDR(png, pngInfo, &pngWidth, &pngHeight, &bitDepth, &colorType, nullptr, nullptr, nullptr);
 
+					if (img.width() != pngWidth || img.height() != pngHeight)
+						img.ensureSize(pngWidth, pngHeight, img.depth());
+
 					// Check that image size is correct.
-					if (img.width() == pngWidth && img.height() == pngHeight)
-					{
+					//if (img.width() == pngWidth && img.height() == pngHeight)
+					//{
 
 						// Make sure that image data type and png file data type match.
 						if (colorType == PNG_COLOR_TYPE_GRAY)
@@ -132,11 +125,11 @@ namespace itl2
 						{
 							errorMessage = "Png file does not contain a grayscale image.";
 						}
-					}
-					else
-					{
-						errorMessage = "Image width and height do not match to file width and height.";
-					}
+					//}
+					//else
+					//{
+					//	errorMessage = "Image width and height do not match to file width and height.";
+					//}
 				}
 				else
 				{
@@ -176,7 +169,7 @@ namespace itl2
 				FILE *f;
 				if (fopen_s(&f, filename.c_str(), "wb") != 0)
 				{
-					errorMessage = string("Unable to open file ") + filename + " for writing.";
+					errorMessage = "Unable to open file for writing.";
 					return false;
 				}
 
@@ -232,12 +225,21 @@ namespace itl2
 
 		/*
 		Get information from .png image file.
-		Supports only 8- and 16-bit grayscale images.
+		Supports 8- and 16-bit grayscale images only.
 		@param width, height Dimensions of the image
 		@param dataType Pixel data type of the image.
 		@return True if the file seems to be an existing, valid .png file with supported pixel data type.
 		*/
 		bool getInfo(const string& filename, coord_t& width, coord_t& height, ImageDataType& dataType, string& reason);
+
+		inline bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
+		{
+			coord_t w, h;
+			bool result = getInfo(filename, w, h, dataType, reason);
+			if (result)
+				dimensions = Vec3c(w, h, 1);
+			return true;
+		}
 
 		/*
 		Read a .png file.
@@ -254,7 +256,7 @@ namespace itl2
 
 		/*
 		Write a .png file.
-		Supports only 8- and 16-bit grayscale images.
+		Supports 8- and 16-bit grayscale images only.
 		@param z Z-coordinate of the slice that will be written.
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const string& filename, coord_t z = 0)
@@ -266,7 +268,7 @@ namespace itl2
 
 		/*
 		Write a .png file, adds .png to the file name.
-		Supports only 8- and 16-bit grayscale images.
+		Supports 8- and 16-bit grayscale images only.
 		@param z Z-coordinate of the slice that will be written.
 		*/
 		template<typename pixel_t> void writed(const Image<pixel_t>& img, const string& filename, coord_t z = 0)

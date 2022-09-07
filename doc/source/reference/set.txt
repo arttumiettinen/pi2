@@ -127,7 +127,7 @@ Origin of current calculation block in coordinates of the full image. This argum
 See also
 --------
 
-:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`get`, :ref:`ramp`
+:ref:`line`, :ref:`capsule`, :ref:`sphere`, :ref:`ellipsoid`, :ref:`set`, :ref:`get`, :ref:`ramp`, :ref:`ramp3`
 
 :code:`set(image, positions, values)`
 =====================================

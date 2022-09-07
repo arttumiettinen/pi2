@@ -171,6 +171,15 @@
     <ClInclude Include="inpaintcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="distributedimagestoragetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="timing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="floodfillcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">
@@ -297,6 +306,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="inpaintcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="timing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="floodfillcommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

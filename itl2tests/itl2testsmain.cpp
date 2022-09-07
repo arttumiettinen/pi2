@@ -13,6 +13,7 @@
 #include "sphere.h"
 #include "testutils.h"
 #include "io/itlpng.h"
+#include "io/itljpeg.h"
 #include "neighbourhood.h"
 #include "misc.h"
 #include "filters.h"
@@ -56,11 +57,9 @@ using namespace itl2;
 using namespace std;
 
 
-
-
-
 int main()
 {
+	//test(itl2::io::tests::badnn5, "reading bad nn5");
 
 	//test(itl2::tests::progress, "progress indicator");
 
@@ -75,20 +74,21 @@ int main()
 	//test(itl2::tests::cgne, "CGNE");
 	//test(itl2::tests::image, "Image");
 
-	test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
-	test(raw::tests::expandFilename, "Raw filename expansion");
-	test(raw::tests::raw, "Raw reader");
-	test(io::tests::readWrite, "IO read");
-	test(raw::tests::writeBlock, "Block based raw reader & writer");
-	test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
+	//test(raw::tests::parseDimensions, "Parse raw dimensions from file name");
+	//test(raw::tests::expandFilename, "Raw filename expansion");
+	//test(raw::tests::raw, "Raw reader");
+	//test(io::tests::readWrite, "IO read");
+	//test(raw::tests::writeBlock, "Block based raw reader & writer");
+	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
+	//test(itl2::jpeg::tests::jpeg, "Jpeg read");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
 	//test(itl2::pcr::tests::read, "PCR read");
 	
-
+	//test(itl2::sequence::tests::singleImages, "Single images as sequences");
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
 	//test(itl2::sequence::tests::fileFormats, "Sequence file formats");
@@ -127,12 +127,13 @@ int main()
 
 	//test(itl2::tests::phaseCorrelation, "phase correlation");
 	//test(itl2::tests::modulo, "modulo function");
-
 	//test(itl2::tests::phaseCorrelation2, "phase correlation 2 (rotation)");
+	//test(itl2::tests::phaseCorrelationBoundary, "phase correlation boundary");
 
 	//test(itl2::tests::blockMatch1, "block match 1");
 	//test(itl2::tests::blockMatch2Match, "block match 2 (match)");
 	//test(itl2::tests::blockMatch2Pullback, "block match 2 (pullback)");
+	test(itl2::tests::reverseDeformation, "reverse deformation");
 
 	//test(itl2::tests::inpaintNearest, "Inpainting");
 	//test(itl2::tests::inpaintGarcia, "Inpainting (Garcia)");
@@ -248,20 +249,26 @@ int main()
 	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
 	//test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");
 
+	
+	//test(itl2::lz4::tests::lz4io, "LZ4");
+	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
+	//
+	//test(itl2::nn5::tests::nn5Metadata, "NN5 metadata");
+	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
+	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
+	//test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
+	//test(itl2::nn5::tests::concurrencyLong, "NN5 concurrent I/O, long test");
+	
+	//test(itl2::tests::aabox, "AABox");
+
+
+
 
 	// Experimental tests - these are mostly work in progress and data for them is not available yet
 
 	//test(itl2::tests::createPlates, "Input geometry generation");
 	//test(itl2::tests::createMoreProjections, "Large number of projections");
 	//test(itl2::tests::fbp, "Filtered backprojection");
-	//test(itl2::tests::nn5Metadata, "NN5 metadata");
-	
-	//test(itl2::lz4::tests::lz4io, "LZ4");
-	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
-	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
-	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
-	//test(itl2::nn5::tests::concurrency, "NN5 concurrent I/O");
-	//test(itl2::nn5::tests::concurrencyLong, "NN5 concurrent I/O, long test");
 	
 	
 	//test(itl2::tests::openCLBackProjection, "OpenCL filtered backprojection");

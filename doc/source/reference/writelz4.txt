@@ -1,0 +1,29 @@
+.. _writelz4:
+
+writelz4
+********
+
+
+**Syntax:** :code:`writelz4(input image, filename)`
+
+Write an image to an .lz4raw file.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to save.
+
+filename [input]
+~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of the file to write. If the file exists, its current contents are erased. Extension .lz4raw is automatically appended to the name of the file.
+

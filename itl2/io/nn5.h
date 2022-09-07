@@ -7,6 +7,7 @@
 #include "io/itllz4.h"
 #include "math/aabox.h"
 #include "io/nn5compression.h"
+#include "generation.h"
 
 namespace itl2
 {
@@ -45,6 +46,10 @@ namespace itl2
 
 			inline std::string chunkFolder(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
 			{
+				// 0-dimensional images get a special treatment.
+				if (dimensionality <= 0)
+					return path + string("/0");
+
 				string filename = path;
 				for (size_t n = 0; n < dimensionality; n++)
 					filename += string("/") + toString(chunkIndex[n]);
@@ -75,14 +80,14 @@ namespace itl2
 			@param chunkIndex Index of the chunk to write. This is used to determine the correct output folder.
 			@param chunkSize Chunk size of the dataset.
 			@param startInChunkCoords Start position of the block to be written in the coordinates of the chunk.
-			@param chunkStart Start position of the block to be written in the coordinates of image img.
+			@param chunkStart Start position of the block to be written in the coordinates of image targetImg.
 			@param writeSize Size of block to be written.
 			*/
 			template<typename pixel_t> void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize,
 				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, NN5Compression compression)
 			{
 				// Build path to chunk folder.
-				string filename = internals::chunkFolder(path, img.dimensionality(), chunkIndex);
+				string filename = internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
 
 				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
 				// Chunk is unsafe if its folder contains writes folder.
@@ -147,7 +152,6 @@ namespace itl2
 				}
 				else
 				{
-					// Write back to disk.
 					switch (compression)
 					{
 					case NN5Compression::Raw:
@@ -170,12 +174,40 @@ namespace itl2
 				}
 			}
 
+			inline size_t countChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize)
+			{
+				Vec3c chunkStart(0, 0, 0);
+				size_t chunkCount = 0;
+				while (chunkStart.z < imageDimensions.z)
+				{
+					while (chunkStart.y < imageDimensions.y)
+					{
+						while (chunkStart.x < imageDimensions.x)
+						{
+							chunkCount++;
+							chunkStart.x += chunkSize.x;
+						}
+						chunkStart.x = 0;
+						chunkStart.y += chunkSize.y;
+					}
+					chunkStart.x = 0;
+					chunkStart.y = 0;
+					chunkStart.z += chunkSize.z;
+				}
+				return chunkCount;
+			}
+
 			/**
 			Call lambda(chunkIndex, chunkStart) for all chunks in an image of given dimensions and chunk size.
 			*/
 			template<typename F>
-			void forAllChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize, F&& lambda)
+			void forAllChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize, bool showProgressInfo, F&& lambda)
 			{
+				size_t maxSteps = 0;
+				if(showProgressInfo)
+					maxSteps = countChunks(imageDimensions, chunkSize);
+				ProgressIndicator progress(maxSteps, showProgressInfo);
+
 				Vec3c chunkStart(0, 0, 0);
 				Vec3c chunkIndex(0, 0, 0);
 				while (chunkStart.z < imageDimensions.z)
@@ -185,6 +217,7 @@ namespace itl2
 						while (chunkStart.x < imageDimensions.x)
 						{
 							lambda(chunkIndex, chunkStart);
+							progress.step();
 
 							chunkIndex.x++;
 							chunkStart.x += chunkSize.x;
@@ -207,9 +240,9 @@ namespace itl2
 			/**
 			Writes NN5 chunk files.
 			*/
-			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize)
+			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize, bool showProgressInfo)
 			{
-				internals::forAllChunks(img.dimensions(), chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				internals::forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, compression);
 				});
@@ -218,7 +251,8 @@ namespace itl2
 			template<typename pixel_t> void writeChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
 				const Vec3c& filePosition, const Vec3c& fileDimensions,
 				const Vec3c& imagePosition,
-				const Vec3c& blockDimensions)
+				const Vec3c& blockDimensions,
+				bool showProgressInfo)
 			{
 				// Writes block of image defined by (imagePosition, blockDimensions) to file (defined by path),
 				// to location defined by filePosition.
@@ -227,13 +261,13 @@ namespace itl2
 
 				AABoxc fileTargetBlock = AABoxc::fromPosSize(filePosition, blockDimensions);
 
-				internals::forAllChunks(fileDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						// This is done for all chunks in the output file.
 						// We will need to update the chunk if the file block to be written (fileTargetBlock)
 						// overlaps the current chunk.
 						AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, chunkSize);
-						if (fileTargetBlock.overlaps(currentChunk))
+						if (fileTargetBlock.overlapsExclusive(currentChunk))
 						{
 							// The region of the current chunk that will be updated is the intersection of the current chunk and the
 							// file block to be written.
@@ -281,7 +315,7 @@ namespace itl2
 						//		// Chunk end is in file target block, so we write the entire chunk.
 						//		Vec3c startInChunkCoords = Vec3c(0, 0, 0);
 						//		Vec3c startInImageCoords = chunkStart - filePosition + imagePosition;
-						//		writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, Vec3c(0, 0, 0), startInImageCoords, chunkSize, compression);
+						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, Vec3c(0, 0, 0), startInImageCoords, chunkSize, compression);
 						//	}
 						//	else if (fileTargetBlock.contains(chunkStart))
 						//	{
@@ -291,7 +325,7 @@ namespace itl2
 						//		Vec3c startInImageCoords = chunkStart - filePosition + imagePosition;
 						//		Vec3c endInImageCoords = imagePosition + blockDimensions;
 						//		Vec3c writeSize = endInImageCoords - startInImageCoords;
-						//		writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, compression);
+						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, compression);
 						//	}
 						//	else
 						//	{
@@ -301,7 +335,7 @@ namespace itl2
 						//		Vec3c endInChunkCoords = chunkSize;
 						//		Vec3c startInImageCoords = imagePosition;
 						//		Vec3c writeSize = endInChunkCoords - startInChunkCoords;
-						//		writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, compression);
+						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, compression);
 						//	}
 						//}
 					});
@@ -330,13 +364,11 @@ namespace itl2
 			}
 
 			
-			template<typename pixel_t> void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, const Vec3c& blockSize, NN5Compression compression, Image<pixel_t>& temp)
+			template<typename pixel_t> void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, NN5Compression compression, Image<pixel_t>& temp)
 			{
 				// TODO: This is not very efficient due to the copying of the block, and memory allocation, improve?
-				//			Note that this could be easily improved using an image view to the desired block in the img.
+				//			Note that this could be easily improved using an image view to the desired block in the targetImg.
 
-				temp.ensureSize(blockSize);
-				
 				readChunkFile(temp, filename, compression);
 
 				copyValues(img, temp, imagePosition);
@@ -345,19 +377,17 @@ namespace itl2
 			/**
 			Reads single NN5 chunk file.
 			*/
-			template<typename pixel_t> void readSingleChunk(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkStart, const Vec3c& chunkSize, NN5Compression compression, Image<pixel_t>& temp)
+			template<typename pixel_t> void readSingleChunk(Image<pixel_t>& target, const std::string& path, const Vec3c& datasetDimensions, const Vec3c& chunkIndex, const Vec3c& chunkStartInTarget, const Vec3c& readSize, NN5Compression compression, Image<pixel_t>& temp)
 			{
-				string dir = path;
-				for (size_t n = 0; n < img.dimensionality(); n++)
-					dir += string("/") + toString(chunkIndex[n]);
+				string dir = chunkFolder(path, getDimensionality(datasetDimensions), chunkIndex);
 
-				Vec3c chunkEnd = chunkStart + chunkSize;
-				for (size_t n = 0; n < chunkEnd.size(); n++)
-				{
-					if (chunkEnd[n] > img.dimension(n))
-						chunkEnd[n] = img.dimension(n);
-				}
-				Vec3c realChunkSize = chunkEnd - chunkStart;
+				//Vec3c chunkEnd = chunkStartInTarget + readSize;
+				//for (size_t n = 0; n < chunkEnd.size(); n++)
+				//{
+				//	if (chunkEnd[n] > target.dimension(n))
+				//		chunkEnd[n] = target.dimension(n);
+				//}
+				//Vec3c realReadSize = chunkEnd - chunkStartInTarget;
 
 				// Search for files in the directory
 				std::vector<string> files = getFileList(dir);
@@ -365,12 +395,12 @@ namespace itl2
 				if (files.size() <= 0)
 				{
 					// No file => all pixels in the block are zeroes.
-					setValue(img, (pixel_t)0);
+					draw<pixel_t>(target, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)0);
 				}
 				else if (files.size() == 1)
 				{
 					string filename = dir + "/" + files[0];
-					readFileIntoImageBlock(img, filename, chunkStart, realChunkSize, compression, temp);
+					readFileIntoImageBlock(target, filename, chunkStartInTarget, compression, temp);
 				}
 				else
 				{
@@ -382,13 +412,13 @@ namespace itl2
 			/**
 			Reads NN5 chunk files.
 			*/
-			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
+			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo)
 			{
 				Image<pixel_t> temp;
 
-				internals::forAllChunks(img.dimensions(), chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				internals::forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
-						readSingleChunk(img, path, chunkIndex, chunkStart, chunkSize, compression, temp);
+						readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, compression, temp);
 					});
 			}
 
@@ -398,18 +428,19 @@ namespace itl2
 			*/
 			template<typename pixel_t> void readChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
 				const Vec3c& datasetDimensions,
-				const Vec3c& start, const Vec3c& end)
+				const Vec3c& start, const Vec3c& end,
+				bool showProgressInfo)
 			{
 				Image<pixel_t> temp;
 
 				AABoxc imageBox = AABoxc::fromMinMax(start, end);
 
 				// This is a check-all-chunks algoritm. Alternatively, we could calculate the required chunk range.
-				internals::forAllChunks(datasetDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				internals::forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
-						if (currentChunk.overlaps(imageBox))
-							readSingleChunk(img, path, chunkIndex, chunkStart - start, chunkSize, compression, temp);
+						if (currentChunk.overlapsExclusive(imageBox))
+							readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), compression, temp);
 					});
 			}
 
@@ -420,8 +451,18 @@ namespace itl2
 
 			/**
 			Checks that provided NN5 information is correct and writes metadata.
+			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
-			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression);
+			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData);
+		
+
+			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData, bool showProgressInfo)
+			{
+				internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, compression, deleteOldData);
+
+				// Write data
+				internals::writeChunks(img, path, chunkSize, compression, img.dimensions(), showProgressInfo);
+			}
 		}
 
 		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason);
@@ -436,26 +477,23 @@ namespace itl2
 
 		/**
 		Write an image to an nn5 dataset.
-		@param img Image to write.
+		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo = false)
 		{
-			internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, compression);
-			
-			// Write data
-			internals::writeChunks(img, path, chunkSize, compression, img.dimensions());
+			internals::write(img, path, chunkSize, compression, false, showProgressInfo);
 		}
 
 
 		/**
 		Write an image to an nn5 dataset.
-		@param img Image to write.
+		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, bool showProgressInfo = false)
 		{
-			write(img, path, chunkSize, NN5Compression::LZ4);
+			write(img, path, chunkSize, NN5Compression::LZ4, showProgressInfo);
 		}
 
 		/**
@@ -465,19 +503,19 @@ namespace itl2
 
 		/**
 		Write an image to an nn5 dataset.
-		@param img Image to write.
+		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
 		{
-			write(img, path, DEFAULT_CHUNK_SIZE);
+			write(img, path, DEFAULT_CHUNK_SIZE, showProgressInfo);
 		}
 
 		/**
 		Writes a block of an image to the specified location in an .nn5 dataset.
 		The output dataset is not truncated if it exists.
 		If the output file does not exist, it is created.
-		@param img Image to write.
+		@param targetImg Image to write.
 		@param filename Name of file to write.
 		@param filePosition Position in the file to write to.
 		@param fileDimension Total dimensions of the entire output file.
@@ -487,7 +525,8 @@ namespace itl2
 		template<typename pixel_t> void writeBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
 			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
-			const Vec3c& blockDimensions)
+			const Vec3c& blockDimensions,
+			bool showProgressInfo = false)
 		{
 			internals::check(chunkSize);
 
@@ -497,17 +536,17 @@ namespace itl2
 			internals::writeMetadata(path, fileDimensions, img.dataType(), chunkSize, compression);
 
 			// Write data
-			internals::writeChunksInRange(img, path, chunkSize, compression, filePosition, fileDimensions, imagePosition, blockDimensions);
+			internals::writeChunksInRange(img, path, chunkSize, compression, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
 
 
 
 		/**
 		Reads an nn5 dataset file to the given image.
-		@param img Image where the data is placed. The size of the image will be set based on the dataset contents.
+		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
 		@param path Path to the root of the nn5 dataset.
 		*/
-		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& path)
+		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
 		{
 			bool isNativeByteOrder;
 			Vec3c dimensions;
@@ -523,7 +562,7 @@ namespace itl2
 
 			img.ensureSize(dimensions);
 
-			internals::readChunks(img, path, chunkSize, compression);
+			internals::readChunks(img, path, chunkSize, compression, showProgressInfo);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
@@ -532,11 +571,11 @@ namespace itl2
 		/**
 		Reads a part of a .nn5 dataset to the given image.
 		NOTE: Does not support out of bounds start position.
-		@param img Image where the data is placed. The size of the image defines the size of the block that is read.
+		@param targetImg Image where the data is placed. The size of the image defines the size of the block that is read.
 		@param filename The name of the dataset to read.
 		@param fileStart Start location of the read in the file. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
 		{
 			bool isNativeByteOrder;
 			Vec3c fileDimensions;
@@ -566,7 +605,7 @@ namespace itl2
 				return;
 			}
 
-			internals::readChunksInRange(img, path, chunkSize, compression, fileDimensions, cStart, cEnd);
+			internals::readChunksInRange(img, path, chunkSize, compression, fileDimensions, cStart, cEnd, showProgressInfo);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
@@ -589,13 +628,14 @@ namespace itl2
 		@param chunkSize Chunk size for the NN5 dataset.
 		@param compression Compression method to be used.
 		@param processes A list of NN5Process objects that define the block that where each process will have read and write access. The blocks may overlap.
+		@return Number of chunks that require special processing in endConcurrentWrite.
 		*/
-		void startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes);
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes);
 
 		/**
 		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
 		This function should be called before the processes are started.
-		@param img Image that is to be saved into the NN5 dataset by the processes.
+		@param targetImg Image that is to be saved into the NN5 dataset by the processes.
 		@param path Path to the NN5 dataset.
 		@param chunkSize Chunk size for the NN5 dataset.
 		@param compression Compression method to be used.
@@ -613,7 +653,7 @@ namespace itl2
 		and removes concurrent tag file from the dataset root folder.
 		@param path Path to the NN5 dataset.
 		*/
-		void endConcurrentWrite(const std::string& path);
+		void endConcurrentWrite(const std::string& path, bool showProgressInfo = false);
 
 		/**
 		Used to test if a block in the given NN5 dataset requires calling endConcurrentWrite after concurrent access by multiple processes.
@@ -621,6 +661,11 @@ namespace itl2
 		@param chunkIndex Index of the chunk to finalize.
 		*/
 		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex);
+
+		/**
+		Get a list of chunks for which needsEndConcurrentWrite must be called.
+		*/
+		std::vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path);
 
 		/**
 		Finalizes concurrent access from multiple processes for a single chunk in an NN5 dataset.

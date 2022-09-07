@@ -18,13 +18,13 @@ namespace itl2
 				string end;
 				size_t hs;
 				string reason;
-				vol::getInfo("./input_data/simple_structures.vol", dims, dt, end, hs, reason);
+				vol::getInfo("../test_input_data/simple_structures.vol", dims, dt, end, hs, reason);
 
 				Image<uint8_t> img;
-				vol::read(img, "./input_data/simple_structures.vol");
+				vol::read(img, "../test_input_data/simple_structures.vol");
 
 				Image<float32_t> gt;
-				raw::read(gt, "./input_data/simple_structures_128x128x128.raw");
+				raw::read(gt, "../test_input_data/simple_structures_128x128x128.raw");
 				multiply(gt, 255);
 
 				itl2::checkDifference(img, gt, "Same structure from .vol and .raw file.");

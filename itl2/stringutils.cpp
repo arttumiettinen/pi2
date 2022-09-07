@@ -8,9 +8,8 @@
 
 namespace itl2
 {
-	bool isWhiteSpace(const char s, const string& whiteSpace)
+	bool isWhitespace(const char s, const string& whiteSpace)
 	{
-		//return s == ' ' || s == '\t' || s == '\r' || s == '\n';
 		for (size_t n = 0; n < whiteSpace.length(); n++)
 			if (s == whiteSpace[n])
 				return true;
@@ -18,15 +17,23 @@ namespace itl2
 		return false;
 	}
 
+	bool isWhitespace(const string& s, const string& whiteSpace)
+	{
+		for (size_t n = 0; n < s.length(); n++)
+			if (!isWhitespace(s[n], whiteSpace))
+				return false;
+		return true;
+	}
+
 	void trimStart(string& s, const string& whiteSpace)
 	{
-		while (s.length() > 0 && isWhiteSpace(s[0], whiteSpace))
+		while (s.length() > 0 && isWhitespace(s[0], whiteSpace))
 			s.erase(0, 1);
 	}
 
 	void trimEnd(string& s, const string& whiteSpace)
 	{
-		while (s.length() > 0 && isWhiteSpace(s[s.length() - 1], whiteSpace))
+		while (s.length() > 0 && isWhitespace(s[s.length() - 1], whiteSpace))
 			s.erase(s.length() - 1, 1);
 	}
 
@@ -39,6 +46,15 @@ namespace itl2
 	bool contains(const string& str, const string& part)
 	{
 		return str.find(part) != string::npos;
+	}
+
+	bool containsIgnoreCase(const string& str, const string& part)
+	{
+		string istr = str;
+		toLower(istr);
+		string ipart = part;
+		toLower(ipart);
+		return contains(istr, ipart);
 	}
 
 	void toLower(string& str)

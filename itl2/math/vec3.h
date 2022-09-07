@@ -395,6 +395,14 @@ namespace itl2
 				return x + y + z;
 			}
 
+			/**
+			Returns product of all elements.
+			*/
+			T product() const
+			{
+				return x * y * z;
+			}
+
 			Vec3<T> componentwiseMultiply(const Vec3<T>& r) const
 			{
 				return Vec3<T>(x * r.x, y * r.y, z * r.z);

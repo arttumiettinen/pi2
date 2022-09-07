@@ -478,7 +478,7 @@ namespace pilib
 		friend class CommandList;
 
 		BilateralFilterCommand() :
-			OverlapDistributable<TwoImageInputOutputCommand<pixel_t> >("bilateralfilter", "Bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel.",
+			OverlapDistributable<TwoImageInputOutputCommand<pixel_t> >("bilateralfilter", "Bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel. See also C. Tomasi, R. Manduchi, Bilateral filtering for gray and color images, Sixth International Conference on Computer Vision, Bombay, 1998.",
 				{
 					CommandArgument<double>(ParameterDirection::In, "spatial sigma", "Standard deviation of Gaussian kernel used for spatial smoothing."),
 					CommandArgument<double>(ParameterDirection::In, "radiometric sigma", "Standard deviation of Gaussian kernel used to avoid smoothing edges of features. Order of magnitude must be similar to difference between gray levels of background and objects."),

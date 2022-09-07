@@ -523,7 +523,7 @@ namespace itl2
 	*/
 	template<typename pixel_t> bool floodfill(Image<pixel_t>& image, const Vec3c& start, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true)
 	{
-		if (image.pixelCount() < 700 * 700 * 700)
+		if (image.pixelCount() < 700 * 700 * 700 || image.dimensionality() < 3)
 			return floodfillSingleThreaded(image, start, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
 		else
 			return floodfillBlocks(image, start, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
@@ -544,7 +544,7 @@ namespace itl2
 	*/
 	template<typename pixel_t> bool floodfill(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true)
 	{
-		if (image.pixelCount() < 700 * 700 * 700)
+		if (image.pixelCount() < 700 * 700 * 700 || image.dimensionality() < 3)
 			return floodfillSingleThreaded(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
 		else
 			return floodfillBlocks(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);

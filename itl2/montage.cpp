@@ -9,7 +9,7 @@ namespace itl2
 		void montage()
 		{
 			Image<uint16_t> head;
-			raw::read(head, "./input_data/t1-head");
+			raw::read(head, "../test_input_data/t1-head");
 
 			Image<uint16_t> montage;
 

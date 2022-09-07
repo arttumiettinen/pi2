@@ -263,25 +263,12 @@ namespace pilib
 		double calcNonZeroMeanRDistributed(Distributor& distributor, DistributedImage<pixel_t>& dmap2) const
 		{
 			// Create temporary image to hold the result
-			//string tempName = "dmap2_mean_" + itl2::toString(randc(10000));
-			//string dt = itl2::toString(imageDataType<float32_t>());
-			//CommandList::get<NewImageCommand>().runDistributed(distributor, { tempName, dt, (coord_t)1, (coord_t)1, (coord_t)1 });
-			//DistributedImage<float32_t>& resultImg = *(DistributedImage<float32_t>*)distributor.getSystem()->getDistributedImage(tempName);
-			DistributedTempImage<float32_t> resultImgPointer(distributor, "dmap2_mean_");
+			DistributedTempImage<float32_t> resultImgPointer(distributor, "dmap2_mean", 1, DistributedImageStorageType::Raw);
 			DistributedImage<float32_t>& resultImg = resultImgPointer.get();
 
 			// Run masked mean and grab the result
 			CommandList::get<MaskedMeanAllPixelsCommand<pixel_t> >().runDistributed(distributor, { &dmap2, &resultImg, 0.0, false, true });
 			float32_t result = resultImg.getValue();
-			//float32_t result = 0;
-			//{
-			//	Image<float32_t> tmp;
-			//	resultImg.readTo(tmp);
-			//	result = tmp(0);
-			//}
-
-			// Clear the temporary image
-			//CommandList::get<ClearCommand>().runDistributed(distributor, { tempName });
 
 			return result;
 		}
@@ -319,7 +306,8 @@ namespace pilib
 
 			distributor.flush();
 
-			if (!dmap2.isRaw())
+			//if (!dmap2.isRaw())
+			if(dmap2.currentReadSourceType() != DistributedImageStorageType::Raw)
 				throw ITLException("The squared distance map must be saved to a .raw file (the file must be memory mappable).");
 
 			dmap2.mustNotBe(result);
@@ -346,7 +334,7 @@ namespace pilib
 					// Process this dimension
 					CommandList::get<DrawSpheres2ProcessDimensionCommand<pixel_t> >().runDistributed(distributor, { &dmap2, &result, dim, riPrefix, dmap2.currentReadSource(), dmap2.dimensions(), Distributor::BLOCK_ORIGIN_ARG_TYPE(), Distributor::BLOCK_INDEX_ARG_TYPE(), meanr });
 
-					std::cout << "Remove unncesessary temporary files..." << std::endl;
+					std::cout << "Remove unnecessary temporary files..." << std::endl;
 
 					// Delete temporary files from previous round
 					auto items = itl2::buildFileList(riPrefix + "_dim" + itl2::toString(dim - 1) + "_*");
@@ -436,8 +424,8 @@ namespace pilib
 "The pixel data type must be able to contain large enough values; usually uint8 is too small. Uint32 or uint64 are recommended. "
 "\n\n"
 "The algorithm selection depends on the value of the 'save memory' argument. "
-"If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model - Independent Assessment of Thickness in Three-Dimensional Images is used. "
-"If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte - scale volume images is applied. "
+"If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model-Independent Assessment of Thickness in Three-Dimensional Images is used."
+"If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte-scale volume images is applied. "
 "The separable algorithm is usually much faster than the Hildebrand algorithm, but requires much more RAM (normal mode) or temporary disk space (distributed mode). ",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Input image where background is marked with background value given by the third argument."),
@@ -489,12 +477,8 @@ namespace pilib
 				// Distance map
 				CommandList::get<DistanceMap2Command<pixel_t, pixel_t> >().runDistributed(distributor, { &input, &input, bgval });
 
-				// Create temporary image
-				//string tempName = "thickmap_temp_" + itl2::toString(randc(10000));
-				//string datatype = itl2::toString(imageDataType<pixel_t>());
-				//CommandList::get<NewImageCommand>().runDistributed(distributor, { tempName, datatype, (coord_t)input.width(), (coord_t)input.height(), (coord_t)input.depth() });
-				//DistributedImage<pixel_t>& temp = *(DistributedImage<pixel_t>*)distributor.getSystem()->getDistributedImage(tempName);
-				DistributedTempImage<pixel_t> tempImg(distributor, "thickmap_temp_", input.dimensions());
+				// Create temporary image with Raw (memory mappable) storage type
+				DistributedTempImage<pixel_t> tempImg(distributor, "thickmap_temp", input.dimensions(), DistributedImageStorageType::Raw);
 				DistributedImage<pixel_t>& temp = tempImg.get();
 
 				// Danielsson

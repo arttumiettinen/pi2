@@ -25,4 +25,4 @@ Maximum amount of memory to use, in megabytes. Specify zero to calculate the val
 See also
 --------
 
-:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`maxjobs`, :ref:`chunksize`, :ref:`printscripts`

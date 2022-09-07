@@ -15,7 +15,12 @@ namespace itl2
 	/**
 	Tests if the given character is whitespace.
 	*/
-	bool isWhiteSpace(const char s, const string& whiteSpace = WHITE_SPACE_CHARS);
+	bool isWhitespace(const char s, const string& whiteSpace = WHITE_SPACE_CHARS);
+
+	/**
+	Tests if the given string is entirely whitespace or empty.
+	*/
+	bool isWhitespace(const string& s, const string& whiteSpace = WHITE_SPACE_CHARS);
 
 	/**
 	Removes whitespace from the beginning of the string.
@@ -36,6 +41,11 @@ namespace itl2
 	Tests if string str contains string part.
 	*/
 	bool contains(const string& str, const string& part);
+
+	/**
+	Tests if string str contains tring part, ignoring case of both strings.
+	*/
+	bool containsIgnoreCase(const string& str, const string& part);
 
 	/**
 	Convert all characters in the string to lower case.
