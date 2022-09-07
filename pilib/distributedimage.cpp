@@ -29,7 +29,14 @@ namespace pilib
 	{
 		if (distributor.getUseNN5())
 		{
-			if (dimensions.product() >= distributor.getChunkSize().product())
+			// This condition is not good. Images of sizes like 3x100000000x1 will be stored in NN5 and that
+			// leads to bad performance.
+			//if (dimensions.product() >= distributor.getChunkSize().product())
+			// Let's try with a condition that requires all dimensions be 'chunkable'.
+			Vec3c cs = distributor.getChunkSize();
+			if(dimensions.x >= cs.x &&
+				dimensions.y >= cs.y &&
+				dimensions.z >= cs.z)
 				return DistributedImageStorageType::NN5;
 			else
 				return DistributedImageStorageType::Raw;
@@ -80,6 +87,7 @@ namespace pilib
 			// Create new temp files.
 			fs::remove_all(tempFilename1);
 			fs::remove_all(tempFilename2);
+			// TODO: Should we keep or change the storage type here?
 			writeTargetType = storageType;
 			// This assigns writeTarget, too.
 			createTempFilenames(storageType);
