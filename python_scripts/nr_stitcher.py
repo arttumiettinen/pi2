@@ -84,7 +84,7 @@ def main():
 
     settings_file = 'stitch_settings.txt'
     if len(sys.argv) >= 1:
-        settings_files = sys.argv[0]
+        settings_file = sys.argv[1]
 
     print(f"Reading stitch settings from {settings_file}")
 
