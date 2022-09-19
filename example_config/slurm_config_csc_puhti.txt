@@ -82,4 +82,5 @@ promote_threshold = 3
 ;scancel_command = scancel
 ;sinfo_command = sinfo
 
-
+; Interval in milliseconds between job progress checks.
+progress_poll_interval = 5000

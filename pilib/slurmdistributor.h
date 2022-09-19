@@ -41,6 +41,11 @@ namespace pilib
 		std::string sbatchCommand, squeueCommand, scancelCommand, sinfoCommand;
 
 		/**
+		Interval for job progress polls. Give in milliseconds.
+		*/
+		int progressPollInterval;
+
+		/**
 		Returns suitable sbatch arguments given type of job.
 		*/
 		std::string extraArgsSBatch(JobType jobType) const

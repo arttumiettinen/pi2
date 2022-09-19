@@ -79,4 +79,5 @@ max_resubmit_count = 5
 ;scancel_command = scancel
 ;sinfo_command = sinfo
 
-
+; Interval in milliseconds between job progress checks.
+; progress_poll_interval = 1000

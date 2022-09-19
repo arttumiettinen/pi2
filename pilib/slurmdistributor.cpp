@@ -44,6 +44,10 @@ namespace pilib
 		squeueCommand = reader.get<string>("squeue_command", "squeue");
 		scancelCommand = reader.get<string>("scancel_command", "scancel");
 		sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
+		progressPollInterval = reader.get<int>("progress_poll_interval", 1000);
+
+		if (progressPollInterval < 1)
+			progressPollInterval = 1;
 
 		readSettings(reader);
 		
@@ -417,7 +421,7 @@ namespace pilib
 			bool done = false;
 			do
 			{
-				itl2::sleep(500);
+				itl2::sleep(progressPollInterval);
 
 				vector<int> progress = getJobProgress();
 
