@@ -55,7 +55,7 @@ namespace itl2
 	inline void sleep(unsigned int ms)
 	{
 #if defined(__linux__)  || defined(__APPLE__)
-		usleep(ms);
+		usleep(ms * 1000);
 #elif defined(_WIN32)
 		Sleep(ms);
 #else
