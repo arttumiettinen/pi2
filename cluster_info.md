@@ -33,9 +33,8 @@ use_nn5 = False
 CSC Puhti cluster
 -----------------
 
-The required module load commands are:
-module load gcc/9.1.0
-module load fftw/3.3.8-omp
+The required module load command is:
+module load fftw/3.3.10-mpi-omp
 
 Compile using command
 make -j16 NO_OPENCL=1
