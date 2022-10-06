@@ -69,6 +69,10 @@ In those cases you will get an 'Illegal instruction'-runtime error. To fix the p
 Before building edit nmake.opt file and change OPTFLAGS value /MD and /MDd to /MT and /MTd, for debug and release builds, respectively.
 * Build everything in itl2.sln solution file, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available. The output is placed to the x64 folder.
 
+### Cluster environments
+
+Please see Linux build instructions above, and cluster-specific notes in the file [cluster_info.md](cluster_info.md).
+
 
 ## License
 
