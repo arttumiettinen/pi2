@@ -493,7 +493,7 @@ namespace pilib
 		BinCommand() : TwoImageInputOutputCommand<pixel_t>("bin", "Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.",
 			{
 				CommandArgument<Vec3c>(ParameterDirection::In, "factor", "Binning factor in each coordinate direction. Value 2 makes the output image dimension half of the input image dimension, 3 makes them one third etc."),
-				CommandArgument<string>(ParameterDirection::In, "binning type", "Name of binning type to be performed. Currently 'mean', 'min' and 'max' are supported.", "mean")
+				CommandArgument<string>(ParameterDirection::In, "binning type", "Name of binning type to be performed. Currently 'mean', 'sum', 'min' and 'max' are supported.", "mean")
 			},
 			scaleSeeAlso())
 		{
@@ -504,6 +504,7 @@ namespace pilib
 		enum class BinType
 		{
 			Mean,
+			Sum,
 			Min,
 			Max
 		};
@@ -513,6 +514,8 @@ namespace pilib
 			toLower(s);
 			if (s == "mean" || s == "average" || s == "avg" || s == "normal")
 				return BinType::Mean;
+			if (s == "sum")
+				return BinType::Sum;
 			if (s == "max" || s == "maximum")
 				return BinType::Max;
 			if (s == "min" || s == "minimum")
@@ -525,6 +528,7 @@ namespace pilib
 		{
 			switch (b)
 			{
+			case BinType::Sum: return "sum";
 			case BinType::Mean: return "mean";
 			case BinType::Max: return "max";
 			case BinType::Min: return "min";
@@ -545,6 +549,9 @@ namespace pilib
 			BinType type = fromString(binType);
 			switch (type)
 			{
+			case BinType::Sum:
+				binning<pixel_t, pixel_t, binningop::sum<pixel_t, pixel_t> >(in, out, binSize);
+				break;
 			case BinType::Mean:
 				binning<pixel_t, pixel_t, binningop::mean<pixel_t, pixel_t> >(in, out, binSize);
 				break;

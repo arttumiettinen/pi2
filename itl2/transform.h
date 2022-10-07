@@ -415,6 +415,17 @@ namespace itl2
 
 	namespace binningop
 	{
+		template<typename pixel_t, typename out_t> out_t sum(const std::vector<pixel_t>& block)
+		{
+			using real_t = typename NumberUtils<pixel_t>::RealFloatType;
+			using float_t = typename NumberUtils<pixel_t>::FloatType;
+
+			float_t val = 0;
+			for (pixel_t p : block)
+				val += (float_t)p;
+			return pixelRound<out_t>(val);
+		}
+
 		template<typename pixel_t, typename out_t> out_t mean(const std::vector<pixel_t>& block)
 		{
 			using real_t = typename NumberUtils<pixel_t>::RealFloatType;
