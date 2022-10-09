@@ -249,6 +249,24 @@ class AutoThresholdMethod(Enum):
 
 
 
+class Binning(Enum):
+    """
+    Enumerates modes used in the bin command.
+    """
+
+    MEAN = "mean"
+    Mean = MEAN
+    SUM = "sum"
+    Sum = SUM
+    MIN = "min"
+    Min = MIN
+    MAX = "max"
+    Max = MAX
+    
+    def __str__(self):
+        return str(self.value)
+
+
 
 class Pi2Object:
     """
