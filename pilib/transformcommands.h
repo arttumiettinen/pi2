@@ -485,12 +485,12 @@ namespace pilib
 		}
 	};
 
-	template<typename pixel_t> class BinCommand : public TwoImageInputOutputCommand<pixel_t>, public Distributable
+	template<typename pixel_t, typename out_t> class BinCommand : public TwoImageInputOutputCommand<pixel_t, out_t>, public Distributable
 	{
 	protected:
 		friend class CommandList;
 
-		BinCommand() : TwoImageInputOutputCommand<pixel_t>("bin", "Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.",
+		BinCommand() : TwoImageInputOutputCommand<pixel_t, out_t>("bin", "Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.",
 			{
 				CommandArgument<Vec3c>(ParameterDirection::In, "factor", "Binning factor in each coordinate direction. Value 2 makes the output image dimension half of the input image dimension, 3 makes them one third etc."),
 				CommandArgument<string>(ParameterDirection::In, "binning type", "Name of binning type to be performed. Currently 'mean', 'sum', 'min' and 'max' are supported.", "mean")
@@ -538,7 +538,7 @@ namespace pilib
 
 
 	public:
-		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, vector<ParamVariant>& args) const override
+		virtual void run(Image<pixel_t>& in, Image<out_t>& out, vector<ParamVariant>& args) const override
 		{
 			Vec3c binSize = pop<Vec3c>(args);
 			string binType = pop<string>(args);
@@ -550,16 +550,16 @@ namespace pilib
 			switch (type)
 			{
 			case BinType::Sum:
-				binning<pixel_t, pixel_t, binningop::sum<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::sum<pixel_t, out_t> >(in, out, binSize);
 				break;
 			case BinType::Mean:
-				binning<pixel_t, pixel_t, binningop::mean<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::mean<pixel_t, out_t> >(in, out, binSize);
 				break;
 			case BinType::Max:
-				binning<pixel_t, pixel_t, binningop::max<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::max<pixel_t, out_t> >(in, out, binSize);
 				break;
 			case BinType::Min:
-				binning<pixel_t, pixel_t, binningop::min<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::min<pixel_t, out_t> >(in, out, binSize);
 				break;
 			default:
 				throw ITLException(string("Unsupported binning type: ") + toString(type));
@@ -569,7 +569,7 @@ namespace pilib
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = * std::get<DistributedImage<pixel_t>* >(args[0]);
-			DistributedImage<pixel_t>& out = * std::get<DistributedImage<pixel_t>* >(args[1]);
+			DistributedImage<out_t>& out = * std::get<DistributedImage<out_t>* >(args[1]);
 			Vec3c binSize =  std::get<Vec3c>(args[2]);
 			string binType =  std::get<string>(args[3]);
 
@@ -615,7 +615,7 @@ namespace pilib
 		{
 			// Calculate expected output size and if current output image size is not correct, calculate amount of extra memory needed to create it.
 			DistributedImage<pixel_t>& in = * std::get<DistributedImage<pixel_t>* >(args[0]);
-			DistributedImage<pixel_t>& out = * std::get<DistributedImage<pixel_t>* >(args[1]);
+			DistributedImage<out_t>& out = * std::get<DistributedImage<out_t>* >(args[1]);
 			Vec3c binSize =  std::get<Vec3c>(args[2]);
 
 			Vec3c expectedOutSize = in.dimensions().componentwiseDivide(binSize);

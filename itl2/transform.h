@@ -438,12 +438,12 @@ namespace itl2
 			return pixelRound<out_t>(val);
 		}
 
-		template<typename pixel_t, typename out_t> pixel_t max(const std::vector<pixel_t>& block)
+		template<typename pixel_t, typename out_t> out_t max(const std::vector<pixel_t>& block)
 		{
 			return pixelRound<out_t>(itl2::max(block));
 		}
 
-		template<typename pixel_t, typename out_t> pixel_t min(const std::vector<pixel_t>& block)
+		template<typename pixel_t, typename out_t> out_t min(const std::vector<pixel_t>& block)
 		{
 			return pixelRound<out_t>(itl2::min(block));
 		}
