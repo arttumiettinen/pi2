@@ -1035,4 +1035,15 @@ class Pi2:
         return Pi2Image(self, image_name)
 
 
+    def autothresholdvalue(self, img, method = "Otsu", arg0 = float("nan"), arg1 = float("nan"), arg2 = float("nan"), arg3 = float("nan")):
+        """
+        Calculates threshold value for the input image, according to a selected thresholding method.
+        For a description of the available thresholding methods and their arguments, please see the online help.
+        """
+
+        temp_image = self.newimage()
+        self.run_script(f"autothresholdvalue({img.name}, {temp_image.name}, {method}, {arg0}, {arg1}, {arg2}, {arg3})")
+        
+        return temp_image.get_value()
+
 

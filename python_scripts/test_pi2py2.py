@@ -1600,6 +1600,33 @@ class Test_basic:
         self.check_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.SAUVOLA], 'img', maxmem=5)
         self.check_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.BERNSEN], 'img', maxmem=5)
     
+    def test_autothresholdvalue_dist(self):
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.OTSU], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.HUANG], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.ISODATA], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.LI], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.MAXENTROPY], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.MEAN], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.MINERROR], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.MOMENTS], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.PERCENTILE], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.RENYI], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.SHANBHAG], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.TRIANGLE], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.YEN], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.MEDIAN], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.MIDGREY], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.NIBLACK], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.PHANSALKAR], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.SAUVOLA], 'result', maxmem=5)
+        self.check_difference_normal_distributed('autothresholdvalue', ['img', 'result', AutoThresholdMethod.BERNSEN], 'result', maxmem=5)
+        
+    def test_autothresholdvalue_custom(self):
+        pi = self.pi2
+        img = pi.read(input_file())
+        th = pi.autothresholdvalue(img)
+        print(th)
+
     def test_localthreshold_dist(self):
         self.check_difference_normal_distributed('localthreshold', ['img', 'result', [2, 2, 2], AutoThresholdMethod.OTSU], 'result', maxmem=5)
     

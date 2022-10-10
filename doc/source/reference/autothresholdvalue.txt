@@ -1,0 +1,311 @@
+.. _autothresholdvalue:
+
+autothresholdvalue
+******************
+
+
+**Syntax:** :code:`autothresholdvalue(input image, output image, method, argument 1, argument 2, argument 3, argument 4)`
+
+Calculates threshold value for the input image, according to a selected thresholding method, and places it into the output image. The supported thresholding methods are
+
+**Otsu**
+
+Otsu's thresholding algorithm.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in N. Otsu, A Threshold Selection Method from Gray-Level Histograms, IEEE Transactions on Systems, Man, and Cybernetics 9(1), 1979.
+
+Original C++ code by Jordan Bevik, ported to ImageJ plugin by Gabriel Landini, and finally ported to pi2.
+
+
+**Huang**
+
+Huang's fuzzy thresholding method.
+
+Uses Shannon's entropy function (one can also use Yager's entropy function).
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in L.-K. Huang and M.-J.J. Wang, Image Thresholding by Minimizing the Measures of Fuzziness, Pattern Recognition 28(1), 1995.
+
+Original code by M. Emre Celebi, ported to ImageJ plugin by G. Landini from E. Celebi's fourier_0.8 routines, then ported to pi2.
+
+
+**Intermodes**
+
+Assumes a bimodal histogram. The histogram needs is iteratively smoothed using a running average of size 3 until there are only two local maxima at j and k. The threshold t is (j+k)/2.
+
+Images with histograms having extremely unequal peaks or a broad and flat valleys are unsuitable for this method.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in  J. M. S. Prewitt and M. L. Mendelsohn, The analysis of cell images, Annals of the New York Academy of Sciences 128, 1966.
+
+Ported to ImageJ plugin by Gabriel Landini from Antti Niemisto's Matlab code (GPL), and then to pi2.
+
+
+
+**IsoData**
+
+Iterative procedure based on the isodata algorithm described in T.W. Ridler and S. Calvard, Picture thresholding using an iterative selection method, IEEE Transactions on System, Man and Cybernetics, SMC-8, 1978.
+
+The procedure divides the image into objects and background by taking an initial threshold, then the averages of the pixels at or below the threshold and pixels above are computed. The averages of those two values are computed, the threshold is incremented and the process is repeated until the threshold is larger than the composite average. That is, threshold = (average background + average objects) / 2
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+The code implementing this method is probably originally from NIH Image, then ported to ImageJ, and then to pi2.
+
+
+**Li**
+
+Li's Minimum Cross Entropy thresholding method.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+This implementation is based on the iterative version of the algorithm, described in C.H. Li and P.K.S. Tam, An Iterative Algorithm for Minimum Cross Entropy Thresholding, Pattern Recognition Letters 18(8), 1998.
+
+Ported to ImageJ plugin by G.Landini from E Celebi's fourier_0.8 routines, and then to pi2.
+
+
+**MaxEntropy**
+
+Implements Kapur-Sahoo-Wong (Maximum Entropy) thresholding method described in J.N. Kapur, P.K. Sahoo, and A.K.C Wong, A New Method for Gray-Level Picture Thresholding Using the Entropy of the Histogram, Graphical Models and Image Processing 29(3), 1985.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Original code by M. Emre Celebi, ported to ImageJ plugin by G.Landini, then ported to pi2.
+
+
+
+**Mean**
+
+The threshold is shifted mean of the greyscale data, i.e. :math:`t = \mu - c`, where :math:`t` is the threshold, :math:`\mu` is the mean of the image or the neighbourhood, and :math:`c` is the shift.
+
+First argument is the shift value :math:`c`.
+
+Described in C. A. Glasbey, An analysis of histogram-based thresholding algorithms, CVGIP: Graphical Models and Image Processing 55, 1993.
+
+
+
+**MinError**
+
+Implements minimum error thresholding method described in  J. Kittler and J. Illingworth, Minimum error thresholding, Pattern Recognition 19, 1986.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Code is originally from Antti Niemisto's Matlab code (GPL), then ported to ImageJ by Gabriel Landini, and then to pi2.
+
+
+
+**Minimum**
+
+Assumes a bimodal histogram. The histogram needs is iteratively smoothed (using a running average of size 3) until there are only two local maxima. Threshold :math:`t` is such that :math:`y_{t-1} > y_t` and :math:`y_t \leq y_{t+1}`. Images with histograms having extremely unequal peaks or a broad and flat valleys are unsuitable for this method.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in J. M. S. Prewitt and M. L. Mendelsohn, The analysis of cell images, Annals of the New York Academy of Sciences 128, 1966.
+
+Original Matlab code by Antti Niemisto, ported to ImageJ by Gabriel Landini, then ported to pi2.
+
+
+**Moments**
+
+Attempts to preserve the moments of the original image in the thresholded result.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in  W. Tsai, Moment-preserving thresholding: a new approach, Computer Vision,	Graphics, and Image Processing 29, 1985.
+
+Original code by M. Emre Celebi ported to ImageJ by Gabriel Landini, and then to pi2.
+
+
+**Percentile**
+
+Assumes the fraction of foreground pixels to be given value.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram. The fourth argument is the fraction of foreground pixels.
+
+Described in W. Doyle, Operation useful for similarity-invariant pattern recognition, Journal of the Association for Computing Machinery 9, 1962.
+
+Original code by Antti Niemisto, ported to ImageJ by Gabriel Landini, then to pi2.
+
+
+
+**RenyiEntropy**
+
+Similar to the MaxEntropy method, but using Renyi's entropy instead.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in J.N. Kapur, P.K. Sahoo, and A.K.C Wong, A New Method for Gray-Level Picture Thresholding Using the Entropy of the Histogram, Graphical Models and Image Processing 29(3), 1985.
+
+Original code by M. Emre Celebi, ported to ImageJ plugin by G.Landini, then ported to pi2.
+
+
+**Shanbhag**
+
+Described in A.G. Shanhbag, Utilization of Information Measure as a Means of Image Thresholding, Graphical Models and Image Processing 56(5), 1994.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Original code by M. Emre Celebi, ported to ImageJ plugin by Gabriel Landini, then to pi2.
+
+
+**Triangle**
+
+The triangle algorithm assumes a peak near either end of the histogram, finds minimum near the other end, draws a line between the minimum and maximum, and sets threshold :math:`t` to a value for which the point :math:`(t, y(t))` is furthest away from the line (where :math:`y` is the histogram).
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Described in G.W. Zack, W.E. Rogers, and S.A. Latt, Automatic Measurement of Sister Chromatid Exchange Frequency, Journal of Histochemistry and Cytochemistry 25(7), 1977.
+
+Original code by Johannes Schindelin, modified by Gabriel Landini, then ported to pi2.
+
+
+**Yen**
+
+Yen thresholding method described in J.C. Yen, F.K. Chang, and S. Chang, A New Criterion for Automatic Multilevel Thresholding, IEEE Transactions on Image Processing 4(3), 1995.
+
+The threshold value is calculated from the histogram of the image. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram.
+
+Original code by M. Emre Celebi, ported to ImageJ plugin by Gabriel Landini, then to pi2.
+
+
+**Median**
+
+The threshold is shifted median of the greyscale data, i.e. :math:`t = M - c`, where :math:`t` is the threshold, :math:`M` is the median of the image, and :math:`c` is the shift.
+
+The median is calculated from image histogram, so its accuracy might degrade if too small bin count is used. The first and the second arguments are values corresponding to the minimum and maximum of the histogram. Out-of-range values will be placed to the first and the last bins, respectively. The third argument is the count of bins in the histogram. The fourth argument is the shift value :math:`c`.
+
+
+**MidGrey**
+
+The threshold is :math:`(m + M) / 2 - c`, where :math:`m` and :math:`M` are the minimum and the maximum value of the image or neighbourhood, respectively. The value :math:`c` is a user-specified shift.
+
+The first argument is the shift value :math:`c`.
+
+
+**Niblack**
+
+Niblack's thresholding method.
+
+This method is mostly suited for local thresholding.
+
+The threshold is :math:`\mu + k * \sigma - c`, where :math:`\mu` and :math:`\sigma` are the mean and the standard deviation of the image or the neighbourhood, respectively. The values :math:`k` and :math:`c` are user-specified scaling constant and shift.
+
+The first argument is the scaling constant :math:`k`. The second argument is the shift value :math:`c`.
+
+Described in W. Niblack, An introduction to Digital Image Processing, Prentice-Hall, 1986.
+
+
+**Phansalkar**
+
+Phansalkar's thresholding method.
+
+This method is mostly suited for local thresholding.
+
+Threshold is :math:`\mu * (1.0 + p * \exp(-q * \mu) + k * (\sigma / r - 1))` where :math:`\mu` and :math:`\sigma` are the mean and the standard deviation of the image or the neighbourhood, respectively. The values :math:`k`, :math:`r`, :math:`p`, and :math:`q` are user-specified parameters of the method. The default values are :math:`k = 0.25`, :math:`r = 0.5`,  :math:`p = 2.0`, and :math:`q = 10.0`.
+
+The first four arguments are the parameters :math:`k`, :math:`r`, :math:`p`, and :math:`q`.
+
+Described in N. Phansalskar, S. More, and A. Sabale, et al., Adaptive local thresholding for detection of nuclei in diversity stained cytology images, International Conference on Communications and Signal Processing (ICCSP), 2011.
+
+
+**Sauvola**
+
+Sauvola's thresholding method.
+
+This method is mostly suited for local thresholding.
+
+The threshold is :math:`\mu * (1 + k * (\sigma / r - 1))`, where :math:`\mu` and :math:`\sigma` are the mean and the standard deviation of the image or the neighbourhood, respectively. The values :math:`k` and :math:`r` are user-specified scaling constants.
+
+The first argument is the scaling constant :math:`k`. The second argument is the scaling constant :math:`r`.
+
+Described in Sauvola, J and Pietaksinen, M, Adaptive Document Image Binarization, Pattern Recognition 33(2), 2000.
+
+
+**Bernsen**
+
+Finds Bernsen's thresholding method.
+
+This method is mostly suited for local thresholding.
+
+The method uses a user-provided contrast threshold. If the local contrast (max - min) is above or equal to the contrast threshold, the threshold is set at the local midgrey value (the mean of the minimum and maximum grey values in the local window (or whole image in the case of global thresholding)). If the local contrast is below the contrast threshold the neighbourhood is considered to consist only of one class and the pixel is set to object or background depending on the value of the midgrey.
+
+The first argument is the local contrast threshold.
+
+Described in J. Bernsen, Dynamic Thresholding of Grey-Level Images, Proceedings of the 8th International Conference on Pattern Recognition, 1986.
+
+The original code is written by Gabriel Landini, and it has been ported to pi2.
+
+
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+method [input]
+~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** Otsu
+
+Thresholding method that will be applied.
+
+argument 1 [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** nan
+
+Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.
+
+argument 2 [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** nan
+
+Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.
+
+argument 3 [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** nan
+
+Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.
+
+argument 4 [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** nan
+
+Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.
+
+See also
+--------
+
+:ref:`autothreshold`, :ref:`autothresholdvalue`, :ref:`localthreshold`, :ref:`threshold`, :ref:`doublethreshold`, :ref:`dualthreshold`, :ref:`thresholdrange`

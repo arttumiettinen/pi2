@@ -1602,11 +1602,21 @@ def seeded_distance_map():
     pi.writetif(sdmap, output_file("sdmap_result"))
 
 
+def autothresholdvalue():
+    """
+    Shows how autothresholdvalue command works in Python mode.
+    """
+
+    img = pi.read(input_file())
+    val = pi.autothresholdvalue(img)
+    print(val)
+
 
 # Please uncomment the examples you wish to run:
 #pi2_numpy_dimensions_deprecated()
 #pi2_numpy_dimensions()
-create_and_access_images()
+#create_and_access_images()
+autothresholdvalue()
 
 # TODO: Convert the examples below to the new to_numpy/from_numpy/width/etc. format.
 die()

@@ -5,8 +5,8 @@ blockmatch
 
 There are 2 forms of this command.
 
-:code:`blockmatch(reference image, deformed image, xmin, xmax, xstep, ymin, ymax, ystep, zmin, zmax, zstep, initial shift, file name prefix, comparison radius)`
-================================================================================================================================================================
+:code:`blockmatch(reference image, deformed image, xmin, xmax, xstep, ymin, ymax, ystep, zmin, zmax, zstep, initial shift, file name prefix, comparison radius, subpixel accuracy)`
+===================================================================================================================================================================================
 
 Calculates displacement field between two images. NOTE: This command is currently implemented in very old format, and thus it forcibly saves the results to a file.
 
@@ -115,13 +115,22 @@ comparison radius [input]
 
 Radius of comparison region.
 
+subpixel accuracy [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** centroid
+
+Subpixel accuracy mode. Can be 'none', 'quadratic', or 'centroid'.
+
 See also
 --------
 
 :ref:`blockmatch`, :ref:`blockmatchmemsave`, :ref:`pullback`, :ref:`pointstodeformed`
 
-:code:`blockmatch(reference image, deformed image, x grid, y grid, z grid, initial shift, file name prefix, coarse comparison radius, coarse binning, fine comparison radius, fine binning)`
-============================================================================================================================================================================================
+:code:`blockmatch(reference image, deformed image, x grid, y grid, z grid, initial shift, file name prefix, coarse comparison radius, coarse binning, fine comparison radius, fine binning, subpixel accuracy)`
+===============================================================================================================================================================================================================
 
 Calculates displacement field between two images with two-step multi-resolution approach, where coarse displacement is first calculated with larger block size (and binning) and the result is refined in second phase with smaller block size (and binning). NOTE: This command is currently implemented in very old format, and thus it forcibly saves the results to a file.
 
@@ -214,6 +223,15 @@ fine binning [input]
 **Default value:** 1
 
 Amount of resolution reduction in fine matching phase. Set to same value than coarse binning to skip fine matching phase.
+
+subpixel accuracy [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** centroid
+
+Subpixel accuracy mode. Can be 'none', 'quadratic', or 'centroid'.
 
 See also
 --------

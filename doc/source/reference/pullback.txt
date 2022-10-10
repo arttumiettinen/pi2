@@ -50,10 +50,10 @@ See also
 
 :ref:`blockmatch`, :ref:`blockmatchmemsave`, :ref:`pullback`, :ref:`pointstodeformed`
 
-:code:`pullback(image, pullback image, grid start, grid step, grid max, x, y, z, interpolation mode)`
-=====================================================================================================
+:code:`pullback(image, pullback image, grid start, grid step, grid max, x, y, z, interpolation mode, pullback position, pullback size)`
+=======================================================================================================================================
 
-Applies reverse of a deformation (calculated using blockmatch command) to image. In other words, performs pull-back operation. Makes output image the same size than the input image.
+Applies reverse of a deformation (calculated, e.g., using the blockmatch command) to image. In other words, performs pull-back operation.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
@@ -124,6 +124,24 @@ interpolation mode [input]
 **Default value:** Cubic
 
 Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
+
+pullback position [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 0, 0]"
+
+Position of region to be pulled back in reference image coordinates.
+
+pullback size [input]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[0, 0, 0]"
+
+Size of the region to be pulled back. Specify zeroes to default to the size of the deformed image.
 
 See also
 --------

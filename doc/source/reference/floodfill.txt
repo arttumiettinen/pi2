@@ -3,8 +3,55 @@
 floodfill
 *********
 
+There are 2 forms of this command.
 
-**Syntax:** :code:`floodfill(image, start point, fill value, connectivity)`
+:code:`floodfill(image, start points, fill value, connectivity)`
+================================================================
+
+Performs flood fill. Fills start point and all its neighbours and their neighbours etc. recursively as long as the color of the pixel to be filled equals color of the start point.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to process.
+
+start points [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+List of start points for the fill.
+
+fill value [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Fill color.
+
+connectivity [input]
+~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** connectivity
+
+**Default value:** All
+
+Connectivity of the region to fill. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
+
+See also
+--------
+
+:ref:`grow`, :ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`, :ref:`morphorec`
+
+:code:`floodfill(image, start point, fill value, connectivity)`
+===============================================================
 
 Performs flood fill. Fills start point and all its neighbours and their neighbours etc. recursively as long as the color of the pixel to be filled equals color of the start point.
 
@@ -43,3 +90,7 @@ connectivity [input]
 
 Connectivity of the region to fill. Can be Nearest for connectivity to nearest neighbours only, or All for connectivity to all neighbours.
 
+See also
+--------
+
+:ref:`grow`, :ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`, :ref:`morphorec`

@@ -678,6 +678,12 @@ Public License instead of this License.  But first, please read
 
 -----------------------------------------------------------------------------------------
 
+This software is based in part on the work of the Independent JPEG Group.
+
+
+
+-----------------------------------------------------------------------------------------
+
 This program contains code from the LZ4 library, licensed
 under the license shown below.
 See also https://github.com/lz4/lz4
