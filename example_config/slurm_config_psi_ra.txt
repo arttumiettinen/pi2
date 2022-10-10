@@ -5,23 +5,23 @@
 ; This item is used for fast jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_fast_jobs_sinfo = --partition=hour
-extra_args_fast_jobs_sbatch = --partition=hour
+extra_args_fast_jobs_sbatch = --partition=hour --tasks=1 --cpus-per-task=36 --mem=180G
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for normal jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_normal_jobs_sinfo = --partition=day
-extra_args_normal_jobs_sbatch = --partition=day --time=1440
+extra_args_normal_jobs_sbatch = --partition=day --time=1440 --tasks=1 --cpus-per-task=36 --mem=180G
 
 ; Extra arguments that are passed to sinfo and sbatch
 ; This item is used for slow jobs only.
 ; Use, e.g., to select partition, set maximum runtime, and exclude some nodes.
 extra_args_slow_jobs_sinfo = --partition=week
-extra_args_slow_jobs_sbatch = --partition=week --time=10080
+extra_args_slow_jobs_sbatch = --partition=week --time=10080 --tasks=1 --cpus-per-task=36 --mem=180G
 
 ; Shell commands run on node before starting job.
 ; Use, e.g., to load modules or mount disks.
-job_init_commands = hostname
+job_init_commands = hostname; export OMP_NUM_THREADS=36
 
 ; Maximum amount of memory to use per node in megabytes.
 ; Set to zero to determine the value automatically as 90 % of
@@ -31,7 +31,7 @@ job_init_commands = hostname
 ; If the number of nodes is large, the sinfo call may be very slow.
 ; In that case one should specify the value in this file so that
 ; the sinfo call is never made.
-max_memory = 180000
+max_memory = 170000
 
 ; Maximum number of re-tries that are done if a job fails.
 ; The job may fail, e.g., due to node failure, memory problems, or time limits.
