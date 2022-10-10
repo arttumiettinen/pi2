@@ -1644,7 +1644,17 @@ class Test_basic:
     
     def test_ramp3_1_dist(self):
         self.check_difference_normal_distributed('ramp3', ['img'], 'img', maxmem=5)
-        
+
+    def test_isimagefile(self):
+        pi = self.pi2
+        self.check_result(pi.isimagefile(input_file()) == True, "input image is tested not to exist")
+        self.check_result(pi.isimagefile('non-existing file name') == False, "not existing image is test to exist")
+        pi.distribute(Distributor.Local)
+        self.check_result(pi.isimagefile(input_file()) == True, "input image is tested not to exist (distributed)")
+        self.check_result(pi.isimagefile('non-existing file name') == False, "not existing image is test to exist (distributed)")
+        pi.distribute(Distributor.No);
+
+
     def test_delaying1(self):
         infile = input_file()
         self.check_difference_delaying('delaying_1', f"read(img, {infile}); gaussfilter(img, out, 1); add(img, 100); clear(img); convert(out, conv, uint8);", 'conv');

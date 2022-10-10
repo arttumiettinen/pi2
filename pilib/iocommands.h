@@ -18,7 +18,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		IsImageFileCommand() : Command("isimagefile", "Checks if a file with given name is image file.",
+		IsImageFileCommand() : Command("isimagefile", "Checks if a file with given name is an image file.",
 			{
 				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name of image file."),
 				CommandArgument<Image<uint8_t> >(ParameterDirection::In, "result", "Set to 1 if the given file name is a readable image file, and to 0 otherwise.")
