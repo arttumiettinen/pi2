@@ -356,7 +356,8 @@ namespace pilib
 				CommandArgument<double>(ParameterDirection::In, "argument 3", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
 				CommandArgument<double>(ParameterDirection::In, "argument 4", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
 			},
-			autoThresholdSeeAlso())
+			autoThresholdSeeAlso(),
+			"In Python/pi2py2, the output image is not specified, and the result value is returned by the function.")
 		{
 
 		}

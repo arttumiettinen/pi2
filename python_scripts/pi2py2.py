@@ -618,19 +618,19 @@ class Pi2Image(Pi2Object):
         """
         Gets width of this image.
         """
-        return self.get_dimensions()[0]
+        return self.dimensions()[0]
 
     def height(self):
         """
         Gets height of this image.
         """
-        return self.get_dimensions()[1]
+        return self.dimensions()[1]
 
     def depth(self):
         """
         Gets depth of this image.
         """
-        return self.get_dimensions()[2]
+        return self.dimensions()[2]
 
     def get_data_type(self):
         """
@@ -851,8 +851,11 @@ class Pi2:
                 temp_images.append(temp_image)
 
                 # Set data of that image to the numpy array
-                temp_image.set_data(arg)
-                
+                #temp_image.set_data(arg) # NOTE: This was the old way of doing the same.
+                # NOTE: This change is a breaking change for Python scripts taking advantage of the old set_data, get_data and
+                # this Numpy interoperability functionality.
+                temp_image.from_numpy(arg)
+
                 arg_as_string = temp_image.name
 
             elif isinstance(arg, Pi2Object):
@@ -945,8 +948,8 @@ class Pi2:
         """
 
         index, unit = self.get_column_index(column_name, analyzers)
-        data = particle_analysis_result.get_data_pointer()
-        column = data[:, index]
+        data = particle_analysis_result.to_numpy_pointer()
+        column = data[index, :]
         return column, unit
 
 

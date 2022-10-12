@@ -145,7 +145,9 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read or a sequence definition. " + sequenceDefinitionHelp()),
 				CommandArgument<string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + ". Specify empty value to infer data type from file content.", "")
-			})
+			},
+			"",
+			"In Python/pi2py2, the image name parameter is not specified, and the function returns the newly created image read from the disk.")
 		{
 		}
 
@@ -502,7 +504,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image. Omit width, height and depth to infer dimensions from file name."),
 				CommandArgument<bool>(ParameterDirection::In, "read only", "Set to true to do read-only mapping. This might be beneficial if the image file is accessed through a network share. WARNING: If set to true, writes to the image result in undefined behaviour, probably program crash to access violation or equivalent error.", false)
 			},
-			"readrawblock, readraw, getmapfile")
+			"readrawblock, readraw, getmapfile",
+			"In Python/pi2py2, the image name parameter is not specified, and the function returns a newly created image mapped to the .raw image file.")
 		{
 		}
 
@@ -527,7 +530,8 @@ namespace pilib
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set to zero to infer dimensions from file name.", Vec3c(0, 0, 0)),
 				CommandArgument<bool>(ParameterDirection::In, "read only", "Set to true to do read-only mapping. This might be beneficial if the image file is accessed through a network share. WARNING: If set to true, writes to the image result in undefined behaviour, probably program crash to access violation or equivalent error.", false)
 			},
-			"readrawblock, readraw, getmapfile")
+			"readrawblock, readraw, getmapfile",
+			"In Python/pi2py2, the image name parameter is not specified, and the function returns a newly created image mapped to the .raw image file.")
 		{
 		}
 
@@ -602,7 +606,8 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "type", "Data type of the variable. Can be 'string'.", "string"),
 				CommandArgument<string>(ParameterDirection::In, "value", "Initial value of the variable", ""),
 			},
-			"set, clear")
+			"set, clear",
+			"In Python/pi2py2, one should use the newstring command.")
 		{
 		}
 
@@ -632,7 +637,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the image.", 1),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image.", 1)
 			},
-			"ensuresize, newlike")
+			"ensuresize, newlike",
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is a Pi2Image object that can be passed to any command expecting an image name as an argument.")
 		{
 		}
 
@@ -659,7 +665,8 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + "."),
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image."),
 			},
-			"ensuresize, newlike")
+			"ensuresize, newlike",
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is a Pi2Image object that can be passed to any command expecting an image name as an argument.")
 		{
 		}
 

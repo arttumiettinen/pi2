@@ -922,7 +922,7 @@ namespace pilib
 				vector<string> headers = split(pointDataNames, true, ',', true);
 
 				if (headers.size() != pointData->width())
-					throw ITLException("Count of headers does not match column count of point data image.");
+					throw ITLException(string("Count of headers (") + itl2::toString(headers.size()) + ") does not match width of point data image (" + itl2::toString(pointData->width()) + ").");
 
 				for (size_t n = 0; n < headers.size(); n++)
 				{

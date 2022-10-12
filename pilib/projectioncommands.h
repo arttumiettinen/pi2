@@ -100,7 +100,7 @@ namespace pilib
 		classname##AllPixelsCommand() : TwoImageInputOutputCommand<in_t, result_t>(#cmdname, "Calculates " #funcname " of all pixels in the input image. The output is a 1x1x1 image.",	\
 			{																								\
 				CommandArgument<bool>(ParameterDirection::In, "print to log", "Set to true to print the results to the log.", false)	\
-			}) {}																							\
+			}, "", "In Python/pi2py2, the output image is not specified, and the result value is returned by the function.") {}																							\
 	public:																									\
 		using Distributable::runDistributed;																\
 																											\
@@ -518,7 +518,9 @@ namespace pilib
 		StdDevAllPixelsCommand() : TwoImageInputOutputCommand<in_t, float32_t>("stddev", "Calculates standard deviation of all pixels in the input image. The output is a 1x1x1 image.",
 			{
 				CommandArgument<bool>(ParameterDirection::In, "print to log", "Set to true to print the results to the log.", false)
-			}) {}
+			},
+			"",
+			"In Python/pi2py2, the output image is not specified, and the result value is returned by the function.") {}
 
 		static void print(bool doPrint, float32_t stddev, coord_t pixelCount)
 		{

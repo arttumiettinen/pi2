@@ -8,6 +8,10 @@ newvalue
 
 Creates a new variable.
 
+.. note::
+	In Python/pi2py2, one should use the newstring command.
+
+
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments

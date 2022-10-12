@@ -440,7 +440,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the image. Set to zero to copy the value from the template image.", 0),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image. Set to zero to copy the value from the template image.", 0)
 			},
-			newlikeSeeAlso())
+			newlikeSeeAlso(),
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is the newly created image object that can be passed to other functions instead of an image name.")
 		{
 
 		}
@@ -488,7 +489,8 @@ namespace pilib
 				CommandArgument<std::string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + ". Leave empty or set to Unknown to copy the value from the template image.", ""),
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set any component to zero to copy the value from the template image."), // NOTE: NewLikeCommand handles calls in form newlike(img1, template, uint32)
 			},
-			newlikeSeeAlso())
+			newlikeSeeAlso(),
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is the newly created image object that can be passed to other functions instead of an image name.")
 		{
 
 		}
@@ -534,7 +536,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the image. Set to zero to copy the value from the template image.", 0),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image. Set to zero to copy the value from the template image.", 0)
 			},
-			newlikeSeeAlso())
+			newlikeSeeAlso(),
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is the created image that can be passed to other functions instead of an image name.")
 		{
 		}
 
@@ -556,7 +559,8 @@ namespace pilib
 				CommandArgument<std::string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + ". Leave empty or set to Unknown to copy the value from the template image.", ""),
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set any component to zero to copy that from the template image.", Vec3c(0, 0, 0)),
 			},
-			newlikeSeeAlso())
+			newlikeSeeAlso(),
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is the created image that can be passed to other functions instead of an image name.")
 		{
 		}
 

@@ -39,10 +39,10 @@ def create_and_access_images():
 
     # newimage command is used to create new images
     img1 = pi.newimage(ImageDataType.UINT8, 10, 20, 30)
-    print(f"Width = {img1.get_width()}")
-    print(f"Height = {img1.get_height()}")
-    print(f"Depth = {img1.get_depth()}")
-    print(f"Data type = {img1.get_data_type()}")
+    print(f"Width = {img1.width()}")
+    print(f"Height = {img1.height()}")
+    print(f"Depth = {img1.depth()}")
+    print(f"Data type = {img1.data_type()}")
     print(f"All in one: {img1}")
 
     # newlike command can be used to create new image that is similar to existing image,
@@ -280,8 +280,8 @@ def math():
 
     # Create mask whose size is the same than the size of the original but it contains
     # only one slice. Then draw a circle into it, with color 1.
-    mask = pi.newimage(img.get_data_type(), img.get_width(), img.get_height())
-    pi.sphere(mask, [img.get_width() / 2, img.get_height() / 2, 0], img.get_width() / 4, 1)
+    mask = pi.newimage(img.data_type(), img.width(), img.height())
+    pi.sphere(mask, [img.width() / 2, img.height() / 2, 0], img.width() / 4, 1)
     pi.writetif(mask, output_file('mask'))
     
     pi.multiply(img, mask, True)
@@ -372,12 +372,8 @@ def filtering():
 
     # Calculate maximal value and place it to image M.
     # M will be a 1x1x1 image.
-    M = pi.newimage(ImageDataType.FLOAT32)
-    pi.maxval(img, M)
-
-    # Get the value of the first pixel of image M.
-    # In this case M is a 1x1x1 image so we have only one pixel anyway.
-    M = M.get_value()
+    M = pi.maxval(img)
+    
     print(f"Maximal difference = {M}")
 
 
@@ -485,12 +481,12 @@ def skeleton_vtk():
     pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines)
 
     # Create some additional data for the points
-    N = vtkpoints.get_height()
+    N = vtkpoints.height()
     point_data = pi.newimage(ImageDataType.FLOAT32, 2, N)
-    di = point_data.get_data_pointer()    
+    di = point_data.to_numpy_pointer()
     for i in range(0, N):
-        di[i, 0] = i
-        di[i, 1] = N - i
+        di[0, i] = i
+        di[1, i] = N - i
 
     # Save .vtk file
     pi.writevtk(vtkpoints, vtklines, output_file("vtk_test_file"), "increasing, decreasing", point_data)
@@ -627,7 +623,7 @@ def rotations():
     #   to rotate function.
     # - The angle is given in radians. Here it is -60 degrees.
     # - The axis is given as a vector and it does not need to be a unit vector.
-    grot = pi.newimage(img.get_data_type(), img.get_dimensions())
+    grot = pi.newimage(img.data_type(), img.get_dimensions())
     pi.rotate(img, grot, -60/180*3.14, [1, 1, 0])
     pi.writetif(grot, output_file('general_rotation'))
 
@@ -690,15 +686,12 @@ def analyze_particles():
     pi.headers(analyzers)
 
     # Get result data from the pi2 system
-    pa = result.get_data()
-
-    # Volume is in the first column (see output of 'headers' command)
-    volume = pa[:, 0]
+    volume, unit = pi.get_column('Volume', result, analyzers)
 
     # Plot volume histogram
     import matplotlib.pyplot as plt
     plt.hist(volume, density=True, bins=30)
-    plt.xlabel('Volume [pixel]')
+    plt.xlabel(f'Volume [{unit}]')
     plt.ylabel('Probability')
     plt.tight_layout()
     plt.show(block=False)
@@ -725,25 +718,24 @@ def fill_particles():
     result = pi.newimage(ImageDataType.FLOAT32)
     pi.analyzeparticles(img, result, analyzers)
 
-    # Get result data from the pi2 system
-    pa = result.get_data()
+    pa = result.to_numpy()
 
-    # Volume is in the first column (see the output of the 'headers' command)
-    volume = pa[:, 0]
+    # Get result data from the pi2 system
+    volume, unit = pi.get_column("Volume", result, analyzers)
 
     print(f"Before filtering the shape of the results matrix is {pa.shape}")
 
     # Filter the measurement results using suitable Python methods.
     # Here we take only the largest particles
     limit = 20000
-    pa = pa[volume > limit, :]
+    pa = pa[:, volume > limit]
 
     print(f"After filtering the shape of the results matrix is {pa.shape}")
 
     # We could use set_data(...) function to push the filtered results
     # back to pi2, but we may as well use the NumPy array pa directly
     # in pi2 commands.
-    #result.set_data(pa)
+    #result.from_numpy(pa)
 
     # Fill the particles that we left into the pa array (i.e. the big ones)
     # Note that (for simple distributed processing support) the fillparticles
@@ -789,8 +781,8 @@ def histogram():
     
 
     # Get histogram data as NumPy array
-    data = hist.get_data()
-    bin_starts = bins.get_data()
+    data = hist.to_numpy()
+    bin_starts = bins.to_numpy()
 
     # Most of the background pixels are in the first bin.
     # We set it to zero so that the output image becomes nicely scaled
@@ -854,7 +846,7 @@ def bivariate_histogram():
     pi.writetif(bins2, output_file('bins2'))
 
     # Get histogram data
-    h = hist.get_data()
+    h = hist.to_numpy()
 
     # Make plot
     import matplotlib.pyplot as plt
@@ -862,7 +854,7 @@ def bivariate_histogram():
     
     # Note that here we plot the transpose of the histogram as that fits better into an image.
     # We also flip it upside down so that both x- and y-values increase in the usual directions.
-    pltimg = plt.imshow(np.flipud(h.transpose()), vmin=0, vmax=1.5e4, extent=(0, thick_max, 0, gray_max), aspect=1/8)
+    pltimg = plt.imshow(np.flipud(h), vmin=0, vmax=1.5e4, extent=(0, thick_max, 0, gray_max), aspect=1/8)
     cbar = fig.colorbar(pltimg)
     plt.xlabel('Thickness [pix]')
     plt.ylabel('Gray value [pix]')
@@ -870,6 +862,7 @@ def bivariate_histogram():
     plt.tight_layout()
     plt.show(block=False)
     plt.savefig(output_file('bivariate_histogram.png'))
+    plt.close()
 
     
 
@@ -1030,8 +1023,8 @@ def find_surface():
     # as there's nothing in the edges of the image.
     # Usually surfaces are recognized from e.g. images of paper sheet
     # where the sheet spans the whole image.
-    img = pi.newimage(orig.get_data_type())
-    pi.crop(orig, img, [80, 90, 0], [85, 120, orig.get_depth()])
+    img = pi.newimage(orig.data_type())
+    pi.crop(orig, img, [80, 90, 0], [85, 120, orig.depth()])
 
     pi.writeraw(img, output_file('findsurface_geometry'))
 
@@ -1039,12 +1032,12 @@ def find_surface():
     hmap = pi.newimage(ImageDataType.FLOAT32)
 
     # ... and this one will be a visualization of surface evolution
-    vis = pi.newimage(orig.get_data_type())
+    vis = pi.newimage(orig.data_type())
 
     # Now find the surface.
     # We will stop at gray level 100 and perform 60 iterations
     # with surface tension 1.0.
-    pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, 1, vis, img.get_height() / 2, 900)
+    pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, 1, vis, img.height() / 2, 900)
 
     # Save the result surface
     pi.writeraw(hmap, output_file('findsurface_height_map'))
@@ -1276,7 +1269,7 @@ def orientation_analysis():
 
     # Now plot the histogram estimated from the image
     plt.subplot(2, 1, 2)
-    pltimg = plt.imshow(hist.get_data(), extent=(-np.pi, np.pi, 0, np.pi))
+    pltimg = plt.imshow(hist.to_numpy().transpose(), extent=(-np.pi, np.pi, 0, np.pi))
     cbar = fig.colorbar(pltimg)
     plt.xlabel('Azimuthal angle [rad]')
     plt.ylabel('Polar angle [rad]')
@@ -1287,7 +1280,7 @@ def orientation_analysis():
     plt.show(block=False)
 
     plt.savefig(output_file('bivariate_histogram_comparison.png'))
-
+    plt.close()
 
 
 
@@ -1300,7 +1293,7 @@ def montage():
     img = pi.read(input_file())
 
     # Create empty image for the montage
-    montage = pi.newimage(img.get_data_type())
+    montage = pi.newimage(img.data_type())
 
     # Make the montage, 4x3 slices, scaled to 0.5 of
     # original size
@@ -1353,7 +1346,7 @@ def fill(img, x, y, z):
     pixel value at (x, y, z) is zero.
     """
 
-    if img.get_data_pointer()[y, x, z] == 0:
+    if img.to_numpy_pointer()[y, x, z] == 0:
         pi.floodfill(img, [x, y, z], 128, Connectivity.NEAREST)
 
 def vessel_tracing():
@@ -1371,13 +1364,13 @@ def vessel_tracing():
     # Note that it is possible that all corners are occupied by vessels and in this case
     # this filling method does not work, but in practice that situation is very rare.
     fill(img, 0, 0, 0)
-    fill(img, img.get_width() - 1, 0, 0)
-    fill(img, 0, img.get_height() - 1, 0)
-    fill(img, img.get_width() - 1, img.get_height() - 1, 0)
-    fill(img, 0, 0, img.get_depth() - 1)
-    fill(img, img.get_width() - 1, 0, img.get_depth() - 1)
-    fill(img, 0, img.get_height() - 1, img.get_depth() - 1)
-    fill(img, img.get_width() - 1, img.get_height() - 1, img.get_depth() - 1)
+    fill(img, img.width() - 1, 0, 0)
+    fill(img, 0, img.height() - 1, 0)
+    fill(img, img.width() - 1, img.height() - 1, 0)
+    fill(img, 0, 0, img.depth() - 1)
+    fill(img, img.width() - 1, 0, img.depth() - 1)
+    fill(img, 0, img.height() - 1, img.depth() - 1)
+    fill(img, img.width() - 1, img.height() - 1, img.depth() - 1)
     # Here the vessels, cavities and background have colors 255, 0, and 128, respectively.
     # Set cavities and vessels to 255 and background to 0.
     pi.replace(img, 255, 0)
@@ -1397,7 +1390,7 @@ def vessel_tracing():
     dmap = pi.newimage(ImageDataType.FLOAT32)
     pi.dmap(img, dmap)
     pi.writeraw(dmap, output_file('vessel_dmap'))
-    dmap_data = dmap.get_data()
+    dmap_data = dmap.to_numpy()
     
     
     # Trace skeleton
@@ -1414,41 +1407,44 @@ def vessel_tracing():
     # Next, we will remove all edges that has at least one free and and whose
     # L/r < 2.
     # First, get edges, vertices, and branch length as NumPy arrays.
-    old_edges = edges.get_data()
-    vert_coords = vertices.get_data()
+    old_edges = edges.to_numpy()
+    vert_coords = vertices.to_numpy()
     
     # The tracelineskeleton measures branch length by anchored convolution and returns it in the
     # measurements image.
-    meas_data = measurements.get_data()
-    length_data = meas_data[:, 1]
+    meas_data = measurements.to_numpy()
     
+    length_data = meas_data[1, :]
     
     # Calculate degree of each vertex
     deg = {}
-    for i in range(0, vert_coords.shape[0]):
+    for i in range(0, vert_coords.shape[1]):
         deg[i] = 0
     
-    for i in range(0, old_edges.shape[0]):
-        deg[old_edges[i, 0]] += 1
-        deg[old_edges[i, 1]] += 1
+    for i in range(0, old_edges.shape[1]):
+        deg[old_edges[0, i]] += 1
+        deg[old_edges[1, i]] += 1
         
     # Determine which edges should be removed
     remove_flags = []
-    for i in range(0, old_edges.shape[0]):
-        n1 = old_edges[i, 0]
-        n2 = old_edges[i, 1]
+    for i in range(0, old_edges.shape[1]):
+        n1 = old_edges[0, i]
+        n2 = old_edges[1, i]
         
         # Remove edge if it has at least one free end point, and if L/r < 2, where
         # r = max(r_1, r_2) and r_1 and r_2 are radii at the end points or the edge.
         should_remove = False
         if deg[n1] == 1 or deg[n2] == 1:
             
-            p1 = vert_coords[n1, :]
-            p2 = vert_coords[n2, :]
+            p1 = vert_coords[:, n1]
+            p2 = vert_coords[:, n2]
             
-            r1 = dmap_data[int(p1[1]), int(p1[0]), int(p1[2])]
-            r2 = dmap_data[int(p2[1]), int(p2[0]), int(p2[2])]
+            r1 = dmap_data[int(p1[0]), int(p1[1]), int(p1[2])]
+            r2 = dmap_data[int(p2[0]), int(p2[1]), int(p2[2])]
             
+            print(r1)
+            print(2)
+
             r = max(r1, r2)
             L = length_data[i]
             
@@ -1464,14 +1460,15 @@ def vessel_tracing():
         remove_flags.append(should_remove)
     
     remove_flags = np.array(remove_flags).astype(np.uint8)
-    print(f"Before dynamic pruning: {old_edges.shape[0]} edges")
+    print(f"Before pruning: {old_edges.shape[1]} edges")
     print(f"Removing {np.sum(remove_flags)} edges")
     
     # This call adjusts the vertices, edges, and measurements images such that
     # the edges for which remove_flags entry is True are removed from the graph.
     pi.removeedges(vertices, edges, measurements, points, remove_flags, True, True)
     
-    
+
+    print(f"After pruning: {edges.height()} edges")
     
     # Convert to vtk format in order to get radius for each point and line
     vtkpoints = pi.newimage()
@@ -1479,18 +1476,18 @@ def vessel_tracing():
     pi.getpointsandlines(vertices, edges, measurements, points, vtkpoints, vtklines)
     
     # Get radius for each point
-    points_data = vtkpoints.get_data()
-    radius_points = np.zeros([points_data.shape[0]])
-    for i in range(0, points_data.shape[0]):
-        p = points_data[i, :]
-        r = dmap_data[int(p[1]), int(p[0]), int(p[2])]
+    points_data = vtkpoints.to_numpy()
+    radius_points = np.zeros([points_data.shape[1]])
+    for i in range(0, points_data.shape[1]):
+        p = points_data[:, i]
+        r = dmap_data[int(p[0]), int(p[1]), int(p[2])]
         radius_points[i] = r
         
         
     # Get average radius for each branch
     # Notice that the vtklines image has a special format that is detailed in
     # the documentation of getpointsandlines function.
-    lines_data = vtklines.get_data()
+    lines_data = vtklines.to_numpy()
     radius_lines = []
     i = 0
     edge_count = lines_data[i]
@@ -1503,8 +1500,8 @@ def vessel_tracing():
         for n in range(0, count):
             index = lines_data[i]
             i += 1
-            p = points_data[index, :]
-            R += dmap_data[int(p[1]), int(p[0]), int(p[2])]
+            p = points_data[:, index]
+            R += dmap_data[int(p[0]), int(p[1]), int(p[2])]
         R /= count
         
         radius_lines.append(R)
@@ -1519,7 +1516,9 @@ def vessel_tracing():
     
 
     # Write to file
-    pi.writevtk(vtkpoints, vtklines, output_file('vessels'), "radius", radius_points, "radius", radius_lines)
+    # Note that width of the point data image must equal the count of headers (1).
+    # The same goes with line data image as well.
+    pi.writevtk(vtkpoints, vtklines, output_file('vessels'), "radius", radius_points.reshape((1, -1)), "radius", radius_lines.reshape((1, -1)))
     
     
 
@@ -1613,16 +1612,10 @@ def autothresholdvalue():
 
 
 # Please uncomment the examples you wish to run:
-#pi2_numpy_dimensions_deprecated()
-#pi2_numpy_dimensions()
-#create_and_access_images()
+pi2_numpy_dimensions_deprecated()
+pi2_numpy_dimensions()
+create_and_access_images()
 autothresholdvalue()
-
-# TODO: Convert the examples below to the new to_numpy/from_numpy/width/etc. format.
-die()
-
-
-
 read_and_write_image()
 help()
 math()
@@ -1649,3 +1642,6 @@ skeleton_types()
 fibre_properties()
 vessel_tracing()
 seeded_distance_map()
+
+
+

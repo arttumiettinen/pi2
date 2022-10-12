@@ -45,9 +45,7 @@ class Test_basic:
 
         pi2.subtract(imgf, img2f)
         pi2.abs(imgf)
-        M = pi2.newimage(ImageDataType.FLOAT32)
-        pi2.maxval(imgf, M)
-        M = M.get_value()
+        M = pi2.maxval(imgf)
 
         return M
 

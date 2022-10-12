@@ -56,13 +56,14 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		TwoImageInputOutputCommand(const string& name, const string& help, const std::vector<CommandArgumentBase>& extraArgs = {}, const string& seeAlso = "") :
+		TwoImageInputOutputCommand(const string& name, const string& help, const std::vector<CommandArgumentBase>& extraArgs = {}, const string& seeAlso = "", const string& uiNotes = "") :
 			Command(name, help,
 				concat({
 					CommandArgument<Image<input_t> >(ParameterDirection::In, "input image", "Input image."),
 					CommandArgument<Image<output_t> >(ParameterDirection::Out, "output image", "Output image.")
 					}, extraArgs),
-				seeAlso
+				seeAlso,
+				uiNotes
 				)
 		{
 		}

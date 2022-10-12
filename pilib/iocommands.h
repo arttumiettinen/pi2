@@ -22,7 +22,9 @@ namespace pilib
 			{
 				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name of image file."),
 				CommandArgument<Image<uint8_t> >(ParameterDirection::In, "result", "Set to 1 if the given file name is a readable image file, and to 0 otherwise.")
-			})
+			},
+			"",
+			"In Python/pi2py2, the result parameter is not specified, but the test result is returned as a boolean return value.")
 		{
 
 		}

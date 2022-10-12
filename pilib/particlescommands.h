@@ -541,7 +541,7 @@ namespace pilib
 		FillParticlesCommand() : OneImageInPlaceCommand<pixel_t>("fillparticles", "Fills particles that correspond to an entry in a list of particles with specified value. All other particles will be set to value 1. This command does not support cases where the particles have different colors.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers that have been used to analyze the particles in the `analyzeparticles` command. The analyzers must contain 'coordinates' analyzer; otherwise this command does not know where the particles are."),
-				CommandArgument<Image<float32_t> >(ParameterDirection::In, "results", "Analysis results image."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "results", "Particle analysis results image."),
 				CommandArgument<double>(ParameterDirection::In, "fill color", "Fill color."),
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours),
 				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Shift that is to be applied to the image before filling the particles. This argument is used internally in distributed processing.", Distributor::BLOCK_ORIGIN_ARG_TYPE())
