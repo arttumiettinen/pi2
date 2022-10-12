@@ -209,7 +209,7 @@ namespace itl2
 			// TODO: Here we limit the number of threads as we might have e.g. 256 threads reading at once
 			// => very large RAM requirement for the whole slice temp images if the slices are large.
 			// But what is a good maximum amount of threads?
-			#pragma omp parallel for if(!omp_in_parallel()) schedule(dynamic) num_threads(16)
+			#pragma omp parallel for if(!omp_in_parallel()) schedule(dynamic) num_threads(32)
 			for (coord_t z = cStart.z; z < cEnd.z; z++)
 			{
 				if (!broken)
