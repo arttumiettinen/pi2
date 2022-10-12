@@ -1043,7 +1043,63 @@ class Pi2:
 
         temp_image = self.newimage()
         self.run_script(f"autothresholdvalue({img.name}, {temp_image.name}, {method}, {arg0}, {arg1}, {arg2}, {arg3})")
-        
         return temp_image.get_value()
 
+    def sum(self, img):
+        """
+        Calculates sum of all pixels in the input image.
+        """
+        
+        dt = img.data_type()
 
+        if dt == ImageDataType.UInt8 or dt == ImageDataType.UInt16 or dt == ImageDataType.UInt32 or dt == ImageDataType.UInt64:
+            out_dt = ImageDataType.UInt64
+        elif dt == ImageDataType.Int8 or dt == ImageDataType.Int16 or dt == ImageDataType.Int32 or dt == ImageDataType.Int64:
+            out_dt = ImageDataType.Int64
+        elif dt == ImageDataType.Float32:
+            out_dt = ImageDataType.Float32
+        elif dt == ImageDataType.Complex32:
+            out_dt = ImageDataType.Complex32
+        else:
+            raise ValueError("This input image data type is not configured for sum calculation.")
+
+        
+        temp_image = self.newimage(out_dt)
+        self.run_script(f"sum({img.name}, {temp_image.name})")
+        return temp_image.get_value()
+
+    def minval(self, img):
+        """
+        Returns the smallest value in the input image.
+        """
+        
+        temp_image = self.newimage(img.data_type())
+        self.run_script(f"minval({img.name}, {temp_image.name})")
+        return temp_image.get_value()
+
+    def maxval(self, img):
+        """
+        Returns the largest value in the input image.
+        """
+        
+        temp_image = self.newimage(img.data_type())
+        self.run_script(f"maxval({img.name}, {temp_image.name})")
+        return temp_image.get_value()
+
+    def mean(self, img):
+        """
+        Returns the mean of all pixels in the input image.
+        """
+        
+        temp_image = self.newimage()
+        self.run_script(f"mean({img.name}, {temp_image.name})")
+        return temp_image.get_value()
+
+    def stddev(self, img):
+        """
+        Returns the standard deviation of all pixels in the input image.
+        """
+        
+        temp_image = self.newimage()
+        self.run_script(f"stddev({img.name}, {temp_image.name})")
+        return temp_image.get_value()

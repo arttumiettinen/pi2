@@ -1627,6 +1627,36 @@ class Test_basic:
         th = pi.autothresholdvalue(img)
         print(th)
 
+    def test_sum_custom(self):
+        pi = self.pi2
+        img = pi.read(input_file())
+        ret = pi.sum(img)
+        print(ret)
+
+    def test_mean_custom(self):
+        pi = self.pi2
+        img = pi.read(input_file())
+        ret = pi.mean(img)
+        print(ret)
+
+    def test_stddev_custom(self):
+        pi = self.pi2
+        img = pi.read(input_file())
+        ret = pi.stddev(img)
+        print(ret)
+
+    def test_minval_custom(self):
+        pi = self.pi2
+        img = pi.read(input_file())
+        ret = pi.minval(img)
+        print(ret)
+
+    def test_maxval_custom(self):
+        pi = self.pi2
+        img = pi.read(input_file())
+        ret = pi.maxval(img)
+        print(ret)
+
     def test_localthreshold_dist(self):
         self.check_difference_normal_distributed('localthreshold', ['img', 'result', [2, 2, 2], AutoThresholdMethod.OTSU], 'result', maxmem=5)
     
