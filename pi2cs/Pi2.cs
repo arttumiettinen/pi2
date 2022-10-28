@@ -482,6 +482,19 @@ namespace pi2cs
         }
 
         /// <summary>
+        /// Set metadata item with given name to given value.
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        public void SetMeta(Pi2Image img, string name, long value, int i = 0, int j = 0)
+        {
+            SetMeta(img, name, value.ToString(CultureInfo.InvariantCulture), i, j);
+        }
+
+        /// <summary>
         /// Get a value of a metadata item.
         /// </summary>
         /// <param name="img"></param>
