@@ -5,7 +5,7 @@ sample_name = stitched
 
 
 # Binning (downscaling) applied to inputs before stitching.
-# Binning 1 corresponds to original input image size, binnin 2 to half of that, etc.
+# Binning 1 corresponds to original input image size, binning 2 to half of that, etc.
 # Use e.g. to test with smaller images before running stitching for full-scale data.
 binning = 1
 
@@ -13,6 +13,7 @@ binning = 1
 # Space between points in the reference grid in the pairwise matching step.
 # Specify such a value that the deformation is approximately linear between the grid points.
 # The value should scale with image size.
+# The value is given in the coordinates of the original image (not in binned coordinates).
 point_spacing = 30
 
 
@@ -21,6 +22,7 @@ point_spacing = 30
 # for each coordinate direction.
 # The block radius is the maximal local shift that can be found between any two sub-images.
 # The value should scale with image size.
+# The value is given in the coordinates of the original image (not in binned coordinates).
 coarse_block_radius = 60
 
 
