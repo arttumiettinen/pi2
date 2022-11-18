@@ -964,7 +964,7 @@ namespace itl2
 		float32_t averageBadPixels = 0;
 		size_t maxBadPixels = 0;
 		size_t counter = 0;
-		#pragma omp parallel
+		#pragma omp parallel num_threads(8)
 		{
 			Image<float32_t> med;
 			Image<float32_t> tmp;
@@ -972,7 +972,7 @@ namespace itl2
 
 			Image<float32_t> cropTmp(croppedSize.x, croppedSize.y);
 
-			#pragma omp for
+			#pragma omp for schedule(dynamic)
 			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
 			{
 				//cout << "Processing slice " << z << endl;
