@@ -286,6 +286,70 @@ namespace pilib
 		return (int)std::count(line.begin(), line.end(), '=') * 10;
 	}
 
+	double parseSlurmTime(string str)
+	{
+		try
+		{
+			// Parse from format [days-]hours:minutes:seconds
+			int days = 0;
+			size_t dashPos = str.find('-');
+			if (dashPos != string::npos)
+			{
+				string daysStr = str.substr(0, dashPos);
+				str = str.substr(dashPos + 1);
+
+				days = fromString<int32_t>(daysStr);
+			}
+
+			size_t colonPos = str.find(':');
+			if (colonPos == string::npos)
+				return -1;
+			string hoursStr = str.substr(0, colonPos);
+			str = str.substr(colonPos + 1);
+
+			colonPos = str.find(':');
+			if (colonPos == string::npos)
+				return -1;
+			string minsStr = str.substr(0, colonPos);
+			string secsStr = str.substr(colonPos + 1);
+
+			int hours = fromString<int32_t>(hoursStr);
+			int mins = fromString<int32_t>(minsStr);
+			int secs = fromString<int32_t>(secsStr);
+
+			return days * 24 * 60 * 60 + hours * 60 * 60 + mins * 60 + secs;
+		}
+		catch (ITLException)
+		{
+			// Invalid conversion. The input is invalid. Return -1.
+			return -1;
+		}
+	}
+
+	double parseRawTime(const string& str)
+	{
+		try
+		{
+			return fromString<int32_t>(str);
+		}
+		catch (ITLException)
+		{
+			// Invalid conversion. The input is invalid. Return -1.
+			return -1;
+		}
+	}
+
+	tuple<double, double> SLURMDistributor::getJobTimes(size_t jobIndex) const
+	{
+		string slurmId = itl2::toString(get<0>(submittedJobs[jobIndex]));
+
+		string result = execute("sacct", string("-X --noheader -o reserved,elapsedraw -j ") + slurmId);
+		trim(result);
+
+		vector<string> parts = split(result, false, ' ');
+		return make_tuple(parseSlurmTime(parts[0]), parseRawTime(parts[1]));
+	}
+
 	vector<int> SLURMDistributor::getJobProgress() const
 	{
 		vector<int> progress;
@@ -501,7 +565,14 @@ namespace pilib
 				{
 					//if (progress[n] == JOB_FAILED || progress[n] >= 100)
 					if (progress[n] >= 100)
+					{
 						doneCount++;
+
+						if (get<0>(jobTiming[n]) < -1 || get<1>(jobTiming[n]) < -1)
+						{
+							jobTiming[n] = getJobTimes(n);
+						}
+					}
 				}
 
 				done = doneCount == progress.size();

@@ -111,6 +111,11 @@ namespace pilib
 		int getJobProgressFromLog(size_t jobIndex) const;
 
 		/**
+		Retrieves job queueing time [s] and execution time [s] from SLURM.
+		*/
+		std::tuple<double, double> SLURMDistributor::getJobTimes(size_t jobIndex) const;
+
+		/**
 		Submits job with given index again.
 		*/
 		void resubmit(size_t jobIndex);

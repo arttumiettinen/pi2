@@ -56,7 +56,6 @@
 using namespace itl2;
 using namespace std;
 
-
 int main()
 {
 	//test(itl2::io::tests::badnn5, "reading bad nn5");
@@ -133,7 +132,7 @@ int main()
 	//test(itl2::tests::blockMatch1, "block match 1");
 	//test(itl2::tests::blockMatch2Match, "block match 2 (match)");
 	//test(itl2::tests::blockMatch2Pullback, "block match 2 (pullback)");
-	test(itl2::tests::reverseDeformation, "reverse deformation");
+	//test(itl2::tests::reverseDeformation, "reverse deformation");
 
 	//test(itl2::tests::inpaintNearest, "Inpainting");
 	//test(itl2::tests::inpaintGarcia, "Inpainting (Garcia)");

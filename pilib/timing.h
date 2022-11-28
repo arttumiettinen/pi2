@@ -7,6 +7,8 @@ namespace pilib
 {
 	enum class TimeClass
 	{
+		JobExecution,
+		JobQueueing,
 		JobsInclQueuing,
 		WritePreparation,
 		WriteFinalizationInclQueuing

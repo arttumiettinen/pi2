@@ -1368,6 +1368,8 @@ namespace pilib
 			cout << "Small jobs were combined into " << jobsToSubmit.size() << " larger jobs (" << std::fixed << std::setprecision(1) << tasksPerJob << " small jobs per combined job)." << endl;
 
 		// Submit jobs
+		jobTiming.clear();
+		jobTiming.reserve(jobsToSubmit.size());
 		for (auto& tup : jobsToSubmit)
 		{
 			string& script = get<0>(tup);
@@ -1383,6 +1385,7 @@ namespace pilib
 			if (tasksPerJob >= promoteThreshold)
 				type = promote(type);
 
+			jobTiming.push_back(make_tuple(-2.0, -2.0));
 			submitJob(script, type);
 		}
 
@@ -1395,6 +1398,17 @@ namespace pilib
 			lastOutput = waitForJobs();
 
 			Timing::Add(TimeClass::JobsInclQueuing, timer.lap());
+
+			// Calculate job timing
+			for (auto tuple : jobTiming)
+			{
+				double queueing = get<0>(tuple);
+				double execution = get<1>(tuple);
+				if(queueing >= 0)
+					Timing::Add(TimeClass::JobQueueing, queueing);
+				if(execution >= 0)
+					Timing::Add(TimeClass::JobExecution, execution);
+			}
 
 			// Submit endConcurrentWrite jobs
 			// Limit the number of jobs to reduce queuing latency.

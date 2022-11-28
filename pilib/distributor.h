@@ -186,6 +186,12 @@ namespace pilib
 
 	protected:
 
+		/**
+		Queue time and execution time (wall-clock) for each submitted job.
+		*/
+		std::vector<std::tuple<double, double>> jobTiming;
+
+
 		Distributor(PISystem* piSystem);
 
 		/**
@@ -323,6 +329,7 @@ namespace pilib
 		/**
 		Waits until all jobs have completed.
 		Throws exception if any of the jobs fails or job output does not end in line "Everything done.".
+		If returns succesfully and job queuing times can be reported, must fill jobTiming array.
 		@return Output written by each job.
 		*/
 		virtual std::vector<string> waitForJobs() = 0;

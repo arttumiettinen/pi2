@@ -22,9 +22,11 @@ namespace pilib
 	{
 		stringstream s;
 
-		s << "Jobs incl. queuing: " << setprecision(2) << times[TimeClass::JobsInclQueuing] << " s" << endl
+		s << "Waiting for jobs to finish: " << setprecision(2) << times[TimeClass::JobsInclQueuing] << " s" << endl
 			<< "Write preparation: " << setprecision(2) << times[TimeClass::WritePreparation] << " s" << endl
-			<< "Write finalization incl. queuing: " << setprecision(2) << times[TimeClass::WriteFinalizationInclQueuing] << " s";
+			<< "Waiting for write finalization: " << setprecision(2) << times[TimeClass::WriteFinalizationInclQueuing] << " s" << endl
+			<< "Total job queuing time: " << setprecision(2) << times[TimeClass::JobQueueing] << " s" << endl
+			<< "Total job execution time: " << setprecision(2) << times[TimeClass::JobExecution] << " s" << endl;
 
 		return s.str();
 	}
