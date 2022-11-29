@@ -19,7 +19,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		TimingCommand() : Command("timing", "Prints information about wall-clock time taken by various sub-processes.",
+		TimingCommand() : Command("timing", "Prints information about wall-clock time taken by various sub-processes. Running this command causes all delayed commands to be executed.",
 			{
 			},
 			helpSeeAlso())
@@ -28,6 +28,11 @@ namespace pilib
 
 	public:
 		virtual void run(vector<ParamVariant>& args) const override;
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
 	};
 
 	
