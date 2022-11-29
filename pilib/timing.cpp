@@ -26,7 +26,7 @@ namespace pilib
 			<< "Write preparation: " << setprecision(2) << times[TimeClass::WritePreparation] << " s" << endl
 			<< "Waiting for write finalization: " << setprecision(2) << times[TimeClass::WriteFinalizationInclQueuing] << " s" << endl
 			<< "Total job queuing time: " << setprecision(2) << times[TimeClass::JobQueueing] << " s" << endl
-			<< "Total job execution time: " << setprecision(2) << times[TimeClass::JobExecution] << " s" << endl;
+			<< "Total job execution time: " << setprecision(2) << times[TimeClass::JobExecution] << " s";
 
 		return s.str();
 	}
