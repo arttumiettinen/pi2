@@ -113,7 +113,7 @@ namespace pilib
 		/**
 		Retrieves job queueing time [s] and execution time [s] from SLURM.
 		*/
-		std::tuple<double, double> SLURMDistributor::getJobTimes(size_t jobIndex) const;
+		std::tuple<double, double> getJobTimes(size_t jobIndex) const;
 
 		/**
 		Submits job with given index again.
