@@ -199,7 +199,7 @@ namespace pilib
 		/**
 		Creates name for job timing output file.
 		*/
-		std::string Distributor::makeTimingName(size_t jobIndex) const;
+		std::string makeTimingName(size_t jobIndex) const;
 
 		/**
 		Queue time and execution time (wall-clock) for each submitted job.
