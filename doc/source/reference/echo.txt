@@ -34,4 +34,4 @@ Set to true to show timing information on commands that have been run.
 See also
 --------
 
-:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`, :ref:`savetiming`

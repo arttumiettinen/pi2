@@ -11,7 +11,56 @@ namespace pilib
 
 	inline std::string helpSeeAlso()
 	{
-		return "help, info, license, echo, print, waitreturn, hello, timing";
+		return "help, info, license, echo, print, waitreturn, hello, timing, savetiming";
+	}
+
+	inline std::string timeClassHelp()
+	{
+		return
+			"The output includes the following time classes.\n"
+			"\n"
+			"**Overhead**\n"
+			"\n"
+			"General overhead, e.g. parsing inputs, finding correct commands to run etc.\n"
+			"This includes the total overhead time spent in the main process, and in possible cluster job processes.\n"
+			"\n"
+			"**I/O**\n"
+			"\n"
+			"Time spent in I/O-bound processing. This is the time when the disk I/O is the bottleneck.\n"
+			"This includes the total I/O time spent in the main process, and in possible cluster job processes.\n"
+			"Time spent in output data compression is counted to this time class.\n"
+			"\n"
+			"**Computation**\n"
+			"\n"
+			"Time spent in CPU/GPU-bound processing. This is the time when the CPU/GPU is the bottleneck.\n"
+			"This includes the total computation time spent in the main process, and in possible cluster job processes.\n"
+			"This is the default mode for all commands.\n"
+			"\n"
+			"**Job execution**\n"
+			"\n"
+			"Total distributed job execution time.\n"
+			"This value includes Overhead+IO+Computation of all jobs, plus workload manager node reservation, process starting, etc. overhead.\n"
+			"This value does not include time spent in workload manager queue.\n"
+			"\n"
+			"**Job queuing**\n"
+			"\n"
+			"Total distributed job queuing time.\n"
+			"This is the total time all jobs have spent in the workload manager queue, waiting to be executed.\n"
+			"\n"
+			"**Total job waiting**\n"
+			"\n"
+			"Total time from submitting the first distributed job until all of them are found to be finished.\n"
+			"This is the total time spent in the job execution process, from submission to jobs until all of them are done.\n"
+			"\n"
+			"**Write preparation**\n"
+			"\n"
+			"Time spent in preparing for writing output images (e.g. NN5 write preparation).\n"
+			"This is the total time spent in the submitting process while preparing writing of output images.\n"
+			"\n"
+			"**Total write finalization waiting**\n"
+			"\n"
+			"Time spent in write finalization jobs, including queuing (e.g. NN5 write finalization jobs).\n"
+			"This is the total time spent in the submitting process, from submission of write finalization jobs until all of them are done.\n";
 	}
 
 	class TimingCommand : virtual public Command, public TrivialDistributable
@@ -19,7 +68,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		TimingCommand() : Command("timing", "Prints information about wall-clock time taken by various sub-processes. Running this command causes all delayed commands to be executed.",
+		TimingCommand() : Command("timing", string("Prints information about wall-clock time taken by various sub-processes. Running this command causes all delayed commands to be executed. ") + timeClassHelp(),
 			{
 			},
 			helpSeeAlso())
@@ -40,7 +89,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		SaveTimingCommand() : Command("savetiming", "Saves timing information to a file. Running this command causes all delayed commands to be executed.",
+		SaveTimingCommand() : Command("savetiming", string("Saves timing information to a file. Running this command causes all delayed commands to be executed. ") + timeClassHelp(),
 			{
 				CommandArgument<string>(ParameterDirection::In, "file name", "The name and path of the file where the information is to be saved.")
 			},

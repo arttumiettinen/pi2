@@ -34,4 +34,4 @@ Output format. Can be text for textual output or rst for ReStructuredText output
 See also
 --------
 
-:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`, :ref:`savetiming`

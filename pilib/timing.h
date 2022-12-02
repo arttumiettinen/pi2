@@ -29,7 +29,7 @@ namespace pilib
 
 		/**
 		Total distributed job execution time.
-		This value includes Overhead+IO+Computation of all jobs, plus workload manager job starting overhead, time spent in starting pi2 process etc.
+		This value includes Overhead+IO+Computation of all jobs, plus workload manager node reservation, process starting, etc. overhead.
 		This value does not include time spent in workload manager queue.
 		*/
 		JobExecution,
