@@ -36,7 +36,9 @@ namespace pilib
 		CommandList::add<ReadSequenceCommand>();
 		CommandList::add<ReadVolCommand>();
 		CommandList::add<WaitReturnCommand>();
+
 		CommandList::add<TimingCommand>();
+		CommandList::add<SaveTimingCommand>();
 
 		CommandList::add<MapRawCommand>();
 		CommandList::add<MapRaw2Command>();
@@ -596,7 +598,13 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 	void TimingCommand::run(vector<ParamVariant>& args) const
 	{
-		cout << Timing::toString() << endl;
+		cout << GlobalTimer::results().toString() << endl;
+	}
+
+	void SaveTimingCommand::run(vector<ParamVariant>& args) const
+	{
+		string fname = pop<string>(args);
+		GlobalTimer::results().toFile(fname);
 	}
 
 	void ListCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

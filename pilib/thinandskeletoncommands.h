@@ -316,9 +316,13 @@ namespace pilib
 			itl2::internals::traceLineSkeletonBlocks(in, pOrig, storeAllEdgePoints, smoothingSigma, maxDisplacement, nets, Vec3sc(origin), threadCount);
 
 			// Write all networks to the output file
-			std::cout << "Writing " << nets.size() << " graphs to " << filename << std::endl;
-			for (const Network& net : nets)
-				net.write(filename, true);
+			{
+				TimingFlag flag(TimeClass::IO);
+
+				std::cout << "Writing " << nets.size() << " graphs to " << filename << std::endl;
+				for (const Network& net : nets)
+					net.write(filename, true);
+			}
 
 			// Combine what we can combine now as here we have the original image still available for updated area measurements.
 			// NOTE: This should not matter as traceLineSkeletonBlocks has the same pOrig data available during tracing.
@@ -422,15 +426,19 @@ namespace pilib
 
 			// Load the data files and combine all the graphs
 			vector<Network> nets;
-			for (size_t n = 0; n < outputCount; n++)
 			{
-				vector<Network> subnets;
-				string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
+				TimingFlag flag(TimeClass::IO);
+	
+				for (size_t n = 0; n < outputCount; n++)
+				{
+					vector<Network> subnets;
+					string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
 
-				std::cout << "Reading " << fname << std::endl;
-				Network::read(fname, subnets);
-				//std::cout << "Read " << subnets.size() << " subgraphs." << std::endl;
-				nets.insert(nets.end(), subnets.begin(), subnets.end());
+					std::cout << "Reading " << fname << std::endl;
+					Network::read(fname, subnets);
+					//std::cout << "Read " << subnets.size() << " subgraphs." << std::endl;
+					nets.insert(nets.end(), subnets.begin(), subnets.end());
+				}
 			}
 
 			std::cout << "Reading done." << std::endl;
@@ -448,10 +456,14 @@ namespace pilib
 			Image<int32_t> pointsLocal;
 			fullnet.toImage(verticesLocal, edgesLocal, &measurementsLocal, &pointsLocal);
 
-			raw::writed(verticesLocal, verticesFilename);
-			raw::writed(edgesLocal, edgesFilename);
-			raw::writed(measurementsLocal, measurementsFilename);
-			raw::writed(pointsLocal, pointsFilename);
+			{
+				TimingFlag flag(TimeClass::IO);
+
+				raw::writed(verticesLocal, verticesFilename);
+				raw::writed(edgesLocal, edgesFilename);
+				raw::writed(measurementsLocal, measurementsFilename);
+				raw::writed(pointsLocal, pointsFilename);
+			}
 		}
 	};
 
@@ -541,10 +553,13 @@ namespace pilib
 				vertices, edges, measurements, points);
 
 			std::cout << "Deleting temporary files..." << std::endl;
-			for (size_t n = 0; n < output.size(); n++)
 			{
-				string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
-				fs::remove(fname);
+				TimingFlag flag(TimeClass::IO);
+				for (size_t n = 0; n < output.size(); n++)
+				{
+					string fname = tempFilename + "_" + itl2::toString(n) + ".dat";
+					fs::remove(fname);
+				}
 			}
 
 			return vector<string>();
@@ -879,6 +894,8 @@ namespace pilib
 
 		void writeVtk(const Image<float32_t>& points, const Image<uint64_t>& lines, const string& filename, const string& pointDataNames = "", const Image<float32_t>* pointData = nullptr, const string& lineDataNames = "", Image<float32_t>* lineData = nullptr) const
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			if (lines.pixelCount() < 1)
 				throw ITLException("Empty image passed as lines.");
 

@@ -6,6 +6,7 @@
 #include "io/io.h"
 #include "commandlist.h"
 #include "standardhelp.h"
+#include "timing.h"
 
 #include <vector>
 
@@ -33,6 +34,8 @@ namespace pilib
 
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 			Image<uint8_t>& result = *pop<Image<uint8_t>*>(args);
 
@@ -60,6 +63,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 			Image<uint32_t>& results = *pop<Image<uint32_t>*>(args);
 
@@ -96,6 +101,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 
 			Vec3c dims;
@@ -130,6 +137,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 
 			Vec3c dims;
@@ -164,6 +173,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 
 			Vec3c dims;
@@ -234,6 +245,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -258,6 +271,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -285,6 +300,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -308,6 +325,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -332,6 +351,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			Vec3c chunkSize = pop<Vec3c>(args);
@@ -343,6 +364,8 @@ namespace pilib
 
 		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			distributor.flush();
 
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
@@ -433,6 +456,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			bool append = pop<bool>(args);
@@ -444,6 +469,8 @@ namespace pilib
 
 		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			distributor.flush();
 
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
@@ -542,6 +569,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<uint8_t>& r = *pop<Image<uint8_t>* >(args);
 			Image<uint8_t>& g = *pop<Image<uint8_t>* >(args);
 			Image<uint8_t>& b = *pop<Image<uint8_t>* >(args);
@@ -569,6 +598,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			sequence::write(in, fname);
@@ -576,6 +607,8 @@ namespace pilib
 
 		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			distributor.flush();
 
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
@@ -723,6 +756,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -839,6 +874,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -959,6 +996,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -1009,6 +1048,8 @@ namespace pilib
 
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 			Vec3c chunkIndex = pop<Vec3c>(args);
 

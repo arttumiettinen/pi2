@@ -187,6 +187,21 @@ namespace pilib
 	protected:
 
 		/**
+		Identifies this running instance from others so that multiple SLURM distributor instances can run from the same working folder.
+		*/
+		std::string myName;
+
+		/**
+		Creates unique name for a job.
+		*/
+		std::string makeJobName(size_t jobIndex) const;
+
+		/**
+		Creates name for job timing output file.
+		*/
+		std::string Distributor::makeTimingName(size_t jobIndex) const;
+
+		/**
 		Queue time and execution time (wall-clock) for each submitted job.
 		*/
 		std::vector<std::tuple<double, double>> jobTiming;

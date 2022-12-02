@@ -35,6 +35,28 @@ namespace pilib
 		}
 	};
 
+	class SaveTimingCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		SaveTimingCommand() : Command("savetiming", "Saves timing information to a file. Running this command causes all delayed commands to be executed.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "file name", "The name and path of the file where the information is to be saved.")
+			},
+			helpSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override;
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
+	};
+
 	
 	class HelloCommand : virtual public Command, public TrivialDistributable
 	{

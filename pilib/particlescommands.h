@@ -272,10 +272,14 @@ namespace pilib
 			// Write outputs to the output file
 			filename += "_" + itl2::toString(index);
 
-			writeText(filename + "_results.txt", results.str());
-			writeList(filename + "_incomplete_particles.dat", incompleteParticles);
-			writeList(filename + "_large_edge_points.dat", largeEdgePoints);
-			itl2::writeListFile(filename + "_edge_z.dat", edgeZ);
+			{
+				TimingFlag flag(TimeClass::IO);
+
+				writeText(filename + "_results.txt", results.str());
+				writeList(filename + "_incomplete_particles.dat", incompleteParticles);
+				writeList(filename + "_large_edge_points.dat", largeEdgePoints);
+				itl2::writeListFile(filename + "_edge_z.dat", edgeZ);
+			}
 		}
 
 		using Distributable::runDistributed;
@@ -481,10 +485,14 @@ namespace pilib
 
 				std::cout << "Reading results of job " << n << std::endl;
 
-				results.readText(resultsName);
-				readList(incompleteName, incompleteParticles);
-				readList(largeName, largeEdgePoints);
-				itl2::readListFile(edgezName, edgeZ);
+				{
+					TimingFlag flag(TimeClass::IO);
+
+					results.readText(resultsName);
+					readList(incompleteName, incompleteParticles);
+					readList(largeName, largeEdgePoints);
+					itl2::readListFile(edgezName, edgeZ);
+				}
 
 				itl2::internals::combineParticleAnalysisResults(analyzers, results, largeEdgePoints, incompleteParticles, volumeLimit, connectivity, edgeZ, n < output.size() - 1);
 			}
@@ -518,10 +526,14 @@ namespace pilib
 				string largeName = tempFilename + "_" + itl2::toString(n) + "_large_edge_points.dat";
 				string edgezName = tempFilename + "_" + itl2::toString(n) + "_edge_z.dat";
 				
-				fs::remove(resultsName);
-				fs::remove(incompleteName);
-				fs::remove(largeName);
-				fs::remove(edgezName);
+				{
+					TimingFlag flag(TimeClass::IO);
+
+					fs::remove(resultsName);
+					fs::remove(incompleteName);
+					fs::remove(largeName);
+					fs::remove(edgezName);
+				}
 			}
 
 			// Convert results to output image.

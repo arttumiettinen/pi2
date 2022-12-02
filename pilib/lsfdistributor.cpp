@@ -8,8 +8,6 @@
 #include <algorithm>
 #include "filesystem.h"
 
-#include <random>
-
 using namespace itl2;
 using namespace std;
 
@@ -19,12 +17,6 @@ namespace pilib
 
 	LSFDistributor::LSFDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
-		// Create unique name for this distributor
-		std::random_device dev;
-		std::mt19937 rng(dev());
-		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
-		myName = itl2::toString(dist(rng));
-
 		fs::path configPath = getConfigDirectory() / "lsf_config.txt";
 
 		//cout << "Reading settings from " << configPath << endl;
@@ -83,11 +75,6 @@ namespace pilib
 		//}
 
 		cout << "Memory per node in the LSF cluster: " << bytesToString((double)allowedMem) << endl;
-	}
-
-	string LSFDistributor::makeJobName(size_t jobIndex) const
-	{
-		return "pi2-" + itl2::toString<size_t>(jobIndex) + "-" + myName;
 	}
 
 	string LSFDistributor::makeInputName(size_t jobIndex) const

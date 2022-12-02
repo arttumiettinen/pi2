@@ -14,6 +14,7 @@
 #include <tuple>
 #include "filesystem.h"
 #include "timing.h"
+#include <random>
 
 using namespace std;
 
@@ -146,6 +147,12 @@ namespace pilib
 		showSubmittedScripts(false),
 		allowDelaying(false)
 	{
+		// Create unique name for this distributor
+		std::random_device dev;
+		std::mt19937 rng(dev());
+		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
+		myName = itl2::toString(dist(rng));
+
 		configDir = findPi2().remove_filename();
 		piCommand = "\"" + findPi2().string() + "\"";
 	}
@@ -160,6 +167,16 @@ namespace pilib
 		chunkSize(reader.get<Vec3c>("chunk_size", nn5::DEFAULT_CHUNK_SIZE));
 		maxSubmittedJobCount = reader.get<size_t>("max_parallel_submit_count", 0);
 		promoteThreshold = reader.get<size_t>("promote_threshold", 3);
+	}
+
+	string Distributor::makeJobName(size_t jobIndex) const
+	{
+		return "pi2-" + itl2::toString<size_t>(jobIndex) + "-" + myName;
+	}
+
+	string Distributor::makeTimingName(size_t jobIndex) const
+	{
+		return "./job-timing/" + makeJobName(jobIndex) + "-timing.txt";
 	}
 
 
@@ -1261,8 +1278,7 @@ namespace pilib
 			}
 		}
 
-		Timer timer;
-		timer.start();
+		TimingFlag timingFlag(TimeClass::WritePreparation);
 
 		// Prepare images for concurrent writing
 		map<DistributedImageBase*, vector<nn5::NN5Process>> nn5processes;
@@ -1329,7 +1345,7 @@ namespace pilib
 				cout << "Image " << img->varName() << " has " << unsafeCount << " unsafe chunks." << endl;
 		}
 
-		Timing::Add(TimeClass::WritePreparation, timer.lap());
+		timingFlag.changeMode(TimeClass::WritePreparation);
 
 		// Combine small jobs
 		const string jobStartLine = "------ start of job";
@@ -1367,13 +1383,18 @@ namespace pilib
 		if (combinationRounds > 0)
 			cout << "Small jobs were combined into " << jobsToSubmit.size() << " larger jobs (" << std::fixed << std::setprecision(1) << tasksPerJob << " small jobs per combined job)." << endl;
 
+		timingFlag.changeMode(TimeClass::JobsInclQueuing);
+
 		// Submit jobs
 		jobTiming.clear();
 		jobTiming.reserve(jobsToSubmit.size());
-		for (auto& tup : jobsToSubmit)
+		for(size_t jobIndex = 0; jobIndex < jobsToSubmit.size(); jobIndex++)
 		{
-			string& script = get<0>(tup);
+			const auto& tup = jobsToSubmit[jobIndex];
+			string script = get<0>(tup);
 			JobType type = get<1>(tup);
+
+			script += "\nsavetiming('" + makeTimingName(jobIndex) + "');";
 
 			if (showSubmittedScripts)
 			{
@@ -1397,18 +1418,23 @@ namespace pilib
 			cout << "Waiting for jobs to finish..." << endl;
 			lastOutput = waitForJobs();
 
-			Timing::Add(TimeClass::JobsInclQueuing, timer.lap());
-
-			// Calculate job timing
-			for (auto tuple : jobTiming)
+			// Calculate job timing. Part of the data comes from this process (the submitting process) and another part from the job process.
+			for (size_t jobIndex = 0; jobIndex < jobsToSubmit.size(); jobIndex++)
 			{
+				const auto& tuple = jobTiming[jobIndex];
 				double queueing = get<0>(tuple);
 				double execution = get<1>(tuple);
 				if(queueing >= 0)
-					Timing::Add(TimeClass::JobQueueing, queueing);
+					GlobalTimer::results().add(TimeClass::JobQueueing, queueing);
 				if(execution >= 0)
-					Timing::Add(TimeClass::JobExecution, execution);
+					GlobalTimer::results().add(TimeClass::JobExecution, execution);
+
+				string timingFile = makeTimingName(jobIndex);
+				if (fs::exists(timingFile))
+					GlobalTimer::results().accumulate(TimingResults::fromFile(timingFile));
 			}
+
+			timingFlag.changeMode(TimeClass::WriteFinalizationInclQueuing);
 
 			// Submit endConcurrentWrite jobs
 			// Limit the number of jobs to reduce queuing latency.
@@ -1462,8 +1488,7 @@ namespace pilib
 				img->writeComplete();
 			}
 
-			Timing::Add(TimeClass::WriteFinalizationInclQueuing, timer.lap());
-
+			timingFlag.changeMode(TimeClass::Overhead);
 
 			if (combinationRounds > 0)
 			{

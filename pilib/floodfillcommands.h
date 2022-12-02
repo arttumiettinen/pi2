@@ -636,8 +636,11 @@ namespace pilib
 
 			// Read seed points (three files: block start z, block end z, start point z)
 			vector<Vec3sc> seeds;
-			readInputFiles(seedsSourcePrefix, blockIndex, seeds);
-
+			{
+				TimingFlag flag(TimeClass::IO);
+				readInputFiles(seedsSourcePrefix, blockIndex, seeds);
+			}
+			
 			// Add possible start points to the seeds list.
 			//if (startPoint.max() >= 0)
 			//	seeds.push_back(Vec3sc(startPoint));
@@ -712,7 +715,9 @@ namespace pilib
 				});
 
 			// Write all 8 seed lists if they are not empty.
-			forAllPixels(newSeeds, [&](coord_t x, coord_t y, coord_t z)
+			{
+				TimingFlag flag(TimeClass::IO);
+				forAllPixels(newSeeds, [&](coord_t x, coord_t y, coord_t z)
 				{
 					std::vector<Vec3sc> seedList = newSeeds(x, y, z);
 					if (seedList.size() > 0)
@@ -721,7 +726,8 @@ namespace pilib
 						writeOutputFile(seedsTargetPrefix + "_from_" + itl2::toString(blockIndex) + "_to_" + itl2::toString(targetBlockIndex) + ".dat", seedList);
 					}
 				});
-
+			}
+			
 		}
 
 		bool isInternal() const override
@@ -943,15 +949,19 @@ namespace pilib
 																				img.dimensions(), Distributor::BLOCK_INDEX3_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() });
 
 				
-				// Delete sources (seedsSourceFilenamePrefix*)
-				auto items = itl2::buildFileList(seedsSourceFilenamePrefix + "_*");
-				for (const string& file : items)
-					itl2::deleteFile(file);
+				{
+					TimingFlag flag(TimeClass::IO);
 
-				// Check if there are any seedsTarget files (seedsTargetFilenamePrefix*)
-				items = itl2::buildFileList(seedsTargetFilenamePrefix + "_*");
-				if (items.size() <= 0)
-					break; // No seeds target files means there are no more seeds to process.
+					// Delete sources (seedsSourceFilenamePrefix*)
+					auto items = itl2::buildFileList(seedsSourceFilenamePrefix + "_*");
+					for (const string& file : items)
+						itl2::deleteFile(file);
+
+					// Check if there are any seedsTarget files (seedsTargetFilenamePrefix*)
+					items = itl2::buildFileList(seedsTargetFilenamePrefix + "_*");
+					if (items.size() <= 0)
+						break; // No seeds target files means there are no more seeds to process.
+				}
 
 				std::swap(seedsSourceFilenamePrefix, seedsTargetFilenamePrefix);
 			}

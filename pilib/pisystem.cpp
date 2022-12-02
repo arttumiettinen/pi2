@@ -7,6 +7,7 @@
 #include "slurmdistributor.h"
 #include "localdistributor.h"
 #include "lsfdistributor.h"
+#include "timing.h"
 
 using namespace std;
 
@@ -787,6 +788,7 @@ namespace pilib
 		if (!isDistributed())
 		{
 			// Normal processing without distribution or anything fancy
+			TimingFlag flag(TimeClass::Computation);
 			cmd->runInternal(this, convertedArgs);
 		}
 		else
@@ -795,6 +797,7 @@ namespace pilib
 			Distributable* dist = dynamic_cast<Distributable*>(cmd);
 			if (dist)
 			{
+				// NOTE: GlobalTimer continues in Overhead mode.
 				dist->runDistributed(*distributor, convertedArgs);
 			}
 			else
@@ -1199,6 +1202,10 @@ namespace pilib
 		if (!running)
 		{
 			running = true;
+
+			// Reset global timer by calling start explicitly.
+			GlobalTimer::start();
+			TimingFlag flag(TimeClass::Overhead);
 
 			while (commandsWaiting.size() > 0)
 			{

@@ -10,6 +10,7 @@
 #include "io/io.h"
 #include "distributedimagestoragetype.h"
 #include "math/aabox.h"
+#include "timing.h"
 
 
 using itl2::Vec3;
@@ -606,6 +607,7 @@ namespace pilib
 
 			if (isSavedToDisk())
 			{
+				TimingFlag flag(TimeClass::IO);
 				itl2::io::read(img, currentReadSource());
 			}
 		}
@@ -617,6 +619,8 @@ namespace pilib
 		{
 			// Flush so that there are no pending writes to this image.
 			DistributedImageBase::flush();
+
+			TimingFlag flag(TimeClass::IO);
 
 			readToNoFlush(img);
 		}
@@ -631,6 +635,8 @@ namespace pilib
 
 			ensureSize(img.dimensions());
 
+			TimingFlag flag(TimeClass::IO);
+			
 			switch (currentWriteTargetType())
 			{
 			case DistributedImageStorageType::NN5:
