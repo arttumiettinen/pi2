@@ -192,6 +192,11 @@ namespace pilib
 		{
 			return mode;
 		}
+
+		/**
+		Erase all timing information and start further timing from scratch.
+		*/
+		static void reset();
 	};
 
 	/**

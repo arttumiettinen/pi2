@@ -33,6 +33,11 @@ namespace pilib
 		tresults.add(GlobalTimer::mode, elapsed);
 	}
 
+	void GlobalTimer::reset()
+	{
+		tresults = TimingResults();
+	}
+
 
 	TimingFlag::TimingFlag(TimeClass mode) :
 		oldMode(GlobalTimer::currentMode())

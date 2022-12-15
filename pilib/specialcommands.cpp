@@ -39,6 +39,7 @@ namespace pilib
 
 		CommandList::add<TimingCommand>();
 		CommandList::add<SaveTimingCommand>();
+		CommandList::add<ResetTimingCommand>();
 
 		CommandList::add<MapRawCommand>();
 		CommandList::add<MapRaw2Command>();
@@ -605,6 +606,11 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	{
 		string fname = pop<string>(args);
 		GlobalTimer::results().toFile(fname);
+	}
+
+	void ResetTimingCommand::run(vector<ParamVariant>& args) const
+	{
+		GlobalTimer::reset();
 	}
 
 	void ListCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

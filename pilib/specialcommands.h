@@ -11,7 +11,7 @@ namespace pilib
 
 	inline std::string helpSeeAlso()
 	{
-		return "help, info, license, echo, print, waitreturn, hello, timing, savetiming";
+		return "help, info, license, echo, print, waitreturn, hello, timing, savetiming, resettiming";
 	}
 
 	inline std::string timeClassHelp()
@@ -92,6 +92,27 @@ namespace pilib
 		SaveTimingCommand() : Command("savetiming", string("Saves timing information to a file. Running this command causes all delayed commands to be executed. ") + timeClassHelp(),
 			{
 				CommandArgument<string>(ParameterDirection::In, "file name", "The name and path of the file where the information is to be saved.")
+			},
+			helpSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override;
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
+	};
+
+	class ResetTimingCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		ResetTimingCommand() : Command("resettiming", string("Zeroes all existing timing data."),
+			{
 			},
 			helpSeeAlso())
 		{
