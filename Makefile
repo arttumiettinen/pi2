@@ -50,9 +50,9 @@ else ifeq ($(CONFIG), release-nocl)
 endif
 
 
-.PHONY: all clean itl2 pilib pi2 itl2tests pi2cs pi2csWinFormsTest
+.PHONY: all clean itl2 pilib pi2 itl2tests
 
-all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
+all: itl2tests itl2 pilib pi2
 	
 	# Construct full distribution to bin-linux64/$(CONFIG) folder
 	mkdir -p bin-linux64/$(CONFIG)
@@ -70,6 +70,7 @@ all: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
 	cp ./example_config/*.cmd ./bin-linux64/$(CONFIG)/
 	cp ./LICENSE.txt ./bin-linux64/$(CONFIG)/
 
+	# TODO: Remove this if it is not necessary.
 	# For ease of use of .NET builds using pi2, construct full distribution also to
 	# "x64/$(CS_CONFIG)" folder. That way the .NET builds can be done with msbuild as usual,
 	# without worrying about final platform-specific output folder name.
@@ -97,10 +98,3 @@ itl2tests: itl2
 else
 itl2tests: ;
 endif
-
-pi2cs: pilib
-	$(MAKE) -C $@ $(MAKECMDGOALS)
-
-pi2csWinFormsTest: pi2cs
-	$(MAKE) -C $@ $(MAKECMDGOALS)
-
