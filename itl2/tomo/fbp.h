@@ -460,75 +460,85 @@ namespace itl2
 		/**
 		Convert reconstruction settings to string.
 		*/
-		friend std::ostream& operator<<(std::ostream& stream, const RecSettings& s);
+		//friend std::ostream& operator<<(std::ostream& stream, const RecSettings& s);
+
+		/**
+		Save the reconstruction settings to an image metadata object.
+		*/
+		void toMeta(ImageMetadata& meta) const;
+
+		/**
+		Create RecSettings object from image metadata object.
+		*/
+		static RecSettings fromMeta(ImageMetadata& meta);
 	};
 
     
 
-	/**
-	Create reconstruction settings from string similar to what << operator outputs.
-	*/
-	template<>
-	inline RecSettings fromString(const string& strOrig)
-	{
-		// This makes default settings
-		RecSettings s;
+	///**
+	//Create reconstruction settings from string similar to what << operator outputs.
+	//*/
+	//template<>
+	//inline RecSettings fromString(const string& strOrig)
+	//{
+	//	// This makes default settings
+	//	RecSettings s;
 
-		ImageMetadata id;
-		id.readFromString(strOrig);
+	//	ImageMetadata id;
+	//	id.readFromString(strOrig);
 
-		s.sourceToRA = id.get("source_to_ra", s.sourceToRA);
-		s.rotationDirection = id.get("rotation_direction", s.rotationDirection);
-		s.bhc = id.get("bhc", s.bhc);
-		s.reconstructAs180degScan = id.get("rec_as_180_deg_scan", s.reconstructAs180degScan);
-		s.centralAngleFor180degScan = id.get("central_angle", s.centralAngleFor180degScan);
-		s.heuristicSinogramWindowingParameter = id.get("hswp", s.heuristicSinogramWindowingParameter);
-		s.rotation = id.get("rotation", s.rotation);
-		s.roiCenter = id.get("roi_center", s.roiCenter);
-		s.roiSize = id.get("roi_size", s.roiSize);
-		s.cropSize = id.get("crop_size", s.cropSize);
-		s.binning = id.get("binning", s.binning);
-		s.removeDeadPixels = id.get("remove_dead_pixels", s.removeDeadPixels);
-		s.deadPixelMedianRadius = id.get("dead_pixel_median_radius", s.deadPixelMedianRadius);
-		s.deadPixelStdDevCount = id.get("dead_pixel_std_dev_count", s.deadPixelStdDevCount);
-		s.centerShift = id.get("center_shift", s.centerShift);
-		s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
-		s.cameraRotation = id.get("camera_rotation", s.cameraRotation);
-		s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
-		s.angleTweak = id.get("angle_tweak", s.angleTweak);
-		s.padType = id.get("pad_type", s.padType);
-		s.padFraction = id.get("pad_size", s.padFraction);
-		s.filterType = id.get("filter_type", s.filterType);
-		s.filterCutOff = id.get("filter_cut_off", s.filterCutOff);
-		s.phaseMode = id.get("phase_mode", s.phaseMode);
-		s.phasePadType = id.get("phase_pad_type", s.phasePadType);
-		s.phasePadFraction = id.get("phase_pad_size", s.phasePadFraction);
-		s.objectCameraDistance = id.get("propagation_distance", s.objectCameraDistance);
-		s.delta = id.get("delta", s.delta);
-		s.mu = id.get("mu", s.mu);
-		s.dynMin = id.get("range_min", s.dynMin);
-		s.dynMax = id.get("range_max", s.dynMax);
-		s.shiftScaling = id.get("shift_scale", s.shiftScaling);
-		s.useShifts = id.get("use_shifts", s.useShifts);
+	//	s.sourceToRA = id.get("source_to_ra", s.sourceToRA);
+	//	s.rotationDirection = id.get("rotation_direction", s.rotationDirection);
+	//	s.bhc = id.get("bhc", s.bhc);
+	//	s.reconstructAs180degScan = id.get("rec_as_180_deg_scan", s.reconstructAs180degScan);
+	//	s.centralAngleFor180degScan = id.get("central_angle", s.centralAngleFor180degScan);
+	//	s.heuristicSinogramWindowingParameter = id.get("hswp", s.heuristicSinogramWindowingParameter);
+	//	s.rotation = id.get("rotation", s.rotation);
+	//	s.roiCenter = id.get("roi_center", s.roiCenter);
+	//	s.roiSize = id.get("roi_size", s.roiSize);
+	//	s.cropSize = id.get("crop_size", s.cropSize);
+	//	s.binning = id.get("binning", s.binning);
+	//	s.removeDeadPixels = id.get("remove_dead_pixels", s.removeDeadPixels);
+	//	s.deadPixelMedianRadius = id.get("dead_pixel_median_radius", s.deadPixelMedianRadius);
+	//	s.deadPixelStdDevCount = id.get("dead_pixel_std_dev_count", s.deadPixelStdDevCount);
+	//	s.centerShift = id.get("center_shift", s.centerShift);
+	//	s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
+	//	s.cameraRotation = id.get("camera_rotation", s.cameraRotation);
+	//	s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
+	//	s.angleTweak = id.get("angle_tweak", s.angleTweak);
+	//	s.padType = id.get("pad_type", s.padType);
+	//	s.padFraction = id.get("pad_size", s.padFraction);
+	//	s.filterType = id.get("filter_type", s.filterType);
+	//	s.filterCutOff = id.get("filter_cut_off", s.filterCutOff);
+	//	s.phaseMode = id.get("phase_mode", s.phaseMode);
+	//	s.phasePadType = id.get("phase_pad_type", s.phasePadType);
+	//	s.phasePadFraction = id.get("phase_pad_size", s.phasePadFraction);
+	//	s.objectCameraDistance = id.get("propagation_distance", s.objectCameraDistance);
+	//	s.delta = id.get("delta", s.delta);
+	//	s.mu = id.get("mu", s.mu);
+	//	s.dynMin = id.get("range_min", s.dynMin);
+	//	s.dynMax = id.get("range_max", s.dynMax);
+	//	s.shiftScaling = id.get("shift_scale", s.shiftScaling);
+	//	s.useShifts = id.get("use_shifts", s.useShifts);
 
-        std::vector<float32_t> emptyV1;
-		s.angles = id.getList<float32_t>("angles", emptyV1);
-        std::vector<Vec2f> emptyV2;
-		std::vector<Vec3f> emptyV3;
-		s.sampleShifts = id.getList<Vec3f>("sample_shifts", emptyV3);
-		s.sourceShifts = id.getList<Vec3f>("source_shifts", emptyV3);
-		s.cameraShifts = id.getList<Vec3f>("camera_shifts", emptyV3);
-		s.rotationAxisShifts = id.getList<Vec3f>("rotation_axis_shifts", emptyV3);
+ //       std::vector<float32_t> emptyV1;
+	//	s.angles = id.getList<float32_t>("angles", emptyV1);
+ //       std::vector<Vec2f> emptyV2;
+	//	std::vector<Vec3f> emptyV3;
+	//	s.sampleShifts = id.getList<Vec3f>("sample_shifts", emptyV3);
+	//	s.sourceShifts = id.getList<Vec3f>("source_shifts", emptyV3);
+	//	s.cameraShifts = id.getList<Vec3f>("camera_shifts", emptyV3);
+	//	s.rotationAxisShifts = id.getList<Vec3f>("rotation_axis_shifts", emptyV3);
 
-		// If there are no shifts supplied, set all shifts to zero.
-		if (s.sampleShifts.size() <= 0)
-		{
-			while (s.sampleShifts.size() < s.angles.size())
-				s.sampleShifts.push_back(Vec3f(0, 0, 0));
-		}
+	//	// If there are no shifts supplied, set all shifts to zero.
+	//	if (s.sampleShifts.size() <= 0)
+	//	{
+	//		while (s.sampleShifts.size() < s.angles.size())
+	//			s.sampleShifts.push_back(Vec3f(0, 0, 0));
+	//	}
 
-		return s;
-	}
+	//	return s;
+	//}
 	
 
 

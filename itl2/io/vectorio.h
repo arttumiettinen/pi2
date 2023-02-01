@@ -36,10 +36,6 @@ namespace itl2
 
 		for (size_t n = 0; n < s; n++)
 		{
-			//Vec3sc val;
-			//in.read((char*)&val.x, sizeof(uint32_t));
-			//in.read((char*)&val.y, sizeof(uint32_t));
-			//in.read((char*)&val.z, sizeof(uint32_t));
 			item_t val;
 			readItem(in, val);
 
@@ -80,9 +76,6 @@ namespace itl2
 		for (size_t n = 0; n < v.size(); n++)
 		{
 			writeItem(out, v[n]);
-			//out.write((char*)&v[n].x, sizeof(int32_t));
-			//out.write((char*)&v[n].y, sizeof(int32_t));
-			//out.write((char*)&v[n].z, sizeof(int32_t));
 		}
 	}
 

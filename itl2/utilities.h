@@ -342,54 +342,6 @@ namespace itl2
 		throw ITLException(errstr.str());
 	}
 
-	///**
-	//Convert from string to vector
-	//*/
-	//template<>
-	//inline Vec2f fromString(const string& value)
-	//{
-	//	try
-	//	{
-	//		if (value.length() < 1)
-	//			throw ITLException("Empty string.");
-
-	//		if (value[0] == '[')
-	//		{
-	//			// Vector notation [1, 2]
-	//			std::stringstream parts;
-	//			parts << value;
-	//			std::string sx, sy;
-	//			std::getline(parts, sx, '[');
-	//			std::getline(parts, sx, ',');
-	//			std::getline(parts, sy, ']');
-
-	//			trim(sx);
-	//			trim(sy);
-
-	//			Vec2f result;
-	//			result.x = itl2::fromString<float32_t>(sx);
-	//			result.y = itl2::fromString<float32_t>(sy);
-	//			return result;
-	//		}
-	//		else
-	//		{
-	//			// Single number
-
-	//			float32_t val = itl2::fromString<float32_t>(value);
-
-	//			Vec2f result;
-	//			result.x = val;
-	//			result.y = val;
-	//			return result;
-	//		}
-	//	}
-	//	catch (ITLException)
-	//	{
-	//		ostringstream errstr;
-	//		errstr << "Value '" << value << "' is not a valid 2-component vector.";
-	//		throw ITLException(errstr.str());
-	//	}
-	//}
 
 	namespace internals
 	{
@@ -624,6 +576,22 @@ namespace itl2
 		if (x)
 			return "True";
 		return "False";
+	}
+
+	template<typename T>
+	std::string toString(const std::vector<T>& value)
+	{
+		ostringstream str;
+		str << "[";
+		for (size_t n = 0; n < value.size(); n++)
+		{
+			// TODO: Escape ,
+			str << value[n];
+			if (n < value.size() - 1)
+				str << ", ";
+		}
+		str << "]";
+		return str.str();
 	}
 
 

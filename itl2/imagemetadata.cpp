@@ -207,14 +207,7 @@ namespace itl2
 		else if (value.size() > 1)
 		{
 			// Vector
-			str << "[";
-			for(size_t n = 0; n < value.size(); n++)
-			{
-				str << value[n];
-				if(n < value.size() - 1)
-					str << ", ";
-			}
-			str << "]";
+			str << toString(value);
 		}
 		else
 		{

@@ -5,31 +5,45 @@
 
 namespace pilib
 {
+	inline std::string fbpSeeAlso()
+	{
+		return "fbppreprocess, fbp, deadpixelremoval, createfbpfilter, defaultrecsettings";
+	}
+
+	class DefaultRecSettingsCommand : public OneImageInPlaceCommand<float32_t>
+	{
+	protected:
+		friend class CommandList;
+
+		DefaultRecSettingsCommand() : OneImageInPlaceCommand<float32_t>("defaultrecsettings", "Writes default reconstruction settings to image metadata.",
+			{ },
+			fbpSeeAlso())
+		{
+
+		}
+	public:
+		virtual void run(Image<float32_t>& in, std::vector<ParamVariant>& args) const override
+		{
+			RecSettings s;
+			s.toMeta(in.metadata);
+		}
+	};
 
 	class FBPPreprocessCommand : public TwoImageInputOutputCommand<float32_t>
 	{
 	protected:
 		friend class CommandList;
 
-		FBPPreprocessCommand() : TwoImageInputOutputCommand<float32_t>("fbppreprocess", "Performs preprocessing of transmission projection data for filtered backprojection. This command is experimental and may change in the near future.",
-			{
-				CommandArgument<std::string>(ParameterDirection::In, "reconstruction settings", "Settings for the reconstruction. If this string contains only a name of an existing file, the settings are read from that file. Otherwise, the string is treated as contents of the settings file.", "")
-			},
-			"fbp")
+		FBPPreprocessCommand() : TwoImageInputOutputCommand<float32_t>("fbppreprocess", "Performs preprocessing of transmission projection data for filtered backprojection. Reconstruction settings are read from the metadata of the input image. This command is experimental and may change in the near future.",
+			{ },
+			fbpSeeAlso())
 		{
 		}
 
 	public:
 		virtual void run(Image<float32_t>& in, Image<float32_t>& out, std::vector<ParamVariant>& args) const override
 		{
-			std::string settings = pop<std::string>(args);
-
-			if (fs::exists(settings))
-			{
-				settings = readText(settings, true);
-			}
-			
-			RecSettings sets = fromString<RecSettings>(settings);
+			RecSettings sets = RecSettings::fromMeta(in.metadata);
 
 			fbpPreprocess(in, out, sets);
 		}
@@ -56,7 +70,7 @@ namespace pilib
 				CommandArgument<size_t>(ParameterDirection::In, "radius", "Median filtering radius.", 1),
 				CommandArgument<double>(ParameterDirection::In, "magnitude", "Magnitude parameter $M$.", 10.0)
 			},
-			"fbppreprocess, fbp")
+			fbpSeeAlso())
 		{
 		}
 
@@ -75,28 +89,20 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		FBPCommand() : TwoImageInputOutputCommand<float32_t>("fbp", "Performs filtered backprojection of data for which fbppreprocess has been called. This command is experimental and may change in the near future.",
+		FBPCommand() : TwoImageInputOutputCommand<float32_t>("fbp", "Performs filtered backprojection of data for which fbppreprocess has been called. Reconstruction settings are read from the metadata of the input image. This command is experimental and may change in the near future.",
 			{
-				CommandArgument<std::string>(ParameterDirection::In, "reconstruction settings", "Settings for the reconstruction. If this string contains only a name of an existing file, the settings are read from that file. Otherwise, the string is treated as contents of the settings file.", ""),
 				CommandArgument<bool>(ParameterDirection::In, "use GPU", "Set to true to allow processing on a GPU.", true)
 			},
-			"fbppreprocess")
+			fbpSeeAlso())
 		{
 		}
 
 	public:
 		virtual void run(Image<float32_t>& in, Image<float32_t>& out, std::vector<ParamVariant>& args) const override
 		{
-			std::string settings = pop<std::string>(args);
 			bool useGPU = pop<bool>(args);
 			
-
-			if (fs::exists(settings))
-			{
-				settings = readText(settings, true);
-			}
-
-			RecSettings sets = fromString<RecSettings>(settings);
+			RecSettings sets = RecSettings::fromMeta(in.metadata);
 
 			if (useGPU)
 			{
@@ -125,7 +131,8 @@ namespace pilib
 					CommandArgument<size_t>(ParameterDirection::In, "size", "Size of the filter. This corresponds to the padded image size in FBP.", 100),
 					CommandArgument<std::string>(ParameterDirection::In, "filter type", "Type of the filter. Supported values are Ideal ramp, Ramp, Shepp-Logan, Cosine, Hamming, Hann, Blackman, Parze.", "Ramp"),
 					CommandArgument<double>(ParameterDirection::In, "cut-off", "Filter cut-off frequency, 0 corresponds to DC and 1 corresponds to Nyquist.", 1.0f)
-				}
+				},
+				fbpSeeAlso()
 			)
 		{
 		}
