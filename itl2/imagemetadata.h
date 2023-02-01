@@ -54,7 +54,7 @@ namespace itl2
 			return dl;
 		}
 
-		void setStr(const std::string& key, const std::string& value, coord_t i, coord_t j);
+		void setStr(const std::string& key, const std::string& value, coord_t column, coord_t row);
 
 		static std::string listToString(const std::vector<std::string>& list)
 		{
@@ -63,28 +63,29 @@ namespace itl2
 			return str.str();
 		}
 
-		std::string getStr(const std::string& k, coord_t i, coord_t j) const
+		std::string getStr(const std::string& k, coord_t column, coord_t row) const
 		{
 			const auto& mat = getStringMatrix(k);
-			if (i >= 0)
+			if (row >= 0)
 			{
-				if (j >= 0)
+				if (column >= 0)
 				{
 					// Retrieve single element
-					return mat[i][j];
+					return mat[row][column];
 				}
 				else
 				{
-					// Retrieve whole row i as string
-					return listToString(mat[i]);
+					// Retrieve whole row row as string
+					return listToString(mat[row]);
 				}
 			}
 			else
 			{
-				if (j >= 0)
+				if (column >= 0)
 				{
 					// Retrieve one column
-					throw ITLException("Unimplemented: Retrieval of a column of data from image metadata object.");
+					// row < 0 => Assume there is only one row.
+					return mat[0][column];
 				}
 				else
 				{
@@ -155,28 +156,71 @@ namespace itl2
 		}
 
 		/**
-		Sets value corresponding to a key.
+		Sets value of an item corresponding to a key.
+		If row and column are negative, assumes the item is a single item (not a list or a matrix).
+		If row is negative and column is non-negative, assumes the item is a list (not a matrix) and sets one list element.
+		If both row and column are given, assumes the item is a matrix, and sets one matrix element.
+		If column is -1, and value is in list format "[a, b, c, ...]", replaces the entire column with the given data.
 		*/
-		template<typename T> void set(const std::string& key, T value, coord_t i = -1, coord_t j = -1)
+		template<typename T> void set(const std::string& key, T value, coord_t column = -1, coord_t row = -1)
 		{
-			setStr(key, toString(value), i, j);
+			setStr(key, toString(value), column, row);
 		}
 
+		/**
+		Retrieves count of rows in a metadata item.
+		Returns -1 if the key is not found.
+		*/
+		coord_t rowCount(const std::string& key) const
+		{
+			if (!contains(key))
+				return -1;
+			return (coord_t)data.size();
+		}
+
+		/**
+		Retrieves count of columns in a specific row of a metadata item.
+		Returns -1 if the key is not found or if row value is invalid.
+		Row value -1 refers to the first row.
+		*/
+		coord_t columnCount(const std::string& key, coord_t row) const
+		{
+			if (!contains(key))
+				return -1;
+
+			const auto& mat = getStringMatrix(key);
+
+			// If row is given, test that it is less than matrix size.
+			if (row >= 0 && (size_t)row >= mat.size())
+				return -1;
+			
+			// If row is 'nothing', return first row info.
+			if (row < 0)
+				row = 0;
+
+			return mat[row].size();
+		}
 		
 		/**
 		Retrieves data with given key.
 		If the key does not exist, returns the given default value.
-		@param i, j Coordinates of the element to get in the data matrix. Specify -1 to retrieve whole row or column.
+		@param row, column Coordinates of the element to get in the data matrix. Specify -1 to retrieve whole row or column.
 		*/
-		template<typename T> T get(const std::string& key, T def, coord_t i = -1, coord_t j = -1) const
+		template<typename T> T get(const std::string& key, T def, coord_t column = -1, coord_t row = -1) const
 		{
-			if (!contains(key))
+			coord_t cc = columnCount(key, row);
+			if (cc < 0)
+				return def; // Here, data does not contain key, or row is invalid.
+
+			if (column >= 0 && // Column specified?
+				column >= cc)  // Column invalid?
 				return def;
-			return fromString<T>(getStr(key, i, j));
+
+			return fromString<T>(getStr(key, column, row));
 		}
 
 		/**
-		Gets item as list of double values.
+		Gets item as a list of values.
 		*/
 		template<typename T> std::vector<T> getList(const std::string& key, std::vector<T>& def) const
 		{
