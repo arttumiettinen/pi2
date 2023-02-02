@@ -581,7 +581,7 @@ namespace itl2
 	template<typename T>
 	std::string toString(const std::vector<T>& value)
 	{
-		ostringstream str;
+		std::ostringstream str;
 		str << "[";
 		for (size_t n = 0; n < value.size(); n++)
 		{
