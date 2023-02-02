@@ -635,5 +635,8 @@
     <ClCompile Include="io\itljpeg.cpp">
       <Filter>Source Files\io</Filter>
     </ClCompile>
+    <ClCompile Include="utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

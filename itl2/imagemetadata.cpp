@@ -28,16 +28,28 @@ namespace itl2
 			// Multi-element item
 			trimStart(value, "[");
 			trimEnd(value, "]");
-			auto list = split(value, true, ',');
-			for (string s : list)
+
+			
+			while (value.length() > 0)
 			{
+				char dummy;
+				string s = getToken(value, ",", dummy);
 				trim(s);
+				undoEscape(s);
 				l.push_back(s);
 			}
+
+			//auto list = split(value, true, ',');
+			//for (string s : list)
+			//{
+			//	trim(s);
+			//	l.push_back(s);
+			//}
 		}
 		else
 		{
 			// Single-element item
+			undoEscape(value);
 			l.push_back(value);
 		}
 
@@ -78,21 +90,31 @@ namespace itl2
 			{
 				arrayName = "";
 			}
-			// TODO: To support equals signs in values, test here if '=' occurs before '"' or the end of the line.
-			// TODO: To support multi-line string values, test if the string starts and ends with '"', and if yes, the line should go to current array.
 			else if (itl2::contains(line, "="))
 			{
 				// This is normal key = value
 
 				arrayName = "";
 
-				vector<string> parts = itl2::split(line, true, '=', false);
-				if (parts.size() == 1)
-					addSingleItem(parts[0], "");
-				else if (parts.size() == 2)
-					addSingleItem(parts[0], parts[1]);
+				//vector<string> parts = itl2::split(line, true, '=', false);
+				//if (parts.size() == 1)
+				//	addSingleItem(parts[0], "");
+				//else if (parts.size() == 2)
+				//	addSingleItem(parts[0], parts[1]);
+				//else
+				//	throw ITLException(string("Line contains multiple values: ") + line);
+
+				size_t pos = line.find('=');
+				if (pos == string::npos)
+				{
+					addSingleItem(line, "");
+				}
 				else
-					throw ITLException(string("Line contains multiple values: ") + line);
+				{
+					string key = line.substr(0, pos - 1);
+					string value = line.substr(pos + 1);
+					addSingleItem(key, value);
+				}
 			}
 			else
 			{
@@ -202,7 +224,9 @@ namespace itl2
 		if (value.size() == 1)
 		{
 			// Single value
-			str << value[0];
+			string esc = value[0];
+			escape(esc);
+			str << esc;
 		}
 		else if (value.size() > 1)
 		{
@@ -273,7 +297,7 @@ namespace itl2
 			testAssert(data.get<Vec3c>("single_vec3", Vec3c(0, 0, 0)) == Vec3c(1, 2, 3), "single vec3");
 			testAssert(data.get<int>("single_vec3", -100, 3) == -100, "column overflow");
 			testAssert(data.get<int>("single_vec3", -100, 0, 1) == -100, "row overflow");
-			testAssert(data.get<string>("string", "") == "test test test", "string");
+			testAssert(data.get<string>("string", "") == "test = test test\n\nsecond line test\nthird line , []]", "string");
 			testAssert(data.get<int>("key1", 0) == 1, "int");
 			testAssert(data.get<double>("pi", 0) == 3.14159265, "double");
 			testAssert(data.get<int>("list", 0, 3) == 4, "list int");
@@ -306,7 +330,7 @@ namespace itl2
 		void imagemetadata()
 		{
 			ImageMetadata data;
-			data.set("string", "test test test");
+			data.set("string", "test = test test\n\nsecond line test\nthird line , []]");
 			data.set("key1", 1);
 			data.set("pi", 3.14159265);
 			data.set("list", 1, 0);
@@ -315,6 +339,9 @@ namespace itl2
 			data.set("list", 4, 3);
 			data.set("list", 5, 4);
 			data.set("single_vec3", Vec3c(1, 2, 3));
+
+			data.set("string list", "two-line\nitem 1", 0);
+			data.set("string list", "two-line\nitem 2", 1);
 
 			data.set("two_vec3", 0, 0);
 			data.set("two_vec3", 1, 1);
@@ -341,8 +368,13 @@ namespace itl2
 				data.set(string("vec2_list2"), Vec2c(vectorElement(listIndex, 0), vectorElement(listIndex, 1)), -1, listIndex);
 			}
 
+
+			cout << "string directly from metadata:" << endl << data.get<string>("string", "") << endl;
+			cout << "string list directly from metadata:" << endl << data.get<string>("string list", "") << endl;
+			cout << "string list item 1 directly from metadata:" << endl << data.get<string>("string list", "", 0) << endl;
+
 			string str = toString(data);
-			cout << str << endl;
+			cout << "toString output: " << endl << str << endl;
 
 			testGetters(data);
 

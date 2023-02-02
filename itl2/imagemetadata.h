@@ -8,7 +8,6 @@
 
 namespace itl2
 {
-	// TODO: Add support for multi-line string values and values that contain equals signs.
 
 	/**
 	Stores image metadata.
@@ -75,7 +74,7 @@ namespace itl2
 				}
 				else
 				{
-					// Retrieve whole row row as string
+					// Retrieve whole row as a string
 					return listToString(mat[row]);
 				}
 			}
@@ -87,9 +86,14 @@ namespace itl2
 					// row < 0 => Assume there is only one row.
 					return mat[0][column];
 				}
+				else if (mat.size() == 1 && mat[0].size() == 1)
+				{
+					// Retrieve the single item
+					return mat[0][0];
+				}
 				else
 				{
-					// Retrieve whole thing
+					// Retrieve whole thing as a parsable string.
 					std::ostringstream str;
 					for (size_t n = 0; n < mat.size(); n++)
 					{

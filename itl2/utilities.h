@@ -578,6 +578,19 @@ namespace itl2
 		return "False";
 	}
 
+	/**
+	Escape characters [],\n\r=
+	*/
+	void escape(std::string& value);
+	
+	/**
+	Undo escapement done using escape method.
+	*/
+	void undoEscape(std::string& value);
+
+	/**
+	Converts vector to string, escapes characters that cannot occur in the output using escape(...) function.
+	*/
 	template<typename T>
 	std::string toString(const std::vector<T>& value)
 	{
@@ -585,8 +598,9 @@ namespace itl2
 		str << "[";
 		for (size_t n = 0; n < value.size(); n++)
 		{
-			// TODO: Escape ,
-			str << value[n];
+			std::string esc = toString(value[n]);
+			escape(esc);
+			str << esc;
 			if (n < value.size() - 1)
 				str << ", ";
 		}
@@ -624,5 +638,10 @@ namespace itl2
 			return itl2::toString(sizeGigas) + " GiB";
 
 		return itl2::toString(sizeTeras) + " TiB";
+	}
+
+	namespace tests
+	{
+		void escapes();
 	}
 }

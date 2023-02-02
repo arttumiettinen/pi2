@@ -213,6 +213,7 @@
     <ClCompile Include="surfacecurvature.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="thickmap.cpp" />
+    <ClCompile Include="utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tomo\fbp.cpp" />
