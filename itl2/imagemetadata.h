@@ -179,7 +179,8 @@ namespace itl2
 		{
 			if (!contains(key))
 				return -1;
-			return (coord_t)data.size();
+			const auto& mat = getStringMatrix(key);
+			return (coord_t)mat.size();
 		}
 
 		/**

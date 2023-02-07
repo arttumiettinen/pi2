@@ -46,6 +46,9 @@ namespace pilib
 
 		CommandList::add<NewValueCommand>();
 		CommandList::add<SetStringCommand>();
+		CommandList::add<SetIntCommand>();
+		CommandList::add<SetRealCommand>();
+		CommandList::add<SetBoolCommand>();
 
 		CommandList::add<NewImageCommand>();
 		CommandList::add<NewImage2Command>();
@@ -638,39 +641,18 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		cout << "Variables:" << endl;
 		cout << "----------" << endl;
 		size_t count = 0;
-		auto v = system->getStringNames();
+		auto v = system->getValueNames();
 		for (const string& name : v)
 		{
 			count++;
-			cout << name << " (string)" << endl;
+			Value* val = system->getValue(name);
+			cout << name << " (" << pilib::toString(val->getType()) << ")" << endl;
 		}
 
 		if (count > 0)
 			cout << "Total " << count << " variables." << endl;
 		else
 			cout << "-- none --" << endl;
-
-		//double totalSize = 0;
-		//auto v = system->getVariableNames();
-		//for (const string& name : v)
-		//{
-		//	ImageBase* img = system->getImageNoThrow(name);
-		//	if (img)
-		//	{
-		//		Vec3c dimensions = img->dimensions();
-		//		size_t pixelSize = img->pixelSize();
-		//		size_t dataSize = img->pixelCount() * pixelSize;
-		//		totalSize += dataSize;
-
-		//		cout << name << ", " << dimensions << ", " << itl2::toString(img->dataType()) << ", " << bytesToString((double)dataSize) << endl;
-		//	}
-		//	else
-		//	{
-		//		cout << name << " (variable)" << endl;
-		//	}
-		//}
-		//if(v.size() > 0)
-		//	cout << "Images occupy total of " << bytesToString(totalSize) << " RAM." << endl;
 
 	}
 
@@ -701,14 +683,32 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		string dts = pop<string>(args);
 		string value = pop<string>(args);
 
+		ValueType type;
 		if (dts == "string")
-		{
-			system->replaceString(name, make_shared<string>(value));
-		}
+			type = ValueType::String;
+		else if (dts == "int" || dts == "integer")
+			type = ValueType::Int;
+		else if (dts == "real" || dts == "float" || dts == "double")
+			type = ValueType::Real;
+		else if (dts == "bool" || dts == "boolean")
+			type = ValueType::Bool;
 		else
-		{
 			throw ITLException(string("Unsupported variable type: ") + dts);
-		}
+
+		shared_ptr<Value> pival = make_shared<Value>(type);
+		
+		if (dts == "string")
+			pival->stringValue = value;
+		else if (dts == "int" || dts == "integer")
+			pival->intValue = fromString<coord_t>(value);
+		else if (dts == "real" || dts == "float" || dts == "double")
+			pival->realValue = fromString<double>(value);
+		else if (dts == "bool" || dts == "boolean")
+			pival->boolValue = fromString<bool>(value);
+		else
+			throw ITLException(string("Unsupported variable type: ") + dts);
+
+		system->replaceValue(name, pival);
 	}
 
 	vector<string> NewValueCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
@@ -730,6 +730,63 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	}
 
 	vector<string> SetStringCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+
+	void SetIntCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		coord_t* name = pop<coord_t*>(args);
+		coord_t value = pop<coord_t>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetIntCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+
+	void SetRealCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		double* name = pop<double*>(args);
+		double value = pop<double>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetRealCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+
+	void SetBoolCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		bool* name = pop<bool*>(args);
+		bool value = pop<bool>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetBoolCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 	{
 		PISystem* system = distributor.getSystem();
 
@@ -1403,7 +1460,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		{
 			system->replaceImage(name, nullptr);
 			system->replaceDistributedImage(name, nullptr);
-			system->replaceString(name, nullptr);
+			system->replaceValue(name, nullptr);
 		}
 		else
 		{
@@ -1412,8 +1469,8 @@ the FAQ for more information on the distribution of modified source versions.)EN
 				system->replaceImage(name, nullptr);
 				system->replaceDistributedImage(name, nullptr);
 			}
-			for (auto name : system->getStringNames())
-				system->replaceString(name, nullptr);
+			for (auto name : system->getValueNames())
+				system->replaceValue(name, nullptr);
 		}
 	}
 

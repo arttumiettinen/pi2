@@ -917,11 +917,11 @@ class Test_basic:
         N = 300
         #positions = pi2.newimage(ImageDataType.FLOAT32, 3, N)
         #pos = positions.get_data()
-        pos = np.zeros([N, 3])
+        pos = np.zeros([3, N])
         for i in range(0, N):
-            pos[i, 0] = random.randint(0, w-2) + 0.5
-            pos[i, 1] = random.randint(0, h-1)
-            pos[i, 2] = random.randint(0, d-1)
+            pos[0, i] = random.randint(0, w-2) + 0.5
+            pos[1, i] = random.randint(0, h-1)
+            pos[2, i] = random.randint(0, d-1)
         #pos = np.array([[34.5, 42, 13]])
 
         # Get pixels at positions (non-distributed)
@@ -945,19 +945,19 @@ class Test_basic:
 
         # Get pixels at positions (through NumPy)
         img = pi2.read(output_file("ramp"))
-        pyimg = img.get_data()
+        pyimg = img.to_numpy()
 
-        N = pos.shape[0]
+        N = pos.shape[1]
         data_numpy = np.zeros(N)
         for i in range(0, N):
-            data_numpy[i] = pyimg[int(pos[i][1] + 0.5), int(pos[i][0] + 0.5), int(pos[i][2] + 0.5)]
+            data_numpy[i] = pyimg[int(pos[0, i] + 0.5), int(pos[1, i] + 0.5), int(pos[2, i] + 0.5)]
 
         self.check_result(np.isclose(data_normal, data_distributed).all(), "get pixel normal != distributed")
         self.check_result(np.isclose(data_normal, data_numpy).all(), "get pixel normal != numpy")
 
         print("point: normal = numpy = distributed")
         for i in range(0, N):
-            print(f"{pos[i]}: {data_normal[i]} = {data_numpy[i]} = {data_distributed[i]}")
+            print(f"{pos[:, i]}: {data_normal[i]} = {data_numpy[i]} = {data_distributed[i]}")
 
 
     def test_get_pixels_multi_job(self):
@@ -1052,7 +1052,7 @@ class Test_basic:
         pi2 = self.pi2
 
         img = pi2.newimage(ImageDataType.UINT8, 1, 1, 1)
-        str = pi2.newstring()
+        str = pi2.newvalue("string")
 
         pi2.setmeta(img, "key1", "value1")
         pi2.setmeta(img, "key2", "value2")
@@ -1089,8 +1089,8 @@ class Test_basic:
         pi2 = self.pi2
 
         img = pi2.newimage(ImageDataType.UINT8, 1, 1, 1)
-        str_key = pi2.newstring()
-        str_value = pi2.newstring("VALUE")
+        str_key = pi2.newvalue("string")
+        str_value = pi2.newvalue("string", "VALUE")
 
         self.check_result(str_key.as_string() == "", "key before doing anything")
         self.check_result(str_value.as_string() == "VALUE", "value before doing anything")
@@ -1274,20 +1274,20 @@ class Test_basic:
 
     def test_floodfill_multiseed_dist_1(self):
         geom_file = self.generate_floodfill_geometry()
-        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [199, 199, 199]], dtype=np.float32), 200], 'img', geom_file, maxmem=4, chunk_size=[100, 100, 100], out_prefix="multiseed")
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [199, 199, 199]], dtype=np.float32).transpose(), 200], 'img', geom_file, maxmem=4, chunk_size=[100, 100, 100], out_prefix="multiseed")
 
     def test_floodfill_multiseed_dist_2(self):
         geom_file = self.generate_floodfill_geometry()
-        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [12, 1, 1]], dtype=np.float32), 200], 'img', geom_file, maxmem=4,  chunk_size=[100, 100, 100], out_prefix="multiseed")
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [12, 1, 1]], dtype=np.float32).transpose(), 200], 'img', geom_file, maxmem=4,  chunk_size=[100, 100, 100], out_prefix="multiseed")
 
 
     def test_floodfill_multiseed_dist_3(self):
         geom_file = self.generate_floodfill_geometry_closed()
-        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [199, 199, 199]], dtype=np.float32), 200], 'img', geom_file, maxmem=4, chunk_size=[100, 100, 100], out_prefix="multiseed_closed")
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [199, 199, 199]], dtype=np.float32).transpose(), 200], 'img', geom_file, maxmem=4, chunk_size=[100, 100, 100], out_prefix="multiseed_closed")
 
     def test_floodfill_multiseed_dist_4(self):
         geom_file = self.generate_floodfill_geometry_closed()
-        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [12, 1, 1]], dtype=np.float32), 200], 'img', geom_file, maxmem=4,  chunk_size=[100, 100, 100], out_prefix="multiseed_closed")
+        self.check_difference_normal_distributed('floodfill', ['img', np.array([[0, 0, 0], [12, 1, 1]], dtype=np.float32).transpose(), 200], 'img', geom_file, maxmem=4,  chunk_size=[100, 100, 100], out_prefix="multiseed_closed")
 
 
     def test_gauss_dist(self):

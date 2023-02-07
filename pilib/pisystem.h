@@ -16,6 +16,8 @@
 #include "distributedimage.h"
 #include "stringutils.h"
 #include "commandlist.h"
+#include "valueobject.h"
+#include "parsedargtype.h"
 
 using namespace itl2;
 
@@ -40,15 +42,15 @@ namespace pilib
 		std::vector<std::shared_ptr<ImageBase>> imageStore;
 
 		/**
-		Maps string variable names to string objects.
+		Maps string variable names to value objects.
 		*/
-		std::map<std::string, std::shared_ptr<std::string>> strings;
+		std::map<std::string, std::shared_ptr<Value>> namedValues;
 
 		/**
 		Temporary store for values so that they don't get deleted during tryConvert calls
 		if another argument overrides previous one.
 		*/
-		std::vector<std::shared_ptr<std::string>> stringStore;
+		std::vector<std::shared_ptr<Value>> namedValueStore;
 
 		/**
 		Maps image variable names to distributed image objects.
@@ -92,8 +94,10 @@ namespace pilib
 		/**
 		Parse line expected to contain function call
 		funcname(param1, param2, param3, ...)
+		The output name will contain "funcname" and
+		args array will contain the arguments as strings, along their expected types.
 		*/
-		static void parseFunctionCall(const std::string& line, std::string& name, std::vector<std::string>& args);
+		static void parseFunctionCall(const std::string& line, std::string& name, std::vector<std::tuple<ParsedArgType, std::string>>& args);
 
 		/**
 		Finds some command of given priority from the given list, and returns count of items with given priority.
@@ -117,7 +121,7 @@ namespace pilib
 		If conversion is not possible, reason string is assigned an explanation of the error.
 		@return 0 if there is no match, 1 if the argument type and parameter type match, and 2 if they match after creation of new images.
 		*/
-		int tryConvert(std::string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, std::string& reason);
+		int tryConvert(std::tuple<ParsedArgType, std::string>& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, std::string& reason);
 
 		/**
 		Checks whether supplied string values can be converted to supplied types.
@@ -125,14 +129,14 @@ namespace pilib
 		If 0 is returned, reason parameter is assigned an explanation why this match does not succeed.
 		@return 0 if there is no match, 1 if there is match, and 2 if there is match after creation of new images.
 		*/
-		int matchParameterTypes(const std::vector<CommandArgumentBase>& types, std::vector<std::string>& values, std::string& reason);
+		int matchParameterTypes(const std::vector<CommandArgumentBase>& types, std::vector<std::tuple<ParsedArgType, std::string>>& values, std::string& reason);
 
 		/**
 		Execute given command with given arguments.
 		Searches the command based on name and arguments, and if found, executes it.
 		If not found, throws ParseException.
 		*/
-		void executeCommand(const std::string& name, std::vector<std::string>& args);
+		void executeCommand(const std::string& name, std::vector<std::tuple<ParsedArgType, std::string>>& args);
 
 		/**
 		Parses one statement of input, e.g. read(img, abc);
@@ -199,9 +203,9 @@ namespace pilib
 		//std::string distributedImageName(const DistributedImageBase* img) const;
 
 		/**
-		Retrieves names of all variables (images and values).
+		Retrieves names of all named values.
 		*/
-		std::vector<std::string> getStringNames() const;
+		std::vector<std::string> getValueNames() const;
 
 		/**
 		Returns names of images in the system.
@@ -257,12 +261,12 @@ namespace pilib
 		/**
 		Retrieve value of variable as string.
 		*/
-		std::string* getString(const std::string& name);
+		Value* getValue(const std::string& name);
 
 		/**
 		Retrieve value of variable as string.
 		*/
-		std::string* getStringNoThrow(const std::string& name);
+		Value* getValueNoThrow(const std::string& name);
 
 		/**
 		Replace image with given image.
@@ -274,8 +278,7 @@ namespace pilib
 		Replace a value with a new one.
 		Replace a value by null pointer to remove it from the system.
 		*/
-		void replaceString(const std::string& name, std::shared_ptr<string> value);
-		//void replaceNamedValue(const std::string& name, ArgumentDataType dt, std::shared_ptr<ParamVariant> newValue);
+		void replaceValue(const std::string& name, std::shared_ptr<Value> value);
 
 		/**
 		Get distributed image having given name.

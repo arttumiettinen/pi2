@@ -180,6 +180,12 @@
     <ClInclude Include="floodfillcommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="valueobject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parsedargtype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">

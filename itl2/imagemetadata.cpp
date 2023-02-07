@@ -368,6 +368,16 @@ namespace itl2
 				data.set(string("vec2_list2"), Vec2c(vectorElement(listIndex, 0), vectorElement(listIndex, 1)), -1, listIndex);
 			}
 
+			testAssert(data.rowCount("string") == 1, "row count");
+			testAssert(data.rowCount("list") == 1, "row count");
+			testAssert(data.rowCount("string list") == 1, "row count");
+			testAssert(data.rowCount("vec2_list") == 3, "row count");
+
+			testAssert(data.columnCount("string", 0) == 1, "column count");
+			testAssert(data.columnCount("list", 0) == 5, "column count");
+			testAssert(data.columnCount("string list", 0) == 2, "column count");
+			testAssert(data.columnCount("vec2_list", 0) == 2, "column count");
+			testAssert(data.columnCount("matrix", 0) == 5, "column count");
 
 			cout << "string directly from metadata:" << endl << data.get<string>("string", "") << endl;
 			cout << "string list directly from metadata:" << endl << data.get<string>("string list", "") << endl;

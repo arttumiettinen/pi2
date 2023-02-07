@@ -315,6 +315,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="metadatacommands.h" />
     <ClInclude Include="othercommands.h" />
     <ClInclude Include="overlapdistributable.h" />
+    <ClInclude Include="parsedargtype.h" />
     <ClInclude Include="parseexception.h" />
     <ClInclude Include="particlescommands.h" />
     <ClInclude Include="pathcommands.h" />
@@ -334,6 +335,7 @@ copy "$(SolutionDir)LICENSE.txt" "$(OutDir)"</Command>
     <ClInclude Include="transformcommands.h" />
     <ClInclude Include="trivialdistributable.h" />
     <ClInclude Include="pilibutilities.h" />
+    <ClInclude Include="valueobject.h" />
     <ClInclude Include="whereami.h" />
     <ClInclude Include="whereamicpp.h" />
   </ItemGroup>

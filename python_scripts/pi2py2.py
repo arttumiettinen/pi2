@@ -5,6 +5,7 @@ import os
 import atexit
 import string
 import random
+import sys
 import numpy as np
 from enum import Enum
 
@@ -310,7 +311,7 @@ class Pi2Value(Pi2Object):
 
     def as_string(self):
         """
-        Retrieves the value of the object as string.
+        Retrieves the value of the object as a string.
         Raises error if the value is not a string.
         """
 
@@ -320,8 +321,39 @@ class Pi2Value(Pi2Object):
         return val.decode('UTF-8')
         
 
+    def as_int(self):
+        """
+        Retrieves the value of the object as an integer.
+        Raises error if the value is not an integer.
+        """
 
+        val = self.pi2.pilib.getInt(self.pi2.piobj, self.name.encode('UTF-8'))
+        if val <= -9223372036854775808:
+            self.pi2.raise_last_error()
+        return val
 
+    def as_real(self):
+        """
+        Retrieves the value of the object as a real number.
+        Raises error if the value is not a real number.
+        """
+
+        val = self.pi2.pilib.getReal(self.pi2.piobj, self.name.encode('UTF-8'))
+        if val <= sys.float_info.min:
+            self.pi2.raise_last_error()
+        return val
+
+    def as_bool(self):
+        """
+        Retrieves the value of the object as a boolean.
+        """
+
+        val = self.pi2.pilib.getBool(self.pi2.piobj, self.name.encode('UTF-8'))
+        if val != 0 and val != 1:
+            self.pi2.raise_last_error()
+        if val != 0:
+            return True
+        return False
 
 
 class Pi2Image(Pi2Object):
@@ -766,6 +798,15 @@ class Pi2:
         self.pilib.getString.restype = c_char_p
         self.pilib.getString.argtypes = [c_void_p, c_char_p]
 
+        self.pilib.getInt.restype = c_int64
+        self.pilib.getInt.argtypes = [c_void_p, c_char_p]
+
+        self.pilib.getReal.restype = c_float
+        self.pilib.getReal.argtypes = [c_void_p, c_char_p]
+
+        self.pilib.getBool.restype = c_uint8
+        self.pilib.getBool.argtypes = [c_void_p, c_char_p]
+
 
         def cleanup(ptr):
             if isinstance(ptr, Pi2):
@@ -970,14 +1011,27 @@ class Pi2:
 
         return Pi2Image(self, image_name)
 
-    def newstring(self, value = ""):
-        """
-        Creates new string object.
-        """
 
+    #def newstring(self, value = ""):
+    #    """
+    #    Creates new string object.
+    #    """
+
+    #    name = self.generate_value_name()
+    #    value = self.make_safe(value.replace("\"", "\\\""))
+    #    self.run_script(f"newvalue({name}, \"string\", \"{value}\")")
+    #    return Pi2Value(self, name)
+
+    def newvalue(self, value_type = "string", value = ""):
+        """
+        Creates new value object.
+        """
+        
         name = self.generate_value_name()
-        value = self.make_safe(value.replace("\"", "\\\""))
-        self.run_script(f"newvalue({name}, \"string\", \"{value}\")")
+        value_type = self.make_safe(value_type)
+        if value is string:
+            value = self.make_safe(value.replace("\"", "\\\""))
+        self.run_script(f"newvalue({name}, \"{value_type}\", \"{value}\")")
         return Pi2Value(self, name)
 
 

@@ -692,6 +692,89 @@ namespace pilib
 
 
 
+	class SetIntCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetIntCommand() : Command("set", "Sets value of an integer variable",
+			{
+				CommandArgument<coord_t>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<coord_t>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+
+	class SetRealCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetRealCommand() : Command("set", "Sets value of an real number variable",
+			{
+				CommandArgument<double>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<double>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+	class SetBoolCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetBoolCommand() : Command("set", "Sets value of an boolean variable",
+			{
+				CommandArgument<bool>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<bool>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+
 	class NewValueCommand : virtual public Command, public Distributable
 	{
 	protected:
@@ -700,7 +783,7 @@ namespace pilib
 		NewValueCommand() : Command("newvalue", "Creates a new variable.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "name", "Name of the variable in the system."),
-				CommandArgument<string>(ParameterDirection::In, "type", "Data type of the variable. Can be 'string'.", "string"),
+				CommandArgument<string>(ParameterDirection::In, "type", "Data type of the variable. Can be 'string', 'int', 'real', or 'bool'.", "string"),
 				CommandArgument<string>(ParameterDirection::In, "value", "Initial value of the variable", ""),
 			},
 			"set, clear",

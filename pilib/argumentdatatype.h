@@ -288,13 +288,17 @@ namespace pilib
 		return pixelSize(t) > 0;
 	}
 
-	typedef std::variant<coord_t,
-		size_t,
+	typedef std::variant<
+		coord_t,
+		coord_t*,
+		size_t,		 // TODO: Is this data type necessary?
 		double,
+		double*,
 		bool,
+		bool*,
 		string,
 		string*,
-		NeighbourhoodType,
+		NeighbourhoodType,	// TODO: Is it possible to handle these data types through simple string conversions?
 		BoundaryCondition,
 		Connectivity,
 		InterpolationMode,
