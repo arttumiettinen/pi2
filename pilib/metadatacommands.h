@@ -89,8 +89,8 @@ namespace pilib
 			{
 				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
 				CommandArgument<string>(ParameterDirection::In, "value", "Value of the metadata item."),
-				CommandArgument<size_t>(ParameterDirection::In, "i", "Row index of the item to set in the data matrix.", 0),
-				CommandArgument<size_t>(ParameterDirection::In, "j", "Column index of the item to set in the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "column", "Column index of the item to set in the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "row", "Row index of the item to set in the data matrix.", 0),
 			},
 			metaSeeAlso())
 		{
@@ -117,8 +117,8 @@ namespace pilib
 			{
 				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
 				CommandArgument<string>(ParameterDirection::Out, "value", "Value of the metadata item is placed into this string."),
-				CommandArgument<size_t>(ParameterDirection::In, "i", "Row index of the item to retrieve from the data matrix.", 0),
-				CommandArgument<size_t>(ParameterDirection::In, "j", "Column index of the item to retrieve from the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "column", "Column index of the item to retrieve from the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "row", "Row index of the item to retrieve from the data matrix.", 0),
 				CommandArgument<string>(ParameterDirection::In, "default", "This value is returned if the key is not found", ""),
 			},
 			metaSeeAlso())
