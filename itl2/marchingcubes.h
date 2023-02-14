@@ -435,7 +435,7 @@ namespace itl2
 	Note that image borders are not handled specially so pixel value outside the image area is assumed
 	to be the same than the value of the nearest pixel inside image area.
 	*/
-	template<typename pixel_t> double getMarchingCubesArea(Image<pixel_t>& object, pixel_t isovalue)
+	template<typename pixel_t> double getMarchingCubesArea(Image<pixel_t>& object, double isovalue)
 	{
 		coord_t width = object.width();
 		coord_t height = object.height();
@@ -516,14 +516,14 @@ namespace itl2
 					}
 					
 					// Change this from "clamp" behavior to "zero outside" behavior if needed.
-					cell.val0 = object(cell.p0);
-					cell.val1 = object(cell.p1);
-					cell.val2 = object(cell.p2);
-					cell.val3 = object(cell.p3);
-					cell.val4 = object(cell.p4);
-					cell.val5 = object(cell.p5);
-					cell.val6 = object(cell.p6);
-					cell.val7 = object(cell.p7);
+					cell.val0 = (double)object(cell.p0);
+					cell.val1 = (double)object(cell.p1);
+					cell.val2 = (double)object(cell.p2);
+					cell.val3 = (double)object(cell.p3);
+					cell.val4 = (double)object(cell.p4);
+					cell.val5 = (double)object(cell.p5);
+					cell.val6 = (double)object(cell.p6);
+					cell.val7 = (double)object(cell.p7);
 					
 					
 					// Determine the index into the edge table which

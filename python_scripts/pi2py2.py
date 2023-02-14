@@ -1160,3 +1160,12 @@ class Pi2:
         temp_image = self.newimage()
         self.run_script(f"stddev({img.name}, {temp_image.name})")
         return temp_image.get_value()
+
+    def surfacearea(self, img, isovalue=1):
+        """
+        Returns the total surface area in an image.
+        """
+        
+        result = self.newvalue("float")
+        self.run_script(f"surfacearea({img.name}, {result.name}, {isovalue})")
+        return result.as_real()

@@ -1699,8 +1699,28 @@ class Test_basic:
         infile = input_file()
         self.check_difference_delaying('delaying_4', f"read(img, {infile}); convert(img, img32, float32); clear(img); cylindricality(img32, 0.5, 0.5); threshold(img32, 5e-4); convert(img32, cyl, uint8); clear(img32);", 'cyl', maxmem=100);
 
+    def test_numpy(self):
+        infile = input_file()
+        pi = self.pi2
+
+        img = pi.read(infile)
+        print(img.dimensions())
+
+        # This should work without exceptions about image dimensions.
+        nparr = img.to_numpy()
+        nparr += 1
+        pi.add(img, nparr)
 
 
+    def test_surfacearea(self):
+        infile = input_file()
+        pi = self.pi2
+
+        img = pi.read(infile)
+        area = pi.surfacearea(img, 160)
+        print(f"Area = {area}")
+
+        assert round(area) == 325995, "Incorrect surface area estimate."
 
 
     ## These commands are not guaranteed to give the same result in distributed and local processing
@@ -1710,10 +1730,13 @@ class Test_basic:
     ##self.check_difference_normal_distributed('surfaceskeleton', ['result'])
     ##self.check_difference_normal_distributed('linethin', ['result'])
     ##self.check_difference_normal_distributed('lineskeleton', ['result'])
-    ## This test involves pretty large dataset
+
+    ## This test involves pretty large dataset, so it is skipped here.
     ##self.check_difference_normal_distributed('scalelabels', ['img', 'result', 4])
+
     ## This test will never succeed as the approximate bilateral filtering algorithm uses random numbers.
     ##self.check_difference_normal_distributed('bilateralfilterapprox', ['img', 'result', 5, 200], 'result') 
+
     ## These two tests do not succeed as the default settings assume the data is spread on the whole 16-bit value range
     ##self.check_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.INTERMODES], 'img', maxmem=5)
     ##self.check_difference_normal_distributed('autothreshold', ['img', AutoThresholdMethod.MINIMUM], 'img', maxmem=5)

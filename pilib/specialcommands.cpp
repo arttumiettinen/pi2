@@ -697,16 +697,19 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 		shared_ptr<Value> pival = make_shared<Value>(type);
 		
-		if (dts == "string")
-			pival->stringValue = value;
-		else if (dts == "int" || dts == "integer")
-			pival->intValue = fromString<coord_t>(value);
-		else if (dts == "real" || dts == "float" || dts == "double")
-			pival->realValue = fromString<double>(value);
-		else if (dts == "bool" || dts == "boolean")
-			pival->boolValue = fromString<bool>(value);
-		else
-			throw ITLException(string("Unsupported variable type: ") + dts);
+		if (value != "")
+		{
+			if (dts == "string")
+				pival->stringValue = value;
+			else if (dts == "int" || dts == "integer")
+				pival->intValue = fromString<coord_t>(value);
+			else if (dts == "real" || dts == "float" || dts == "double")
+				pival->realValue = fromString<double>(value);
+			else if (dts == "bool" || dts == "boolean")
+				pival->boolValue = fromString<bool>(value);
+			else
+				throw ITLException(string("Unsupported variable type: ") + dts);
+		}
 
 		system->replaceValue(name, pival);
 	}

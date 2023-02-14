@@ -15,5 +15,6 @@ namespace pilib
 		ADD_ALL(ListMetadataCommand);
 		ADD_ALL2(CopyMetadataCommand);
 		ADD_ALL(MetaRowCountCommand);
+		ADD_ALL(MetaColumnCountCommand);
 	}
 }

@@ -5,6 +5,7 @@
 
 #include "structure.h"
 #include "surfacecurvature.h"
+#include "marchingcubes.h"
 
 namespace pilib
 {
@@ -563,5 +564,46 @@ namespace pilib
 		{
 			return JobType::Slow;
 		}
+	};
+
+
+
+	template<typename pixel_t> class SurfaceAreaCommand : public Command //OverlapDistributable<Command>
+	{
+	protected:
+		friend class CommandList;
+
+		SurfaceAreaCommand() : Command("surfacearea",
+			R"(Calculates the total surface area between foreground and background in an image.)"
+			R"(Foreground and background are defined by a threshold value (isovalue parameter)."
+			R"(Uses Marching Cubes algorithm.)",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "geometry", "An image containing the input geometry. If using a non-binary image, please specify isovalue parameter, too."),
+				CommandArgument<double>(ParameterDirection::Out, "surface area", "The total surface area will be returned in this value."),
+				CommandArgument<double>(ParameterDirection::In, "isovalue", "Threshold value that separates foreground and background.", 1.0f)
+			},
+			"curvature, derivative")
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& geom = *pop<Image<pixel_t>* >(args);
+			double* area = pop<double*>(args);
+			double isovalue = pop<double>(args);
+
+			*area = itl2::getMarchingCubesArea<pixel_t>(geom, isovalue);
+		}
+
+		//virtual Vec3c calculateOverlap(const std::vector<ParamVariant>& args) const override
+		//{
+		//	return Vec3c(1, 1, 1);
+		//}
+
+		//virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
+		//{
+		//	return JobType::Fast;
+		//}
 	};
 }
