@@ -1,12 +1,12 @@
-.. _license:
+.. _resettiming:
 
-license
-*******
+resettiming
+***********
 
 
-**Syntax:** :code:`license()`
+**Syntax:** :code:`resettiming()`
 
-Displays license of this program and PI system.
+Zeroes all existing timing data.
 
 This command can be used in the distributed processing mode, but it does not participate in distributed processing.
 

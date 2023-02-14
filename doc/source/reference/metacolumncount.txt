@@ -1,20 +1,20 @@
-.. _setmeta:
+.. _metacolumncount:
 
-setmeta
-*******
+metacolumncount
+***************
 
 
-**Syntax:** :code:`setmeta(image, key, value, column, row)`
+**Syntax:** :code:`metacolumncount(image, key, row index, count)`
 
-Sets metadata item of an image.
+Retrieves count of columns in a specific row of a metadata item.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
 Arguments
 ---------
 
-image [input & output]
-~~~~~~~~~~~~~~~~~~~~~~
+image [input]
+~~~~~~~~~~~~~
 
 **Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
 
@@ -27,30 +27,19 @@ key [input]
 
 Name of the metadata item.
 
-value [input]
-~~~~~~~~~~~~~
+row index [input]
+~~~~~~~~~~~~~~~~~
 
-**Data type:** string
+**Data type:** integer
 
-Value of the metadata item.
+Index of the row whose column count is to be returned.
 
-column [input]
+count [output]
 ~~~~~~~~~~~~~~
 
-**Data type:** positive integer
+**Data type:** integer
 
-**Default value:** 0
-
-Column index of the item to set in the data matrix.
-
-row [input]
-~~~~~~~~~~~
-
-**Data type:** positive integer
-
-**Default value:** 0
-
-Row index of the item to set in the data matrix.
+Item count.
 
 See also
 --------

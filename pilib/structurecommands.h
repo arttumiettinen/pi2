@@ -579,7 +579,7 @@ namespace pilib
 			R"(Uses Marching Cubes algorithm.)",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "geometry", "An image containing the input geometry. If using a non-binary image, please specify isovalue parameter, too."),
-				CommandArgument<double>(ParameterDirection::Out, "surface area", "The total surface area will be returned in this value."),
+				CommandArgument<double>(ParameterDirection::Out, "surface area", "The total surface area in square pixels will be returned in this value."),
 				CommandArgument<double>(ParameterDirection::In, "isovalue", "Threshold value that separates foreground and background.", 1.0f)
 			},
 			"curvature, derivative")

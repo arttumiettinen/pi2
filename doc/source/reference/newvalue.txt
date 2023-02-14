@@ -31,7 +31,7 @@ type [input]
 
 **Default value:** string
 
-Data type of the variable. Can be 'string'.
+Data type of the variable. Can be 'string', 'int', 'real', or 'bool'.
 
 value [input]
 ~~~~~~~~~~~~~

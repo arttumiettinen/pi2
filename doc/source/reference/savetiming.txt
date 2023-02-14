@@ -67,4 +67,4 @@ The name and path of the file where the information is to be saved.
 See also
 --------
 
-:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`, :ref:`savetiming`
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`, :ref:`savetiming`, :ref:`resettiming`
