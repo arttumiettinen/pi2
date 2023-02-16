@@ -15,13 +15,13 @@ ifeq ($(UNAME_S),Darwin)
     $(info Detected MacOS)
     CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I/opt/homebrew/include -I/opt/homebrew/opt/opencl-clhpp-headers/include
     LDFLAGS := -fopenmp -L/opt/homebrew/lib/
-	PLATFORM := linux64
+	PLATFORM := macos
 else
     # Linux
     $(info Detected Linux)
     CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
     LDFLAGS := -fopenmp
-	PLATFORM := macos
+	PLATFORM := linux64
 endif
 
 OPENCL_LIB := -lOpenCL
