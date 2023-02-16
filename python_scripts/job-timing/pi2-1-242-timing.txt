@@ -1,3 +1,0 @@
-Overhead: 0.0008845 s
-I/O: 0.0166025 s
-Computation: 0.0135169 s

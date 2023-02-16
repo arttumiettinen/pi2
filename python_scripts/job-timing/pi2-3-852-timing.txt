@@ -1,2 +1,0 @@
-Overhead: 0.0004163 s
-Computation: 0.0065072 s
