@@ -7,15 +7,22 @@ Pi2 can be used from Python scripts and from iPython console.
 In order to initialize Pi2, the package pi2py must be imported and a Pi2 object created::
 	
 	import sys
-	sys.path.append('path/to/pi2/folder')
+	sys.path.append("path/to/pi2/folder")
 	
 	from pi2py2 import *
 	pi = Pi2()
 
+**Note**
+The :code:`'path/to/pi2/folder'` should point to the folder of the compiled binary distribution of pi2, not to the source code repository. Typically, the correct folder will be :code:`pi2/bin-linux64/release-nocl` or something similar, where the first folder is the root of the source code repository.
+
+**Note**
+Windows users should beware that Python uses the standard directory separator backslash \\-character as escape character.
+This means you need to specify the path either using forward slashes "/" (:code:`"path/to/folder"`), double \\-characters (:code:`"path\\to\\folder"`), or a raw string (:code:`r"path\to\folder"`).
+
 If the pi2py2.py file is in the current working directory, then the :code:`sys.path.append` command does not need to be run.
 Pi2py is written for Python versions >= 3.6.
 
-After initalization, all the functionality of Pi2 can be accessed through the Pi2 object::
+After initialization, all the functionality of Pi2 can be accessed through the Pi2 object::
 
 	img = pi.newimage(ImageDataType.UINT8, 100, 100, 100)
 	pi.noise(img, 100, 25)
@@ -27,7 +34,7 @@ Note that there are some small differences between arguments specified in the :r
 There are many Python examples available here: https://github.com/arttumiettinen/pi2/blob/master/python_scripts/pi2py2_examples.py
 Most of them are documented in the :ref:`examples` page.
 
-The Python bindings in the pi2py2.py file are self-generating so they are always up-to-date.
+The Python bindings in the pi2py2.py file are (mostly) self-generating so they are always (mostly) up-to-date.
 
 Pi2 and NumPy
 -------------
