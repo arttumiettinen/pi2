@@ -1,13 +1,26 @@
 
-# NOTE: Use "make" or "make all" to do a normal build.
+# NOTE: This makefile is for Linux and MacOS (Apple silicon) builds.
+#	Use Visual Studio project for Windows build.
+#	Use "make" or "make all" to do a normal build.
 #       Use "make NO_OPENCL=1" or "make all NO_OPENCL=1" to do a build without OpenCL support.
 #       use "make TESTS=1" to build also itl2tests project.
 #		Use "make BOUNDS_CHECK=1" to build a version with image access bounds checking. Usually
 #			bounds checking is not necessary unless tracking bugs etc.
 
 CFLAGS := -O3
-CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
-LDFLAGS := -fopenmp
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    # MacOS, assuming gcc compiler installed with homebrew
+    $(info Detected MacOS)
+    CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I/opt/homebrew/include -I/opt/homebrew/opt/opencl-clhpp-headers/include
+    LDFLAGS := -fopenmp -L/opt/homebrew/lib/
+else
+    # Linux
+    $(info Detected Linux)
+    CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I../fftw-3.3.7-linux64/include
+    LDFLAGS := -fopenmp -L./../fftw-3.3.7-linux64/lib
+endif
 
 OPENCL_LIB := -lOpenCL
 CONFIG := release

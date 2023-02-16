@@ -12,8 +12,22 @@
 #include "generation.h"
 
 #if defined(USE_OPENCL)
-#define __CL_ENABLE_EXCEPTIONS
-#include <CL/cl.hpp>
+
+#if defined(__APPLE__)
+
+	#error OpenCL is not currently supported in MacOS builds. Use NO_OPENCL=1 make argument.
+
+	#define CL_HPP_ENABLE_EXCEPTIONS
+	#define CL_HPP_MINIMUM_OPENCL_VERSION 110
+	#define CL_HPP_TARGET_OPENCL_VERSION 110
+	// TODO: CL version seems to be different in MacOS, size_t template is missing.
+	// TODO: Update code to the newest version in Windows and Linux, and check if
+	// that works in MacOS, too.
+#else
+	#define __CL_ENABLE_EXCEPTIONS
+	#include <CL/cl.hpp>
+#endif
+
 #endif
 
 #include <iostream>
