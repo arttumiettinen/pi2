@@ -15,11 +15,13 @@ ifeq ($(UNAME_S),Darwin)
     $(info Detected MacOS)
     CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I/opt/homebrew/include -I/opt/homebrew/opt/opencl-clhpp-headers/include
     LDFLAGS := -fopenmp -L/opt/homebrew/lib/
+	PLATFORM := linux64
 else
     # Linux
     $(info Detected Linux)
     CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
     LDFLAGS := -fopenmp
+	PLATFORM := macos
 endif
 
 OPENCL_LIB := -lOpenCL
@@ -67,29 +69,29 @@ endif
 
 all: itl2tests itl2 pilib pi2
 	
-	# Construct full distribution to bin-linux64/$(CONFIG) folder
-	mkdir -p bin-linux64/$(CONFIG)
-	cp ./intermediate/$(CONFIG)/pilib/libpi.so ./bin-linux64/$(CONFIG)/
-	cp ./intermediate/$(CONFIG)/pi2/pi2 ./bin-linux64/$(CONFIG)/
-	cp ./x64/$(CONFIG)/*.exe ./bin-linux64/$(CONFIG)/ | true
-	cp ./x64/$(CONFIG)/*.dll ./bin-linux64/$(CONFIG)/ | true
-	cp ./x64/$(CONFIG)/*.exe.config ./bin-linux64/$(CONFIG)/ | true
-	cp ./x64/$(CONFIG)/*.xml ./bin-linux64/$(CONFIG)/ | true
-	cp ./python_scripts/*.py ./bin-linux64/$(CONFIG)/
-	chmod +x ./bin-linux64/$(CONFIG)/*.py
-	cp ./example_config/*.txt ./bin-linux64/$(CONFIG)/
-	cp ./example_config/*.sh ./bin-linux64/$(CONFIG)/
-	chmod +x ./bin-linux64/$(CONFIG)/*.sh
-	cp ./example_config/*.cmd ./bin-linux64/$(CONFIG)/
-	cp ./LICENSE.txt ./bin-linux64/$(CONFIG)/
+	# Construct full distribution to bin-$(PLATFORM)/$(CONFIG) folder
+	mkdir -p bin-$(PLATFORM)/$(CONFIG)
+	cp ./intermediate/$(CONFIG)/pilib/libpi.so ./bin-$(PLATFORM)/$(CONFIG)/
+	cp ./intermediate/$(CONFIG)/pi2/pi2 ./bin-$(PLATFORM)/$(CONFIG)/
+	cp ./x64/$(CONFIG)/*.exe ./bin-$(PLATFORM)/$(CONFIG)/ | true
+	cp ./x64/$(CONFIG)/*.dll ./bin-$(PLATFORM)/$(CONFIG)/ | true
+	cp ./x64/$(CONFIG)/*.exe.config ./bin-$(PLATFORM)/$(CONFIG)/ | true
+	cp ./x64/$(CONFIG)/*.xml ./bin-$(PLATFORM)/$(CONFIG)/ | true
+	cp ./python_scripts/*.py ./bin-$(PLATFORM)/$(CONFIG)/
+	chmod +x ./bin-$(PLATFORM)/$(CONFIG)/*.py
+	cp ./example_config/*.txt ./bin-$(PLATFORM)/$(CONFIG)/
+	cp ./example_config/*.sh ./bin-$(PLATFORM)/$(CONFIG)/
+	chmod +x ./bin-$(PLATFORM)/$(CONFIG)/*.sh
+	cp ./example_config/*.cmd ./bin-$(PLATFORM)/$(CONFIG)/
+	cp ./LICENSE.txt ./bin-$(PLATFORM)/$(CONFIG)/
 
 	# TODO: Remove this if it is not necessary.
 	# For ease of use of .NET builds using pi2, construct full distribution also to
 	# "x64/$(CS_CONFIG)" folder. That way the .NET builds can be done with msbuild as usual,
 	# without worrying about final platform-specific output folder name.
 	mkdir -p "./x64/$(CS_CONFIG)/"
-	cp ./bin-linux64/$(CONFIG)/*.so "./x64/$(CS_CONFIG)/"
-	cp ./bin-linux64/$(CONFIG)/pi2 "./x64/$(CS_CONFIG)/"
+	cp ./bin-$(PLATFORM)/$(CONFIG)/*.so "./x64/$(CS_CONFIG)/"
+	cp ./bin-$(PLATFORM)/$(CONFIG)/pi2 "./x64/$(CS_CONFIG)/"
 	cp ./example_config/*.txt "./x64/$(CS_CONFIG)/"
 
 clean: itl2tests itl2 pilib pi2
@@ -107,7 +109,7 @@ pi2: pilib
 ifdef TESTS
 itl2tests: itl2
 	$(MAKE) -C $@ $(MAKECMDGOALS)
-	cp ./intermediate/$(CONFIG)/itl2tests/itl2testsmain ./bin-linux64/$(CONFIG)/
+	cp ./intermediate/$(CONFIG)/itl2tests/itl2testsmain ./bin-$(PLATFORM)/$(CONFIG)/
 else
 itl2tests: ;
 endif

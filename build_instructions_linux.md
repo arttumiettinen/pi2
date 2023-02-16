@@ -6,7 +6,7 @@ The overall build process is as follows:
 * Make sure that FFTW 3 library, libpng, libtiff, libjpeg, and their development packages are installed.
 * For Python support make sure that Python 3 is installed.
 * For OpenCL support make sure that you have suitable OpenCL development files installed.
-* Run `make` to generate OpenCL-enabled build or `make NO_OPENCL=1` if no OpenCL is desired. The output is placed in folder `bin-linux64`.
+* Run `make` to generate OpenCL-enabled build or `make NO_OPENCL=1` if no OpenCL is desired.
 
 Typically in an Ubuntu-like system you would run something like this:
 ```
@@ -16,7 +16,7 @@ cd pi2
 make NO_OPENCL=1
 ```
 
-You can install the executable and libraries to any standard location, but often it is better to just copy the files along with your project. This guarantees that you know which version of the program you used to generate the results.
+The output is placed in folder `bin-linux64`. You can install the executable and libraries to any standard location, but often it is better to just copy the files along with your project. This guarantees that you know which version of the program you used to generate the results.
 
 **Note**
 The default makefile compiles the programs for the processor architecture of the computer where the compilation is done.
