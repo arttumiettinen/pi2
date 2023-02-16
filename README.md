@@ -36,7 +36,7 @@ Pre-built binaries for Windows and CentOS Linux can be downloaded from the [rele
 
 When building from the source, consider using branch 'experimental'. The most recent, but possibly buggy, changes are there.
 
-Build instructions for different environments can be found in these files:
+Build instructions for different platforms can be found here:
 * [Windows](build_instructions_windows.md)
 * [Linux](build_instructions_linux.md)
 * [MacOS](build_instructions_macos.md)

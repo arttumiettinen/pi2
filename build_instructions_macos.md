@@ -3,7 +3,7 @@ Building pi2 in MacOS
 
 **Note**
 These instructions have been tested on a newly installed MacOS Monterey system running on Apple silicon.
-Macs with Intel processor will require at least changes to homebrew-related installation paths.
+Macs with Intel processor will require at least changes to homebrew-related installation paths, and possibly more.
 
 **Note**
 The instructions below guide through installing `gcc` compiler. The default `clang` compiler does not seem to support OpenMP.
@@ -25,7 +25,7 @@ cd pi2
 git checkout experimental
 ```
 
-Install [homebrew package manager](https://brew.sh) according to its installation instructions.
+Install [homebrew package manager](https://brew.sh) according to its installation instructions (one Terminal command).
 
 Install gcc compiler using Terminal command
 ```
@@ -46,6 +46,9 @@ ln -s c++-12 c++
 ln -s cpp-12 cpp
 cd ~/dev/pi2
 ```
+
+**Note**
+You might need to change the `12` suffix to some other number depending on the current gcc version.
 
 Install the required libraries using commands
 ```
