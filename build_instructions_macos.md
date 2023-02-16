@@ -70,5 +70,5 @@ make NO_OPENCL=1
 
 The output will be placed in sub-folder `bin-macos`.
 
-**NOTE**
+**Note**
 Compiling with OpenCL does not seem to work at the moment.
