@@ -79,7 +79,7 @@ all: itl2tests itl2 pilib pi2
 	cp ./bin-linux64/$(CONFIG)/pi2 "./x64/$(CS_CONFIG)/"
 	cp ./example_config/*.txt "./x64/$(CS_CONFIG)/"
 
-clean: itl2tests itl2 pilib pi2 pi2cs pi2csWinFormsTest
+clean: itl2tests itl2 pilib pi2
 
 itl2:
 	$(MAKE) -C $@ $(MAKECMDGOALS)
