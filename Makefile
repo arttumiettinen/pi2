@@ -18,8 +18,8 @@ ifeq ($(UNAME_S),Darwin)
 else
     # Linux
     $(info Detected Linux)
-    CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I../fftw-3.3.7-linux64/include
-    LDFLAGS := -fopenmp -L./../fftw-3.3.7-linux64/lib
+    CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
+    LDFLAGS := -fopenmp
 endif
 
 OPENCL_LIB := -lOpenCL
