@@ -1,8 +1,13 @@
+Pi2 on a compute cluster
+------------------------
 
-This file contains notes about compiling and running pi2 in various cluster environments.
+Building pi2 to run on a compute cluster is largely the same process than building for a single workstation.
+Please see build instructions for the operating system the cluster is running (typically [Linux](build_instructions_linux.md)).
 
-NOTE: Typically the modules mentioned below must be loaded when compiling AND
-when running the compiled code!
+This file contains further notes about compiling and running pi2 in various cluster environments.
+
+**Note**
+Typically the modules mentioned below must be loaded when compiling AND when running the compiled code!
 
 
 

@@ -36,42 +36,11 @@ Pre-built binaries for Windows and CentOS Linux can be downloaded from the [rele
 
 When building from the source, consider using branch 'experimental'. The most recent, but possibly buggy, changes are there.
 
-### Linux
-
-The overall build process is as follows:
-* Make sure that gcc 8.4.0 or newer is installed. Often you also need to install build-essential or corresponding package.
-* Make sure that FFTW 3 library and its development packages are installed, or place its source to fftw-3.3.7-src folder and run build_again.sh.
-* Make sure that libpng and libtiff libraries and their development packages are installed.
-* For Python support make sure that Python 3 is installed.
-* For OpenCL support make sure that you have suitable OpenCL development files installed.
-* Run "make" to generate OpenCL-enabled build or "make NO_OPENCL=1" if no OpenCL should be used. The output is placed in folder bin-linux64.
-
-Typically in an Ubuntu-like system you would run something like this:
-```
-sudo apt install build-essential libfftw3-dev libpng-dev libtiff-dev libjpeg-dev 
-git clone https://github.com/arttumiettinen/pi2.git
-cd pi2
-make NO_OPENCL=1
-```
-
-You can install the executable and libraries to any standard location, but often it is better to just copy the files along with your project. This guarantees that you know which version of the program you used to generate the results.
-
-NOTE: The default makefile compiles the programs for the processor type of the computer where the compilation is done. E.g. in heterogeneous clusters not all nodes might support the same instruction set.
-In those cases you will get an 'Illegal instruction'-runtime error. To fix the problem, please determine suitable value for gcc march parameter (https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#x86-Options) and enter that into the CXXFLAGS in the main makefile.
-
-
-### Windows
-
-* FFTW, libpng, zlib, libtiff, and libjpeg are required. It's easiest to download all the dependencies from the binary download page, see above. Either use pre-built binaries and place them to folders fftw-3.3.5-dll64, libpng-1.6.34, zlib-1.2.11, tiff-4.0.10, and jpeg-9e, or build them from sources using default Release Library x64 build settings. In particular, libtiff must be built with nmake from x64 Developer Command Prompt using command
-```
-[path-to-base-folder]\tiff-4.0.5> nmake /f makefile.vc
-```
-Before building edit nmake.opt file and change OPTFLAGS value /MD and /MDd to /MT and /MTd, for debug and release builds, respectively.
-* Build everything in itl2.sln solution file, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available. The output is placed to the x64 folder.
-
-### Cluster environments
-
-Please see Linux build instructions above, and cluster-specific notes in the file [cluster_info.md](cluster_info.md).
+Build instructions for different environments can be found in these files:
+* [Windows](build_instructions_windows.md)
+* [Linux](build_instructions_linux.md)
+* [MacOS](build_instructions_macos.md)
+* [Compute clusters](cluster_instructions.md)
 
 
 ## License

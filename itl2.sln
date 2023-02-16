@@ -24,8 +24,11 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "python_scripts", "python_sc
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CA616BFE-3881-423D-9002-07CE74B909E6}"
 	ProjectSection(SolutionItems) = preProject
-		cluster_info.md = cluster_info.md
+		build_instructions_linux.md = build_instructions_linux.md
+		build_instructions_macos.md = build_instructions_macos.md
+		build_instructions_windows.md = build_instructions_windows.md
 		LICENSE.txt = LICENSE.txt
+		cluster_instructions.md = cluster_instructions.md
 		example_config\local_config.txt = example_config\local_config.txt
 		example_config\lsf_config.txt = example_config\lsf_config.txt
 		README.md = README.md
