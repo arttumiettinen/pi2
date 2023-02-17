@@ -50,7 +50,7 @@ After finding the surface, the example demonstrates how to visualize it.
 		# Now find the surface.
 		# We will stop at gray level 100 and perform 60 iterations
 		# with surface tension 1.0.
-		pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, vis, img.get_height() / 2, 900)
+		pi.findsurface(img, hmap, 100, Direction.DOWN, 1.0, 60, 1, vis, img.height() / 2, 900)
 
 		# Save the result surface
 		pi.writeraw(hmap, output_file('findsurface_height_map'))
