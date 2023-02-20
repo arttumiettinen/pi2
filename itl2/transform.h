@@ -926,6 +926,53 @@ namespace itl2
 
 	}
 
+
+	/**
+	Convert image from cartesian coordinates to cylindrical coordinates.
+	For 2D image, converts from cartesian coordinates to polar coordinates.
+	@param input Input image.
+	@param output Output image. The size of the output must be set to the desired image size.
+	The x coordinate of the output image corresponds to r;
+	y corresponds to azimuthal angle such that y=0 equals azimuthal=0, and y=height equals 2pi;
+	z coordinate is the same coordinate than in the input image (but accounts for the position of the origin given in the inCenter parameter).
+	@param inCenter Origin of the cylindrical coordinates in the input image.
+	@param interpolate Interpolator object.
+	@param showProgressIndicator Flag to indicate whether progress info should be shown.
+	*/
+	template<typename pixel_t> void cartesianToCylindrical(
+		Image<pixel_t>& input,
+		Image<pixel_t>& output,
+		const Vec3f& inCenter,
+		const Interpolator<pixel_t, pixel_t>& interpolate = LinearInterpolator<pixel_t, pixel_t>(BoundaryCondition::Zero),
+		bool showProgressIndicator = true)
+	{
+		// In the output image
+		// x == r
+		// y == azimuthal angle such that y = 0 corresponds to 0, and y = max corresponds to 2 pi
+		// z == z (unchanged)
+
+		forAllPixels(output, [&](coord_t x, coord_t y, coord_t z)
+			{
+				// Convert from output image (x, y, z) to cylindrical coordinates (r, azimuthal, z).
+				double r = (double)x;
+				double azimuthal = (double)y / output.height() * 2 * PI;
+
+				// Convert cylindrical coordinates to cartesian coordinates.
+				Vec3f p = pixelRound<Vec3f>(cylindricalToCartesian(r, azimuthal, (double)z));
+
+				// Add center point translation.
+				p += inCenter;
+
+				// Interpolate value from the input image.
+				pixel_t inval = interpolate(input, p);
+
+				// Assign to output image.
+				output(x, y, z) = inval;
+			},
+			showProgressIndicator);
+	}
+
+
 	namespace tests
 	{
 		void scale();
@@ -937,6 +984,7 @@ namespace itl2
 		void rotate();
 		void reslice();
 		void crop();
+		void cylindricalConversion();
 	}
 
 }

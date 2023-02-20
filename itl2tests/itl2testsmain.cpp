@@ -236,10 +236,11 @@ int main()
 	//test(itl2::tests::pathopening2d, "Path opening 2D");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
-	test(itl2::tests::imagemetadata, "image metadata");
+	//test(itl2::tests::imagemetadata, "image metadata");
 
 	//test(itl2::tests::pointsToDeformed, "points to deformed");
 	
+	test(itl2::tests::cylindricalConversion, "cylindrical coordinates");
 
 	//test(itl2::tests::eval, "evaluation of string expressions");
 

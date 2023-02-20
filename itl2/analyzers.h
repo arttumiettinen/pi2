@@ -1132,7 +1132,7 @@ namespace itl2
 	{
 		inline int isnotalnum(int ch)
 		{
-			return !isalnum(ch);
+			return isalnum(ch) == 0;
 		}
 
 		/**

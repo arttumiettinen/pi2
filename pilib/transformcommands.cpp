@@ -20,6 +20,7 @@ namespace pilib
 		ADD_ALL(GenericTransformCommand);
 		ADD_ALL(TranslateCommand);
 		ADD_ALL(Copy2Command);
+		ADD_REAL(CartesianToCylindricalCommand);
 	}
 
 }
