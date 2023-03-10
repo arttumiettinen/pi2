@@ -7,6 +7,7 @@ namespace pilib
 	void addOtherCommands()
 	{
 		ADD_REAL(BlockMatchCommand);
+		ADD_REAL(BlockMatchNoDiskCommand);
 		ADD_REAL(BlockMatchMultiCommand);
 		CommandList::add<PointsToDeformedCommand>();
 		CommandList::add<BlockMatchPartialLoadCommand>(); // Only one as this command determines data type itself
