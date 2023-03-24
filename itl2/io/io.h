@@ -23,6 +23,29 @@ namespace itl2
 				const std::string& nrrdReason,
 				const std::string& pcrReason,
 				const std::string& nn5Reason,
+				const std::string& lz4Reason,
+				const std::string& dicomReason)
+			{
+				return std::string() +
+					"raw: " + rawReason + "\n" +
+					"tiff: " + tiffReason + "\n" +
+					"sequence: " + sequenceReason + "\n" +
+					"vol: " + volReason + "\n" +
+					"nrrd: " + nrrdReason + "\n" +
+					"pcr: " + pcrReason + "\n" +
+					"nn5: " + nn5Reason + "\n" +
+					"lz4raw: " + lz4Reason + "\n" +
+					"DICOM: " + dicomReason;
+			}
+
+			inline std::string combineReasonsNoDICOM(
+				const std::string& rawReason,
+				const std::string& tiffReason,
+				const std::string& sequenceReason,
+				const std::string& volReason,
+				const std::string& nrrdReason,
+				const std::string& pcrReason,
+				const std::string& nn5Reason,
 				const std::string& lz4Reason)
 			{
 				return std::string() +
@@ -31,8 +54,8 @@ namespace itl2
 					"sequence: " + sequenceReason + "\n" +
 					"vol: " + volReason + "\n" +
 					"nrrd: " + nrrdReason + "\n" +
-					"pcr: " + pcrReason + "\n" + 
-					"nn5: " + nn5Reason + "\n" + 
+					"pcr: " + pcrReason + "\n" +
+					"nn5: " + nn5Reason + "\n" +
 					"lz4raw: " + lz4Reason;
 			}
 		}
@@ -46,7 +69,7 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dt;
 			
-			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, lz4Reason;
+			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, lz4Reason, dicomReason;
 			if (vol::getInfo(filename, dimensions, dt, volReason))
 			{
 				vol::read(img, filename);
@@ -79,10 +102,14 @@ namespace itl2
 			{
 				lz4::read(img, filename);
 			}
+			else if (dicom::getInfo(filename, dimensions, dt, dicomReason))
+			{
+				dicom::read(img, filename);
+			}
 			else
 			{
 				throw ITLException(std::string("Unsupported file type, file not found, or cannot be read: ") + filename + "\n" +
-					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason));
+					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason, dicomReason));
 			}
 		}
 
@@ -136,10 +163,11 @@ namespace itl2
 			{
 				lz4::readBlock(img, filename, blockStart);
 			}
+			// TODO: DICOM read block
 			else
 			{
 				throw ITLException(std::string("Unsupported file type, file not found, or cannot be read: ") + filename + "\n" +
-					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason));
+					internals::combineReasonsNoDICOM(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason));
 			}
 		}
 

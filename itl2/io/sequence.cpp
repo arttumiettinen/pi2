@@ -41,6 +41,18 @@ namespace itl2
 				if (jpeg::getInfo(filename, width, height, dataType, reason))
 					return true;
 
+				// DICOM
+				if (dicom::getInfo(filename, dimensions, dataType, reason))
+				{
+					width = dimensions.x;
+					height = dimensions.y;
+					if (dimensions.z == 1)
+						return true;
+
+					reason = "The sequence contains 3D DICOM files.";
+					return false;
+				}
+
 				reason = "Sequence slices could not be determined to be in any supported file format.";
 				return false;
 			}

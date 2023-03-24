@@ -5,6 +5,7 @@
 #include "io/itlpng.h"
 #include "io/itltiff.h"
 #include "io/itljpeg.h"
+#include "io/itldicom.h"
 #include "utilities.h"
 #include "ompatomic.h"
 
@@ -38,6 +39,8 @@ namespace itl2
 					tiff::read2D(image, filename, z, false);
 				else if (endsWithIgnoreCase(filename, ".jpg") || endsWithIgnoreCase(filename, ".jpeg"))
 					jpeg::read(image, filename, z);
+				else if (endsWithIgnoreCase(filename, ".dcm"))
+					dicom::read2D(image, filename, z, false);
 				else
 					throw ITLException(std::string("Unsupported sequence input file format (") + filename + ").");
 			}

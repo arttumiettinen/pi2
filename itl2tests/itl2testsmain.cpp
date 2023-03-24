@@ -10,6 +10,7 @@
 #include "io/itltiff.h"
 #include "io/nrrd.h"
 #include "io/pcr.h"
+#include "io/itldicom.h"
 #include "sphere.h"
 #include "testutils.h"
 #include "io/itlpng.h"
@@ -88,6 +89,7 @@ int main()
 	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
 	//test(itl2::pcr::tests::read, "PCR read");
+	test(itl2::dicom::tests::read, "DICOM read");
 	
 	//test(itl2::sequence::tests::singleImages, "Single images as sequences");
 	//test(itl2::sequence::tests::match, "Matching");
@@ -240,7 +242,7 @@ int main()
 
 	//test(itl2::tests::pointsToDeformed, "points to deformed");
 	
-	test(itl2::tests::cylindricalConversion, "cylindrical coordinates");
+	//test(itl2::tests::cylindricalConversion, "cylindrical coordinates");
 
 	//test(itl2::tests::eval, "evaluation of string expressions");
 
