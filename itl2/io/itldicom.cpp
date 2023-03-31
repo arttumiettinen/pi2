@@ -237,14 +237,22 @@ namespace itl2
 				int samplesPerPixel = 0;
 				while (decodingTags)
 				{
+					if (!in)
+					{
+						reason = "Unexpected end of file.";
+						return false;
+					}
+
 					int elementLength;
 					int tag = getNextTag(in, bigEndianTransferSyntax, littleEndian, oddLocations, elementLength);
 					uint64_t location = in.tellg();
 					if ((location & 1) != 0) // DICOM tags must be at even locations
 						oddLocations = true;
 
+					//cout << tag << ": " << elementLength << endl;
+
 					//if (inSequence && !acquisitionSequence) {
-					//	addInfo(tag, null);
+					//	addInfo(tag, elementLength, null);
 					//	continue;
 					//}
 
@@ -256,7 +264,7 @@ namespace itl2
 					{
 						case TRANSFER_SYNTAX_UID:
 							s = getString(in, elementLength);
-							//addInfo(tag, s);
+							//addInfo(tag, elementLength, s);
 							if (contains(s, "1.2.4") || contains(s, "1.2.5"))
 							{
 								reason = "Cannot open compressed DICOM images. Transfer Syntax UID = " + s;
@@ -267,44 +275,44 @@ namespace itl2
 							break;
 						case MODALITY:
 							modality = getString(in, elementLength);
-							//addInfo(tag, modality);
+							//addInfo(tag, elementLength, modality);
 							break;
 						case NUMBER_OF_FRAMES:
 							s = getString(in, elementLength);
-							//addInfo(tag, s);
+							//addInfo(tag, elementLength, s);
 							frames = s2d(s);
 							if (frames > 1.0)
 								dimensions.z = (coord_t)frames;
 							break;
 						case SAMPLES_PER_PIXEL:
 							samplesPerPixel = getShort(in, littleEndian);
-							//addInfo(tag, samplesPerPixel);
+							//addInfo(tag, elementLength, samplesPerPixel);
 							break;
 						case PHOTOMETRIC_INTERPRETATION:
 							photoInterpretation = getString(in, elementLength);
-							//addInfo(tag, photoInterpretation);
+							//addInfo(tag, elementLength, photoInterpretation);
 							break;
 						case PLANAR_CONFIGURATION:
 							planarConfiguration = getShort(in, littleEndian);
-							//addInfo(tag, planarConfiguration);
+							//addInfo(tag, elementLength, planarConfiguration);
 							break;
 						case ROWS:
 							dimensions.y = getShort(in, littleEndian);
-							//addInfo(tag, fi.height);
+							//addInfo(tag, elementLength, dimensions.y);
 							break;
 						case COLUMNS:
 							dimensions.x = getShort(in, littleEndian);
-							//addInfo(tag, fi.width);
+							//addInfo(tag, elementLength, dimensions.x);
 							break;
 						case IMAGER_PIXEL_SPACING: case PIXEL_SPACING:
 							s = getString(in, elementLength);
 							//getSpatialScale(fi, scale);
-							//addInfo(tag, scale);
+							//addInfo(tag, elementLength, s);
 							break;
 						case SLICE_THICKNESS: case SLICE_SPACING:
 							spacing = getString(in, elementLength);
 							//fi.pixelDepth = s2d(spacing);
-							//addInfo(tag, spacing);
+							//addInfo(tag, elementLength, spacing);
 							break;
 						case BITS_ALLOCATED:
 							bitsAllocated = getShort(in, littleEndian);
@@ -313,7 +321,7 @@ namespace itl2
 							else if (bitsAllocated == 32)
 								dataType = ImageDataType::UInt32;
 							pixelSizeBytes = bitsAllocated / 8;
-							//addInfo(tag, bitsAllocated);
+							//addInfo(tag, elementLength, bitsAllocated);
 							break;
 						case PIXEL_REPRESENTATION:
 							pixelRepresentation = getShort(in, littleEndian);
@@ -321,46 +329,46 @@ namespace itl2
 								dataType = ImageDataType::Int16;
 								isSigned = true;
 							}
-							//addInfo(tag, pixelRepresentation);
+							//addInfo(tag, elementLength, pixelRepresentation);
 							break;
 						case WINDOW_CENTER:
 							center = getString(in, elementLength);
 							//int index = center.indexOf('\\');
 							//if (index != -1) center = center.substring(index + 1);
 							//windowCenter = s2d(center);
-							//addInfo(tag, center);
+							//addInfo(tag, elementLength, center);
 							break;
 						case WINDOW_WIDTH:
 							width = getString(in, elementLength);
 							//index = width.indexOf('\\');
 							//if (index != -1) width = width.substring(index + 1);
 							//windowWidth = s2d(width);
-							//addInfo(tag, width);
+							//addInfo(tag, elementLength, width);
 							break;
 						case RESCALE_INTERCEPT:
 							intercept = getString(in, elementLength);
 							//rescaleIntercept = s2d(intercept);
-							//addInfo(tag, intercept);
+							//addInfo(tag, elementLength, intercept);
 							break;
 						case RESCALE_SLOPE:
 							slop = getString(in, elementLength);
 							//rescaleSlope = s2d(slop);
-							//addInfo(tag, slop);
+							//addInfo(tag, elementLength, slop);
 							break;
 						case RED_PALETTE:
 							//fi.reds =
 							getLut(in, elementLength, littleEndian);
-							//addInfo(tag, elementLength / 2);
+							//addInfo(tag, elementLength, elementLength / 2);
 							break;
 						case GREEN_PALETTE:
 							//fi.greens =
 							getLut(in, elementLength, littleEndian);
-							//addInfo(tag, elementLength / 2);
+							//addInfo(tag, elementLength, elementLength / 2);
 							break;
 						case BLUE_PALETTE:
 							//fi.blues =
 							getLut(in, elementLength, littleEndian);
-							//addInfo(tag, elementLength / 2);
+							//addInfo(tag, elementLength, elementLength / 2);
 							break;
 						case FLOAT_PIXEL_DATA:
 							dataType = ImageDataType::Float32;
@@ -371,11 +379,11 @@ namespace itl2
 							if (elementLength != 0)
 							{
 								rawDataOffset = location;
-								//addInfo(tag, location);
+								//addInfo(tag, elementLength, location);
 								decodingTags = false;
 							}
-							//else
-							//	addInfo(tag, null);
+							else
+								//addInfo(tag, elementLength, nullptr);
 							break;
 						case 0x7F880010:
 							// What is this? - RAK
@@ -387,7 +395,9 @@ namespace itl2
 							break;
 						default:
 							// Not used, skip over it...
-							//addInfo(tag, null);
+							//addInfo(tag, elementLength, nullptr);
+							for (int n = 0; n < elementLength; n++)
+								getByte(in);
 							break;
 					}
 				}
@@ -425,12 +435,201 @@ namespace itl2
 			return internals::getInfo(filename, dimensions, dataType, bytesPerPixel, offset, littleEndian, reason);
 		}
 
+		/*
+
+		const int PIXEL_REPRESENTATION = 0x00280103;
+		const int TRANSFER_SYNTAX_UID = 0x00020010;
+		const int MODALITY = 0x00080060;
+		const int SLICE_THICKNESS = 0x00180050;
+		const int SLICE_SPACING = 0x00180088;
+		const int IMAGER_PIXEL_SPACING = 0x00181164;
+		const int SAMPLES_PER_PIXEL = 0x00280002;
+		const int PHOTOMETRIC_INTERPRETATION = 0x00280004;
+		const int PLANAR_CONFIGURATION = 0x00280006;
+		const int NUMBER_OF_FRAMES = 0x00280008;
+		const int ROWS = 0x00280010;
+		const int COLUMNS = 0x00280011;
+		const int PIXEL_SPACING = 0x00280030;
+		const int BITS_ALLOCATED = 0x00280100;
+		const int WINDOW_CENTER = 0x00281050;
+		const int WINDOW_WIDTH = 0x00281051;
+		const int RESCALE_INTERCEPT = 0x00281052;
+		const int RESCALE_SLOPE = 0x00281053;
+		const int RED_PALETTE = 0x00281201;
+		const int GREEN_PALETTE = 0x00281202;
+		const int BLUE_PALETTE = 0x00281203;
+		const int ACQUISITION_CONTEXT_SEQUENCE = 0x00400555;
+		const int VIEW_CODE_SEQUENCE = 0x00540220;
+		const int ICON_IMAGE_SEQUENCE = 0x00880200;
+		const int ITEM = 0xFFFEE000;
+		const int ITEM_DELIMINATION = 0xFFFEE00D;
+		const int SEQUENCE_DELIMINATION = 0xFFFEE0DD;
+		const int FLOAT_PIXEL_DATA = 0x7FE00008;
+		const int PIXEL_DATA = 0x7FE00010;
+
+
+		void addInfo(int tag, int elementLength, string value)
+		{
+			string info = getHeaderInfo(tag, value);
+			//if (inSequence && info != null && vr != SQ) info = ">" + info;
+			if (info != null && tag != ITEM) {
+				int group = (unsigned int)tag >> 16;
+				//previousGroup = group;
+				//previousInfo = info;
+				//dicomInfo.append(tag2hex(tag) + info + "\n");
+			}
+			if (info == null) info = "";
+
+			vrLetters[0] = (byte)(vr >> 8);
+			vrLetters[1] = (byte)(vr & 0xFF);
+			String VR = new String(vrLetters);
+			cout << "(" << tag2hex(tag) << VR
+				<< " "
+				<< elementLength
+				<< " bytes from "
+				<< (location - elementLength) + ") "
+				<< info << endl;
+		}
+
+		void addInfo(int tag, int elementLength, int value)
+		{
+			addInfo(tag, elementLength, toString(value));
+		}
+
+		string getHeaderInfo(int tag, string value)
+		{
+			if (tag == ITEM_DELIMINATION || tag == SEQUENCE_DELIMINATION) {
+				//inSequence = false;
+				//if (!IJ.debugMode) return null;
+			}
+			string key = i2hex(tag);
+			//while (key.length()<8)
+			//  key = '0' + key;
+
+			string id = (String)dictionary.get(key);
+			if (id != null) {
+				if (vr == IMPLICIT_VR && id != null)
+					vr = (id.charAt(0) << 8) + id.charAt(1);
+				id = id.substring(2);
+			}
+
+			if (tag == ITEM)
+				return id != null ? id + ":" : null;
+			if (value != null)
+				return id + ": " + value;
+
+			switch (vr) {
+			case FD:
+				if (elementLength == 8)
+					value = Double.toString(getDouble());
+				else
+					for (int i = 0; i < elementLength; i++) getByte();
+				break;
+			case FL:
+				if (elementLength == 4)
+					value = Float.toString(getFloat());
+				else
+					for (int i = 0; i < elementLength; i++) getByte();
+				break;
+				//case UT:
+					//throw new IOException("ImageJ cannot read UT (unlimited text) DICOMs");
+			case AE: case AS: case AT: case CS: case DA: case DS: case DT:  case IS: case LO:
+			case LT: case PN: case SH: case ST: case TM: case UI:
+				value = getString(elementLength);
+				break;
+			case UN:
+				value = getUNString(elementLength);
+				break;
+			case US:
+				if (elementLength == 2)
+					value = Integer.toString(getShort());
+				else {
+					int n = elementLength / 2;
+					StringBuilder sb = new StringBuilder();
+					for (int i = 0; i < n; i++) {
+						sb.append(Integer.toString(getShort()));
+						sb.append(" ");
+					}
+					value = sb.toString();
+				}
+				break;
+			case SS:
+				if (elementLength == 2)
+					value = Integer.toString(getSShort());
+				else {
+					int n = elementLength / 2;
+					StringBuilder sb = new StringBuilder();
+					for (int i = 0; i < n; i++) {
+						sb.append(Integer.toString(getSShort()));
+						sb.append(" ");
+					}
+					value = sb.toString();
+				}
+				break;
+			case UL:
+				if (elementLength == 4)
+					value = Long.toString(getUInt());
+				else {
+					int n = elementLength / 4;
+					StringBuilder sb = new StringBuilder();
+					for (int i = 0; i < n; i++) {
+						sb.append(Long.toString(getUInt()));
+						sb.append(" ");
+					}
+					value = sb.toString();
+				}
+				break;
+			case SL:
+				if (elementLength == 4)
+					value = Long.toString(getInt());
+				else {
+					int n = elementLength / 4;
+					StringBuilder sb = new StringBuilder();
+					for (int i = 0; i < n; i++) {
+						sb.append(Long.toString(getInt()));
+						sb.append(" ");
+					}
+					value = sb.toString();
+				}
+				break;
+			case IMPLICIT_VR:
+				value = getString(elementLength);
+				if (elementLength > 44) value = null;
+				break;
+			case SQ:
+				value = "";
+				if (tag == ACQUISITION_CONTEXT_SEQUENCE)
+					acquisitionSequence = true;
+				if (tag == VIEW_CODE_SEQUENCE)
+					acquisitionSequence = false;
+				boolean privateTag = ((tag >> 16) & 1) != 0;
+				if (tag != ICON_IMAGE_SEQUENCE && !privateTag)
+					break;
+				// else fall through and skip icon image sequence or private sequence
+			default:
+				long skipCount = (long)elementLength;
+				while (skipCount > 0) skipCount -= f.skip(skipCount);
+				location += elementLength;
+				value = "";
+			}
+			if (value != null && id == null && !value.equals(""))
+				return "---: " + value;
+			else if (id == null)
+				return null;
+			else
+				return id + ": " + value;
+		}
+
+		*/
+
+
 		namespace tests
 		{
 			void read()
 			{
 				Image<uint16_t> img;
 				dicom::read(img, "../test_input_data/test.dcm");
+				//dicom::read(img, "c:\\mytemp\\live_view_bin1\\0.dcm");
 
 				raw::writed(img, "../test_output_data/dicom/test_as_raw");
 			}

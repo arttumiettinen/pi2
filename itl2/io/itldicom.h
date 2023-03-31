@@ -51,7 +51,15 @@ namespace itl2
 					if (allowResize)
 						img.ensureSize(dimensions.x, dimensions.y, img.depth());
 
-					itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, z), false, (size_t)offset);
+					if (z == 0)
+					{
+						itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)offset);
+					}
+					else
+					{
+						Image<pixel_t> view(img, z, z);
+						itl2::raw::readBlockNoParse(view, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)offset);
+					}
 				}
 				else
 				{

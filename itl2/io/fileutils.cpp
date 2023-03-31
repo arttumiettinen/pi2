@@ -369,7 +369,8 @@ namespace itl2
 				ext != ".tiff" &&
 				ext != ".png" &&
 				ext != ".jpg" &&
-				ext != ".jpeg")
+				ext != ".jpeg" &&
+				ext != ".dcm")
 			{
 				results.erase(results.begin() + n);
 				n--;
