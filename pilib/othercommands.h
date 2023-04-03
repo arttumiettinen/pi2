@@ -380,6 +380,18 @@ namespace pilib
 		{
 		}
 
+		template<typename pixel_t> struct BlockMatchPartialLoadDriver
+		{
+			static void run(const string& referenceFile, const string& deformedFile, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
+				const Vec3c& coarseBlockRadius, size_t coarseBinning,
+				const Vec3c& fineBlockRadius, size_t fineBinning,
+				bool normalize, double& normFact, double& normFactStd, double& meanDef,
+				SubpixelAccuracy mode)
+			{
+				blockMatchPartialLoad<pixel_t, pixel_t>(referenceFile, deformedFile, refGrid, defPoints, accuracy, coarseBlockRadius, coarseBinning, fineBlockRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
+			}
+		};
+
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
@@ -454,21 +466,23 @@ namespace pilib
 				}
 			}
 
+			pickReal<BlockMatchPartialLoadDriver>(refDT, refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
 
-			if (refDT == ImageDataType::UInt8)
-			{
-				blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
-			}
-			else if (refDT == ImageDataType::UInt16)
-			{
-				blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
-			}
-			else if (refDT == ImageDataType::Float32)
-			{
-				blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
-			}
-			else
-				throw ParseException("Unsupported image data type (Please add the data type to BlockMatchPartialLoadCommand in commands.h file).");
+			// The pickReal above does this, but for all the (non-complex) data types.
+			//if (refDT == ImageDataType::UInt8)
+			//{
+			//	blockMatchPartialLoad<uint8_t, uint8_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
+			//}
+			//else if (refDT == ImageDataType::UInt16)
+			//{
+			//	blockMatchPartialLoad<uint16_t, uint16_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
+			//}
+			//else if (refDT == ImageDataType::Float32)
+			//{
+			//	blockMatchPartialLoad<float32_t, float32_t>(refFile, defFile, refPoints, defPoints, fitGoodness, coarseCompRadius, coarseBinning, fineCompRadius, fineBinning, normalize, normFact, normFactStd, meanDef, mode);
+			//}
+			//else
+			//	throw ParseException("Unsupported image data type (Please add the data type to BlockMatchPartialLoadCommand in commands.h file).");
 
 			writeBlockMatchResult(fname, refPoints, defPoints, fitGoodness, normFact, normFactStd, meanDef);
 		}
