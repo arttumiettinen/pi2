@@ -85,3 +85,30 @@ and job init commands to
 ```
 job_init_commands = export OMP_NUM_THREADS=40
 ```
+
+
+
+ESRF clusters
+-------------
+
+Some of the required libraries are available from the modules system, e.g.,
+```
+module load fftw
+```
+The rest you will need to install locally or compile yourself.
+Do not forget to add the locally installed libraries in the PATH.
+
+Additionally, there is an ESRF-specific Makefile that you should activate by command
+```
+ln Makefile.local.ESRF Makefile.local
+```
+
+Compile pi2 using command
+```
+make -j16 NO_OPENCL=1
+```
+
+The file slurm_config_esrf.txt can be used as a starting point for SLURM
+settings file. You will need to modify it, though! Please see notes in the
+template file.
+
