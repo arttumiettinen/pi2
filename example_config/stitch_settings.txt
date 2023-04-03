@@ -100,12 +100,6 @@ mask_to_max_circle = False
 displacement_filter_threshold = 6
 
 
-# Set to true to re-do pairwise matching.
-# If output files exist, the pairwise matching process is skipped for those images.
-# Use this if parameters of pairwise matching process are changed and you don't want to
-# manually remove the relevant output files.
-redo = False
-
 # Set to true to create an output image that shows the local amount of
 # deviation from perfect stitching.
 # The output is standard deviation of all overlapping images in each pixel.

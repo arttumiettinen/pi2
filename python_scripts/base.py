@@ -565,7 +565,7 @@ def rigid_body_transformation_from_displacement_field(x_orig, y_orig, z_orig, u_
 
 
 
-def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold, force_redo):
+def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold):
     """
     Calculate displacement fields and load results to relations network.
     Returns true if all displacement fields have been calculated and read, and false otherwise.
@@ -578,7 +578,7 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
         scan1 = edge[0]
         scan2 = edge[1]
 
-        if force_redo or (not is_displacement_ok(sample_name, scan1, scan2)):
+        if not is_displacement_ok(sample_name, scan1, scan2):
             print("Calculate displacement field %i -> %i" % (scan1.index, scan2.index))
             calculate_displacement_field(sample_name, scan1, scan2, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold)
             jobs_started = jobs_started + 1
@@ -1477,7 +1477,7 @@ def is_world_to_local_ok(prefix):
     return os.path.isfile(filename)
         
 
-def calculate_world_to_local(tree, allow_local_deformations, force_redo):
+def calculate_world_to_local(tree, allow_local_deformations):
     """
     Calculates world to local transformations for all nodes in the given tree, starting from the root nodes that have no incoming connections.
     """
@@ -1506,7 +1506,7 @@ def calculate_world_to_local(tree, allow_local_deformations, force_redo):
                               f"determine_world_to_local({scan.transformation_file}, [{scan.dimensions[0]}, {scan.dimensions[1]}, {scan.dimensions[2]}], {scan.world_to_local_prefix}, {allow_local_deformations});"
                              )
                              
-                    if force_redo or (not is_world_to_local_ok(scan.world_to_local_prefix)):     
+                    if not is_world_to_local_ok(scan.world_to_local_prefix):     
                         run_pi2(script, scan.world_to_local_prefix)
 
         wait_for_cluster_jobs()
@@ -1514,7 +1514,7 @@ def calculate_world_to_local(tree, allow_local_deformations, force_redo):
     
 
 
-def run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo):
+def run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
     """
     Prepares and runs pi2 stitching process for connected component 'comp' of scan relations tree 'tree'.
     - determines final world to image transformations
@@ -1542,7 +1542,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
     #for node in comp.nodes:
     #    node.c = -node.position.reshape(-1, 1)
 
-    if force_redo or not are_all_transformations_ok(comp):
+    if not are_all_transformations_ok(comp):
 
         if global_optimization:
             print("Finding globally optimal locations and orientations for the sub-images...")
@@ -1556,7 +1556,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
 
     # Calculate world to local grid transformations
     print("Calculating world to local transformation for each image...")
-    calculate_world_to_local(comp, allow_local_deformations, force_redo)
+    calculate_world_to_local(comp, allow_local_deformations)
 
 
     print("Stitching...")
@@ -1623,7 +1623,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                              f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )
 
-                if force_redo or (not os.path.isfile(f"{out_template}_{jobs_started}_done.tif")):
+                if not os.path.isfile(f"{out_template}_{jobs_started}_done.tif"):
                      run_pi2(pi_script, "")
                 else:
                      print(f"Stitch job {jobs_started} has been done already. Skipping it.")
@@ -1634,7 +1634,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
     return jobs_started
 
 
-def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo):
+def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
     """
     Calls run_stitching for each connected component in relations network.
     """
@@ -1642,7 +1642,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
-        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, force_redo)
+        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file)
 
     if (jobs_started > 0) and is_use_cluster():
         return False

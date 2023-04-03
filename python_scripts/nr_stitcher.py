@@ -35,7 +35,6 @@ class NonGridStitchSettings:
         self.allow_rotation = True
         self.allow_local_shifts = True
         self.allow_local_deformations = True
-        self.force_redo = False
 
 
 
@@ -143,9 +142,6 @@ def main():
     # Threshold for displacement filtering
     settings.filter_threshold = float(get(config, 'displacement_filter_threshold', '3'))
 
-    # Redo displacement fields?
-    settings.force_redo = to_bool(get(config, 'redo', False))
-
     # Create stitch goodness output?
     settings.create_goodness_file = to_bool(get(config, 'create_goodness', False))
 
@@ -216,14 +212,14 @@ def main():
 
     # Calculate displacement fields
     while True:
-        if calculate_displacement_fields(settings.sample_name, relations, settings.point_spacing, settings.coarse_block_radius, settings.coarse_binning, settings.fine_block_radius, settings.fine_binning, settings.normalize_in_blockmatch, settings.filter_threshold, settings.force_redo):
+        if calculate_displacement_fields(settings.sample_name, relations, settings.point_spacing, settings.coarse_block_radius, settings.coarse_binning, settings.fine_block_radius, settings.fine_binning, settings.normalize_in_blockmatch, settings.filter_threshold):
             break
 
         wait_for_cluster_jobs()
         
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.force_redo)
+    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file)
 
     wait_for_cluster_jobs()
 

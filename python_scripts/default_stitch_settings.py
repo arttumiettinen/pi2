@@ -99,13 +99,6 @@ mask_to_max_circle = {mask_to_max_circle}
 displacement_filter_threshold = 12
 
 
-# Set to true to re-do pairwise matching.
-# If output files exist, the pairwise matching process is skipped for those images.
-# Use this if parameters of pairwise matching process are changed and you don't want to
-# manually remove the relevant output files.
-redo = False
-
-
 # Indicates which cluster manager should be used to submit jobs
 cluster = {cluster_name}
 
