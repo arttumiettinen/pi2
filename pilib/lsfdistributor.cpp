@@ -17,11 +17,7 @@ namespace pilib
 
 	LSFDistributor::LSFDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
-		fs::path configPath = getConfigDirectory() / "lsf_config.txt";
-
-		//cout << "Reading settings from " << configPath << endl;
-
-		INIReader reader(configPath.string());
+		INIReader reader = Distributor::readConfig("lsf_config.txt");
 
 		extraArgsFastJobs = reader.get<string>("extra_args_fast_jobs", "");
 		extraArgsNormalJobs = reader.get<string>("extra_args_normal_jobs", "");
@@ -32,8 +28,6 @@ namespace pilib
 		bsubCommand = reader.get<string>("bsub_command", "bsub");
 		bjobsCommand = reader.get<string>("bjobs_command", "bjobs");
 		bkillCommand = reader.get<string>("bkill_command", "bkill");
-
-		readSettings(reader);
 
 		allowedMemory(mem);
 	}

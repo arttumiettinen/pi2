@@ -17,11 +17,7 @@ namespace pilib
 
 	SLURMDistributor::SLURMDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
-		fs::path configPath = getConfigDirectory() / "slurm_config.txt";
-			
-		//cout << "Reading settings from " << configPath << endl;
-
-		INIReader reader(configPath.string());
+		INIReader reader = Distributor::readConfig("slurm_config.txt");
 
 		extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
 		extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
@@ -40,8 +36,6 @@ namespace pilib
 
 		if (progressPollInterval < 1)
 			progressPollInterval = 1;
-
-		readSettings(reader);
 		
 		allowedMemory(mem);
 	}

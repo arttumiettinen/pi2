@@ -184,6 +184,12 @@ namespace pilib
 		*/
 		bool tryDelay(Delayed& d);
 
+		/**
+		Reads general distributor settings from ini file.
+		Call this from derived class constructor when settings file has been found.
+		*/
+		void readSettings(INIReader& reader);
+
 	protected:
 
 		/**
@@ -218,18 +224,11 @@ namespace pilib
 		}
 
 		/**
-		Gets configuration directory.
+		Gets contents of the configuration file.
+		Reads generic settings into the base class.
+		@param filename The name of the configuration file, this is decided by the derived class.
 		*/
-		fs::path getConfigDirectory() const
-		{
-			return configDir;
-		}
-
-		/**
-		Reads general distributor settings from ini file.
-		Call this from derived class constructor when settings file has been found.
-		*/
-		void readSettings(INIReader& reader);
+		INIReader readConfig(const std::string& filename);
 
 
 	public:

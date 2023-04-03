@@ -153,10 +153,29 @@ namespace pilib
 		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
 		myName = itl2::toString(dist(rng));
 
-		configDir = findPi2().remove_filename();
-		piCommand = "\"" + findPi2().string() + "\"";
+		fs::path piPath = findPi2();
+		configDir = piPath.remove_filename();
+		piCommand = "\"" + piPath.string() + "\"";
 	}
 
+
+	INIReader Distributor::readConfig(const std::string& filename)
+	{
+		// First try to search config file from the current directory.
+		fs::path configPath = filename;
+		if (fs::exists(configPath))
+		{
+			INIReader reader(configPath.string());
+			readSettings(reader);
+			return reader;
+		}
+
+		// Then try a global config file from the installation directory.
+		configPath = configDir / filename;
+		INIReader reader(configPath.string());
+		readSettings(reader);
+		return reader;
+	}
 
 	void Distributor::readSettings(INIReader& reader)
 	{
