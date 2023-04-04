@@ -47,7 +47,7 @@ def get(config, key, default):
 
 
 
-def read_global_settings(config):
+def read_global_settings(config, args):
     """
     Reads cluster and pi2 related settings from a ConfigParser.
     """
@@ -59,10 +59,15 @@ def read_global_settings(config):
 
     # Path to pi2 program. By default directory of running script.
     pi_path = os.path.dirname(os.path.realpath(__file__))
-    pi_path = get(config, 'pipath', pi_path)
+    # This won't work anyway, as we have already imported pi2, so let's disable it.
+    #pi_path = get(config, 'pipath', pi_path)
+    #if args.pi_path:
+    #    pi_path = args.pi_path
 
     # Indicates if the calculations should be performed on a cluster
     cluster = get(config, 'cluster', cluster)
+    if args.cluster:
+        cluster = args.cluster
     if cluster == "None" or cluster == "none":
         cluster = ""
 
@@ -71,9 +76,9 @@ def read_global_settings(config):
 
     # Maximum stitching block size
     max_block_size = get(config, 'max_block_size', max_block_size)
-
-
-
+    if args.max_block_size:
+        max_block_size = args.max_block_size
+        
 
 def from_string(str):
 
@@ -300,10 +305,10 @@ def is_displacement_ok(sample_name, scan1, scan2, point_spacing, coarse_block_ra
 
     prefix = displacement_file_prefix(sample_name, scan1, scan2)
     settingsfile = f"{prefix}_refpoints_settings.txt"
-    settings_contents = f"{point_spacing}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize}";
+    settings_contents = f"{point_spacing}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize}"
     current_contents = get_contents(settingsfile)
     if settings_contents != current_contents:
-        return False; # Settings have changed.
+        return False # Settings have changed.
         
 
     filename = f"{prefix}_refpoints.txt"
@@ -321,10 +326,10 @@ def is_filtered_displacement_ok(sample_name, scan1, scan2, filter_threshold):
 
     prefix = displacement_file_prefix(sample_name, scan1, scan2)
     settingsfile = f"{prefix}_filtered_refpoints_settings.txt"
-    settings_contents = f"{filter_threshold}";
+    settings_contents = f"{filter_threshold}"
     current_contents = get_contents(settingsfile)
     if settings_contents != current_contents:
-        return False; # Settings have changed.
+        return False # Settings have changed.
 
 
     filename = f"{prefix}_filtered_refpoints.txt"
@@ -400,13 +405,13 @@ def calculate_displacement_field(sample_name, scan1, scan2, point_spacing, coars
 
     # Write a file that specifies the settings that were used to calculate the result.
     settingsfile = f"{file_prefix}_refpoints_settings.txt"
-    settings_contents = f"{point_spacing}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize}";
+    settings_contents = f"{point_spacing}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize}"
     write_contents(settingsfile, settings_contents)
     delete_file(f"{file_prefix}_refpoints.txt")
 
     # We write the filtered displacement field settings file, too, as we generate that result here.
     settingsfile = f"{file_prefix}_filtered_refpoints_settings.txt"
-    settings_contents = f"{filter_threshold}";
+    settings_contents = f"{filter_threshold}"
     write_contents(settingsfile, settings_contents)
     delete_file(f"{file_prefix}_filtered_refpoints.txt")
     delete_transformations_file(scan1)
@@ -429,7 +434,7 @@ def filter_displacement_field(sample_name, scan1, scan2, filter_threshold):
              )
 
     settingsfile = f"{file_prefix}_filtered_refpoints_settings.txt"
-    settings_contents = f"{filter_threshold}";
+    settings_contents = f"{filter_threshold}"
     write_contents(settingsfile, settings_contents)
     
     delete_file(f"{file_prefix}_filtered_refpoints.txt")
@@ -1532,10 +1537,10 @@ def are_all_transformations_ok(sample_name, comp, global_optimization, allow_rot
 
 
     settingsfile = f"{sample_name}_transformations_settings.txt"
-    settings_contents = f"{global_optimization}, {allow_rotation}";
+    settings_contents = f"{global_optimization}, {allow_rotation}"
     current_contents = get_contents(settingsfile)
     if settings_contents != current_contents:
-        return False; # Settings have changed.
+        return False # Settings have changed.
 
 
     for node in comp.nodes:
@@ -1574,10 +1579,10 @@ def is_world_to_local_ok(prefix, allow_local_deformations):
     """
     
     settingsfile = f"{prefix}_refpoints_settings.txt"
-    settings_contents = f"{allow_local_deformations}";
+    settings_contents = f"{allow_local_deformations}"
     current_contents = get_contents(settingsfile)
     if settings_contents != current_contents:
-        return False; # Settings have changed.
+        return False # Settings have changed.
     
     filename = f"{prefix}_refpoints.txt"
     return os.path.isfile(filename)
@@ -1620,7 +1625,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
 
                         prefix = scan.world_to_local_prefix
                         settingsfile = f"{prefix}_refpoints_settings.txt"
-                        settings_contents = f"{allow_local_deformations}";
+                        settings_contents = f"{allow_local_deformations}"
                         write_contents(settingsfile, settings_contents)
                         delete_file(f"{prefix}_refpoints.txt")
 
