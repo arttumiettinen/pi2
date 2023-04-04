@@ -1,11 +1,9 @@
 
 
 import os.path
-import subprocess
 import struct
 import networkx as nx
 from pyquaternion import Quaternion
-import time
 import math
 import glob
 import numpy as np
@@ -92,16 +90,6 @@ def from_string(str):
 
 
 
-def run_pi2_locally(pi_script):
-    """
-    Runs pi2 on local computer. Returns output as string.
-    """
-
-    return subprocess.check_output([pi_path + "/pi2", pi_script])
-
-
-
-
 def run_pi2(pi_script, output_prefix):
     """
     Runs pi2 job either locally or on cluster.
@@ -169,13 +157,8 @@ class Scan:
         """
         Tests if reconstructed image file exists.
         """
-        
-        # TODO: Replace this hack with pi2py.
-        pi_script = f"fileinfo({self.rec_file});"
-        s = run_pi2_locally(pi_script)
-        s = s.decode('ASCII')
-        lines = s.splitlines()
-        return len(lines) == 3 # Three lines means the file was found and can be read.
+
+        return pi.isimagefile(self.rec_file)
 
 
 
@@ -188,20 +171,16 @@ def get_image_size(filename):
     Finds out size of given image and returns it as numpy array.
     """
 
-    # TODO: Replace this hack with pi2py.
-    pi_script = f"fileinfo({filename});"
-    s = run_pi2_locally(pi_script)
-    s = s.decode('ASCII')
-    lines = s.splitlines()
-    if len(lines) == 3:
-        
-        if lines[-1] == 'Unknown':
-            raise RuntimeError("Unsupported image file type or pixel data type: " + filename)
+    result = pi.newimage(ImageDataType.UInt32)
+    pi.fileinfo(filename, result)
+    result = result.to_numpy()
+    if len(result) != 4:
+        raise RuntimeError(f"Unable to read dimensions from image file {filename}. The file does not exist or it is not in supported file format.")
 
-        return from_string(lines[1])
+    if result[3] == 0:
+        raise RuntimeError(f"Pixel data type of {filename} cannot be determined. The file does not exist or it is not in supported file format.")
 
-    raise RuntimeError("Unable to read dimensions from image file " + filename)
-
+    return result[0:3]
 
 
 
