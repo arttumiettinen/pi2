@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-# Non-rigid stitching script that does not assume that the sub-images are arranged in a grid.
+# Non-rigid stitching script.
 # In order to use this script, please make a stitch_settings.txt file according to
 # the provided template. Place it into the directory where the output and temporary files
 # can be placed and run this script (without command line arguments).
@@ -82,7 +82,7 @@ def main():
     """
 
     settings_file = 'stitch_settings.txt'
-    if len(sys.argv) >= 1:
+    if len(sys.argv) > 1:
         settings_file = sys.argv[1]
 
     print(f"Reading stitch settings from {settings_file}")
@@ -148,7 +148,8 @@ def main():
     # Read image names and locations
     if not ('positions' in config):
         raise RuntimeError("No 'positions' section found in the stitching settings file.")
-
+    
+    settings_contents = ""
     data = config.items('positions')
     index = 0
     relations = nx.DiGraph()
@@ -164,16 +165,31 @@ def main():
 
         relations.add_node(sc, scan=sc)
 
-        print(f"{file} at position {position}, size = {sc.dimensions}")
+        out_line = f"{file} at position {position}, size = {sc.dimensions}"
+        settings_contents += out_line + "\n"
+        print(out_line)
 
         index = index + 1
 
 
+    # Find if the positions section has changed
+    settingsfile = f"{settings.sample_name}_position_settings.txt"
+    current_contents = get_contents(settingsfile)
+    redo_all = False
+    if settings_contents != current_contents:
+        # Tile positions or sizes have changed. Redo everything.
+        print("Tile positions or sizes have changed.")
+        redo_all = True
+
+    write_contents(settingsfile, settings_contents)
+
     # Perform binning
+    redo_all_binning = redo_all
     while True:
-        if auto_binning(relations, settings.binning):
+        if auto_binning(relations, settings.binning, redo_all_binning):
             break;
 
+        redo_all_binning = False;
         wait_for_cluster_jobs()
         
     if settings.binning != 1:
@@ -211,10 +227,12 @@ def main():
     #plt.savefig('network.png')
 
     # Calculate displacement fields
+    redo_all_displacements = redo_all
     while True:
-        if calculate_displacement_fields(settings.sample_name, relations, settings.point_spacing, settings.coarse_block_radius, settings.coarse_binning, settings.fine_block_radius, settings.fine_binning, settings.normalize_in_blockmatch, settings.filter_threshold):
+        if calculate_displacement_fields(settings.sample_name, relations, settings.point_spacing, settings.coarse_block_radius, settings.coarse_binning, settings.fine_block_radius, settings.fine_binning, settings.normalize_in_blockmatch, settings.filter_threshold, redo_all_displacements):
             break
 
+        redo_all_displacements = False
         wait_for_cluster_jobs()
         
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)

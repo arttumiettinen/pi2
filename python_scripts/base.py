@@ -210,7 +210,7 @@ def raw_exists(prefix):
 
 
 
-def auto_binning(relations, binning):
+def auto_binning(relations, binning, redo_all):
     """
     Makes binned versions of the original input files if they do not exist yet.
     Returns true if all binned files are already done.
@@ -245,7 +245,7 @@ def auto_binning(relations, binning):
             #node.dimensions = node.dimensions / binning
             #node.position = node.position / binning
 
-            if not raw_exists(binned_file):
+            if redo_all or (not raw_exists(binned_file)):
 
                 print(f"Binning {orig_file} to {binned_file}")
 
@@ -270,25 +270,64 @@ def displacement_file_prefix(sample_name, scan1, scan2):
 
 
 
-def is_displacement_ok(sample_name, scan1, scan2):
+def get_contents(filename):
+    """
+    Gets contents of a text file, or empty string if the file does not exist.
+    """
+    
+    try:
+        with open(filename, 'r') as f:
+            return f.read()
+    except OSError:
+        return ""
+
+def write_contents(filename, contents):
+    """
+    Writes the contents string into the given file.
+    """
+
+    with open(filename, 'w') as f:
+        f.write(contents)
+
+
+
+def is_displacement_ok(sample_name, scan1, scan2, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold):
     """
     Checks if displacement field has been calculated between the two given scans.
 
     Returns true if displacement field has been calculated, and false otherwise.
     """
-    filename = "%s_refpoints.txt" % displacement_file_prefix(sample_name, scan1, scan2)
+
+    prefix = displacement_file_prefix(sample_name, scan1, scan2)
+    settingsfile = f"{prefix}_refpoints_settings.txt"
+    settings_contents = f"{point_spacing}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize}";
+    current_contents = get_contents(settingsfile)
+    if settings_contents != current_contents:
+        return False; # Settings have changed.
+        
+
+    filename = f"{prefix}_refpoints.txt"
     return os.path.isfile(filename)
 
 
 
 
-def is_filtered_displacement_ok(sample_name, scan1, scan2):
+def is_filtered_displacement_ok(sample_name, scan1, scan2, filter_threshold):
     """
     Checks if filtered displacement field has been calculated between the two given scans.
 
     Returns true if filtered displacement field has been calculated, and false otherwise.
     """
-    filename = "%s_filtered_refpoints.txt" % displacement_file_prefix(sample_name, scan1, scan2)
+
+    prefix = displacement_file_prefix(sample_name, scan1, scan2)
+    settingsfile = f"{prefix}_filtered_refpoints_settings.txt"
+    settings_contents = f"{filter_threshold}";
+    current_contents = get_contents(settingsfile)
+    if settings_contents != current_contents:
+        return False; # Settings have changed.
+
+
+    filename = f"{prefix}_filtered_refpoints.txt"
     return os.path.isfile(filename)
 
 
@@ -314,6 +353,27 @@ def overlap_region(scan1, scan2):
 
 
 
+def delete_file(filename):
+    """
+    Deleted the given file if it exists. Does nothing if the file does not exist.
+    """
+
+    try:
+        os.remove(filename)
+    except OSError:
+        pass
+
+
+def delete_transformations_file(scan):
+    """
+    Deletes xxx_transformations.txt file corresponding to the given scan.
+    """
+
+    scan_name = fix_directories(scan.rec_file)
+    filename = f"{scan_name}_transformation.txt"
+    delete_file(filename)
+
+
 def calculate_displacement_field(sample_name, scan1, scan2, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold):
     """
     Calculates displacement field between scan1 and scan2 locally or submits displacement field calculation job to cluster.
@@ -331,12 +391,27 @@ def calculate_displacement_field(sample_name, scan1, scan2, point_spacing, coars
     #          f"mapraw(def, {image_data_type}, {scan2.rec_file});"
     #          f"blockmatch(ref, def, {xmin}, {xmax}, {point_spacing}, {ymin}, {ymax}, {point_spacing}, {zmin}, {zmax}, {point_spacing}, {shiftx}, {shifty}, {shiftz}, {file_prefix}, {block_radius});"
     #         )
+    
     # This script uses ad-hoc implementation of blockmatch to save memory.
     params = (f"echo;"
               f"blockmatchmemsave({scan1.rec_file}, {scan2.rec_file}, {xmin}, {xmax}, {point_spacing}, {ymin}, {ymax}, {point_spacing}, {zmin}, {zmax}, {point_spacing}, [{shiftx}, {shifty}, {shiftz}], {file_prefix}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize});"
               f"filterdisplacements({file_prefix}, {filter_threshold});"
              )
 
+    # Write a file that specifies the settings that were used to calculate the result.
+    settingsfile = f"{file_prefix}_refpoints_settings.txt"
+    settings_contents = f"{point_spacing}, {coarse_block_radius}, {coarse_binning}, {fine_block_radius}, {fine_binning}, {normalize}";
+    write_contents(settingsfile, settings_contents)
+    delete_file(f"{file_prefix}_refpoints.txt")
+
+    # We write the filtered displacement field settings file, too, as we generate that result here.
+    settingsfile = f"{file_prefix}_filtered_refpoints_settings.txt"
+    settings_contents = f"{filter_threshold}";
+    write_contents(settingsfile, settings_contents)
+    delete_file(f"{file_prefix}_filtered_refpoints.txt")
+    delete_transformations_file(scan1)
+    delete_transformations_file(scan2)
+    
     run_pi2(params, file_prefix)
 
 
@@ -353,6 +428,14 @@ def filter_displacement_field(sample_name, scan1, scan2, filter_threshold):
               f"filterdisplacements({file_prefix}, {filter_threshold});"
              )
 
+    settingsfile = f"{file_prefix}_filtered_refpoints_settings.txt"
+    settings_contents = f"{filter_threshold}";
+    write_contents(settingsfile, settings_contents)
+    
+    delete_file(f"{file_prefix}_filtered_refpoints.txt")
+    delete_transformations_file(scan1)
+    delete_transformations_file(scan2)
+    
     run_pi2(params, f"{file_prefix}_filter")
 
 
@@ -565,7 +648,7 @@ def rigid_body_transformation_from_displacement_field(x_orig, y_orig, z_orig, u_
 
 
 
-def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold):
+def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold, redo_all_displacements):
     """
     Calculate displacement fields and load results to relations network.
     Returns true if all displacement fields have been calculated and read, and false otherwise.
@@ -578,7 +661,7 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
         scan1 = edge[0]
         scan2 = edge[1]
 
-        if not is_displacement_ok(sample_name, scan1, scan2):
+        if redo_all_displacements or (not is_displacement_ok(sample_name, scan1, scan2, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold)):
             print("Calculate displacement field %i -> %i" % (scan1.index, scan2.index))
             calculate_displacement_field(sample_name, scan1, scan2, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold)
             jobs_started = jobs_started + 1
@@ -593,7 +676,7 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
         scan1 = edge[0]
         scan2 = edge[1]
 
-        if not is_displacement_ok(sample_name, scan1, scan2):
+        if not is_displacement_ok(sample_name, scan1, scan2, point_spacing, coarse_block_radius, coarse_binning, fine_block_radius, fine_binning, normalize, filter_threshold):
             raise RuntimeError("Displacement field calculation has failed, unable to continue. See error messages above.")
 
 
@@ -603,7 +686,7 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
         scan1 = edge[0]
         scan2 = edge[1]
 
-        if not is_filtered_displacement_ok(sample_name, scan1, scan2):
+        if not is_filtered_displacement_ok(sample_name, scan1, scan2, filter_threshold):
             print("Filter displacement field %i -> %i" % (scan1.index, scan2.index))
             filter_displacement_field(sample_name, scan1, scan2, filter_threshold)
             jobs_started = jobs_started + 1
@@ -1442,10 +1525,18 @@ def is_transformation_ok(scan):
         return False
     
 
-def are_all_transformations_ok(comp):
+def are_all_transformations_ok(sample_name, comp, global_optimization, allow_rotation):
     """
     Tests if all transformation files are OK.
     """
+
+
+    settingsfile = f"{sample_name}_transformations_settings.txt"
+    settings_contents = f"{global_optimization}, {allow_rotation}";
+    current_contents = get_contents(settingsfile)
+    if settings_contents != current_contents:
+        return False; # Settings have changed.
+
 
     for node in comp.nodes:
         if not is_transformation_ok(node):
@@ -1468,10 +1559,25 @@ def find_roots(tree):
     return roots
 
 
-def is_world_to_local_ok(prefix):
+def delete_world_to_local_file(scan):
+    """
+    Deletes world to local transformation result.
+    """
+
+    scan_name = fix_directories(scan.rec_file)
+    filename = f"{scan_name}_world_to_local_refpoints.txt"
+    delete_file(filename)
+
+def is_world_to_local_ok(prefix, allow_local_deformations):
     """
     Tests if world to local transformation has been calculated.
     """
+    
+    settingsfile = f"{prefix}_refpoints_settings.txt"
+    settings_contents = f"{allow_local_deformations}";
+    current_contents = get_contents(settingsfile)
+    if settings_contents != current_contents:
+        return False; # Settings have changed.
     
     filename = f"{prefix}_refpoints.txt"
     return os.path.isfile(filename)
@@ -1480,12 +1586,15 @@ def is_world_to_local_ok(prefix):
 def calculate_world_to_local(tree, allow_local_deformations):
     """
     Calculates world to local transformations for all nodes in the given tree, starting from the root nodes that have no incoming connections.
+    Returns True if the transformations changed and stitching should be re-done; return False otherwise.
     """
 
     # We don't want to use topological_sort here as we can process multiple images at once as they
     # depend only on images that have been processed already.
 
     done = {scan: False for scan in tree}
+    
+    changed = False
 
     while not all(done[scan] for scan in tree):
         done_prev = done.copy()
@@ -1506,12 +1615,20 @@ def calculate_world_to_local(tree, allow_local_deformations):
                               f"determine_world_to_local({scan.transformation_file}, [{scan.dimensions[0]}, {scan.dimensions[1]}, {scan.dimensions[2]}], {scan.world_to_local_prefix}, {allow_local_deformations});"
                              )
                              
-                    if not is_world_to_local_ok(scan.world_to_local_prefix):     
+                    if not is_world_to_local_ok(scan.world_to_local_prefix, allow_local_deformations):
+                        changed = True
+
+                        prefix = scan.world_to_local_prefix
+                        settingsfile = f"{prefix}_refpoints_settings.txt"
+                        settings_contents = f"{allow_local_deformations}";
+                        write_contents(settingsfile, settings_contents)
+                        delete_file(f"{prefix}_refpoints.txt")
+
                         run_pi2(script, scan.world_to_local_prefix)
 
         wait_for_cluster_jobs()
         
-    
+    return changed
 
 
 def run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
@@ -1542,7 +1659,11 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
     #for node in comp.nodes:
     #    node.c = -node.position.reshape(-1, 1)
 
-    if not are_all_transformations_ok(comp):
+    if not are_all_transformations_ok(sample_name, comp, global_optimization, allow_rotation):
+
+        settingsfile = f"{sample_name}_transformations_settings.txt"
+        settings_contents = f"{global_optimization}, {allow_rotation}"
+        write_contents(settingsfile, settings_contents)
 
         if global_optimization:
             print("Finding globally optimal locations and orientations for the sub-images...")
@@ -1550,16 +1671,35 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
             # TODO: Here we could do similar global optimization process for intensities, too.
 
         # Save the transformations
+        # Note that we also delete ALL world to local results such that they are forcibly re-calculated,
+        # as they become obsolete if world to local transformations change.
         for node in comp.nodes:
             save_transformation(sample_name, node, comp)
+            delete_world_to_local_file(node)
 
 
     # Calculate world to local grid transformations
     print("Calculating world to local transformation for each image...")
-    calculate_world_to_local(comp, allow_local_deformations)
+
+
+    redo_mosaic = calculate_world_to_local(comp, allow_local_deformations)
+    if not redo_mosaic:
+        print("World to local transformations did not change.")
 
 
     print("Stitching...")
+
+
+    # Check stitch settings
+    settingsfile = f"{sample_name}_mosaic_settings.txt"
+    settings_contents = f"{normalize}, {max_circle}, {create_goodness_file}"
+    current_contents = get_contents(settingsfile)
+    if settings_contents != current_contents:
+        print("Mosaic settings have changed.")
+        redo_mosaic = True
+    write_contents(settingsfile, settings_contents)
+
+
 
     # Determine approximate bounds for the stitched image
     minx, miny, minz, maxx, maxy, maxz = determine_bounds(comp)
@@ -1579,6 +1719,14 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
     out_template = f"{sample_name}_{start_node.position[0]}_{start_node.position[1]}_{start_node.position[2]}"
     out_file = f"{out_template}_{out_width}x{out_height}x{out_depth}.raw"
     out_goodness_file = f"{out_template}_goodness_{out_width}x{out_height}x{out_depth}.raw"
+
+    if not os.path.isfile(out_file):
+        print(f"Output file {out_file} is missing.")
+        redo_mosaic = True
+
+    if create_goodness_file and (not os.path.isfile(out_goodness_file)):
+        print(f"Goodness file {out_goodness_file} is missing.")
+        redo_mosaic = True
 
     # Make index file
     index_file = out_template + "_index.txt"
@@ -1622,6 +1770,9 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                              f"newimage(marker, uint8, 1, 1, 1);"
                              f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )
+
+                if redo_mosaic:
+                    delete_file(f"{out_template}_{jobs_started}_done.tif")
 
                 if not os.path.isfile(f"{out_template}_{jobs_started}_done.tif"):
                      run_pi2(pi_script, "")
