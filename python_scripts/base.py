@@ -72,7 +72,12 @@ def read_global_settings(config, args):
     if cluster != "":
         pi.distribute(cluster)
 
-    # Maximum stitching block size
+        # Maximum stitching block size
+        maxmem = int(pi.getmaxmemory())
+        # This assumes the worst typical case, pixel size = 4 bytes
+        max_block_size = int(pow(0.8 * (maxmem * 1024 * 1024) / (2 * 4 + 4), 0.333))
+        print(f"Maximum memory setting {maxmem} MiB leads to default maximum block size of {max_block_size}.")
+    
     max_block_size = get(config, 'max_block_size', max_block_size)
     if args.max_block_size:
         max_block_size = args.max_block_size

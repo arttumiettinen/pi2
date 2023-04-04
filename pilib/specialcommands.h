@@ -986,9 +986,31 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		MaxMemoryCommand() : Command("maxmemory", "Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm distribution mode).",
+		MaxMemoryCommand() : Command("maxmemory", "Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm etc. distribution modes).",
 			{
 				CommandArgument<double>(ParameterDirection::In, "maximum memory", "Maximum amount of memory to use, in megabytes. Specify zero to calculate the value automatically.", 0.0)
+			},
+			distributeSeeAlso())
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+	};
+
+
+	class GetMaxMemoryCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		GetMaxMemoryCommand() : Command("getmaxmemory", "Gets the maximum memory setting used in distributed processing. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm etc. distribution modes).",
+			{
+				CommandArgument<double>(ParameterDirection::Out, "maximum memory", "Maximum amount of memory to use, in megabytes.")
 			},
 			distributeSeeAlso())
 		{

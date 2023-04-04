@@ -339,7 +339,7 @@ class Pi2Value(Pi2Object):
         """
 
         val = self.pi2.pilib.getReal(self.pi2.piobj, self.name.encode('UTF-8'))
-        if val <= sys.float_info.min:
+        if val <= np.nextafter(-np.inf, 0, dtype=np.float32):
             self.pi2.raise_last_error()
         return val
 
@@ -1168,4 +1168,13 @@ class Pi2:
         
         result = self.newvalue("float")
         self.run_script(f"surfacearea({img.name}, {result.name}, {isovalue})")
+        return result.as_real()
+
+    def getmaxmemory(self):
+        """
+        Returns the current max memory setting for distributed processing.
+        """
+
+        result = self.newvalue("float")
+        self.run_script(f"getmaxmemory({result.name})")
         return result.as_real()
