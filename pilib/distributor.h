@@ -226,9 +226,9 @@ namespace pilib
 		/**
 		Gets contents of the configuration file.
 		Reads generic settings into the base class.
-		@param filename The name of the configuration file, this is decided by the derived class.
+		@param filenameTemplate The name template of the configuration file (file name without extension), this is decided by the derived class.
 		*/
-		INIReader readConfig(const std::string& filename);
+		INIReader readConfig(const std::string& filenameTemplate);
 
 
 	public:

@@ -15,6 +15,7 @@
 #include "filesystem.h"
 #include "timing.h"
 #include <random>
+#include <regex>
 
 using namespace std;
 
@@ -158,12 +159,50 @@ namespace pilib
 		configDir = piPath.remove_filename(); // NOTE: remove_filename modifies the original path and returns *this!
 	}
 
+	/**
+	Try to find cluster-specific configuration in format
+	[template]_[hostname regexp].txt
+	For example,
+	slurm_config_puhti-any.bullx.txt
+	slurm_config_ra-any.psi.ch.txt
+	String any will be replaced by *, as in Windows * is now allowed in file names.
+	*/
+	string selectConfigFile(const fs::path& directory, const string& filenameTemplate)
+	{
+		// Algorithm:
+		// Get host name.
+		// Get all files in the source dir that match "template_(*).txt"
+		// For each of them, extract (*), and check if it matches the hostname.
+		// If yes, we have found the correct settings file.
+		// If none matches, check if generic template.txt exists.
+		// If yes, we have found the correct settings file.
+		// If not, try other directory.
 
-	INIReader Distributor::readConfig(const std::string& filename)
+		fs::path directory;
+
+		string hostname = getHostname();
+		cout << hostname << endl;
+		vector<string> files = buildFileList((directory / (filenameTemplate + "_*.txt")).string());
+		for (string file : files)
+		{
+			file = std::regex_replace(file, std::regex("any"), "*");
+			string exp = file.substr(filenameTemplate.length(), file.length() - string(".txt").length() - filenameTemplate.length());
+			cout << exp << endl;
+			if (matches(hostname, exp))
+				return file;
+		}
+
+		if (fs::exists(directory / "slurm_config.txt"))
+			return (directory / "slurm_config.txt").string();
+
+		return "";
+	}
+
+	INIReader Distributor::readConfig(const std::string& filenameTemplate)
 	{
 		// First try to search config file from the current directory.
-		fs::path configPath = filename;
-		if (fs::exists(configPath))
+		fs::path configPath = selectConfigFile(".", filenameTemplate);
+		if (configPath != "")
 		{
 			INIReader reader(configPath.string());
 			readSettings(reader);
@@ -171,7 +210,7 @@ namespace pilib
 		}
 
 		// Then try a global config file from the installation directory.
-		configPath = configDir / filename;
+		configPath = selectConfigFile(configDir, filenameTemplate);
 		INIReader reader(configPath.string());
 		readSettings(reader);
 		return reader;
@@ -179,6 +218,7 @@ namespace pilib
 
 	void Distributor::readSettings(INIReader& reader)
 	{
+		cout << "Reading distributed processing settings from " << reader.getFilename() << endl;
 		piCommand = reader.get<string>("pi2_command", piCommand);
 		showSubmittedScripts = reader.get<bool>("show_submitted_scripts", false);
 		allowDelaying = reader.get<bool>("allow_delaying", true);

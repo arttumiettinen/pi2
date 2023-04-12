@@ -59,6 +59,8 @@ using namespace std;
 
 int main()
 {
+	cout << "Host name: " << getHostname() << endl;
+
 	//test(itl2::tests::escapes, "Escape sequences");
 
 	//test(itl2::io::tests::badnn5, "reading bad nn5");
@@ -89,7 +91,7 @@ int main()
 	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
 	//test(itl2::pcr::tests::read, "PCR read");
-	test(itl2::dicom::tests::read, "DICOM read");
+	//test(itl2::dicom::tests::read, "DICOM read");
 	
 	//test(itl2::sequence::tests::singleImages, "Single images as sequences");
 	//test(itl2::sequence::tests::match, "Matching");

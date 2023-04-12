@@ -17,7 +17,7 @@ namespace pilib
 
 	LSFDistributor::LSFDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
-		INIReader reader = Distributor::readConfig("lsf_config.txt");
+		INIReader reader = Distributor::readConfig("lsf_config");
 
 		extraArgsFastJobs = reader.get<string>("extra_args_fast_jobs", "");
 		extraArgsNormalJobs = reader.get<string>("extra_args_normal_jobs", "");

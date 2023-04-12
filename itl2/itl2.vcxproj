@@ -312,7 +312,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <Lib>
-      <AdditionalDependencies>opencl.lib;libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>opencl.lib;libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug no OpenCL|x64'">
@@ -334,7 +334,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <Lib>
-      <AdditionalDependencies>libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib;</AdditionalDependencies>
+      <AdditionalDependencies>libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -14,7 +14,7 @@ namespace pilib
 {
 	LocalDistributor::LocalDistributor(PISystem* piSystem) : Distributor(piSystem), allowedMem(0)
 	{
-		INIReader reader = Distributor::readConfig("local_config.txt");
+		INIReader reader = Distributor::readConfig("local_config");
 
 		size_t mem = (size_t)(reader.get<double>("max_memory", 0) * 1024 * 1024);
 

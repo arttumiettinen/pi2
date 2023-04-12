@@ -17,7 +17,7 @@ namespace pilib
 
 	SLURMDistributor::SLURMDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
-		INIReader reader = Distributor::readConfig("slurm_config.txt");
+		INIReader reader = Distributor::readConfig("slurm_config");
 
 		extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
 		extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");

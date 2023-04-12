@@ -27,17 +27,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build_instructions_linux.md = build_instructions_linux.md
 		build_instructions_macos.md = build_instructions_macos.md
 		build_instructions_windows.md = build_instructions_windows.md
-		LICENSE.txt = LICENSE.txt
 		cluster_instructions.md = cluster_instructions.md
+		LICENSE.txt = LICENSE.txt
 		example_config\local_config.txt = example_config\local_config.txt
 		example_config\lsf_config.txt = example_config\lsf_config.txt
 		README.md = README.md
 		example_config\rm-stitch-temp.cmd = example_config\rm-stitch-temp.cmd
 		example_config\rm-stitch-temp.sh = example_config\rm-stitch-temp.sh
 		example_config\slurm_config.txt = example_config\slurm_config.txt
-		example_config\slurm_config_csc_puhti.txt = example_config\slurm_config_csc_puhti.txt
-		example_config\slurm_config_psi_ra.txt = example_config\slurm_config_psi_ra.txt
 		example_config\stitch_settings.txt = example_config\stitch_settings.txt
+		example_config\slurm_config_ra-any.psi.ch.txt = example_config\slurm_config_ra-any.psi.ch.txt
+		example_config\slurm_config_puhti-any.bullx.txt = example_config\slurm_config_puhti-any.bullx.txt
 	EndProjectSection
 EndProject
 Global
