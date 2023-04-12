@@ -178,8 +178,6 @@ namespace pilib
 		// If yes, we have found the correct settings file.
 		// If not, try other directory.
 
-		fs::path directory;
-
 		string hostname = getHostname();
 		cout << hostname << endl;
 		vector<string> files = buildFileList((directory / (filenameTemplate + "_*.txt")).string());
