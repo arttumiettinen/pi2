@@ -154,8 +154,8 @@ namespace pilib
 		myName = itl2::toString(dist(rng));
 
 		fs::path piPath = findPi2();
-		configDir = piPath.remove_filename();
 		piCommand = "\"" + piPath.string() + "\"";
+		configDir = piPath.remove_filename(); // NOTE: remove_filename modifies the original path and returns *this!
 	}
 
 
