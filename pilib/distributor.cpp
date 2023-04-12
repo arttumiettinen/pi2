@@ -1518,10 +1518,12 @@ namespace pilib
 		}
 		catch (...)
 		{
+			jobTiming.clear();
 			delayedCommands.clear();
 			throw;
 		}
 
+		jobTiming.clear();
 		// This may deallocate images that are not in PISystem anymore.
 		delayedCommands.clear();
 	}

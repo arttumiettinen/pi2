@@ -328,6 +328,10 @@ namespace pilib
 		trim(result);
 
 		vector<string> parts = split(result, false, ' ');
+		
+		if (parts.size() != 2)
+			return make_tuple(-1.0, -1.0); // Output is invalid, unable to parse it.
+
 		return make_tuple(parseSlurmTime(parts[0]), parseRawTime(parts[1]));
 	}
 
@@ -544,14 +548,16 @@ namespace pilib
 				size_t doneCount = 0;
 				for (size_t n = 0; n < progress.size(); n++)
 				{
-					//if (progress[n] == JOB_FAILED || progress[n] >= 100)
 					if (progress[n] >= 100)
 					{
 						doneCount++;
 
-						if (get<0>(jobTiming[n]) < -1 || get<1>(jobTiming[n]) < -1)
+						if (jobTiming.size() == progress.size())
 						{
-							jobTiming[n] = getJobTimes(n);
+							if (get<0>(jobTiming[n]) < -1 || get<1>(jobTiming[n]) < -1)
+							{
+								jobTiming[n] = getJobTimes(n);
+							}
 						}
 					}
 				}
