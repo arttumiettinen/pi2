@@ -955,7 +955,7 @@ class Pi2:
         """
         unit = ""
 
-        headers = self.newstring()
+        headers = self.newvalue("string")
         self.headers(analyzers, headers)
         headers = headers.as_string().split(', ')
 
