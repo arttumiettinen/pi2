@@ -54,6 +54,7 @@ make -j16 NO_OPENCL=1
 
 The file `slurm_config_ra-any.psi.ch.txt` can be used as a default SLURM configuration file.
 You might need to edit it, though.
+
 Typically in Ra cluster, good performance is achieved when
 ```
 use_nn5 = False
@@ -74,12 +75,12 @@ Compile using command
 make -j16 NO_OPENCL=1
 ```
 
-The file slurm_config_puhti-any.bullx.txt can be used as a template SLURM configuration file.
+The file `slurm_config_puhti-any.bullx.txt` can be used as a template SLURM configuration file.
 You will need to edit it to enter your project number.
 
 Typically in Puhti cluster, good performance is achieved when NN5 is enabled with
 ```
-use_nn5 = True.
+use_nn5 = True
 ```
 Note that setting `use_nn5` to `False` might make the _entire cluster_ unusable and the
 admins will get angry at you. This has something to do with interplay between pi2 and Lustre
@@ -126,7 +127,7 @@ Compile pi2 using command
 make -j16 NO_OPENCL=1
 ```
 
-The file slurm_config_esrf.txt can be used as a starting point for SLURM
+The file `slurm_config_esrf.txt` can be used as a starting point for SLURM
 settings file. You will need to modify it, though! Please see notes in the
 template file.
 
