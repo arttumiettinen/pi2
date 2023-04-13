@@ -20,10 +20,11 @@ the string 'any' can be used to match any sequence of characters (note that the 
 not allowed in file names in all file systems).
 If the file with host name is not found, the system checks default file `slurm_config.txt`.
 All in all, the configuration search order is as follows:
-./slurm_config_[hostname].txt
-./slurm_config.txt
-pi2-dir/slurm_config_[hostname].txt
-pi2-dir/slurm_config.txt
+
+* ./slurm_config_[hostname].txt
+* ./slurm_config.txt
+* pi2-dir/slurm_config_[hostname].txt
+* pi2-dir/slurm_config.txt
 
 
 
