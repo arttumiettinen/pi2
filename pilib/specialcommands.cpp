@@ -1593,7 +1593,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		if (system->getDistributor())
 			*maxMem = system->getDistributor()->allowedMemory() / (1024.0 * 1024.0);
 		else
-			*maxMem = 0;
+			*maxMem = itl2::memorySize() / (1024.0 * 1024.0);
 	}
 
 	void MaxJobsCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

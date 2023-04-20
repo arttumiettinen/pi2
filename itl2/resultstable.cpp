@@ -81,17 +81,26 @@ namespace itl2
 
 	void Results::toImage(Image<float32_t>& img) const
 	{
-		size_t cols = headers().size();
-		img.ensureSize(cols, size());
 		img.metadata.set("column headers", headers().str());
-
-		for (size_t rowi = 0; rowi < size(); rowi++)
+		if (size() > 0)
 		{
-			const vector<double>& row = (*this)[rowi];
-			for (size_t coli = 0; coli < cols; coli++)
+			size_t cols = headers().size();
+			img.ensureSize(cols, size());
+			
+			for (size_t rowi = 0; rowi < size(); rowi++)
 			{
-				img(coli, rowi) = (float32_t)row[coli];
+				const vector<double>& row = (*this)[rowi];
+				for (size_t coli = 0; coli < cols; coli++)
+				{
+					img(coli, rowi) = (float32_t)row[coli];
+				}
 			}
+		}
+		else
+		{
+			// We have no results to store in the table.
+			// There is no functionality in the Image class to represent images of zero height, so we'll throw an exception.
+			throw ITLException("The results table is empty and cannot therefore be expressed as an image.");
 		}
 	}
 

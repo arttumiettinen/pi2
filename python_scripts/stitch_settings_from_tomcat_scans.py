@@ -165,7 +165,10 @@ def main():
         if good_count > 1:
             print("Writing output to stitch_settings.txt...")
 
-            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', mask_to_max_circle=args.mask)
+            mask_d = -1 # Rectangle mask
+            if args.mask:
+                mask_d = 0 # Automatic circle mask
+            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', max_circle_diameter=mask_d)
             
             print('All done. Consider running nr_stitcher.py now.')
         else:

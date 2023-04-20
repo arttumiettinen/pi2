@@ -955,7 +955,7 @@ class Pi2:
         """
         unit = ""
 
-        headers = self.newstring()
+        headers = self.newvalue("string")
         self.headers(analyzers, headers)
         headers = headers.as_string().split(', ')
 
@@ -990,7 +990,10 @@ class Pi2:
 
         index, unit = self.get_column_index(column_name, analyzers)
         data = particle_analysis_result.to_numpy_pointer()
-        column = data[index, :]
+        if len(data.shape) > 1:
+            column = data[index, :]
+        else:
+            column = data[index]
         return column, unit
 
 
