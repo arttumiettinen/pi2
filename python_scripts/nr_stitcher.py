@@ -93,7 +93,7 @@ def main():
     argsparser.add_argument('--fine_binning', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--normalize_in_blockmatch', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--normalize_while_stitching', type=str, help='Overrides corresponding setting read from the configuration file.')
-    argsparser.add_argument('--mask_to_max_circle', type=str, help='Overrides corresponding setting read from the configuration file.')
+    argsparser.add_argument('--max_circle_diameter', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--global_optimization', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--allow_rotation', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--allow_local_deformations', type=str, help='Overrides corresponding setting read from the configuration file.')
@@ -178,10 +178,10 @@ def main():
     settings.normalize_while_stitching = to_bool(sval)
 
     # Mask each input image to maximum inscribed circle?
-    sval = get(config, "mask_to_max_circle", 'False')
-    if args.mask_to_max_circle:
-        sval = args.mask_to_max_circle
-    settings.max_circle = to_bool(sval)
+    sval = get(config, "max_circle_diameter", "-1")
+    if args.max_circle_diameter:
+        sval = args.max_circle_diameter
+    settings.max_circle_diameter = float(sval)
 
     # Allow global optimization of transformations?
     sval = get(config, 'global_optimization', 'True')
@@ -305,7 +305,7 @@ def main():
         
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file)
+    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle_diameter, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file)
 
     wait_for_cluster_jobs()
 

@@ -1,6 +1,6 @@
 
 
-def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, cluster_name='None', normalize_while_stitching=False, mask_to_max_circle=False):
+def write_stitch_settings(sample_name, binning, positions, point_spacing=60, coarse_block_radius=120, coarse_binning=4, cluster_name='None', normalize_while_stitching=False, max_circle_diameter=-1):
     """
     Writes new stitch settings file to stitch_settings.txt.
     sample_name - prefix of output files.
@@ -85,11 +85,17 @@ normalize_in_blockmatch = True
 # or local gray-value gradients, respectively.
 normalize_while_stitching = {normalize_while_stitching}
 
-# Set to true to mask each input image such that only pixels inside the maximum
-# inscribed circle that fits into each xy-slice of the image are taken into account
-# in stitching. This is useful if, e.g. tomographic slices contain bad values outside the
+
+# Selects tile pixel weighing method. Set to a negative value to use rect weight, where weight
+# of a pixel is proportional to the distance from the edge of the tile. Set to 0 to use
+# maximum circle weight, where the weight of a pixel is proportional to the distance from
+# the edge of a maximal inscribed circle that fits inside the image in the xy-plane. Set
+# to a positive value to use circle weight with user-specified diameter.
+# This is useful if, e.g. tomographic slices contain bad values outside the
 # well-reconstructed region.
-mask_to_max_circle = {mask_to_max_circle}
+# Note that currently masking is made after calculation of gray level normalization, see
+# also normalize_while_stitching and normalize_in_blockmatch settings.
+max_circle_diameter = {max_circle_diameter}
 
 
 # Threshold value for displacement filtering.

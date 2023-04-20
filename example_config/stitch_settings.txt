@@ -84,13 +84,17 @@ normalize_in_blockmatch = True
 normalize_while_stitching = True
 
 
-# Set to true to mask each input image such that only pixels inside the maximum
-# inscribed circle that fits into each xy-slice of the image are taken into account
-# in stitching. This is useful if, e.g. tomographic slices contain bad values outside the
+
+# Selects tile pixel weighing method. Set to a negative value to use rect weight, where weight
+# of a pixel is proportional to the distance from the edge of the tile. Set to 0 to use
+# maximum circle weight, where the weight of a pixel is proportional to the distance from
+# the edge of a maximal inscribed circle that fits inside the image in the xy-plane. Set
+# to a positive value to use circle weight with user-specified diameter.
+# This is useful if, e.g. tomographic slices contain bad values outside the
 # well-reconstructed region.
 # Note that currently masking is made after calculation of gray level normalization, see
 # also normalize_while_stitching and normalize_in_blockmatch settings.
-mask_to_max_circle = False
+max_circle_diameter = -1
 
 
 # Threshold value for displacement filtering.

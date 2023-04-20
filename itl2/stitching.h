@@ -887,13 +887,14 @@ namespace itl2
 		After calling the method for all input images:
 		- image mean does not need further processing.
 		- image S must be divided by image weight and to get standard deviation, sqrt must be taken.
+		@param maxCircleDiameter Set to 0 to use "normal" weight that is related to the distance from the edge of the image. Set to positive value to use weight that is proportional to distance from max circle of given diameter.
 		*/
 		template<typename pixel_t, typename real_t> void stitchOneVer3(
 			const Image<pixel_t>& src, const Vec3<real_t>& srcBlockPos, const Vec3c fullSrcDimensions,
 			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts,
 			real_t normFactor, real_t normFactorStd, real_t meanDef,
 			const Vec3c& outPos, Image<real_t>& mean, Image<real_t>& weight, Image<real_t>* S,
-			bool normalize)
+			bool normalize, real_t maxCircleDiameter)
 		{
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
@@ -960,14 +961,27 @@ namespace itl2
 								if (normalize)
 									pix = (pix - meanDef) * normFactorStd + meanDef + normFactor;
 
-								real_t w1 = 2 * std::min(p.x, fullSrcDimensions.x - 1 - p.x) / s;
-								real_t w2 = 2 * std::min(p.y, fullSrcDimensions.y - 1 - p.y) / s;
-								real_t w3 = 2 * std::min(p.z, fullSrcDimensions.z - 1 - p.z) / s;
+								real_t ww;
+								if (maxCircleDiameter <= 0)
+								{
+									// Rect weight
+									real_t w1 = 2 * std::min(p.x, fullSrcDimensions.x - 1 - p.x) / s;
+									real_t w2 = 2 * std::min(p.y, fullSrcDimensions.y - 1 - p.y) / s;
+									real_t w3 = 2 * std::min(p.z, fullSrcDimensions.z - 1 - p.z) / s;
 
-								if (src.dimensionality() < 3)
-									w3 = 1;
+									if (src.dimensionality() < 3)
+										w3 = 1;
 
-								real_t ww = w1 * w2 * w3;
+									ww = w1 * w2 * w3;
+								}
+								else
+								{
+									// Circle weight
+									real_t r = (Vec2f(p.x, p.y) - Vec2f((float32_t)fullSrcDimensions.x, (float32_t)fullSrcDimensions.y) / 2).norm();
+									ww = 1 - r / (maxCircleDiameter / 2);
+									if (ww < 0)
+										ww = 0;
+								}
 
 								if (ww > 0)
 								{
@@ -978,7 +992,7 @@ namespace itl2
 
 									if (xo >= 0 && yo >= 0 && zo >= 0 && xo < mean.width() && yo < mean.height() && zo < mean.depth())
 									{
-										// Use this to visualization weights etc. for debugging:
+										//// Use this to visualization weights etc. for debugging:
 										//coord_t xo = x - outPos.x;
 										//coord_t yo = y - outPos.y;
 										//coord_t zo = z - outPos.z;
@@ -1132,10 +1146,11 @@ namespace itl2
 	@param output Output image.
 	@param std Pointer to goodness image, or nullptr.
 	@param normalize Set to true to contrast match the tiles.
+	@param maxCircleMaskDiameter Set to negative value to use rect weight (proportional to distance from tile edge). Set to 0 to use maximum circle weight (weight proportional to distance from the edge of a maximal circle that fits inside the image). Set to positive value to use circle weight with user-specified diameter.
 	@param srcBlockSize Maximum block size that is read from an input image at once. Use to limit RAM requirements.
 	*/
 	template<typename pixel_t> void stitchVer3(const string& indexFile, const Vec3c& outputPos, const Vec3c& outputSize,
-		Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, bool maskMaxCircle, const Vec3c& srcBlockSize)
+		Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, float32_t maxCircleMaskDiameter, const Vec3c& srcBlockSize)
 	{
 
 		// Read index file
@@ -1185,6 +1200,13 @@ namespace itl2
 			Vec3c cc(refPoints.xg.first, refPoints.yg.first, refPoints.zg.first);
 			Vec3c cd(refPoints.xg.maximum, refPoints.yg.maximum, refPoints.zg.maximum);
 
+			// Note that the automatic determination of mask circle diameter is made separately for each tile.
+			float32_t maskD;
+			if (maxCircleMaskDiameter == 0)
+				maskD = (float32_t)std::min(srcDimensions.x, srcDimensions.y);
+			else
+				maskD = maxCircleMaskDiameter;
+
 			if (internals::overlapsWithOutput(cc, cd, outputPos, outputSize))
 			{
 				Image<Vec3<float32_t> > shifts;
@@ -1206,22 +1228,23 @@ namespace itl2
 							clamp(srcBlockPos, Vec3c(0, 0, 0), srcDimensions);
 							clamp(srcBlockEnd, Vec3c(0, 0, 0), srcDimensions);
 
-							std::cout << "Source block size = " << (srcBlockEnd - srcBlockPos) << std::endl;
+							//std::cout << "Source block size = " << (srcBlockEnd - srcBlockPos) << std::endl;
 
 							Image<pixel_t> srcBlock(srcBlockEnd - srcBlockPos);
 							io::readBlock(srcBlock, imgFile, srcBlockPos);
 
-							if (maskMaxCircle)
-							{
-								Image<pixel_t> mask(srcBlock.width(), srcBlock.height());
-								float32_t d = (float32_t)std::min(srcDimensions.x, srcDimensions.y);
-								Vec3f c(srcDimensions.x / 2.0f, srcDimensions.y / 2.0f, 0);
-								draw<pixel_t>(mask, Sphere<float32_t>(c - Vec3f(srcBlockPos), d / 2.0f), (pixel_t)1);
-								multiply(srcBlock, mask, true);
-							}
+							//if (maskMaxCircle)
+							//{
+							//	Image<pixel_t> mask(srcBlock.width(), srcBlock.height());
+							//	float32_t d = (float32_t)std::min(srcDimensions.x, srcDimensions.y);
+							//	Vec3f c(srcDimensions.x / 2.0f, srcDimensions.y / 2.0f, 0);
+							//	draw<pixel_t>(mask, Sphere<float32_t>(c - Vec3f(srcBlockPos), d / 2.0f), (pixel_t)1);
+							//	multiply(srcBlock, mask, true);
+							//}
 
 							internals::stitchOneVer3<pixel_t, float32_t>(srcBlock, Vec3f(srcBlockPos), srcDimensions,
-								refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
+								refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr,
+								normalize, maskD);
 						}
 					}
 				}

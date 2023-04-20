@@ -86,7 +86,7 @@ def read_global_settings(config, args):
         print(f"RAM usage of {maxmem} MiB leads to maximum block size of {max_block_size}.")
     
     max_block_size_temp = get(config, 'max_block_size', max_block_size)
-    if max_block_size_temp > 0:
+    if int(max_block_size_temp) > 0:
         max_block_size = max_block_size_temp
     if args.max_block_size:
         max_block_size = args.max_block_size
@@ -1629,7 +1629,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
     return changed
 
 
-def run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
+def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
     """
     Prepares and runs pi2 stitching process for connected component 'comp' of scan relations tree 'tree'.
     - determines final world to image transformations
@@ -1690,7 +1690,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
 
     # Check stitch settings
     settingsfile = f"{sample_name}_mosaic_settings.txt"
-    settings_contents = f"{normalize}, {max_circle}, {create_goodness_file}"
+    settings_contents = f"{normalize}, {max_circle_diameter}, {create_goodness_file}"
     current_contents = get_contents(settingsfile)
     if settings_contents != current_contents:
         print("Mosaic settings have changed.")
@@ -1753,7 +1753,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                 if not create_goodness_file:
                     pi_script = (f"echo;"
                                  f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
-                                 f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle}, {block_size});"
+                                 f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle_diameter}, {block_size});"
                                  f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                                  f"newimage(marker, uint8, 1, 1, 1);"
                                  f"writetif(marker, {out_template}_{jobs_started}_done);"
@@ -1762,7 +1762,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
                     pi_script = (f"echo;"
                              f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"newlikefile(goodnessimg, {first_file_name}, Unknown, 1, 1, 1);"
-                             f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle}, {block_size});"
+                             f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle_diameter}, {block_size});"
                              f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                              f"writerawblock(goodnessimg, {out_goodness_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
                              f"newimage(marker, uint8, 1, 1, 1);"
@@ -1783,7 +1783,7 @@ def run_stitching(comp, sample_name, normalize, max_circle, global_optimization,
     return jobs_started
 
 
-def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
+def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file):
     """
     Calls run_stitching for each connected component in relations network.
     """
@@ -1791,7 +1791,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
-        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file)
+        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file)
 
     if (jobs_started > 0) and is_use_cluster():
         return False
