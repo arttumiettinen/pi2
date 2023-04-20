@@ -499,6 +499,9 @@ class Test_basic:
         pi2.drawellipsoids(img, analyzers, result, 2)
         pi2.writeraw(img, output_file('ellipsoids_local'))
 
+        # Get a column to check that get_column works.
+        test_column = pi2.get_column('Volume', result, analyzers)
+
         pa = result.get_data()
     
 
@@ -590,7 +593,6 @@ class Test_basic:
         pi2.headers(analyzers)
 
         pa_local = self.analyze_particles_local(analyzers)
-    
 
         # Flood fill all particles so that only background should be left
         img = pi2.read(output_file('particles'))

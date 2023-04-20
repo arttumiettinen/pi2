@@ -1008,9 +1008,9 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		GetMaxMemoryCommand() : Command("getmaxmemory", "Gets the maximum memory setting used in distributed processing. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm etc. distribution modes).",
+		GetMaxMemoryCommand() : Command("getmaxmemory", "Gets the amount of available RAM. The value is the amount RAM in the local computer (Local distribution mode or no distribution mode at all) or in a compute node (Slurm etc. distribution modes), or value defined in the relevant _config.txt file.",
 			{
-				CommandArgument<double>(ParameterDirection::Out, "maximum memory", "Maximum amount of memory to use, in megabytes.")
+				CommandArgument<double>(ParameterDirection::Out, "maximum memory", "Amount of RAM available, in megabytes.")
 			},
 			distributeSeeAlso())
 		{

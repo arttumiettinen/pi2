@@ -104,8 +104,12 @@ cluster = {cluster_name}
 
 
 # Maximum size of image block that is processed in one process is max_block_size^3.
-# Set to such a value that (2 * pixel_size_in_bytes + 4) * max_block_size^3 < available memory in bytes.
-max_block_size = 2500
+# Set to zero to determine the value automatically based on available RAM.
+# If create_goodness is false, set to such a value that
+# (tile_pixel_size + 8) * max_block_size^3 < (available_memory_in_bytes).
+# If create_goodness is true, set to such a value that 
+# (tile_pixel_size + 12) * max_block_size^3 < (available_memory_in_bytes).
+max_block_size = 0
 
 
 

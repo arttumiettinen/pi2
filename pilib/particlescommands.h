@@ -330,71 +330,6 @@ namespace pilib
 	{
 	private:
 
-		//static void readList(const string& filename, vector<coord_t>& v)
-		//{
-		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-		//	if (!in)
-		//		throw ITLException(string("Unable to open file: ") + filename);
-
-		//	size_t s = 0;
-		//	in.read((char*)&s, sizeof(size_t));
-
-		//	v.reserve(v.size() + s);
-
-		//	for (size_t n = 0; n < s; n++)
-		//	{
-		//		coord_t val;
-		//		in.read((char*)&val, sizeof(coord_t));
-		//		v.push_back(val);
-		//	}
-		//}
-
-		//static void readList(std::ifstream& in, vector<Vec3sc>& v)
-		//{
-		//	size_t s = 0;
-		//	in.read((char*)&s, sizeof(size_t));
-
-		//	v.reserve(v.size() + s);
-
-		//	for (size_t n = 0; n < s; n++)
-		//	{
-		//		Vec3sc val;
-		//		in.read((char*)&val.x, sizeof(uint32_t));
-		//		in.read((char*)&val.y, sizeof(uint32_t));
-		//		in.read((char*)&val.z, sizeof(uint32_t));
-		//		v.push_back(val);
-		//	}
-		//}
-
-		//static void readList(const string& filename, vector<Vec3sc>& v)
-		//{
-		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-		//	if (!in)
-		//		throw ITLException(string("Unable to open file: ") + filename);
-
-		//	readList(in, v);
-		//}
-
-		//static void readList(const string& filename, vector<vector<Vec3sc> >& v)
-		//{
-		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-		//	if (!in)
-		//		throw ITLException(string("Unable to open file: ") + filename);
-
-		//	size_t s = 0;
-		//	in.read((char*)&s, sizeof(size_t));
-
-		//	v.reserve(v.size() + s);
-
-		//	vector<Vec3sc> val;
-		//	for (size_t n = 0; n < s; n++)
-		//	{
-		//		val.clear();
-		//		readList(in, val);
-		//		v.push_back(val);
-		//	}
-		//}
-
 		static void readList(const string& filename, vector<vector<Vec3sc> >& v)
 		{
 			itl2::readListFile(filename, v, [=](std::ifstream& in, std::vector<Vec3sc>& v) { itl2::readList<Vec3sc>(in, v); });
@@ -403,7 +338,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		AnalyzeParticlesCommand() : Command("analyzeparticles", "Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command `headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see `analyzelabels`.",
+		AnalyzeParticlesCommand() : Command("analyzeparticles", "Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command `headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see `analyzelabels`. Note that the command fails to run if the input image does not contain any particles.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::InOut, "input image", "Input image. The particles in this image will be filled with temporary color."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command `headers` to retrieve meanings of columns."),
