@@ -179,13 +179,18 @@ namespace pilib
 		// If not, try other directory.
 
 		string hostname = getHostname();
-		cout << hostname << endl;
 		vector<string> files = buildFileList((directory / (filenameTemplate + "_*.txt")).string());
 		for (string file : files)
 		{
-			file = std::regex_replace(file, std::regex("any"), "*");
-			string exp = file.substr(filenameTemplate.length(), file.length() - string(".txt").length() - filenameTemplate.length());
-			cout << exp << endl;
+            fs::path fp = file;
+
+            fs::path directory = fp;
+            directory.remove_filename();
+            fs::path filename = fp.filename();
+            
+			string fs = std::regex_replace(filename.string(), std::regex("any"), "*");
+			string exp = fs.substr(filenameTemplate.length() + 1, fs.length() - string(".txt").length() - filenameTemplate.length() - 1);
+
 			if (matches(hostname, exp))
 				return file;
 		}
