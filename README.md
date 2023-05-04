@@ -17,7 +17,7 @@ The user-oriented help of pi2, including examples, can be read at [ReadTheDocs](
 
 ## Binaries
 
-Pre-built binaries for Windows and CentOS Linux can be downloaded from the [releases page](https://github.com/arttumiettinen/pi2/releases).
+Pre-built binaries for Windows can be downloaded from the [releases page](https://github.com/arttumiettinen/pi2/releases).
 
 
 ## Design decisions
@@ -49,3 +49,17 @@ This software is licensed under [GNU General Public License v3.0.](LICENSE.txt)
 
 Some external parts of the software (that might be statically or dynamically linked depending on configuration) are licensed under their respective licenses. Please run `pi2 license` for most up-to-date information.
 
+
+## Versioning
+
+The source code repository is divided into two main branches: master and experimental.
+The master branch contains the latest 'stable' and therefore more tested version.
+The experimental branch contains work in progress.
+
+Versions are indicated using tags in the form "vX.Y.Z", e.g. v4.6.17.
+Version numbers that do not contain third part (.Z) are 'stable' versions and snapshots
+of the master branch in some well-selected state.
+Version numbers that contain the third number (.Z) correspond to experimental branch in
+some usable but no thoroughly tested state (e.g., new functionality, quick bug fixes).
+
+Version numbers below v4.4.2 may not follow the above conventions.
