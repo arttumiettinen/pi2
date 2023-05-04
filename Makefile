@@ -100,7 +100,7 @@ itl2:
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 pilib: itl2
-	./pilib/create_commit_info.sh
+	-./pilib/create_commit_info.sh >/dev/null 2>/dev/null
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 pi2: pilib
