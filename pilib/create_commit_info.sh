@@ -5,7 +5,7 @@ then
 
 	if git rev-parse --is-inside-work-tree &> /dev/null
 	then
-		OLD=$(cat ./pilib/commit_info.txt) 2>/dev/null
+		OLD=$(cat ./pilib/commit_info.txt 2>/dev/null)
 		NEW="const std::string VERSION = \"$(git describe --dirty --always --tags)\";"
 
 		echo $OLD
