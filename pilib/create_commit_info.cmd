@@ -19,13 +19,13 @@ IF !ERRORLEVEL! EQU 0 (
 	)
 )
 
-echo std::string VERSION = ^"%NEW%^"; > commit_info_temp.txt
+echo std::string VERSION = ^"!NEW!^"; > commit_info_temp.txt
 set /p NEW=<commit_info_temp.txt
 
 rem echo %OLD%
 rem echo %NEW%
 
 IF NOT !OLD!==!NEW! (
-	echo Version string changed
-	echo %NEW%>commit_info.txt
+	echo Version string changed to !NEW!
+	echo !NEW!>commit_info.txt
 )
