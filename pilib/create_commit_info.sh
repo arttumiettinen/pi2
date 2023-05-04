@@ -8,8 +8,8 @@ then
 		OLD=$(cat ./pilib/commit_info.txt 2>/dev/null)
 		NEW="const std::string VERSION = \"$(git describe --dirty --always --tags)\";"
 
-		echo $OLD
-		echo $NEW
+		#echo $OLD
+		#echo $NEW
 
 		# Only write the file if the version is different.
 		# This is to ensure that no re-build is triggered unnecessarily.
