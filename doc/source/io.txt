@@ -16,6 +16,7 @@ Type                        Reading  Writing  Reading blocks  Writing blocks
 `.tif`_                     Yes      Yes      Yes             Yes                
 `.nrrd`_                    Yes      Yes      No              No
 `.vol/.longvol`_            Yes      No       Yes             No
+PyHST .vol                  Yes      No       Yes             No
 .pcr                        Yes      No       Yes             No
 .dcm (DICOM)                Yes      No       No              No
 NN5                         Yes      Yes      Yes             Yes

@@ -1129,10 +1129,10 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 		Vec3c dimensions;
 		ImageDataType dt;
-		string endianness;
+		bool isBigEndian;
 		size_t headerSize;
 		string reason;
-		if (!vol::getInfo(filename, dimensions, dt, endianness, headerSize, reason))
+		if (!vol::getInfo(filename, dimensions, dt, isBigEndian, headerSize, reason))
 			throw ITLException(string("Not a .vol file: ") + filename + ". " + reason);
 
 		pick<CreateImageAndReadVol>(dt, dimensions, name, system, filename);

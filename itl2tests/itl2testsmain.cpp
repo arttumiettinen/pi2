@@ -84,7 +84,7 @@ int main()
 	//test(io::tests::readWrite, "IO read");
 	//test(raw::tests::writeBlock, "Block based raw reader & writer");
 	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
-	//test(vol::tests::volio, ".vol input/output");
+	test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
 	//test(itl2::jpeg::tests::jpeg, "Jpeg read");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
