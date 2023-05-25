@@ -4,6 +4,7 @@
 #include "stringutils.h"
 #include "math/vec3.h"
 #include "io/raw.h"
+#include "byteorder.h"
 
 #include <string>
 #include <array>
