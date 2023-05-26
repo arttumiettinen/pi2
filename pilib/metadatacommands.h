@@ -74,7 +74,7 @@ namespace pilib
 		{
 			const string& key = std::get<string>(args[0]);
 			coord_t row = std::get<coord_t>(args[1]);
-			coord_t* out = std::get<coord_t*>(args[1]);
+			coord_t* out = std::get<coord_t*>(args[2]);
 			*out = in.metadata.columnCount(key, row);
 		}
 	};
