@@ -318,6 +318,11 @@ namespace itl2
 		float32_t cameraRotation = 0.0f;
 
 		/**
+		Amount of tilt in rotation axis around axis that is normal to sample up and optical axis.
+		*/
+		float32_t rotationAxisTilt = 0.0f;
+
+		/**
 		Rate of change of center shift as a function of angle from the image taken at central angle.
 		*/
 		float32_t csAngleSlope = 0.0f;
@@ -766,10 +771,11 @@ namespace itl2
 				
 
 				float32_t angleRad = (rotMul * settings.angles[anglei] + settings.rotation) / 180.0f * PIf;
-				itl2::rotate<float32_t>(ps, angleRad, 0.0f);
-				itl2::rotate<float32_t>(pd, angleRad, 0.0f);
-				itl2::rotate<float32_t>(u, angleRad, 0.0f);
-				itl2::rotate<float32_t>(v, angleRad, 0.0f);
+				float32_t rotTiltRad = settings.rotationAxisTilt / 180.0f * PIf;
+				itl2::rotate<float32_t>(ps, angleRad, rotTiltRad);
+				itl2::rotate<float32_t>(pd, angleRad, rotTiltRad);
+				itl2::rotate<float32_t>(u, angleRad, rotTiltRad);
+				itl2::rotate<float32_t>(v, angleRad, rotTiltRad);
 				Vec3f w = u.cross(v);
 
 				//float32_t sdx = settings.objectShifts[anglei].x * settings.shiftScaling * (settings.useShifts ? 1 : 0);

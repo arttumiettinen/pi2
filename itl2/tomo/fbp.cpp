@@ -134,6 +134,7 @@ namespace itl2
 		meta.set("center_shift", centerShift);
 		meta.set("camera_z_shift", cameraZShift);
 		meta.set("camera_rotation", cameraRotation);
+		meta.set("rotation_axis_tils", rotationAxisTilt);
 		meta.set("cs_angle_slope", csAngleSlope);
 		meta.set("angle_tweak", angleTweak);
 		meta.set("pad_type", padType);
@@ -181,6 +182,7 @@ namespace itl2
 		s.centerShift = meta.get("center_shift", s.centerShift);
 		s.cameraZShift = meta.get("camera_z_shift", s.cameraZShift);
 		s.cameraRotation = meta.get("camera_rotation", s.cameraRotation);
+		s.rotationAxisTilt = meta.get("rotation_axis_tilt", s.rotationAxisTilt);
 		s.csAngleSlope = meta.get("cs_angle_slope", s.csAngleSlope);
 		s.angleTweak = meta.get("angle_tweak", s.angleTweak);
 		s.padType = meta.get("pad_type", s.padType);
