@@ -88,9 +88,9 @@ def main():
 
             scan_name = parser.logDict['Scan Settings File Prefix']
             pixel_size = parser.logDict['Detector Settings Actual pixel size [um]']
-            xx = parser.logDict['Sample coordinates XX-coordinate']
-            zz = parser.logDict['Sample coordinates ZZ-coordinate']
-            y = parser.logDict['Sample coordinates Y-coordinate']
+            xx = parser.logDict['User Sample coordinates XX-coordinate']
+            zz = parser.logDict['User Sample coordinates ZZ-coordinate']
+            y = parser.logDict['User Sample coordinates Y-coordinate']
             gigafrost = parser.logDict['Detector Settings Camera'] == 'GigaFRoST'
             
             rec_dir = ""
