@@ -1146,7 +1146,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			io::readBlock<pixel_t>(img, filename, blockStart, true);
+			io::readBlock<pixel_t>(img, filename, blockStart, false);
 		}
 	};
 
@@ -1203,7 +1203,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& fileDims, const Vec3c& blockStart)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			raw::readBlockNoParse<pixel_t>(img, filename, fileDims, blockStart, true);
+			raw::readBlockNoParse<pixel_t>(img, filename, fileDims, blockStart, false);
 		}
 	};
 
@@ -1274,7 +1274,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			sequence::readBlock<pixel_t>(img, filename, blockStart, true);
+			sequence::readBlock<pixel_t>(img, filename, blockStart, false);
 		}
 	};
 
