@@ -159,11 +159,21 @@ namespace itl2
 		meta.set("rotation_axis_shifts", rotationAxisShifts);
 	}
 
+	void checkMetaItem(const string& item, const ImageMetadata& meta)
+	{
+		if (!meta.contains(item))
+			throw ITLException(item + " item is missing from image metadata.");
+	}
 	
 	RecSettings RecSettings::fromMeta(ImageMetadata& meta)
 	{
 		// This constructs default settings
 		RecSettings s;
+
+		// Check that essential metadata exists.
+		checkMetaItem("source_to_ra", meta);
+		checkMetaItem("angles", meta);
+
 
 		s.sourceToRA = meta.get("source_to_ra", s.sourceToRA);
 		s.rotationDirection = meta.get("rotation_direction", s.rotationDirection);
