@@ -25,8 +25,13 @@ def main():
         argsparser.add_argument('-n', '--name', default='stitched', type=str, help='Sample name.')
         argsparser.add_argument('-r', '--recdir', default='', type=str, help='Try to find reconstructions from this directory. Use e.g. if the reconstructions were done in Ra and the original log files do not contain reconstruction folder. String %%s will be replaced by sub-scan name, e.g. /das/work/p1234/Data10/disk1/%%s/ may expand to /das/work/p1234/Data10/disk1/01_BigSample_B7/')
         argsparser.add_argument('-m', '--mask', action='store_true', help='Set to true to mask the input images to the maximum inscribed circle in each cross-section. Use this setting to erase possible bad data outside of the well-reconstructed region.')
+        argsparser.add_argument('-u', '--units', default='um', type=str, help='Units used for sample coordinates in the log files. Can be mm or um.')
 
         args = argsparser.parse_args()
+
+        coord_factor = 1
+        if args.units == 'mm':
+            coord_factor = 1000
 
         if len(args.scan_folders) <= 0:
             args.scan_folders = ['./*']
@@ -88,9 +93,9 @@ def main():
 
             scan_name = parser.logDict['Scan Settings File Prefix']
             pixel_size = parser.logDict['Detector Settings Actual pixel size [um]']
-            xx = parser.logDict['Sample coordinates XX-coordinate']
-            zz = parser.logDict['Sample coordinates ZZ-coordinate']
-            y = parser.logDict['Sample coordinates Y-coordinate']
+            xx = parser.logDict['Sample user coordinates XX-coordinate']
+            zz = parser.logDict['Sample user coordinates ZZ-coordinate']
+            y = parser.logDict['Sample user coordinates Y-coordinate']
             gigafrost = parser.logDict['Detector Settings Camera'] == 'GigaFRoST'
             
             rec_dir = ""
@@ -115,9 +120,9 @@ def main():
                 #d = int(numbers[1]) - int(numbers[0]) + 1
 
                 # Convert from beamline coordinates to image coordinates
-                X = zz / pixel_size
-                Y = -xx / pixel_size
-                Z = y / pixel_size
+                X = zz * coord_factor / pixel_size
+                Y = -xx * coord_factor / pixel_size
+                Z = y * coord_factor / pixel_size
 
                 # GigaFRoST images use different coordinate system -> fix that here
                 if gigafrost:
@@ -165,10 +170,7 @@ def main():
         if good_count > 1:
             print("Writing output to stitch_settings.txt...")
 
-            mask_d = -1 # Rectangle mask
-            if args.mask:
-                mask_d = 0 # Automatic circle mask
-            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', max_circle_diameter=mask_d)
+            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', mask_to_max_circle=args.mask)
             
             print('All done. Consider running nr_stitcher.py now.')
         else:
