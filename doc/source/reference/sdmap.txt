@@ -6,7 +6,7 @@ sdmap
 
 **Syntax:** :code:`sdmap(seeds, geometry, output, connectivity)`
 
-Calculates seeded distance map of a binary image. For each pixel in the image, finds the shortest pixel-by-pixel path to nearest seed region such that the path does not pass through regions that are marked as obstacles. The output is the length of the shortest path, calculated as sum of pixel-to-pixel steps that must be taken to follow the path. This is in contrast to the :ref:`dmap` command where the distance to the seed region is direct Euclidean distance and no separate obstacles are supported. Please note that comparing the output of :ref:`dmap` and :ref:`sdmap` commands might lead to surprising results due to the different definition of distance.
+Calculates seeded distance map of a binary image. For each pixel in the image, finds the shortest pixel-by-pixel path to nearest seed region such that the path does not pass through regions that are marked as obstacles. The output is the length of the shortest path, calculated as the number of pixel-to-pixel steps that must be taken to follow the path. This is in contrast to the :ref:`dmap` command where the distance to the seed region is direct Euclidean distance and no separate obstacles are supported. Please note that comparing the output of :ref:`dmap` and :ref:`sdmap` commands might lead to surprising results due to the different definition of distance.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
