@@ -162,7 +162,7 @@ namespace itl2
 	void checkMetaItem(const string& item, const ImageMetadata& meta)
 	{
 		if (!meta.contains(item))
-			throw ITLException(item + " item is missing from image metadata.");
+			throw ITLException(string("'") + item + "' item is missing from image metadata.");
 	}
 	
 	RecSettings RecSettings::fromMeta(ImageMetadata& meta)
@@ -172,7 +172,15 @@ namespace itl2
 
 		// Check that essential metadata exists.
 		checkMetaItem("source_to_ra", meta);
-		checkMetaItem("angles", meta);
+		
+		//checkMetaItem("angles", meta);
+		string anglesName;
+		if (meta.contains("angles"))
+			anglesName = "angles";
+		else if (meta.contains("Angles [deg]"))
+			anglesName = "Angles [deg]";
+		else
+			throw ITLException("'angles' item or 'Angles [deg]' item is missing from image metadata.");
 
 
 		s.sourceToRA = meta.get("source_to_ra", s.sourceToRA);
@@ -211,13 +219,13 @@ namespace itl2
 		s.useShifts = meta.get("use_shifts", s.useShifts);
 
 		std::vector<float32_t> emptyV1;
-   		s.angles = meta.getList<float32_t>("angles", emptyV1);
+   		s.angles = meta.getList<float32_t>(anglesName, emptyV1, true);
 		std::vector<Vec2f> emptyV2;
    		std::vector<Vec3f> emptyV3;
-   		s.sampleShifts = meta.getList<Vec3f>("sample_shifts", emptyV3);
-   		s.sourceShifts = meta.getList<Vec3f>("source_shifts", emptyV3);
-   		s.cameraShifts = meta.getList<Vec3f>("camera_shifts", emptyV3);
-   		s.rotationAxisShifts = meta.getList<Vec3f>("rotation_axis_shifts", emptyV3);
+   		s.sampleShifts = meta.getList<Vec3f>("sample_shifts", emptyV3, false);
+   		s.sourceShifts = meta.getList<Vec3f>("source_shifts", emptyV3, false);
+   		s.cameraShifts = meta.getList<Vec3f>("camera_shifts", emptyV3, false);
+   		s.rotationAxisShifts = meta.getList<Vec3f>("rotation_axis_shifts", emptyV3, false);
 
    		// If there are no shifts supplied, set all shifts to zero.
    		if (s.sampleShifts.size() <= 0)

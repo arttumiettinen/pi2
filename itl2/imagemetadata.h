@@ -226,8 +226,9 @@ namespace itl2
 
 		/**
 		Gets item as a list of values.
+		@param squeeze If set to true, returns list of all elements of the value matrix irrespective of its shape; use, e.g., to always return a list of N numbers despite it being stored either as 1xN or Nx1 matrix. If set to false, the elements in the returned list correspond to the first dimension of the value matrix.
 		*/
-		template<typename T> std::vector<T> getList(const std::string& key, std::vector<T>& def) const
+		template<typename T> std::vector<T> getList(const std::string& key, std::vector<T>& def, bool squeeze) const
 		{
 			if (!contains(key))
 				return def;
@@ -240,12 +241,26 @@ namespace itl2
 			for(const std::vector<string>& row : mat)
 			{
 				if (row.size() == 1)
+				{
 					lst.push_back(fromString<T>(row[0]));
+				}
 				else
 				{
-					std::ostringstream str;
-					appendValueOrVector(str, row);
-					lst.push_back(fromString<T>(str.str()));
+					if (squeeze)
+					{
+						// Convert each element of the row to the output type.
+						for (const string& elem : row)
+						{
+							lst.push_back(fromString<T>(elem));
+						}
+					}
+					else
+					{
+						// Convert row of values to one value of output type.
+						std::ostringstream str;
+						appendValueOrVector(str, row);
+						lst.push_back(fromString<T>(str.str()));
+					}
 				}
 			}
 

@@ -318,7 +318,7 @@ namespace itl2
 
 			// List as vector of Vec2f
 			vector<Vec2c> def;
-			vector<Vec2c> vlist = data.getList<Vec2c>("vec2_list", def);
+			vector<Vec2c> vlist = data.getList<Vec2c>("vec2_list", def, false);
 			if (testAssert(vlist.size() == 3, "vec2 list size"))
 			{
 				testAssert(vlist[0] == Vec2c(vectorElement(0, 0), vectorElement(0, 1)), "element");
