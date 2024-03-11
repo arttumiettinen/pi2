@@ -151,6 +151,8 @@ namespace itl2
 		meta.set("range_max", dynMax);
 		meta.set("shift_scale", shiftScaling);
 		meta.set("use_shifts", useShifts);
+		meta.set("ra_h_shift_tilt", rotationAxisHShiftTilt);
+		meta.set("ra_v_shift_tilt", rotationAxisVShiftTilt);
 
 		meta.set("angles", angles);
 		meta.set("sample_shifts", sampleShifts);
@@ -217,6 +219,8 @@ namespace itl2
 		s.dynMax = meta.get("range_max", s.dynMax);
 		s.shiftScaling = meta.get("shift_scale", s.shiftScaling);
 		s.useShifts = meta.get("use_shifts", s.useShifts);
+		s.rotationAxisHShiftTilt = meta.get("ra_h_shift_tilt", s.rotationAxisHShiftTilt);
+		s.rotationAxisVShiftTilt = meta.get("ra_v_shift_tilt", s.rotationAxisVShiftTilt);
 
 		std::vector<float32_t> emptyV1;
    		s.angles = meta.getList<float32_t>(anglesName, emptyV1, true);

@@ -461,6 +461,12 @@ namespace itl2
 		*/
 		bool useShifts = true;
 
+		/**
+		Tilt angles of XY shift stages around the optical axis.
+		*/
+		float32_t rotationAxisHShiftTilt = 0.0f;
+		float32_t rotationAxisVShiftTilt = 0.0f;
+
 
 		/**
 		Convert reconstruction settings to string.
@@ -479,75 +485,6 @@ namespace itl2
 	};
 
     
-
-	///**
-	//Create reconstruction settings from string similar to what << operator outputs.
-	//*/
-	//template<>
-	//inline RecSettings fromString(const string& strOrig)
-	//{
-	//	// This makes default settings
-	//	RecSettings s;
-
-	//	ImageMetadata id;
-	//	id.readFromString(strOrig);
-
-	//	s.sourceToRA = id.get("source_to_ra", s.sourceToRA);
-	//	s.rotationDirection = id.get("rotation_direction", s.rotationDirection);
-	//	s.bhc = id.get("bhc", s.bhc);
-	//	s.reconstructAs180degScan = id.get("rec_as_180_deg_scan", s.reconstructAs180degScan);
-	//	s.centralAngleFor180degScan = id.get("central_angle", s.centralAngleFor180degScan);
-	//	s.heuristicSinogramWindowingParameter = id.get("hswp", s.heuristicSinogramWindowingParameter);
-	//	s.rotation = id.get("rotation", s.rotation);
-	//	s.roiCenter = id.get("roi_center", s.roiCenter);
-	//	s.roiSize = id.get("roi_size", s.roiSize);
-	//	s.cropSize = id.get("crop_size", s.cropSize);
-	//	s.binning = id.get("binning", s.binning);
-	//	s.removeDeadPixels = id.get("remove_dead_pixels", s.removeDeadPixels);
-	//	s.deadPixelMedianRadius = id.get("dead_pixel_median_radius", s.deadPixelMedianRadius);
-	//	s.deadPixelStdDevCount = id.get("dead_pixel_std_dev_count", s.deadPixelStdDevCount);
-	//	s.centerShift = id.get("center_shift", s.centerShift);
-	//	s.cameraZShift = id.get("camera_z_shift", s.cameraZShift);
-	//	s.cameraRotation = id.get("camera_rotation", s.cameraRotation);
-	//	s.csAngleSlope = id.get("cs_angle_slope", s.csAngleSlope);
-	//	s.angleTweak = id.get("angle_tweak", s.angleTweak);
-	//	s.padType = id.get("pad_type", s.padType);
-	//	s.padFraction = id.get("pad_size", s.padFraction);
-	//	s.filterType = id.get("filter_type", s.filterType);
-	//	s.filterCutOff = id.get("filter_cut_off", s.filterCutOff);
-	//	s.phaseMode = id.get("phase_mode", s.phaseMode);
-	//	s.phasePadType = id.get("phase_pad_type", s.phasePadType);
-	//	s.phasePadFraction = id.get("phase_pad_size", s.phasePadFraction);
-	//	s.objectCameraDistance = id.get("propagation_distance", s.objectCameraDistance);
-	//	s.delta = id.get("delta", s.delta);
-	//	s.mu = id.get("mu", s.mu);
-	//	s.dynMin = id.get("range_min", s.dynMin);
-	//	s.dynMax = id.get("range_max", s.dynMax);
-	//	s.shiftScaling = id.get("shift_scale", s.shiftScaling);
-	//	s.useShifts = id.get("use_shifts", s.useShifts);
-
- //       std::vector<float32_t> emptyV1;
-	//	s.angles = id.getList<float32_t>("angles", emptyV1);
- //       std::vector<Vec2f> emptyV2;
-	//	std::vector<Vec3f> emptyV3;
-	//	s.sampleShifts = id.getList<Vec3f>("sample_shifts", emptyV3);
-	//	s.sourceShifts = id.getList<Vec3f>("source_shifts", emptyV3);
-	//	s.cameraShifts = id.getList<Vec3f>("camera_shifts", emptyV3);
-	//	s.rotationAxisShifts = id.getList<Vec3f>("rotation_axis_shifts", emptyV3);
-
-	//	// If there are no shifts supplied, set all shifts to zero.
-	//	if (s.sampleShifts.size() <= 0)
-	//	{
-	//		while (s.sampleShifts.size() < s.angles.size())
-	//			s.sampleShifts.push_back(Vec3f(0, 0, 0));
-	//	}
-
-	//	return s;
-	//}
-	
-
-
-
 	/**
 	Pre-processing of data for filtered backprojection.
 	Call this before calling backproject method.
@@ -763,9 +700,19 @@ namespace itl2
 				Vec3f ps(-settings.sourceToRA, 0, 0);
 				Vec3f pd(settings.objectCameraDistance, 0, 0);
 
-				ps -= settings.rotationAxisShifts[anglei] * settings.shiftScaling;
-				pd -= settings.rotationAxisShifts[anglei] * settings.shiftScaling;
+				// Calculate rotation axis shift accounting for possible tilt angles of horizontal and vertical stages.
+				Vec3 rotationAxisShift = settings.rotationAxisShifts[anglei];
+				float32_t alphaRad = settings.rotationAxisHShiftTilt / 180.0f * PIf;
+				float32_t betaRad= settings.rotationAxisVShiftTilt / 180.0f * PIf;
+				float32_t sh = rotationAxisShift.y;
+				float32_t sv = rotationAxisShift.z;
+				Vec3 rotatedRotationAxisShift(rotationAxisShift.x, sh * cos(alphaRad) - sv * sin(betaRad), sh * sin(alphaRad) + sv * cos(betaRad));
 
+				// Account for rotation axis shift by moving both source and detector to the inverse direction.
+				ps -= rotatedRotationAxisShift * settings.shiftScaling;
+				pd -= rotatedRotationAxisShift * settings.shiftScaling;
+
+				// Account for source shift and camera shift by moving them accordingly.
 				ps += settings.sourceShifts[anglei] * settings.shiftScaling;
 				pd += settings.cameraShifts[anglei] * settings.shiftScaling;
 				
