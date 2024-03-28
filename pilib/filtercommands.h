@@ -480,7 +480,7 @@ namespace pilib
 		BilateralFilterCommand() :
 			OverlapDistributable<TwoImageInputOutputCommand<pixel_t> >("bilateralfilter", "Bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel. See also C. Tomasi, R. Manduchi, Bilateral filtering for gray and color images, Sixth International Conference on Computer Vision, Bombay, 1998.",
 				{
-					CommandArgument<double>(ParameterDirection::In, "spatial sigma", "Standard deviation of Gaussian kernel used for spatial smoothing."),
+					CommandArgument<Vec3d>(ParameterDirection::In, "spatial sigma", "Standard deviation of Gaussian kernel used for spatial smoothing."),
 					CommandArgument<double>(ParameterDirection::In, "radiometric sigma", "Standard deviation of Gaussian kernel used to avoid smoothing edges of features. Order of magnitude must be similar to difference between gray levels of background and objects."),
 					CommandArgument<BoundaryCondition>(ParameterDirection::In, "boundary condition", string("Type of boundary condition. ") + boundaryConditionHelp(), BoundaryCondition::Nearest)
 				},
@@ -492,23 +492,23 @@ namespace pilib
 	public:
 		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, vector<ParamVariant>& args) const override
 		{
-			double noisestd = pop<double>(args);
-			double radstd = pop<double>(args);
+			Vec3d sigma = pop<Vec3d>(args);
+			double radsigma = pop<double>(args);
 			BoundaryCondition bc = pop<BoundaryCondition>(args);
 
-			bilateralFilter(in, out, noisestd, radstd, bc);
+			bilateralFilter(in, out, sigma, radsigma, bc);
 		}
 
 		virtual Vec3c calculateOverlap(const vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = *std::get<DistributedImage<pixel_t>* >(args[0]);
 			DistributedImage<pixel_t>& out = *std::get<DistributedImage<pixel_t>* >(args[1]);
-			double sigma = std::get<double>(args[2]);
-			coord_t margin = itl2::round(3 * sigma + 4);
+			Vec3d sigma = std::get<Vec3d>(args[2]);
+			Vec3c margin = itl2::round(3 * sigma + Vec3d(4, 4, 4));
 
 			out.ensureSize(in.dimensions());
 
-			return Vec3c(margin, margin, margin);
+			return margin;
 		}
 
 		virtual JobType getJobType(const vector<ParamVariant>& args) const override
