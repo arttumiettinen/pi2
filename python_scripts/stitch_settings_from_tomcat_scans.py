@@ -25,8 +25,29 @@ def main():
         argsparser.add_argument('-n', '--name', default='stitched', type=str, help='Sample name.')
         argsparser.add_argument('-r', '--recdir', default='', type=str, help='Try to find reconstructions from this directory. Use e.g. if the reconstructions were done in Ra and the original log files do not contain reconstruction folder. String %%s will be replaced by sub-scan name, e.g. /das/work/p1234/Data10/disk1/%%s/ may expand to /das/work/p1234/Data10/disk1/01_BigSample_B7/')
         argsparser.add_argument('-m', '--mask', action='store_true', help='Set to true to mask the input images to the maximum inscribed circle in each cross-section. Use this setting to erase possible bad data outside of the well-reconstructed region.')
+        argsparser.add_argument('-u', '--units', default='um', type=str, help='Units used for sample coordinates in the log files. Can be mm or um.')
+        argsparser.add_argument('-xx', '--xx_sign', default='positive', type=str, help='Sign of the XX coordinate. Can be "positive" or "negative"')
+        argsparser.add_argument('-zz', '--zz_sign', default='positive', type=str, help='Sign of the ZZ coordinate. Can be "positive" or "negative"')
 
         args = argsparser.parse_args()
+
+        coord_factor = 1
+        if args.units == 'mm':
+            coord_factor = 1000
+
+        xx_fac = 1
+        # If XX axis needs to be inverted
+        if args.xx_sign == 'positive':
+            xx_fac = 1
+        elif args.xx_sign == 'negative':
+            xx_fac = -1
+
+        zz_fac = 1
+        # If ZZ axis needs to be inverted
+        if args.zz_sign == 'positive':
+            zz_fac = 1
+        elif args.zz_sign == 'negative':
+            zz_fac = -1
 
         if len(args.scan_folders) <= 0:
             args.scan_folders = ['./*']
@@ -88,9 +109,9 @@ def main():
 
             scan_name = parser.logDict['Scan Settings File Prefix']
             pixel_size = parser.logDict['Detector Settings Actual pixel size [um]']
-            xx = parser.logDict['User Sample coordinates XX-coordinate']
-            zz = parser.logDict['User Sample coordinates ZZ-coordinate']
-            y = parser.logDict['User Sample coordinates Y-coordinate']
+            xx = parser.logDict['Sample user coordinates XX-coordinate']
+            zz = parser.logDict['Sample user coordinates ZZ-coordinate']
+            y = parser.logDict['Sample user coordinates Y-coordinate']
             gigafrost = parser.logDict['Detector Settings Camera'] == 'GigaFRoST'
             
             rec_dir = ""
@@ -115,9 +136,9 @@ def main():
                 #d = int(numbers[1]) - int(numbers[0]) + 1
 
                 # Convert from beamline coordinates to image coordinates
-                X = zz / pixel_size
-                Y = -xx / pixel_size
-                Z = y / pixel_size
+                X = zz * coord_factor * zz_fac / pixel_size
+                Y = -xx * coord_factor * xx_fac / pixel_size
+                Z = y * coord_factor / pixel_size
 
                 # GigaFRoST images use different coordinate system -> fix that here
                 if gigafrost:
@@ -138,7 +159,7 @@ def main():
                 Z -= first_z
 
                 # Normalize rec_dir path and make sure it exists
-                rec_dir = os.path.normpath(rec_dir)
+                rec_dir = os.path.normpath(rec_dir)+ f"/rec_16bit_Paganin"
 
                 rec_dir2 = os.path.dirname(logfile) + os.path.sep + ".." + os.path.sep + os.path.basename(rec_dir)
                 rec_dir2 = os.path.normpath(rec_dir2)
@@ -165,7 +186,10 @@ def main():
         if good_count > 1:
             print("Writing output to stitch_settings.txt...")
 
-            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', mask_to_max_circle=args.mask)
+            mask_d = -1 # Rectangle mask
+            if args.mask:
+                mask_d = 0 # Automatic circle mask
+            write_stitch_settings(args.name, args.binning, positions, cluster_name='Slurm', max_circle_diameter=mask_d)
             
             print('All done. Consider running nr_stitcher.py now.')
         else:
