@@ -10,9 +10,11 @@
 #include "io/itltiff.h"
 #include "io/nrrd.h"
 #include "io/pcr.h"
+#include "io/itldicom.h"
 #include "sphere.h"
 #include "testutils.h"
 #include "io/itlpng.h"
+#include "io/itljpeg.h"
 #include "neighbourhood.h"
 #include "misc.h"
 #include "filters.h"
@@ -57,6 +59,12 @@ using namespace std;
 
 int main()
 {
+	cout << "Host name: " << getHostname() << endl;
+
+	//test(itl2::tests::escapes, "Escape sequences");
+
+	//test(itl2::io::tests::badnn5, "reading bad nn5");
+
 	//test(itl2::tests::progress, "progress indicator");
 
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
@@ -78,12 +86,14 @@ int main()
 	//test(raw::tests::writeBlockFast, "Optimized block based raw reader & writer");
 	//test(vol::tests::volio, ".vol input/output");
 	//test(itl2::png::tests::png, "Png read and write");
+	//test(itl2::jpeg::tests::jpeg, "Jpeg read");
 	//test(itl2::tiff::tests::readWrite, "Tiff read and write");
 	////test(itl2::tiff::tests::imageJLargeTiff, "ImageJ large Tiff");
 	//test(itl2::nrrd::tests::readWrite, "NRRD read and write");
 	//test(itl2::pcr::tests::read, "PCR read");
+	//test(itl2::dicom::tests::read, "DICOM read");
 	
-
+	//test(itl2::sequence::tests::singleImages, "Single images as sequences");
 	//test(itl2::sequence::tests::match, "Matching");
 	//test(itl2::sequence::tests::sequence, "Image sequence");
 	//test(itl2::sequence::tests::fileFormats, "Sequence file formats");
@@ -122,12 +132,13 @@ int main()
 
 	//test(itl2::tests::phaseCorrelation, "phase correlation");
 	//test(itl2::tests::modulo, "modulo function");
-
 	//test(itl2::tests::phaseCorrelation2, "phase correlation 2 (rotation)");
+	//test(itl2::tests::phaseCorrelationBoundary, "phase correlation boundary");
 
 	//test(itl2::tests::blockMatch1, "block match 1");
 	//test(itl2::tests::blockMatch2Match, "block match 2 (match)");
 	//test(itl2::tests::blockMatch2Pullback, "block match 2 (pullback)");
+	//test(itl2::tests::reverseDeformation, "reverse deformation");
 
 	//test(itl2::tests::inpaintNearest, "Inpainting");
 	//test(itl2::tests::inpaintGarcia, "Inpainting (Garcia)");
@@ -229,10 +240,11 @@ int main()
 	//test(itl2::tests::pathopening2d, "Path opening 2D");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
-	//test(itl2::tests::imagemetadata, "image metadata");
+	test(itl2::tests::imagemetadata, "image metadata");
 
 	//test(itl2::tests::pointsToDeformed, "points to deformed");
 	
+	//test(itl2::tests::cylindricalConversion, "cylindrical coordinates");
 
 	//test(itl2::tests::eval, "evaluation of string expressions");
 

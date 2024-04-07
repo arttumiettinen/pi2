@@ -28,4 +28,7 @@ namespace itl2
 			return Line<T>::distance(x) < radius;
 		}
 	};
+
+	typedef Capsule<double> Capsuled;
+	typedef Capsule<float32_t> Capsulef;
 }

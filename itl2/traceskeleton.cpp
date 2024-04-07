@@ -839,8 +839,8 @@ namespace itl2
 
 
 				Image<uint8_t> skele, orig;
-				raw::read(skele, "./input_data/" + in);
-				raw::read(orig, "./input_data/" + in);
+				raw::read(skele, "../test_input_data/" + in);
+				raw::read(orig, "../test_input_data/" + in);
 
 				//Image<uint8_t> skele0, orig0;
 				//raw::read(skele0, in);
@@ -925,7 +925,7 @@ namespace itl2
 		void traceSkeletonRealData()
 		{
 			Image<uint8_t> skele, orig;
-			raw::read(skele, "./input_data/real_skele_200x200x200.raw");
+			raw::read(skele, "../test_input_data/real_skele_200x200x200.raw");
 			Network net;
 			traceLineSkeleton(skele, false, 1.0, 1.0, net);
 

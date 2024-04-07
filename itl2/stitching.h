@@ -887,13 +887,14 @@ namespace itl2
 		After calling the method for all input images:
 		- image mean does not need further processing.
 		- image S must be divided by image weight and to get standard deviation, sqrt must be taken.
+		@param maxCircleDiameter Set to 0 to use "normal" weight that is related to the distance from the edge of the image. Set to positive value to use weight that is proportional to distance from max circle of given diameter.
 		*/
 		template<typename pixel_t, typename real_t> void stitchOneVer3(
-			const Image<pixel_t>& src,
+			const Image<pixel_t>& src, const Vec3<real_t>& srcBlockPos, const Vec3c fullSrcDimensions,
 			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts,
 			real_t normFactor, real_t normFactorStd, real_t meanDef,
 			const Vec3c& outPos, Image<real_t>& mean, Image<real_t>& weight, Image<real_t>* S,
-			bool normalize)
+			bool normalize, real_t maxCircleDiameter)
 		{
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
@@ -924,8 +925,7 @@ namespace itl2
 			ymax = std::min(ymax, outPos.y + mean.height());
 			zmax = std::min(zmax, outPos.z + mean.depth());
 
-			Vec3c srcDimensions = src.dimensions();
-			coord_t s = srcDimensions.min();
+			coord_t s = fullSrcDimensions.min();
 
 			if (src.dimensionality() < 3)
 			{
@@ -950,8 +950,8 @@ namespace itl2
 						Vec3<real_t> p = X + internals::projectPointToDeformed(X, refPoints, shifts, shiftInterpolator);
 
 						// Convert p to pdot, position in the input block.
-						//Vec3<real_t> pdot = p - Vec3<real_t>(srcBlockPos);
-						Vec3<real_t> pdot = p; // No src block support
+						Vec3<real_t> pdot = p - srcBlockPos;
+						//Vec3<real_t> pdot = p; // No src block support
 
 						if (src.isInImage(pdot))
 						{
@@ -960,16 +960,28 @@ namespace itl2
 							{
 								if (normalize)
 									pix = (pix - meanDef) * normFactorStd + meanDef + normFactor;
-									//pix += normFactor;
 
-								real_t w1 = 2 * std::min(p.x, srcDimensions.x - 1 - p.x) / s;
-								real_t w2 = 2 * std::min(p.y, srcDimensions.y - 1 - p.y) / s;
-								real_t w3 = 2 * std::min(p.z, srcDimensions.z - 1 - p.z) / s;
+								real_t ww;
+								if (maxCircleDiameter <= 0)
+								{
+									// Rect weight
+									real_t w1 = 2 * std::min(p.x, fullSrcDimensions.x - 1 - p.x) / s;
+									real_t w2 = 2 * std::min(p.y, fullSrcDimensions.y - 1 - p.y) / s;
+									real_t w3 = 2 * std::min(p.z, fullSrcDimensions.z - 1 - p.z) / s;
 
-								if (src.dimensionality() < 3)
-									w3 = 1;
+									if (src.dimensionality() < 3)
+										w3 = 1;
 
-								real_t ww = w1 * w2 * w3;
+									ww = w1 * w2 * w3;
+								}
+								else
+								{
+									// Circle weight
+									real_t r = (Vec2f(p.x, p.y) - Vec2f((float32_t)fullSrcDimensions.x, (float32_t)fullSrcDimensions.y) / 2).norm();
+									ww = 1 - r / (maxCircleDiameter / 2);
+									if (ww < 0)
+										ww = 0;
+								}
 
 								if (ww > 0)
 								{
@@ -980,6 +992,15 @@ namespace itl2
 
 									if (xo >= 0 && yo >= 0 && zo >= 0 && xo < mean.width() && yo < mean.height() && zo < mean.depth())
 									{
+										//// Use this to visualization weights etc. for debugging:
+										//coord_t xo = x - outPos.x;
+										//coord_t yo = y - outPos.y;
+										//coord_t zo = z - outPos.z;
+										//real_t& wSum = weight(xo, yo, zo);
+										//wSum = 1;
+										//real_t& meanNew = mean(xo, yo, zo);
+										//meanNew = ww;
+
 										// Calculate mean and, if requested, standard deviation.
 										// This uses algorithm from West, D. H. D. (1979). "Updating Mean and Variance Estimates: An Improved Method". 
 										// See also https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance -> Weighted incremental algorithm
@@ -1117,7 +1138,19 @@ namespace itl2
 	//	convert(out, output);
 	//}
 
-	template<typename pixel_t> void stitchVer3(const string& indexFile, const Vec3c& outputPos, const Vec3c& outputSize, Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, bool maskMaxCircle)
+	/**
+	Stitching, version 3.
+	@param indexFile Index file.
+	@param outputPos Output block position.
+	@param outputSize Output block size.
+	@param output Output image.
+	@param std Pointer to goodness image, or nullptr.
+	@param normalize Set to true to contrast match the tiles.
+	@param maxCircleMaskDiameter Set to negative value to use rect weight (proportional to distance from tile edge). Set to 0 to use maximum circle weight (weight proportional to distance from the edge of a maximal circle that fits inside the image). Set to positive value to use circle weight with user-specified diameter.
+	@param srcBlockSize Maximum block size that is read from an input image at once. Use to limit RAM requirements.
+	*/
+	template<typename pixel_t> void stitchVer3(const string& indexFile, const Vec3c& outputPos, const Vec3c& outputSize,
+		Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, float32_t maxCircleMaskDiameter, const Vec3c& srcBlockSize)
 	{
 
 		// Read index file
@@ -1167,50 +1200,74 @@ namespace itl2
 			Vec3c cc(refPoints.xg.first, refPoints.yg.first, refPoints.zg.first);
 			Vec3c cd(refPoints.xg.maximum, refPoints.yg.maximum, refPoints.zg.maximum);
 
+			// Note that the automatic determination of mask circle diameter is made separately for each tile.
+			float32_t maskD;
+			if (maxCircleMaskDiameter == 0)
+				maskD = (float32_t)std::min(srcDimensions.x, srcDimensions.y);
+			else
+				maskD = maxCircleMaskDiameter;
+
 			if (internals::overlapsWithOutput(cc, cd, outputPos, outputSize))
 			{
-
-				//// If source image is big, load it in blocks.
-				//// Python script assumes 116 GB blocks for output (2 x float32_t), so we use 80 GB blocks (1 x uint16_t) for input.
-				//Vec3c srcBlockSize(3500, 3500, 3500);
-				//for (coord_t z = 0; z < srcDimensions.z; z += srcBlockSize.z)
-				//{
-				//	for (coord_t y = 0; y < srcDimensions.y; y += srcBlockSize.y)
-				//	{
-				//		for (coord_t x = 0; x < srcDimensions.x; x += srcBlockSize.x)
-				//		{
-				//			std::cout << "Processing source image block (" << x << ", " << y << ", " << z << ")..." << std::endl;
-
-				//			// Take extra pixel layer so that interpolation succeeds at (x, y, z)
-				//			Vec3c srcBlockPos = Vec3c(x, y, z) - Vec3c(1, 1, 1);
-				//			Vec3c srcBlockEnd = srcBlockPos + srcBlockSize + 2 * Vec3c(1, 1, 1);
-
-				//			clamp(srcBlockPos, Vec3c(0, 0, 0), srcDimensions);
-				//			clamp(srcBlockEnd, Vec3c(0, 0, 0), srcDimensions);
-
-				//			Image<pixel_t> srcBlock(srcBlockEnd - srcBlockPos);
-				//			raw::readBlock(srcBlock, imgFile, srcDimensions, srcBlockPos);
-
-				//			internals::stitchOne<pixel_t, float32_t, float32_t>(srcBlockPos, srcDimensions, srcBlock, transformation, outputPos, out, weight, normalize, cc, cd, true);
-				//		}
-				//	}
-				//}
-
 				Image<Vec3<float32_t> > shifts;
 				internals::readShifts(wlPrefix, refPoints, shifts);
 
-				Image<pixel_t> src(srcDimensions);
-				io::read(src, imgFile);
-
-				if (maskMaxCircle)
+				// Load source tile image in blocks
+				for (coord_t z = 0; z < srcDimensions.z; z += srcBlockSize.z)
 				{
-					Image<pixel_t> mask(src.width(), src.height());
-					float32_t d = (float32_t)std::min(src.width(), src.height());
-					draw<pixel_t>(mask, Sphere<float32_t>(Vec3f(src.width() / 2.0f, src.height() / 2.0f, 0), d / 2.0f), (pixel_t)1);
-					multiply(src, mask, true);
+					for (coord_t y = 0; y < srcDimensions.y; y += srcBlockSize.y)
+					{
+						for (coord_t x = 0; x < srcDimensions.x; x += srcBlockSize.x)
+						{
+							std::cout << "Processing source image block starting at (" << x << ", " << y << ", " << z << ")..." << std::endl;
+							
+							// Take extra pixel layer so that interpolation succeeds at (x, y, z)
+							Vec3c srcBlockPos = Vec3c(x, y, z) - Vec3c(1, 1, 1);
+							Vec3c srcBlockEnd = srcBlockPos + srcBlockSize + 2 * Vec3c(1, 1, 1);
+
+							clamp(srcBlockPos, Vec3c(0, 0, 0), srcDimensions);
+							clamp(srcBlockEnd, Vec3c(0, 0, 0), srcDimensions);
+
+							//std::cout << "Source block size = " << (srcBlockEnd - srcBlockPos) << std::endl;
+
+							Image<pixel_t> srcBlock(srcBlockEnd - srcBlockPos);
+							io::readBlock(srcBlock, imgFile, srcBlockPos);
+
+							//if (maskMaxCircle)
+							//{
+							//	Image<pixel_t> mask(srcBlock.width(), srcBlock.height());
+							//	float32_t d = (float32_t)std::min(srcDimensions.x, srcDimensions.y);
+							//	Vec3f c(srcDimensions.x / 2.0f, srcDimensions.y / 2.0f, 0);
+							//	draw<pixel_t>(mask, Sphere<float32_t>(c - Vec3f(srcBlockPos), d / 2.0f), (pixel_t)1);
+							//	multiply(srcBlock, mask, true);
+							//}
+
+							internals::stitchOneVer3<pixel_t, float32_t>(srcBlock, Vec3f(srcBlockPos), srcDimensions,
+								refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr,
+								normalize, maskD);
+						}
+					}
 				}
 
-				internals::stitchOneVer3<pixel_t, float32_t>(src, refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
+
+
+				//// This is the version that does not divide the source image into blocks.
+				//Image<Vec3<float32_t> > shifts;
+				//internals::readShifts(wlPrefix, refPoints, shifts);
+
+				//Image<pixel_t> src(srcDimensions);
+				//io::read(src, imgFile);
+
+				//if (maskMaxCircle)
+				//{
+				//	Image<pixel_t> mask(src.width(), src.height());
+				//	float32_t d = (float32_t)std::min(src.width(), src.height());
+				//	draw<pixel_t>(mask, Sphere<float32_t>(Vec3f(src.width() / 2.0f, src.height() / 2.0f, 0), d / 2.0f), (pixel_t)1);
+				//	multiply(src, mask, true);
+				//}
+
+				//internals::stitchOneVer3<pixel_t, float32_t>(src, Vec3f(0, 0, 0), refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr, normalize);
+				//
 			}
 		}
 

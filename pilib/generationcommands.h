@@ -46,9 +46,19 @@ namespace pilib
 			return true;
 		}
 
+		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const override
+		{
+			return 2;
+		}
+
 		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
+		}
+
+		virtual size_t getDistributionDirection3(const std::vector<ParamVariant>& args) const override
+		{
+			return 0;
 		}
 	};
 
@@ -168,18 +178,22 @@ namespace pilib
 			if (positions.width() != 3)
 				throw ITLException("Positions image width must be 3.");
 
-			std::ofstream outs(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-
-			for (coord_t n = 0; n < positions.height(); n++)
 			{
-				Vec3d dpos(positions(0, n), positions(1, n), positions(2, n));
-				Vec3c pos = round(dpos);
-				pos -= origin;
-				if (in.isInImage(pos))
+				TimingFlag flag(TimeClass::IO);
+
+				std::ofstream outs(filename, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+
+				for (coord_t n = 0; n < positions.height(); n++)
 				{
-					pixel_t value = in(pos);
-					outs.write((char*)&n, sizeof(coord_t));
-					outs.write((char*)&value, sizeof(pixel_t));
+					Vec3d dpos(positions(0, n), positions(1, n), positions(2, n));
+					Vec3c pos = round(dpos);
+					pos -= origin;
+					if (in.isInImage(pos))
+					{
+						pixel_t value = in(pos);
+						outs.write((char*)&n, sizeof(coord_t));
+						outs.write((char*)&value, sizeof(pixel_t));
+					}
 				}
 			}
 		}
@@ -284,34 +298,38 @@ namespace pilib
 			// Collect results
 			Image<pixel_t> outLocal(out.dimensions());
 
-			for (size_t n = 0; n < output.size(); n++)
 			{
-				std::cout << "Collecting results from job " << n << "..." << std::endl;
+				TimingFlag flag(TimeClass::IO);
 
-				string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
-				std::ifstream ins(filename, std::ios_base::in | std::ios_base::binary);
-
-				while (ins.good())
+				for (size_t n = 0; n < output.size(); n++)
 				{
-					coord_t pos;
-					ins.read((char*)&pos, sizeof(coord_t));
-					pixel_t value;
-					ins.read((char*)&value, sizeof(pixel_t));
+					std::cout << "Collecting results from job " << n << "..." << std::endl;
 
-					if(pos >= 0 && pos < outLocal.pixelCount())
-						outLocal(pos) = value;
+					string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
+					std::ifstream ins(filename, std::ios_base::in | std::ios_base::binary);
+
+					while (ins.good())
+					{
+						coord_t pos;
+						ins.read((char*)&pos, sizeof(coord_t));
+						pixel_t value;
+						ins.read((char*)&value, sizeof(pixel_t));
+
+						if (pos >= 0 && pos < outLocal.pixelCount())
+							outLocal(pos) = value;
+					}
+				}
+
+				out.setData(outLocal);
+
+
+				// Delete temporary files
+				for (size_t n = 0; n < output.size(); n++)
+				{
+					string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
+					deleteFile(filename);
 				}
 			}
-
-			out.setData(outLocal);
-
-			// Delete temporary files
-			for (size_t n = 0; n < output.size(); n++)
-			{
-				string filename = GetPixelsToTempFileCommand<pixel_t>::getTempName(tempPrefix, n);
-				deleteFile(filename);
-			}
-
 			return vector<string>();
 		}
 	};

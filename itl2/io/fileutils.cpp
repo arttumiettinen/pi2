@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 
 #elif defined(_WIN32)
 
@@ -355,8 +356,6 @@ namespace itl2
 		vector<string> results = buildFileList(templ);
 
 		// Remove non-images
-		//coord_t w, h;
-		//ImageDataType dt;
 		for (size_t n = 0; n < results.size(); n++)
 		{
 			// This is too slow!
@@ -367,7 +366,12 @@ namespace itl2
 			toLower(exts);
 
 			// TODO: Add other formats here.
-			if(ext != ".tif" && ext != ".tiff" && ext != ".png")
+			if(ext != ".tif" &&
+				ext != ".tiff" &&
+				ext != ".png" &&
+				ext != ".jpg" &&
+				ext != ".jpeg" &&
+				ext != ".dcm")
 			{
 				results.erase(results.begin() + n);
 				n--;
@@ -377,4 +381,29 @@ namespace itl2
 		return results;
 	}
 
+
+	std::string getHostname()
+	{
+#if defined(__linux__) || defined(__APPLE__)
+
+		char hostname[HOST_NAME_MAX + 1];
+		gethostname(&hostname[0], HOST_NAME_MAX);
+		return string(hostname);
+
+#elif defined(_WIN32)
+		char hostname[MAX_COMPUTERNAME_LENGTH + 1];
+		DWORD bufCharCount = MAX_COMPUTERNAME_LENGTH + 1;
+		GetComputerNameA(hostname, &bufCharCount);
+
+		char domain[MAX_COMPUTERNAME_LENGTH + 1];
+		bufCharCount = MAX_COMPUTERNAME_LENGTH + 1;
+		GetComputerNameExA(ComputerNameDnsDomain, domain, &bufCharCount);
+
+		string sdomain = string(domain);
+		if (sdomain.length() > 0)
+			sdomain = "." + sdomain;
+
+		return string(hostname) + sdomain;
+#endif
+	}
 }

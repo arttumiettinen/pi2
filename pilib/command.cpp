@@ -124,6 +124,31 @@ namespace pilib
 		// Help text
 		msg << processTags(help, format) << endl;
 
+		// UI notes
+		if (uiNotes.length() > 0)
+		{
+			msg << endl;
+
+			string lines;
+			switch (format)
+			{
+			case HelpFormat::Text:
+				printTitle(msg, "Note", 2);
+				msg << processTags(uiNotes, format) << endl;
+				break;
+			case HelpFormat::Rst:
+				msg << ".. note::" << endl;
+				lines = processTags(uiNotes, format);
+				lines = std::regex_replace(lines, std::regex("\n"), "\t\n");
+				msg << "\t" << lines << endl << endl;
+				break;
+			default:
+				throw logic_error("Unsupported help format.");
+			}
+
+			
+		}
+
 		// Distribution text
 		if (dynamic_cast<const TrivialDistributable*>(this))
 		{

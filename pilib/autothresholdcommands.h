@@ -15,6 +15,11 @@
 namespace pilib
 {
 
+	inline std::string autoThresholdSeeAlso()
+	{
+		return "autothreshold, autothresholdvalue, localthreshold, threshold, doublethreshold, dualthreshold, thresholdrange";
+	}
+
 	inline std::string autoThresholdMethodsHelp()
 	{
 		return
@@ -335,13 +340,14 @@ namespace pilib
 			"\n";
 	}
 
-	template<typename pixel_t> class AutoThresholdCommand : public OneImageInPlaceCommand<pixel_t>, public Distributable
+
+	template<typename pixel_t> class AutoThresholdValueCommand : public TwoImageInputOutputCommand<pixel_t>, public Distributable
 	{
 	protected:
 		friend class CommandList;
 
-		AutoThresholdCommand() : OneImageInPlaceCommand<pixel_t>("autothreshold",
-			"Thresholds image by automatically determined threshold value. The supported thresholding methods are\n\n" +
+		AutoThresholdValueCommand() : TwoImageInputOutputCommand<pixel_t>("autothresholdvalue",
+			"Calculates threshold value for the input image, according to a selected thresholding method, and places it into the output image. The supported thresholding methods are\n\n" +
 			autoThresholdMethodsHelp(),
 			{
 				CommandArgument<string>(ParameterDirection::In, "method", "Thresholding method that will be applied.", "Otsu"),
@@ -350,13 +356,14 @@ namespace pilib
 				CommandArgument<double>(ParameterDirection::In, "argument 3", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
 				CommandArgument<double>(ParameterDirection::In, "argument 4", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
 			},
-			"localthreshold, threshold")
+			autoThresholdSeeAlso(),
+			"In Python/pi2py2, the output image is not specified, and the result value is returned by the function.")
 		{
 
 		}
 
 	public:
-		virtual void run(Image<pixel_t>& img, std::vector<ParamVariant>& args) const override
+		virtual void run(Image<pixel_t>& img, Image<pixel_t>& out, std::vector<ParamVariant>& args) const override
 		{
 			string methods = pop<string>(args);
 			double arg0 = pop<double>(args);
@@ -366,22 +373,14 @@ namespace pilib
 
 			AutoThresholdMethod method = fromString<AutoThresholdMethod>(methods);
 
-			autoThreshold(img, method, arg0, arg1, arg2, arg3);
+			out.ensureSize(1, 1, 1);
+			out(0, 0, 0) = pixelRound<pixel_t>(itl2::internals::autoThresholdValue(img, method, arg0, arg1, arg2, arg3, false));
 		}
 
-		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		static double distributedAutoThresholdValue(DistributedImage<pixel_t>& img, AutoThresholdMethod method, double arg0, double arg1, double arg2, double arg3, Distributor& distributor)
 		{
-			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>*>(args);
-			string methods = pop<string>(args);
-			double arg0 = pop<double>(args);
-			double arg1 = pop<double>(args);
-			double arg2 = pop<double>(args);
-			double arg3 = pop<double>(args);
-
-			AutoThresholdMethod method = fromString<AutoThresholdMethod>(methods);
-
 			double th;
-			
+
 			if (method == AutoThresholdMethod::Otsu
 				|| method == AutoThresholdMethod::Huang
 				|| method == AutoThresholdMethod::Intermodes
@@ -448,7 +447,7 @@ namespace pilib
 				CommandList::get<StdDevAllPixelsCommand<pixel_t>>().runDistributed(distributor, { &img, &tempStd.get(), false });
 				double mean = (double)tempMean.get().getValue();
 				double std = (double)tempStd.get().getValue();
-				
+
 				th = itl2::internals::autothreshold::niblack(mean, std, arg0, arg1);
 			}
 			else if (method == AutoThresholdMethod::Phansalkar)
@@ -487,6 +486,78 @@ namespace pilib
 			{
 				throw ITLException(string("Unsupported auto-thresholding method: ") + itl2::toString(method));
 			}
+
+			return th;
+		}
+
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		{
+			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>*>(args);
+			DistributedImage<pixel_t>& out = *pop<DistributedImage<pixel_t>*>(args);
+			string methods = pop<string>(args);
+			double arg0 = pop<double>(args);
+			double arg1 = pop<double>(args);
+			double arg2 = pop<double>(args);
+			double arg3 = pop<double>(args);
+
+			AutoThresholdMethod method = fromString<AutoThresholdMethod>(methods);
+
+			pixel_t th = pixelRound<pixel_t>(distributedAutoThresholdValue(img, method, arg0, arg1, arg2, arg3, distributor));
+
+			Image<pixel_t> temp(1, 1, 1);
+			temp(0, 0, 0) = th;
+			out.setData(temp);
+
+			return std::vector<std::string>();
+		}
+	};
+
+	template<typename pixel_t> class AutoThresholdCommand : public OneImageInPlaceCommand<pixel_t>, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		AutoThresholdCommand() : OneImageInPlaceCommand<pixel_t>("autothreshold",
+			"Thresholds image by automatically determined threshold value. The supported thresholding methods are\n\n" +
+			autoThresholdMethodsHelp(),
+			{
+				CommandArgument<string>(ParameterDirection::In, "method", "Thresholding method that will be applied.", "Otsu"),
+				CommandArgument<double>(ParameterDirection::In, "argument 1", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
+				CommandArgument<double>(ParameterDirection::In, "argument 2", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
+				CommandArgument<double>(ParameterDirection::In, "argument 3", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
+				CommandArgument<double>(ParameterDirection::In, "argument 4", "Argument for the thresholding method. The purpose of this argument depends on the method, see the list above. Specify nan in order to use a method-specific default value.", std::numeric_limits<double>::quiet_NaN()),
+			},
+			"localthreshold, threshold")
+		{
+
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& img, std::vector<ParamVariant>& args) const override
+		{
+			string methods = pop<string>(args);
+			double arg0 = pop<double>(args);
+			double arg1 = pop<double>(args);
+			double arg2 = pop<double>(args);
+			double arg3 = pop<double>(args);
+
+			AutoThresholdMethod method = fromString<AutoThresholdMethod>(methods);
+
+			autoThreshold(img, method, arg0, arg1, arg2, arg3);
+		}
+
+		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
+		{
+			DistributedImage<pixel_t>& img = *pop<DistributedImage<pixel_t>*>(args);
+			string methods = pop<string>(args);
+			double arg0 = pop<double>(args);
+			double arg1 = pop<double>(args);
+			double arg2 = pop<double>(args);
+			double arg3 = pop<double>(args);
+
+			AutoThresholdMethod method = fromString<AutoThresholdMethod>(methods);
+
+			double th = AutoThresholdValueCommand<pixel_t>::distributedAutoThresholdValue(img, method, arg0, arg1, arg2, arg3, distributor);
 			
 			CommandList::get<ThresholdConstantCommand<pixel_t> >().runDistributed(distributor, { &img, th });
 			

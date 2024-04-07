@@ -5,7 +5,7 @@ sample_name = stitched
 
 
 # Binning (downscaling) applied to inputs before stitching.
-# Binning 1 corresponds to original input image size, binnin 2 to half of that, etc.
+# Binning 1 corresponds to original input image size, binning 2 to half of that, etc.
 # Use e.g. to test with smaller images before running stitching for full-scale data.
 binning = 1
 
@@ -13,6 +13,7 @@ binning = 1
 # Space between points in the reference grid in the pairwise matching step.
 # Specify such a value that the deformation is approximately linear between the grid points.
 # The value should scale with image size.
+# The value is given in the coordinates of the original image (not in binned coordinates).
 point_spacing = 30
 
 
@@ -21,6 +22,7 @@ point_spacing = 30
 # for each coordinate direction.
 # The block radius is the maximal local shift that can be found between any two sub-images.
 # The value should scale with image size.
+# The value is given in the coordinates of the original image (not in binned coordinates).
 coarse_block_radius = 60
 
 
@@ -82,13 +84,17 @@ normalize_in_blockmatch = True
 normalize_while_stitching = True
 
 
-# Set to true to mask each input image such that only pixels inside the maximum
-# inscribed circle that fits into each xy-slice of the image are taken into account
-# in stitching. This is useful if, e.g. tomographic slices contain bad values outside the
+
+# Selects tile pixel weighing method. Set to a negative value to use rect weight, where weight
+# of a pixel is proportional to the distance from the edge of the tile. Set to 0 to use
+# maximum circle weight, where the weight of a pixel is proportional to the distance from
+# the edge of a maximal inscribed circle that fits inside the image in the xy-plane. Set
+# to a positive value to use circle weight with user-specified diameter.
+# This is useful if, e.g. tomographic slices contain bad values outside the
 # well-reconstructed region.
 # Note that currently masking is made after calculation of gray level normalization, see
 # also normalize_while_stitching and normalize_in_blockmatch settings.
-mask_to_max_circle = False
+max_circle_diameter = -1
 
 
 # Threshold value for displacement filtering.
@@ -97,12 +103,6 @@ mask_to_max_circle = False
 # The value should scale with image size.
 displacement_filter_threshold = 6
 
-
-# Set to true to re-do pairwise matching.
-# If output files exist, the pairwise matching process is skipped for those images.
-# Use this if parameters of pairwise matching process are changed and you don't want to
-# manually remove the relevant output files.
-redo = False
 
 # Set to true to create an output image that shows the local amount of
 # deviation from perfect stitching.
@@ -123,11 +123,12 @@ wait_for_jobs = True
 
 
 # Maximum size of image block that is processed in one process is max_block_size^3.
+# Set to zero to determine the value automatically based on available RAM.
 # If create_goodness is false, set to such a value that
-# (2 * pixel_size_in_bytes + 4) * max_block_size^3 + (size_of_single_subimage_in_bytes) < (available_memory_in_bytes).
+# (tile_pixel_size + 8) * max_block_size^3 < (available_memory_in_bytes).
 # If create_goodness is true, set to such a value that 
-# (2 * pixel_size_in_bytes + 4 + 4) * max_block_size^3 + (size_of_single_subimage_in_bytes) < (available_memory_in_bytes).
-max_block_size = 2100
+# (tile_pixel_size + 12) * max_block_size^3 < (available_memory_in_bytes).
+max_block_size = 0
 
 
 

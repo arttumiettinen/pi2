@@ -13,6 +13,7 @@
 #include "projectioncommands.h"
 #include "math/aabox.h"
 #include "pilibutilities.h"
+#include "timing.h"
 
 #include <vector>
 #include <type_traits>
@@ -143,7 +144,10 @@ namespace pilib
 			if (dim > 0)
 			{
 				// Read ri from previous dimension output
-				itl2::internals::readRiBlock(ri, riPrefix + "_dim" + itl2::toString(dim - 1), blockOrigin);
+				{
+					TimingFlag flag(TimeClass::IO);
+					itl2::internals::readRiBlock(ri, riPrefix + "_dim" + itl2::toString(dim - 1), blockOrigin);
+				}
 				M = maxR2(ri, dmap2, dmap2Full, blockOrigin);
 			}
 			else
@@ -181,6 +185,7 @@ namespace pilib
 			// Write temporary file, if any
 			if (dim < getDimensionality(fullDimensions) - 1)
 			{
+				TimingFlag flag(TimeClass::IO);
 				itl2::internals::writeRiBlock(ri, riPrefix + "_dim" + itl2::toString(dim), (uint16_t)blockIndex, blockOrigin, fullDimensions);
 			}
 		}
@@ -337,9 +342,12 @@ namespace pilib
 					std::cout << "Remove unnecessary temporary files..." << std::endl;
 
 					// Delete temporary files from previous round
-					auto items = itl2::buildFileList(riPrefix + "_dim" + itl2::toString(dim - 1) + "_*");
-					for (const string& file : items)
-						itl2::deleteFile(file);
+					{
+						TimingFlag flag(TimeClass::IO);
+						auto items = itl2::buildFileList(riPrefix + "_dim" + itl2::toString(dim - 1) + "_*");
+						for (const string& file : items)
+							itl2::deleteFile(file);
+					}
 				}
 			}
 			else
@@ -424,8 +432,8 @@ namespace pilib
 "The pixel data type must be able to contain large enough values; usually uint8 is too small. Uint32 or uint64 are recommended. "
 "\n\n"
 "The algorithm selection depends on the value of the 'save memory' argument. "
-"If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model - Independent Assessment of Thickness in Three-Dimensional Images is used. "
-"If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte - scale volume images is applied. "
+"If 'save memory' is true, the algorithm introduced in Hildebrand - A New Method for the Model-Independent Assessment of Thickness in Three-Dimensional Images is used."
+"If 'save memory' is false, the separable algorithm in Lovric - Separable distributed local thickness algorithm for efficient morphological characterization of terabyte-scale volume images is applied. "
 "The separable algorithm is usually much faster than the Hildebrand algorithm, but requires much more RAM (normal mode) or temporary disk space (distributed mode). ",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Input image where background is marked with background value given by the third argument."),
@@ -490,9 +498,6 @@ namespace pilib
 
 				// Propagate
 				CommandList::get<DrawSpheres2Command<pixel_t> >().runDistributed(distributor, { &temp, &input, saveMemory, blockSize });
-
-				// Clear temp image
-				//CommandList::get<ClearCommand>().runDistributed(distributor, { tempName });
 			}
 			// Finalize
 			CommandList::get<FinalizeThicknessMapCommand<pixel_t, out_t> >().runDistributed(distributor, { &input, &output });

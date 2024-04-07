@@ -26,7 +26,7 @@ namespace itl2
 		@param defPoint Point in the deformed image. Input value is used as initial guess of the shift. On output, will contain the shift that was estimated.
 		@param accuracy Stores a measure of the accuracy of the matching.
 		*/
-		template<typename ref_t, typename def_t> void blockMatchOnePoint(const Image<ref_t>& reference, const Image<def_t>& deformed, const Vec3c& blockRadius, const Vec3c& refPoint, Vec3d& defPoint, double& accuracy, size_t binningSize = 1)
+		template<typename ref_t, typename def_t> void blockMatchOnePoint(const Image<ref_t>& reference, const Image<def_t>& deformed, const Vec3c& blockRadius, const Vec3c& refPoint, Vec3d& defPoint, double& accuracy, size_t binningSize = 1, SubpixelAccuracy mode = SubpixelAccuracy::Centroid)
 		{
 			Vec3c r = blockRadius;
 			for (size_t n = reference.dimensionality(); n < 3; n++)
@@ -61,7 +61,14 @@ namespace itl2
 			inpaintNearest(refBlock);
 			inpaintNearest(defBlock);
 
-			Vec3d shift = phaseCorrelation(refBlock, defBlock, r / binningSize, accuracy);
+			//raw::writed(refBlock, string("./") + toString(refPoint) + "_ref");
+			//raw::writed(defBlock, string("./") + toString(refPoint) + "_def");
+			//Image<float32_t> temp(refBlock.dimensions());
+			//setValue(temp, refBlock);
+			//correlogram(temp, defBlock);
+			//raw::writed(temp, string("./") + toString(refPoint) + "_cor");
+
+			Vec3d shift = phaseCorrelationShift(refBlock, defBlock, r / binningSize, mode, accuracy);
 			shift *= (double)binningSize;
 
 			defPoint = Vec3d(defPointRounded) - shift;
@@ -79,12 +86,12 @@ namespace itl2
 		@param defPoint Point in the deformed image. Input value is used as initial guess of the shift. On output, will contain the shift that was estimated.
 		@param accuracy Stores a measure of the accuracy of the matching.
 		*/
-		template<typename ref_t, typename def_t> void blockMatchOnePointMultires(const Image<ref_t>& reference, const Image<def_t>& deformed, const Vec3c& coarseBlockRadius, size_t coarseBinning, const Vec3c& fineBlockRadius, size_t fineBinning, const Vec3c& refPoint, Vec3d& defPoint, double& accuracy)
+		template<typename ref_t, typename def_t> void blockMatchOnePointMultires(const Image<ref_t>& reference, const Image<def_t>& deformed, const Vec3c& coarseBlockRadius, size_t coarseBinning, const Vec3c& fineBlockRadius, size_t fineBinning, const Vec3c& refPoint, Vec3d& defPoint, double& accuracy, SubpixelAccuracy mode)
 		{
-			blockMatchOnePoint(reference, deformed, coarseBlockRadius, refPoint, defPoint, accuracy, coarseBinning);
+			blockMatchOnePoint(reference, deformed, coarseBlockRadius, refPoint, defPoint, accuracy, coarseBinning, mode);
 
 			if(accuracy > 0 && coarseBinning > fineBinning)
-				blockMatchOnePoint(reference, deformed, fineBlockRadius, refPoint, defPoint, accuracy, fineBinning);
+				blockMatchOnePoint(reference, deformed, fineBlockRadius, refPoint, defPoint, accuracy, fineBinning, mode);
 		}
 	}
 
@@ -110,7 +117,7 @@ namespace itl2
 		#pragma omp parallel for if(!omp_in_parallel())
 		for (coord_t n = 0; n < (coord_t)refPoints.size(); n++)
 		{
-			internals::blockMatchOnePoint(reference, deformed, blockRadius, refPoints[n], defPoints[n], accuracy[n]);
+			internals::blockMatchOnePoint(reference, deformed, blockRadius, refPoints[n], defPoints[n], accuracy[n], 1, mode);
 
 			showThreadProgress(counter, refPoints.size());
 		}
@@ -249,7 +256,7 @@ namespace itl2
 	Block matching for point grid and image output.
 	NOTE: Assumes that zero pixels in the images represent unknown values. The unknown values are replaced by the nearest non-zero value.
 	*/
-	template<typename ref_t, typename def_t> void blockMatch(const Image<ref_t>& reference, const Image<def_t>& deformed, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy, const Vec3c& blockRadius)
+	template<typename ref_t, typename def_t> void blockMatch(const Image<ref_t>& reference, const Image<def_t>& deformed, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy, const Vec3c& blockRadius, SubpixelAccuracy mode)
 	{
 		accuracy.ensureSize(refGrid.pointCounts());
 		defPoints.ensureSize(refGrid.pointCounts());
@@ -266,7 +273,7 @@ namespace itl2
 					Vec3d defPoint = defPoints(x, y, z);
 					double gof;
 
-					internals::blockMatchOnePoint(reference, deformed, blockRadius, refPoint, defPoint, gof);
+					internals::blockMatchOnePoint(reference, deformed, blockRadius, refPoint, defPoint, gof, 1, mode);
 
 					defPoints(x, y, z) = defPoint;
 					accuracy(x, y, z) = (float32_t)gof;
@@ -284,7 +291,8 @@ namespace itl2
 	*/
 	template<typename ref_t, typename def_t> void blockMatchMulti(const Image<ref_t>& reference, const Image<def_t>& deformed, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
 		const Vec3c& coarseBlockRadius, size_t coarseBinning,
-		const Vec3c& fineBlockRadius, size_t fineBinning)
+		const Vec3c& fineBlockRadius, size_t fineBinning,
+		SubpixelAccuracy mode)
 	{
 		accuracy.ensureSize(refGrid.pointCounts());
 		defPoints.ensureSize(refGrid.pointCounts());
@@ -301,7 +309,7 @@ namespace itl2
 					Vec3d defPoint = defPoints(x, y, z);
 					double gof;
 
-					internals::blockMatchOnePointMultires(reference, deformed, coarseBlockRadius, coarseBinning, fineBlockRadius, fineBinning, refPoint, defPoint, gof);
+					internals::blockMatchOnePointMultires(reference, deformed, coarseBlockRadius, coarseBinning, fineBlockRadius, fineBinning, refPoint, defPoint, gof, mode);
 
 					defPoints(x, y, z) = defPoint;
 					accuracy(x, y, z) = (float32_t)gof;
@@ -319,7 +327,8 @@ namespace itl2
 	template<typename ref_t, typename def_t> void blockMatchPartialLoad(const string& referenceFile, const string& deformedFile, const PointGrid3D<coord_t>& refGrid, Image<Vec3d>& defPoints, Image<float32_t>& accuracy,
 		const Vec3c& coarseBlockRadius, size_t coarseBinning,
 		const Vec3c& fineBlockRadius, size_t fineBinning,
-		bool normalize, double& normFact, double& normFactStd, double& meanDef)
+		bool normalize, double& normFact, double& normFactStd, double& meanDef,
+		SubpixelAccuracy mode)
 	{
 		accuracy.ensureSize(refGrid.pointCounts());
 		defPoints.ensureSize(refGrid.pointCounts());
@@ -400,7 +409,7 @@ namespace itl2
 					Vec3d defPoint = defPoints(x, y, z) - Vec3d(defStart);
 					double gof;
 
-					internals::blockMatchOnePointMultires(referenceBlock, deformedBlock, coarseBlockRadius, coarseBinning, fineBlockRadius, fineBinning, refPoint, defPoint, gof);
+					internals::blockMatchOnePointMultires(referenceBlock, deformedBlock, coarseBlockRadius, coarseBinning, fineBlockRadius, fineBinning, refPoint, defPoint, gof, mode);
 
 					defPoints(x, y, z) = defPoint + Vec3d(defStart);
 					accuracy(x, y, z) = (float32_t)gof;
@@ -486,15 +495,14 @@ namespace itl2
 	@param pullback Result image. This image will contain deformed image reversed to the coordinates of the original, non-deformed, image. Size of this image must be set by the caller.
 	@param refPoints Points in the reference image whose locations in the deformed image have been be determined.
 	@param defPoints Locations of points in the deformed image corresponding to the reference points.
+	@param pullbackPos Position of the pullback image in the reference image coordinates.
 	*/
-	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
 	{
 		deformed.mustNotBe(pullback);
 
 		if (refGrid.pointCounts() != defPoints.dimensions())
 			throw ITLException("Arguments refGrid and defPoints must have the same dimensions.");
-
-		// TODO: determine region of pullback that must be processed
 
 		Image<Vec3d> shifts(defPoints.dimensions());
 		internals::pointsToShifts(shifts, refGrid, defPoints);
@@ -510,6 +518,8 @@ namespace itl2
 				for (coord_t x = 0; x < pullback.width(); x++)
 				{
 					Vec3d xRef((double)x, (double)y, (double)z);
+					xRef += pullbackPos;
+
 					Vec3d shift = internals::projectPointToDeformed(xRef, refGrid, shifts, shiftInterpolator);
 					
 					Vec3d xDef = xRef + shift;
@@ -518,8 +528,13 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, pullback.depth());
+			showThreadProgress(counter, pullback.depth(), showProgressInfo);
 		}
+	}
+
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
+	{
+		reverseDeformation<def_t, result_t>(deformed, pullback, refGrid, defPoints, Vec3d(0, 0, 0), interpolator, showProgressInfo);
 	}
 
 	/*
@@ -544,5 +559,6 @@ namespace itl2
 		void blockMatch2Pullback();
 		void mipMatch();
 		void pointsToDeformed();
+		void reverseDeformation();
 	}
 }

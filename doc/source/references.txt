@@ -1,22 +1,28 @@
 Articles where pi2 has been used
 --------------------------------
 
-This is an incomplete list of articles where this software or some of its previous versions has been used.
+This is an incomplete list of journal articles where this software (pi2 or NRStitcher) or some of its previous versions has been used.
 If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
+* Albers J. et al., High Throughput Tomography (HiTT) on EMBL beamline P14 on PETRA III, Journal of Synchrotron Radiation 31(1), 2024. https://doi.org/10.1107/S160057752300944X
+* Zhao B. et al., Wood-based superblack, Nature Communications 14, 2023. https://doi.org/10.1038/s41467-023-43594-4
+* Mattos B.D. et al., Black Bioinks from Superstructured Carbonized Lignin Particles, Advanced Functional Materials 33(45), 2023. https://doi.org/10.1002/adfm.202304867
+* Hyväluoma J. et al., Structural and chemical changes in pyrogenic organic matter aged in a boreal forest soil, Pedosphere 33(3), 2023. https://doi.org/10.1016/j.pedsph.2022.06.058
+* Karakoç A. et al., Microstructural evaluation and recommendations for face masks in community use to reduce the transmission of respiratory infectious diseases, Computer Methods and Programs in Biomedicine 226, 2022. https://doi.org/10.1016/j.cmpb.2022.107154
+* Ketola A. et al., Changing the Structural and Mechanical Anisotropy of Foam-Formed Cellulose Materials by Affecting Bubble–Fiber Interaction with Surfactant, ACS Applied Polymer Materials 4(10), 2022. https://doi.org/10.1021/acsapm.2c01248
+* Truong M. et al., Sub-micrometer morphology of human atherosclerotic plaque revealed by synchrotron radiation-based μCT—A comparison with histology. PLoS ONE 17(4), e0265598. https://doi.org/10.1371/journal.pone.0265598
 * Blaskovic A. et al., Early life exposure to nicotine modifies lung gene response after elastase-induced emphysema. Respiratory Research 23, 2022. https://doi.org/10.1186/s12931-022-01956-4
-* Romano M., et al., X-Ray Phase Contrast 3D Virtual Histology:Evaluation of Lung Alterations AfterMicrobeam Irradiation. Radiation Oncology, Biology, Physics, 2022. https://doi.org/10.1016/j.ijrobp.2021.10.009
+* Romano M., et al., X-Ray Phase Contrast 3D Virtual Histology:Evaluation of Lung Alterations After Microbeam Irradiation. Radiation Oncology, Biology, Physics, 2022. https://doi.org/10.1016/j.ijrobp.2021.10.009
 * Eckermann M. et al., Three-dimensional virtual histology of the human hippocampus based on phase-contrast computed tomography, PNAS 118(48), 2021.
-* Wälchli T. et al., Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Nature Protocols, 2021.
+* Wälchli T. et al., Hierarchical imaging and computational analysis of three-dimensional vascular network architecture in the entire postnatal and adult mouse brain. Nature Protocols 16, 2021. https://doi.org/10.1038/s41596-021-00587-1
 * Bosch C. et al., Functional and multiscale 3D structural investigation of brain tissue through correlative in vivo physiology, synchrotron micro-tomography and volume electron microscopy. Pre-print available at https://www.biorxiv.org/content/10.1101/2021.01.13.426503v1.full.
-* Truong M. et al., Submicrometer morphology of human atherosclerotic plaque revealed by synchrotron radiation-based μCT - a comparison with histology. In press.
 * Miettinen A. et al., Micrometer-resolution reconstruction and analysis of whole mouse brain vasculature by synchrotron-based phase-contrast tomographic microscopy. In press, preprint available at https://www.biorxiv.org/content/10.1101/2021.03.16.435616v1.abstract.
 * Karakoç A. et al., Effective elastic properties of biocomposites using 3D computational homogenization and X-ray microcomputed tomography, Composite Structures 273, 2021.
 * Longo E. et al., X-ray Zernike phase contrast tomography: 3D ROI visualization of mm-sized mice organ tissues down to sub-cellular components, Biomedical Optics Express 11(10), 2020.
-* Eckermann M. et al., 3d virtual pathohistology of lung tissue from COVID-19 patients based on phase contrast x-ray tomography, eLife 2020;9:e60408, 2020.
+* Eckermann M. et al., 3D virtual pathohistology of lung tissue from COVID-19 patients based on phase contrast x-ray tomography, eLife 2020;9:e60408, 2020.
 * Borisova E. et al., Micrometer-resolution X-ray tomographic full-volume reconstruction of an intact post mortem juvenile rat lung, Histochemistry and Cell Biology, 2020.
 * Anschuetz L. et al., Synchrotron radiation imaging revealing the sub-micron structure of the auditory ossicles, Hearing Research 383, 2019.
-* Miettinen A. et al., NRStitcher: Non-rigid stitching of terapixel-scale volumetric images, Bioinformatics 35(24), 2019.
+* Miettinen A. et al., NRStitcher: Non-rigid stitching of terapixel-scale volumetric images, Bioinformatics 35(24), 2019. https://doi.org/10.1093/bioinformatics/btz423
 * Jairan Nafar Dastgerdi, Behnam Anbarlooie, Arttu Miettinen, Hossein Hosseini-Toudeshky, Heikki Remes. Effects of particle clustering on the plastic deformation and damage initiation of particulate reinforced composite utilizing X-ray CT data and finite element modeling, Composites Part B 153(15), 2018.
 * Sayab M. et al., Orthogonal switching of AMS axes during type-2 fold interference: Insights from integrated X-ray computed tomography, AMS and 3D petrography, Journal of Structural Geology 103, 2017.
 * Hajlane A. et al., Use of micro-tomography for validation of method to identify interfacial shear strength from tensile tests of short regenerated cellulose fibre composites, IOP Conference Series: Materials Science and Engineering 139, 2016.

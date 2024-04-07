@@ -1,0 +1,47 @@
+.. _metacolumncount:
+
+metacolumncount
+***************
+
+
+**Syntax:** :code:`metacolumncount(image, key, row index, count)`
+
+Retrieves count of columns in a specific row of a metadata item.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input]
+~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to process.
+
+key [input]
+~~~~~~~~~~~
+
+**Data type:** string
+
+Name of the metadata item.
+
+row index [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+Index of the row whose column count is to be returned.
+
+count [output]
+~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+Item count.
+
+See also
+--------
+
+:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`, :ref:`metarowcount`, :ref:`metacolumncount`

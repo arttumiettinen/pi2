@@ -100,6 +100,11 @@ namespace pilib
 		return distributable->getDistributionDirection2(args);
 	}
 
+	size_t Delayed::getDistributionDirection3() const
+	{
+		return distributable->getDistributionDirection3(args);
+	}
+
 	size_t Delayed::getRefIndex() const
 	{
 		return refIndex;
@@ -115,8 +120,8 @@ namespace pilib
 		return distributable->getJobType(args);
 	}
 
-	bool Delayed::needsToRun(const Vec3c& readStart, const Vec3c& readSize, const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize, size_t blockIndex) const
+	bool Delayed::needsToRun(const Vec3c& readStart, const Vec3c& readSize, const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize, size_t blockIndex, const Vec3c& blockIndex3) const
 	{
-		return distributable->needsToRunBlock(args, readStart, readSize, writeFilePos, writeImPos, writeSize, blockIndex);
+		return distributable->needsToRunBlock(args, readStart, readSize, writeFilePos, writeImPos, writeSize, blockIndex, blockIndex3);
 	}
 }

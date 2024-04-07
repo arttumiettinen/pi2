@@ -55,7 +55,7 @@ namespace itl2
 	inline void sleep(unsigned int ms)
 	{
 #if defined(__linux__)  || defined(__APPLE__)
-		usleep(ms);
+		usleep(ms * 1000);
 #elif defined(_WIN32)
 		Sleep(ms);
 #else
@@ -342,54 +342,6 @@ namespace itl2
 		throw ITLException(errstr.str());
 	}
 
-	///**
-	//Convert from string to vector
-	//*/
-	//template<>
-	//inline Vec2f fromString(const string& value)
-	//{
-	//	try
-	//	{
-	//		if (value.length() < 1)
-	//			throw ITLException("Empty string.");
-
-	//		if (value[0] == '[')
-	//		{
-	//			// Vector notation [1, 2]
-	//			std::stringstream parts;
-	//			parts << value;
-	//			std::string sx, sy;
-	//			std::getline(parts, sx, '[');
-	//			std::getline(parts, sx, ',');
-	//			std::getline(parts, sy, ']');
-
-	//			trim(sx);
-	//			trim(sy);
-
-	//			Vec2f result;
-	//			result.x = itl2::fromString<float32_t>(sx);
-	//			result.y = itl2::fromString<float32_t>(sy);
-	//			return result;
-	//		}
-	//		else
-	//		{
-	//			// Single number
-
-	//			float32_t val = itl2::fromString<float32_t>(value);
-
-	//			Vec2f result;
-	//			result.x = val;
-	//			result.y = val;
-	//			return result;
-	//		}
-	//	}
-	//	catch (ITLException)
-	//	{
-	//		ostringstream errstr;
-	//		errstr << "Value '" << value << "' is not a valid 2-component vector.";
-	//		throw ITLException(errstr.str());
-	//	}
-	//}
 
 	namespace internals
 	{
@@ -626,6 +578,36 @@ namespace itl2
 		return "False";
 	}
 
+	/**
+	Escape characters [],\n\r=
+	*/
+	void escape(std::string& value);
+	
+	/**
+	Undo escapement done using escape method.
+	*/
+	void undoEscape(std::string& value);
+
+	/**
+	Converts vector to string, escapes characters that cannot occur in the output using escape(...) function.
+	*/
+	template<typename T>
+	std::string toString(const std::vector<T>& value)
+	{
+		std::ostringstream str;
+		str << "[";
+		for (size_t n = 0; n < value.size(); n++)
+		{
+			std::string esc = toString(value[n]);
+			escape(esc);
+			str << esc;
+			if (n < value.size() - 1)
+				str << ", ";
+		}
+		str << "]";
+		return str.str();
+	}
+
 
 	inline double sizeRound(double size)
 	{
@@ -656,5 +638,10 @@ namespace itl2
 			return itl2::toString(sizeGigas) + " GiB";
 
 		return itl2::toString(sizeTeras) + " TiB";
+	}
+
+	namespace tests
+	{
+		void escapes();
 	}
 }

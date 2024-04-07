@@ -21,6 +21,8 @@ namespace pilib
 		{
 			if (fname.length() > 0)
 			{
+				TimingFlag flag(TimeClass::IO);
+
 				if (blockIndex >= 0)
 					fname = fname + "_" + itl2::toString(blockIndex);
 
@@ -43,12 +45,20 @@ namespace pilib
 
 				std::cout << "Reading " << fname << std::endl;
 
+				
 				Image<raw_t> currHist;
-				raw::read(currHist, fname);
+				{
+					TimingFlag flag(TimeClass::IO);
+					raw::read(currHist, fname);
+				}
 
 				add(rawHist, currHist);
 
-				fs::remove(fname);
+				{
+					TimingFlag flag(TimeClass::IO);
+					fs::remove(fname);
+				}
+				
 			}
 			
 			// Convert data to output format

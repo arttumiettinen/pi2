@@ -115,7 +115,7 @@ namespace itl2
 	 * @param azimuthal Azimuthal angle. (from positive x-axis towards positive y-axis, [-pi, pi])
 	 * @param polar Polar angle. (from positive z-axis towards xy-plane, [0, pi])
 	 */
-	inline void toSpherical(double x, double y, double z, double& r, double& azimuthal, double& polar)
+	inline void cartesianToSpherical(double x, double y, double z, double& r, double& azimuthal, double& polar)
 	{
 		r = std::sqrt(x * x + y * y + z * z);
 		azimuthal = std::atan2(y, x);
@@ -129,7 +129,7 @@ namespace itl2
 	 * @param polar Polar angle. (from positive z-axis towards xy-plane, [0, pi])
 	 * @param x, y, z The cartesian coordinates.
 	 */
-	inline void toCartesian(double r, double azimuthal, double polar, double& x, double& y, double& z)
+	inline void sphericalToCartesian(double r, double azimuthal, double polar, double& x, double& y, double& z)
 	{
 		x = r * std::cos(azimuthal) * std::sin(polar);
 		y = r * std::sin(azimuthal) * std::sin(polar);
@@ -142,7 +142,7 @@ namespace itl2
 	 * @param r Radial coordinate. (from origo outwards. [0, inf])
 	 * @param azimuthal Azimuthal angle. (from positive x-axis towards positive y-axis, [-pi, pi])
 	 */
-	inline void toPolar(double x, double y, double& r, double& azimuthal)
+	inline void cartesianToPolar(double x, double y, double& r, double& azimuthal)
 	{
 		r = std::sqrt(x * x + y * y);
 		azimuthal = std::atan2(y, x);
@@ -154,7 +154,7 @@ namespace itl2
 	 * @param azimuthal Azimuthal angle. (from positive x-axis towards positive y-axis, [-pi, pi])
 	 * @param x, y The cartesian coordinates.
 	 */
-	inline void toCartesian(double r, double azimuthal, double& x, double& y)
+	inline void polarToCartesian(double r, double azimuthal, double& x, double& y)
 	{
 		x = r * std::cos(azimuthal);
 		y = r * std::sin(azimuthal);

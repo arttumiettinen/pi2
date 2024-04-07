@@ -150,7 +150,7 @@ namespace itl2
 					{
 						double polar = oriTheta(oriPos);
 						double azimuthal = oriPhi(oriPos);
-						Vec3d dir = toCartesian(1.0, azimuthal, polar);
+						Vec3d dir = sphericalToCartesian(1.0, azimuthal, polar);
 
 						bool touchesEdge = false;
 						getSlice<pixel_t>(original, Vec3d(pos), dir, slice, &touchesEdge, interp);

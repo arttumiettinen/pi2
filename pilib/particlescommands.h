@@ -10,7 +10,7 @@
 #include "regionremoval.h"
 #include "csa.h"
 
-#include "othercommands.h"
+#include "floodfillcommands.h"
 #include "pointprocesscommands.h"
 #include "specialcommands.h"
 #include "commandlist.h"
@@ -272,10 +272,14 @@ namespace pilib
 			// Write outputs to the output file
 			filename += "_" + itl2::toString(index);
 
-			writeText(filename + "_results.txt", results.str());
-			writeList(filename + "_incomplete_particles.dat", incompleteParticles);
-			writeList(filename + "_large_edge_points.dat", largeEdgePoints);
-			itl2::writeListFile(filename + "_edge_z.dat", edgeZ);
+			{
+				TimingFlag flag(TimeClass::IO);
+
+				writeText(filename + "_results.txt", results.str());
+				writeList(filename + "_incomplete_particles.dat", incompleteParticles);
+				writeList(filename + "_large_edge_points.dat", largeEdgePoints);
+				itl2::writeListFile(filename + "_edge_z.dat", edgeZ);
+			}
 		}
 
 		using Distributable::runDistributed;
@@ -326,71 +330,6 @@ namespace pilib
 	{
 	private:
 
-		//static void readList(const string& filename, vector<coord_t>& v)
-		//{
-		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-		//	if (!in)
-		//		throw ITLException(string("Unable to open file: ") + filename);
-
-		//	size_t s = 0;
-		//	in.read((char*)&s, sizeof(size_t));
-
-		//	v.reserve(v.size() + s);
-
-		//	for (size_t n = 0; n < s; n++)
-		//	{
-		//		coord_t val;
-		//		in.read((char*)&val, sizeof(coord_t));
-		//		v.push_back(val);
-		//	}
-		//}
-
-		//static void readList(std::ifstream& in, vector<Vec3sc>& v)
-		//{
-		//	size_t s = 0;
-		//	in.read((char*)&s, sizeof(size_t));
-
-		//	v.reserve(v.size() + s);
-
-		//	for (size_t n = 0; n < s; n++)
-		//	{
-		//		Vec3sc val;
-		//		in.read((char*)&val.x, sizeof(uint32_t));
-		//		in.read((char*)&val.y, sizeof(uint32_t));
-		//		in.read((char*)&val.z, sizeof(uint32_t));
-		//		v.push_back(val);
-		//	}
-		//}
-
-		//static void readList(const string& filename, vector<Vec3sc>& v)
-		//{
-		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-		//	if (!in)
-		//		throw ITLException(string("Unable to open file: ") + filename);
-
-		//	readList(in, v);
-		//}
-
-		//static void readList(const string& filename, vector<vector<Vec3sc> >& v)
-		//{
-		//	std::ifstream in(filename, std::ios_base::in | std::ios_base::binary);
-		//	if (!in)
-		//		throw ITLException(string("Unable to open file: ") + filename);
-
-		//	size_t s = 0;
-		//	in.read((char*)&s, sizeof(size_t));
-
-		//	v.reserve(v.size() + s);
-
-		//	vector<Vec3sc> val;
-		//	for (size_t n = 0; n < s; n++)
-		//	{
-		//		val.clear();
-		//		readList(in, val);
-		//		v.push_back(val);
-		//	}
-		//}
-
 		static void readList(const string& filename, vector<vector<Vec3sc> >& v)
 		{
 			itl2::readListFile(filename, v, [=](std::ifstream& in, std::vector<Vec3sc>& v) { itl2::readList<Vec3sc>(in, v); });
@@ -399,7 +338,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		AnalyzeParticlesCommand() : Command("analyzeparticles", "Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command `headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see `analyzelabels`.",
+		AnalyzeParticlesCommand() : Command("analyzeparticles", "Analyzes shape of blobs or other particles (separate nonzero regions) in the input image. Assumes all the particles have the same color. All the nonzero pixels in the input image will be set to same value. Output image will contain results of the measurements. There will be one row for each particle found in the input image. Use command `headers` to get interpretation of the columns. The order of the particles in the results may be different in normal and distributed processing modes. If you wish to analyze labeled particles, see `analyzelabels`. Note that the command fails to run if the input image does not contain any particles.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::InOut, "input image", "Input image. The particles in this image will be filled with temporary color."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "results", "Image where analysis results are placed. This image will contain one row for each particle found in the input image. Use command `headers` to retrieve meanings of columns."),
@@ -481,10 +420,14 @@ namespace pilib
 
 				std::cout << "Reading results of job " << n << std::endl;
 
-				results.readText(resultsName);
-				readList(incompleteName, incompleteParticles);
-				readList(largeName, largeEdgePoints);
-				itl2::readListFile(edgezName, edgeZ);
+				{
+					TimingFlag flag(TimeClass::IO);
+
+					results.readText(resultsName);
+					readList(incompleteName, incompleteParticles);
+					readList(largeName, largeEdgePoints);
+					itl2::readListFile(edgezName, edgeZ);
+				}
 
 				itl2::internals::combineParticleAnalysisResults(analyzers, results, largeEdgePoints, incompleteParticles, volumeLimit, connectivity, edgeZ, n < output.size() - 1);
 			}
@@ -518,10 +461,14 @@ namespace pilib
 				string largeName = tempFilename + "_" + itl2::toString(n) + "_large_edge_points.dat";
 				string edgezName = tempFilename + "_" + itl2::toString(n) + "_edge_z.dat";
 				
-				fs::remove(resultsName);
-				fs::remove(incompleteName);
-				fs::remove(largeName);
-				fs::remove(edgezName);
+				{
+					TimingFlag flag(TimeClass::IO);
+
+					fs::remove(resultsName);
+					fs::remove(incompleteName);
+					fs::remove(largeName);
+					fs::remove(edgezName);
+				}
 			}
 
 			// Convert results to output image.
@@ -541,7 +488,7 @@ namespace pilib
 		FillParticlesCommand() : OneImageInPlaceCommand<pixel_t>("fillparticles", "Fills particles that correspond to an entry in a list of particles with specified value. All other particles will be set to value 1. This command does not support cases where the particles have different colors.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "analyzers", "List of names of analyzers that have been used to analyze the particles in the `analyzeparticles` command. The analyzers must contain 'coordinates' analyzer; otherwise this command does not know where the particles are."),
-				CommandArgument<Image<float32_t> >(ParameterDirection::In, "results", "Analysis results image."),
+				CommandArgument<Image<float32_t> >(ParameterDirection::In, "results", "Particle analysis results image."),
 				CommandArgument<double>(ParameterDirection::In, "fill color", "Fill color."),
 				CommandArgument<Connectivity>(ParameterDirection::In, "connectivity", string("Connectivity of the particles. ") + connectivityHelp(), Connectivity::NearestNeighbours),
 				CommandArgument<Distributor::BLOCK_ORIGIN_ARG_TYPE>(ParameterDirection::In, Distributor::BLOCK_ORIGIN_ARG_NAME, "Shift that is to be applied to the image before filling the particles. This argument is used internally in distributed processing.", Distributor::BLOCK_ORIGIN_ARG_TYPE())

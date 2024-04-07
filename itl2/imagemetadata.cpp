@@ -28,16 +28,28 @@ namespace itl2
 			// Multi-element item
 			trimStart(value, "[");
 			trimEnd(value, "]");
-			auto list = split(value, true, ',');
-			for (string s : list)
+
+			
+			while (value.length() > 0)
 			{
+				char dummy;
+				string s = getToken(value, ",", dummy);
 				trim(s);
+				undoEscape(s);
 				l.push_back(s);
 			}
+
+			//auto list = split(value, true, ',');
+			//for (string s : list)
+			//{
+			//	trim(s);
+			//	l.push_back(s);
+			//}
 		}
 		else
 		{
 			// Single-element item
+			undoEscape(value);
 			l.push_back(value);
 		}
 
@@ -78,21 +90,31 @@ namespace itl2
 			{
 				arrayName = "";
 			}
-			// TODO: To support equals signs in values, test here if '=' occurs before '"' or the end of the line.
-			// TODO: To support multi-line string values, test if the string starts and ends with '"', and if yes, the line should go to current array.
 			else if (itl2::contains(line, "="))
 			{
 				// This is normal key = value
 
 				arrayName = "";
 
-				vector<string> parts = itl2::split(line, true, '=', false);
-				if (parts.size() == 1)
-					addSingleItem(parts[0], "");
-				else if (parts.size() == 2)
-					addSingleItem(parts[0], parts[1]);
+				//vector<string> parts = itl2::split(line, true, '=', false);
+				//if (parts.size() == 1)
+				//	addSingleItem(parts[0], "");
+				//else if (parts.size() == 2)
+				//	addSingleItem(parts[0], parts[1]);
+				//else
+				//	throw ITLException(string("Line contains multiple values: ") + line);
+
+				size_t pos = line.find('=');
+				if (pos == string::npos)
+				{
+					addSingleItem(line, "");
+				}
 				else
-					throw ITLException(string("Line contains multiple values: ") + line);
+				{
+					string key = line.substr(0, pos - 1);
+					string value = line.substr(pos + 1);
+					addSingleItem(key, value);
+				}
 			}
 			else
 			{
@@ -114,40 +136,77 @@ namespace itl2
 	}
 
 
-	void ImageMetadata::setStr(const string& key, const string& value, coord_t i, coord_t j)
+	void ImageMetadata::setStr(const string& key, const string& value, coord_t column, coord_t row)
 	{
+		// Rules
+		// setStr("key", "value", 7, -1)		=> "key" contains a list (single row), set element 7 to "value"
+		// setStr("key", "value")				=> "key" contains a single value "value"
+		// setStr("key", "value", 1, 2)			=> "key" contains a matrix, set element (1, 2) to "value"
+		// setStr("key", "[0, 1, 2]", -1, n)	=> n:th row of "key" is set to elements (0, 1, 2)
+
 		if (!contains(key))
 			addEmptyItem(key);
 
 		vector<vector<string>>& mat = getStringMatrix(key);
 
-		if (i >= 0)
+		if (column < 0)
 		{
-			while (mat.size() <= (size_t)i)
-				mat.push_back(vector<string>());
-
-			if (j >= 0)
+			vector<string> subElements = parseValue(value);
+			if (subElements.size() > 1)
 			{
-				while (mat[i].size() <= (size_t)j)
-					mat[i].push_back("");
+				// This is a special case of value like [1, 2, 7, 8]
+				// Remove possible existing data, and
+				// set all the elements one-by-one.
+				if(row >= 0 && (size_t)row < mat.size())
+					mat[row].clear();
+				for (size_t n = 0; n < subElements.size(); n++)
+					setStr(key, subElements[n], n, row);
+				return;
 			}
 		}
 
-		if (i >= 0 && j >= 0)
+		if (row >= 0)
+		{
+			while (mat.size() <= (size_t)row)
+				mat.push_back(vector<string>());
+
+			if (column >= 0)
+			{
+				while (mat[row].size() <= (size_t)column)
+					mat[row].push_back("");
+			}
+		}
+		else
+		{
+			// row < 0 => assume there is only one row
+			if(mat.size() > 1)
+				mat.erase(mat.begin() + 1, mat.end());
+			else if(mat.size() <= 0)
+				mat.push_back(vector<string>());
+
+			if (column >= 0)
+			{
+				while (mat[0].size() <= (size_t)column)
+					mat[0].push_back("");
+			}
+		}
+
+		if (row >= 0 && column >= 0)
 		{
 			// Set single item in the matrix
-			mat[i][j] = value;
+			mat[row][column] = value;
 		}
-		else if (i >= 0 && j < 0)
+		else if (row >= 0 && column < 0)
 		{
-			// Set single row
-			mat[i].clear();
-			mat[i].push_back(value);
+			// Set entire single row
+			mat[row].clear();
+			mat[row].push_back(value);
 		}
-		else if (i < 0 && j >= 0)
+		else if (row < 0 && column >= 0)
 		{
 			// Set single column
-			throw ITLException("Unimplemented: setting column of values in image metadata object.");
+			// row < 0 so we assume there is only one row.
+			mat[0][column] = value;
 		}
 		else
 		{
@@ -165,19 +224,14 @@ namespace itl2
 		if (value.size() == 1)
 		{
 			// Single value
-			str << value[0];
+			string esc = value[0];
+			escape(esc);
+			str << esc;
 		}
 		else if (value.size() > 1)
 		{
 			// Vector
-			str << "[";
-			for(size_t n = 0; n < value.size(); n++)
-			{
-				str << value[n];
-				if(n < value.size() - 1)
-					str << ", ";
-			}
-			str << "]";
+			str << toString(value);
 		}
 		else
 		{
@@ -228,35 +282,55 @@ namespace itl2
 
 	namespace tests
 	{
+		int matrixElement(int column, int row)
+		{
+			return (column + 1) * (row + 1) + row;
+		}
+
+		int vectorElement(int listIndex, int elementIndex)
+		{
+			return (listIndex + 1) * (elementIndex + 1) + listIndex;
+		}
+
 		void testGetters(const ImageMetadata& data)
 		{
 			testAssert(data.get<Vec3c>("single_vec3", Vec3c(0, 0, 0)) == Vec3c(1, 2, 3), "single vec3");
-			testAssert(data.get<string>("string", "") == "test test test", "string");
+			testAssert(data.get<int>("single_vec3", -100, 3) == -100, "column overflow");
+			testAssert(data.get<int>("single_vec3", -100, 0, 1) == -100, "row overflow");
+			testAssert(data.get<string>("string", "") == "test = test test\n\nsecond line test\nthird line , []]", "string");
 			testAssert(data.get<int>("key1", 0) == 1, "int");
 			testAssert(data.get<double>("pi", 0) == 3.14159265, "double");
 			testAssert(data.get<int>("list", 0, 3) == 4, "list int");
-			testAssert(data.get<int>("matrix", 0, 4, 2) == 4 * 2, "int matrix element");
+			testAssert(data.get<int>("matrix", 0, 4, 2) == matrixElement(4, 2), "int matrix element");
 
 			// List as individual elements
-			testAssert(data.get<int>("vec_list", -1, 0, 0) == 0, "list element");
-			testAssert(data.get<int>("vec_list", -1, 0, 1) == 1, "list element");
-			testAssert(data.get<int>("vec_list", -1, 1, 0) == 1, "list element");
-			testAssert(data.get<int>("vec_list", -1, 1, 1) == 2, "list element");
-			testAssert(data.get<int>("vec_list", -1, 2, 0) == 2, "list element");
-			testAssert(data.get<int>("vec_list", -1, 2, 1) == 3, "list element");
+			testAssert(data.get<int>("vec2_list", -1, 0, 0) == vectorElement(0, 0), "list element");
+			testAssert(data.get<int>("vec2_list", -1, 1, 0) == vectorElement(0, 1), "list element");
+			testAssert(data.get<int>("vec2_list", -1, 0, 1) == vectorElement(1, 0), "list element");
+			testAssert(data.get<int>("vec2_list", -1, 1, 1) == vectorElement(1, 1), "list element");
+			testAssert(data.get<int>("vec2_list", -1, 0, 2) == vectorElement(2, 0), "list element");
+			testAssert(data.get<int>("vec2_list", -1, 1, 2) == vectorElement(2, 1), "list element");
+
+			// Lists in different formats
+			vector<vector<int>> def1 = {};
+			vector<vector<int>> def2 = { {10} };
+			testAssert(data.getMatrix<int>("vec2_list", def1) == data.getMatrix<int>("vec2_list2", def2), "vec2 lists as matrices");
 
 			// List as vector of Vec2f
-			vector<Vec2f> def;
-			vector<Vec2f> vlist = data.getList<Vec2f>("vec_list", def);
-			testAssert(vlist[0] == Vec2f(0 + 0, 0 + 1), "element");
-			testAssert(vlist[1] == Vec2f(1 + 0, 1 + 1), "element");
-			testAssert(vlist[2] == Vec2f(2 + 0, 2 + 1), "element");
+			vector<Vec2c> def;
+			vector<Vec2c> vlist = data.getList<Vec2c>("vec2_list", def, false);
+			if (testAssert(vlist.size() == 3, "vec2 list size"))
+			{
+				testAssert(vlist[0] == Vec2c(vectorElement(0, 0), vectorElement(0, 1)), "element");
+				testAssert(vlist[1] == Vec2c(vectorElement(1, 0), vectorElement(1, 1)), "element");
+				testAssert(vlist[2] == Vec2c(vectorElement(2, 0), vectorElement(2, 1)), "element");
+			}
 		}
 
 		void imagemetadata()
 		{
 			ImageMetadata data;
-			data.set("string", "test test test");
+			data.set("string", "test = test test\n\nsecond line test\nthird line , []]");
 			data.set("key1", 1);
 			data.set("pi", 3.14159265);
 			data.set("list", 1, 0);
@@ -266,26 +340,53 @@ namespace itl2
 			data.set("list", 5, 4);
 			data.set("single_vec3", Vec3c(1, 2, 3));
 
-			for (int n = 0; n < 5; n++)
+			data.set("string list", "two-line\nitem 1", 0);
+			data.set("string list", "two-line\nitem 2", 1);
+
+			data.set("two_vec3", 0, 0);
+			data.set("two_vec3", 1, 1);
+			data.set("two_vec3", 2, 2);
+			data.set("two_vec3", 3, 3);
+			data.set("two_vec3", Vec3c(1, 2, 3), -1, 0);
+			data.set("two_vec3", Vec3c(4, 5, 6), -1, 1);
+
+			for (int column = 0; column < 5; column++)
 			{
-				for (int m = 0; m < 3; m++)
+				for (int row = 0; row < 3; row++)
 				{
-					data.set(string("matrix"), n * m, n, m);
+					data.set(string("matrix"), matrixElement(column, row), column, row);
 				}
 			}
 
-			for (int n = 0; n < 3; n++)
+			for (int listIndex = 0; listIndex < 3; listIndex++)
 			{
-				for (int m = 0; m < 2; m++)
+				for (int element = 0; element < 2; element++)
 				{
-					data.set(string("vec_list"), n + m, n, m);
+					data.set(string("vec2_list"), vectorElement(listIndex, element), element, listIndex);
 				}
+
+				data.set(string("vec2_list2"), Vec2c(vectorElement(listIndex, 0), vectorElement(listIndex, 1)), -1, listIndex);
 			}
 
-			testGetters(data);
+			testAssert(data.rowCount("string") == 1, "row count");
+			testAssert(data.rowCount("list") == 1, "row count");
+			testAssert(data.rowCount("string list") == 1, "row count");
+			testAssert(data.rowCount("vec2_list") == 3, "row count");
+
+			testAssert(data.columnCount("string", 0) == 1, "column count");
+			testAssert(data.columnCount("list", 0) == 5, "column count");
+			testAssert(data.columnCount("string list", 0) == 2, "column count");
+			testAssert(data.columnCount("vec2_list", 0) == 2, "column count");
+			testAssert(data.columnCount("matrix", 0) == 5, "column count");
+
+			cout << "string directly from metadata:" << endl << data.get<string>("string", "") << endl;
+			cout << "string list directly from metadata:" << endl << data.get<string>("string list", "") << endl;
+			cout << "string list item 1 directly from metadata:" << endl << data.get<string>("string list", "", 0) << endl;
 
 			string str = toString(data);
-			cout << str << endl;
+			cout << "toString output: " << endl << str << endl;
+
+			testGetters(data);
 
 			ImageMetadata data2 = fromString<ImageMetadata>(str);
 

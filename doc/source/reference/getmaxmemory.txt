@@ -1,0 +1,26 @@
+.. _getmaxmemory:
+
+getmaxmemory
+************
+
+
+**Syntax:** :code:`getmaxmemory(maximum memory)`
+
+Gets the amount of available RAM. The value is the amount RAM in the local computer (Local distribution mode or no distribution mode at all) or in a compute node (Slurm etc. distribution modes), or value defined in the relevant _config.txt file.
+
+This command can be used in the distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+maximum memory [output]
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+Amount of RAM available, in megabytes.
+
+See also
+--------
+
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`maxjobs`, :ref:`chunksize`, :ref:`printscripts`

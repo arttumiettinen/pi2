@@ -25,4 +25,4 @@ Set to true to enable delaying.
 See also
 --------
 
-:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`printscripts`
+:ref:`distribute`, :ref:`delaying`, :ref:`maxmemory`, :ref:`maxjobs`, :ref:`chunksize`, :ref:`printscripts`

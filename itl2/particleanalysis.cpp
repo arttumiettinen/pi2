@@ -236,7 +236,7 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img);
@@ -255,7 +255,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// Detailed check
 				Results results;
@@ -287,7 +287,7 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img, Connectivity::AllNeighbours, 3000);
@@ -306,7 +306,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img, Connectivity::NearestNeighbours, 3000);

@@ -12,8 +12,22 @@
 #include "generation.h"
 
 #if defined(USE_OPENCL)
-#define __CL_ENABLE_EXCEPTIONS
-#include <CL/cl.hpp>
+
+#if defined(__APPLE__)
+
+	#error OpenCL is not currently supported in MacOS builds. Use NO_OPENCL=1 make argument.
+
+	#define CL_HPP_ENABLE_EXCEPTIONS
+	#define CL_HPP_MINIMUM_OPENCL_VERSION 110
+	#define CL_HPP_TARGET_OPENCL_VERSION 110
+	// TODO: CL version seems to be different in MacOS, size_t template is missing.
+	// TODO: Update code to the newest version in Windows and Linux, and check if
+	// that works in MacOS, too.
+#else
+	#define __CL_ENABLE_EXCEPTIONS
+	#include <CL/cl.hpp>
+#endif
+
 #endif
 
 #include <iostream>
@@ -27,77 +41,207 @@ namespace itl2
 	
 
 
-	ostream& operator<<(ostream& stream, const RecSettings& s)
+	//ostream& operator<<(ostream& stream, const RecSettings& s)
+	//{
+	//	// TODO: Do this through ImageMetaData object
+	//	stream << "source_to_ra = " << s.sourceToRA << endl;
+	//	stream << "rotation_direction = " << s.rotationDirection << endl;
+	//	stream << "bhc = " << s.bhc << endl;
+	//	stream << "rec_as_180_deg_scan = " << s.reconstructAs180degScan << endl;
+	//	stream << "central_angle = " << s.centralAngleFor180degScan << endl;
+	//	stream << "angle_tweak = " << s.angleTweak << endl;
+	//	stream << "hswp = " << s.heuristicSinogramWindowingParameter << endl;
+	//	stream << "rotation = " << s.rotation << endl;
+	//	stream << "roi_center = " << s.roiCenter << endl;
+	//	stream << "roi_size = " << s.roiSize << endl;
+	//	stream << "crop_size = " << s.cropSize << endl;
+	//	stream << "binning = " << s.binning << endl;
+	//	stream << "remove_dead_pixels = " << s.removeDeadPixels << endl;
+	//	stream << "dead_pixel_median_radius = " << s.deadPixelMedianRadius << endl;
+	//	stream << "dead_pixel_std_dev_count = " << s.deadPixelStdDevCount << endl;
+	//	stream << endl;
+	//	stream << "center_shift = " << s.centerShift << endl;
+	//	stream << "camera_z_shift = " << s.cameraZShift << endl;
+	//	stream << "camera_rotation = " << s.cameraRotation << endl;
+	//	stream << "cs_angle_slope = " << s.csAngleSlope << endl;
+	//	stream << endl;
+	//	stream << "pad_type = " << s.padType << endl;
+	//	stream << "pad_size = " << s.padFraction << endl;
+	//	stream << "filter_type = " << s.filterType << endl;
+	//	stream << "filter_cut_off = " << s.filterCutOff << endl;
+	//	stream << endl;
+	//	stream << "phase_mode = " << s.phaseMode << endl;
+	//	stream << "phase_pad_type = " << s.phasePadType << endl;
+	//	stream << "phase_pad_size = " << s.phasePadFraction << endl;
+	//	stream << "propagation_distance = " << s.objectCameraDistance << endl;
+	//	stream << "delta = " << s.delta << endl;
+	//	stream << "mu = " << s.mu << endl;
+	//	stream << endl;
+	//	stream << "range_min = " << s.dynMin << endl;
+	//	stream << "range_max = " << s.dynMax << endl;
+	//	stream << endl;
+	//	stream << "shift_scale = " << s.shiftScaling << endl;
+	//	stream << "use_shifts = " << s.useShifts << endl;
+	//	stream << endl;
+	//	stream << "angles" << endl;
+
+	//	stream.precision(17);
+	//	for (size_t n = 0; n < s.angles.size(); n++)
+	//		stream << fixed << s.angles[n] << endl;
+	//	stream << endl;
+
+	//	stream << "sample_shifts" << endl;
+	//	for (size_t n = 0; n < s.sampleShifts.size(); n++)
+	//		stream << fixed << s.sampleShifts[n] << endl;
+	//	stream << endl;
+
+	//	stream << "source_shifts" << endl;
+	//	for (size_t n = 0; n < s.sourceShifts.size(); n++)
+	//		stream << fixed << s.sourceShifts[n] << endl;
+	//	stream << endl;
+
+	//	stream << "camera_shifts" << endl;
+	//	for (size_t n = 0; n < s.cameraShifts.size(); n++)
+	//		stream << fixed << s.cameraShifts[n] << endl;
+	//	stream << endl;
+
+	//	stream << "rotation_axis_shifts" << endl;
+	//	for (size_t n = 0; n < s.rotationAxisShifts.size(); n++)
+	//		stream << fixed << s.rotationAxisShifts[n] << endl;
+	//	stream << endl;
+
+	//	return stream;
+	//}
+
+	
+	void RecSettings::toMeta(ImageMetadata& meta) const
 	{
-		// TODO: Do this through ImageMetaData object
-		stream << "source_to_ra = " << s.sourceToRA << endl;
-		stream << "rotation_direction = " << s.rotationDirection << endl;
-		stream << "bhc = " << s.bhc << endl;
-		stream << "rec_as_180_deg_scan = " << s.reconstructAs180degScan << endl;
-		stream << "central_angle = " << s.centralAngleFor180degScan << endl;
-		stream << "angle_tweak = " << s.angleTweak << endl;
-		stream << "hswp = " << s.heuristicSinogramWindowingParameter << endl;
-		stream << "rotation = " << s.rotation << endl;
-		stream << "roi_center = " << s.roiCenter << endl;
-		stream << "roi_size = " << s.roiSize << endl;
-		stream << "crop_size = " << s.cropSize << endl;
-		stream << "binning = " << s.binning << endl;
-		stream << "remove_dead_pixels = " << s.removeDeadPixels << endl;
-		stream << "dead_pixel_median_radius = " << s.deadPixelMedianRadius << endl;
-		stream << "dead_pixel_std_dev_count = " << s.deadPixelStdDevCount << endl;
-		stream << endl;
-		stream << "center_shift = " << s.centerShift << endl;
-		stream << "camera_z_shift = " << s.cameraZShift << endl;
-		stream << "camera_rotation = " << s.cameraRotation << endl;
-		stream << "cs_angle_slope = " << s.csAngleSlope << endl;
-		stream << endl;
-		stream << "pad_type = " << s.padType << endl;
-		stream << "pad_size = " << s.padFraction << endl;
-		stream << "filter_type = " << s.filterType << endl;
-		stream << "filter_cut_off = " << s.filterCutOff << endl;
-		stream << endl;
-		stream << "phase_mode = " << s.phaseMode << endl;
-		stream << "phase_pad_type = " << s.phasePadType << endl;
-		stream << "phase_pad_size = " << s.phasePadFraction << endl;
-		stream << "propagation_distance = " << s.objectCameraDistance << endl;
-		stream << "delta = " << s.delta << endl;
-		stream << "mu = " << s.mu << endl;
-		stream << endl;
-		stream << "range_min = " << s.dynMin << endl;
-		stream << "range_max = " << s.dynMax << endl;
-		stream << endl;
-		stream << "shift_scale = " << s.shiftScaling << endl;
-		stream << "use_shifts = " << s.useShifts << endl;
-		stream << endl;
-		stream << "angles" << endl;
+		
+		meta.set("source_to_ra", sourceToRA);
+		meta.set("rotation_direction", rotationDirection);
+		meta.set("bhc", bhc);
+		meta.set("rec_as_180_deg_scan", reconstructAs180degScan);
+		meta.set("central_angle", centralAngleFor180degScan);
+		meta.set("hswp", heuristicSinogramWindowingParameter);
+		meta.set("rotation", rotation);
+		meta.set("roi_center", roiCenter);
+		meta.set("roi_size", roiSize);
+		meta.set("crop_size", cropSize);
+		meta.set("binning", binning);
+		meta.set("remove_dead_pixels", removeDeadPixels);
+		meta.set("dead_pixel_median_radius", deadPixelMedianRadius);
+		meta.set("dead_pixel_std_dev_count", deadPixelStdDevCount);
+		meta.set("center_shift", centerShift);
+		meta.set("camera_z_shift", cameraZShift);
+		meta.set("camera_rotation", cameraRotation);
+		meta.set("rotation_axis_tils", rotationAxisTilt);
+		meta.set("cs_angle_slope", csAngleSlope);
+		meta.set("angle_tweak", angleTweak);
+		meta.set("pad_type", padType);
+		meta.set("pad_size", padFraction);
+		meta.set("filter_type", filterType);
+		meta.set("filter_cut_off", filterCutOff);
+		meta.set("phase_mode", phaseMode);
+		meta.set("phase_pad_type", phasePadType);
+		meta.set("phase_pad_size", phasePadFraction);
+		meta.set("propagation_distance", objectCameraDistance);
+		meta.set("delta", delta);
+		meta.set("mu", mu);
+		meta.set("range_min", dynMin);
+		meta.set("range_max", dynMax);
+		meta.set("shift_scale", shiftScaling);
+		meta.set("use_shifts", useShifts);
+		meta.set("ra_h_shift_tilt", rotationAxisHShiftTilt);
+		meta.set("ra_v_shift_tilt", rotationAxisVShiftTilt);
 
-		stream.precision(17);
-		for (size_t n = 0; n < s.angles.size(); n++)
-			stream << fixed << s.angles[n] << endl;
-		stream << endl;
-
-		stream << "sample_shifts" << endl;
-		for (size_t n = 0; n < s.sampleShifts.size(); n++)
-			stream << fixed << s.sampleShifts[n] << endl;
-		stream << endl;
-
-		stream << "source_shifts" << endl;
-		for (size_t n = 0; n < s.sourceShifts.size(); n++)
-			stream << fixed << s.sourceShifts[n] << endl;
-		stream << endl;
-
-		stream << "camera_shifts" << endl;
-		for (size_t n = 0; n < s.cameraShifts.size(); n++)
-			stream << fixed << s.cameraShifts[n] << endl;
-		stream << endl;
-
-		stream << "rotation_axis_shifts" << endl;
-		for (size_t n = 0; n < s.rotationAxisShifts.size(); n++)
-			stream << fixed << s.rotationAxisShifts[n] << endl;
-		stream << endl;
-
-		return stream;
+		meta.set("angles", angles);
+		meta.set("sample_shifts", sampleShifts);
+		meta.set("source_shifts", sourceShifts);
+		meta.set("camera_shifts", cameraShifts);
+		meta.set("rotation_axis_shifts", rotationAxisShifts);
 	}
+
+	void checkMetaItem(const string& item, const ImageMetadata& meta)
+	{
+		if (!meta.contains(item))
+			throw ITLException(string("'") + item + "' item is missing from image metadata.");
+	}
+	
+	RecSettings RecSettings::fromMeta(ImageMetadata& meta)
+	{
+		// This constructs default settings
+		RecSettings s;
+
+		// Check that essential metadata exists.
+		checkMetaItem("source_to_ra", meta);
+		
+		//checkMetaItem("angles", meta);
+		string anglesName;
+		if (meta.contains("angles"))
+			anglesName = "angles";
+		else if (meta.contains("Angles [deg]"))
+			anglesName = "Angles [deg]";
+		else
+			throw ITLException("'angles' item or 'Angles [deg]' item is missing from image metadata.");
+
+
+		s.sourceToRA = meta.get("source_to_ra", s.sourceToRA);
+		s.rotationDirection = meta.get("rotation_direction", s.rotationDirection);
+		s.bhc = meta.get("bhc", s.bhc);
+		s.reconstructAs180degScan = meta.get("rec_as_180_deg_scan", s.reconstructAs180degScan);
+		s.centralAngleFor180degScan = meta.get("central_angle", s.centralAngleFor180degScan);
+		s.heuristicSinogramWindowingParameter = meta.get("hswp", s.heuristicSinogramWindowingParameter);
+		s.rotation = meta.get("rotation", s.rotation);
+		s.roiCenter = meta.get("roi_center", s.roiCenter);
+		s.roiSize = meta.get("roi_size", s.roiSize);
+		s.cropSize = meta.get("crop_size", s.cropSize);
+		s.binning = meta.get("binning", s.binning);
+		s.removeDeadPixels = meta.get("remove_dead_pixels", s.removeDeadPixels);
+		s.deadPixelMedianRadius = meta.get("dead_pixel_median_radius", s.deadPixelMedianRadius);
+		s.deadPixelStdDevCount = meta.get("dead_pixel_std_dev_count", s.deadPixelStdDevCount);
+		s.centerShift = meta.get("center_shift", s.centerShift);
+		s.cameraZShift = meta.get("camera_z_shift", s.cameraZShift);
+		s.cameraRotation = meta.get("camera_rotation", s.cameraRotation);
+		s.rotationAxisTilt = meta.get("rotation_axis_tilt", s.rotationAxisTilt);
+		s.csAngleSlope = meta.get("cs_angle_slope", s.csAngleSlope);
+		s.angleTweak = meta.get("angle_tweak", s.angleTweak);
+		s.padType = meta.get("pad_type", s.padType);
+		s.padFraction = meta.get("pad_size", s.padFraction);
+		s.filterType = meta.get("filter_type", s.filterType);
+		s.filterCutOff = meta.get("filter_cut_off", s.filterCutOff);
+		s.phaseMode = meta.get("phase_mode", s.phaseMode);
+		s.phasePadType = meta.get("phase_pad_type", s.phasePadType);
+		s.phasePadFraction = meta.get("phase_pad_size", s.phasePadFraction);
+		s.objectCameraDistance = meta.get("propagation_distance", s.objectCameraDistance);
+		s.delta = meta.get("delta", s.delta);
+		s.mu = meta.get("mu", s.mu);
+		s.dynMin = meta.get("range_min", s.dynMin);
+		s.dynMax = meta.get("range_max", s.dynMax);
+		s.shiftScaling = meta.get("shift_scale", s.shiftScaling);
+		s.useShifts = meta.get("use_shifts", s.useShifts);
+		s.rotationAxisHShiftTilt = meta.get("ra_h_shift_tilt", s.rotationAxisHShiftTilt);
+		s.rotationAxisVShiftTilt = meta.get("ra_v_shift_tilt", s.rotationAxisVShiftTilt);
+
+		std::vector<float32_t> emptyV1;
+   		s.angles = meta.getList<float32_t>(anglesName, emptyV1, true);
+		std::vector<Vec2f> emptyV2;
+   		std::vector<Vec3f> emptyV3;
+   		s.sampleShifts = meta.getList<Vec3f>("sample_shifts", emptyV3, false);
+   		s.sourceShifts = meta.getList<Vec3f>("source_shifts", emptyV3, false);
+   		s.cameraShifts = meta.getList<Vec3f>("camera_shifts", emptyV3, false);
+   		s.rotationAxisShifts = meta.getList<Vec3f>("rotation_axis_shifts", emptyV3, false);
+
+   		// If there are no shifts supplied, set all shifts to zero.
+   		if (s.sampleShifts.size() <= 0)
+   		{
+   			while (s.sampleShifts.size() < s.angles.size())
+   				s.sampleShifts.push_back(Vec3f(0, 0, 0));
+   		}
+
+   		return s;
+	}
+
+
 
 	/**
 	Performs phase retrieval for single projection slice.
@@ -964,7 +1108,7 @@ namespace itl2
 		float32_t averageBadPixels = 0;
 		size_t maxBadPixels = 0;
 		size_t counter = 0;
-		#pragma omp parallel
+		#pragma omp parallel num_threads(8)
 		{
 			Image<float32_t> med;
 			Image<float32_t> tmp;
@@ -972,7 +1116,7 @@ namespace itl2
 
 			Image<float32_t> cropTmp(croppedSize.x, croppedSize.y);
 
-			#pragma omp for
+			#pragma omp for schedule(dynamic)
 			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
 			{
 				//cout << "Processing slice " << z << endl;
@@ -1734,19 +1878,18 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			settings.angles.push_back(7);
 			settings.sampleShifts.push_back(Vec3f(1, 2, 3));
 			settings.sampleShifts.push_back(Vec3f(4, 5, 6));
-			
-			stringstream s;
-			s << settings;
+			settings.binning = 10;
 
-			cout << settings << endl;
-			
-			RecSettings settings2 = fromString<RecSettings>(s.str());
-		
-			
-			stringstream s2;
-			s2 << settings;
+			ImageMetadata meta;
+			settings.toMeta(meta);
 
-			testAssert(s.str() == s2.str(), "rec settings save/load");
+			cout << toString(meta) << endl;
+
+			RecSettings settings2 = RecSettings::fromMeta(meta);
+
+			testAssert(settings.angles == settings2.angles, "rec settings save/load 1");
+			testAssert(settings.sampleShifts == settings2.sampleShifts, "rec settings save/load 2");
+			testAssert(settings.binning == settings2.binning, "rec settings save/load 2");
 		}
 
 
@@ -1921,8 +2064,10 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 #if defined(USE_OPENCL)
 			// TODO: Test data is not available.
 
-			string logFile = readText("./rec/fibre_log.txt", true);
-			RecSettings settings = fromString<RecSettings>(logFile);
+			ImageMetadata meta;
+			meta.readFromFile("./rec/fibre_log.txt");
+			RecSettings settings = RecSettings::fromMeta(meta);
+
 
 			Image<float32_t> projections;
 			Image<float32_t> preProcProjections;
@@ -1970,8 +2115,8 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 			raw::writed(output3, "./rec/fibre_reconstruction_mid_gpu_output_projection_blocks");
 
 
-			testAssert(equals(output, output2, 1e-4f), "images reconstructed in whole and in projection blocks do not match.");
-			testAssert(equals(output, output3, 1e-4f), "images reconstructed in whole and in output and projection blocks do not match.");
+			testAssert(equalsTol(output, output2, 1e-4f), "images reconstructed in whole and in projection blocks do not match.");
+			testAssert(equalsTol(output, output3, 1e-4f), "images reconstructed in whole and in output and projection blocks do not match.");
 #endif
 		}
 
@@ -1979,8 +2124,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		{
 
 #if defined(USE_OPENCL)
-			string logFile = readText("C:\\mytemp\\cfrp\\CRPE_small.log");
-			RecSettings settings = fromString<RecSettings>(logFile);
+			ImageMetadata meta;
+			meta.readFromFile("C:\\mytemp\\cfrp\\CRPE_small.log");
+			RecSettings settings = RecSettings::fromMeta(meta);
 
 			cout << settings.filterType << endl;
 
@@ -2014,8 +2160,9 @@ kernel void backproject(read_only image3d_t transmissionProjections,
 		void openCLBackProjectionRealBin1()
 		{
 #if defined(USE_OPENCL)
-			string logFile = readText("C:\\mytemp\\cfrp\\crpe_log_big.txt");
-			RecSettings settings = fromString<RecSettings>(logFile);
+			ImageMetadata meta;
+			meta.readFromFile("C:\\mytemp\\cfrp\\crpe_log_big.txt");
+			RecSettings settings = RecSettings::fromMeta(meta);
 
 			//cout << "Copy input to output..." << endl;
 			//copyFile("C:\\mytemp\\cfrp\\CRPE_test_scans_20X_Tomo_AreaB_1976x1976x1441.raw", "C:\\mytemp\\cfrp\\CRPE_test_scans_20X_Tomo_AreaB_1976x1976x1441-preprocessed.raw");

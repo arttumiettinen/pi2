@@ -9,6 +9,8 @@
 #include "io/raw.h"
 #include "io/io.h"
 #include "distributedimagestoragetype.h"
+#include "math/aabox.h"
+#include "timing.h"
 
 
 using itl2::Vec3;
@@ -23,6 +25,7 @@ using itl2::endsWith;
 using itl2::Image;
 using itl2::float32_t;
 using itl2::complex32_t;
+using itl2::AABox;
 
 namespace pilib
 {
@@ -123,6 +126,14 @@ namespace pilib
 		static DistributedImageStorageType suggestStorageType(const Distributor& distributor, const Vec3c& dimensions);
 		
 		/**
+		Suggest suitable storage type for this image.
+		*/
+		DistributedImageStorageType suggestStorageType() const
+		{
+			return suggestStorageType(*distributor, dimensions());
+		}
+
+		/**
 		Retrieves NN5 chunk size.
 		*/
 		Vec3c getChunkSize() const
@@ -198,6 +209,15 @@ namespace pilib
 		Vec3c dimensions() const
 		{
 			return dims;
+		}
+
+		/**
+		Returns bounds of the image as an AABox.
+		The box spans from (0, 0, 0) to dimensions().
+		*/
+		AABox<coord_t> bounds() const
+		{
+			return AABox<coord_t>::fromPosSize(Vec3c(), dimensions());
 		}
 
 		coord_t width() const
@@ -587,6 +607,7 @@ namespace pilib
 
 			if (isSavedToDisk())
 			{
+				TimingFlag flag(TimeClass::IO);
 				itl2::io::read(img, currentReadSource());
 			}
 		}
@@ -598,6 +619,8 @@ namespace pilib
 		{
 			// Flush so that there are no pending writes to this image.
 			DistributedImageBase::flush();
+
+			TimingFlag flag(TimeClass::IO);
 
 			readToNoFlush(img);
 		}
@@ -612,6 +635,8 @@ namespace pilib
 
 			ensureSize(img.dimensions());
 
+			TimingFlag flag(TimeClass::IO);
+			
 			switch (currentWriteTargetType())
 			{
 			case DistributedImageStorageType::NN5:

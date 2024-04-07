@@ -4,7 +4,7 @@ blockmatchmemsave
 *****************
 
 
-**Syntax:** :code:`blockmatchmemsave(reference image file, deformed image file, xmin, xmax, xstep, ymin, ymax, ystep, zmin, zmax, zstep, initial shift, file name prefix, coarse comparison radius, coarse binning, fine comparison radius, fine binning, normalize)`
+**Syntax:** :code:`blockmatchmemsave(reference image file, deformed image file, xmin, xmax, xstep, ymin, ymax, ystep, zmin, zmax, zstep, initial shift, file name prefix, coarse comparison radius, coarse binning, fine comparison radius, fine binning, normalize, subpixel accuracy)`
 
 Calculates displacement between two images, loads only overlapping region from disk. NOTE: This command is currently implemented in very old format, and thus it forcibly saves the results to a file.
 
@@ -148,6 +148,15 @@ normalize [input]
 **Default value:** True
 
 Indicates if the mean gray values of the two images should be made same in the overlapping region before matching.
+
+subpixel accuracy [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** centroid
+
+Subpixel accuracy mode. Can be 'none', 'quadratic', or 'centroid'.
 
 See also
 --------

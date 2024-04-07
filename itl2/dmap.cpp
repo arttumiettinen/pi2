@@ -38,17 +38,17 @@ namespace itl2
 
 		void dmap1()
 		{
-			dmap<float32_t>("./input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./input_data/t1-head_bin_dmap_256x256x129.raw", 1e-6);
-			dmap<float32_t>("./input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_256x256x256.raw", 1e-6);
-			dmap<float32_t>("./input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_512x512x512.raw", 1e-6);
+			dmap<float32_t>("../test_input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "../test_input_data/t1-head_bin_dmap_256x256x129.raw", 1e-6);
+			dmap<float32_t>("../test_input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "../test_input_data/test_piece_dmap_GT_256x256x256.raw", 1e-6);
+			dmap<float32_t>("../test_input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "../test_input_data/test_piece_dmap_GT_512x512x512.raw", 1e-6);
 
-			dmap<int32_t>("./input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./input_data/t1-head_bin_dmap_256x256x129.raw", 0.5);
-			dmap<int32_t>("./input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_256x256x256.raw", 0.5);
-			dmap<int32_t>("./input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_512x512x512.raw", 0.5);
+			dmap<int32_t>("../test_input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "../test_input_data/t1-head_bin_dmap_256x256x129.raw", 0.5);
+			dmap<int32_t>("../test_input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "../test_input_data/test_piece_dmap_GT_256x256x256.raw", 0.5);
+			dmap<int32_t>("../test_input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "../test_input_data/test_piece_dmap_GT_512x512x512.raw", 0.5);
 
-			dmap<uint32_t>("./input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "./input_data/t1-head_bin_dmap_256x256x129.raw", 0.5);
-			dmap<uint32_t>("./input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_256x256x256.raw", 0.5);
-			dmap<uint32_t>("./input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "./input_data/test_piece_dmap_GT_512x512x512.raw", 0.5);
+			dmap<uint32_t>("../test_input_data/t1-head_bin_256x256x129.raw", "./dmap/head_dmap", "../test_input_data/t1-head_bin_dmap_256x256x129.raw", 0.5);
+			dmap<uint32_t>("../test_input_data/test_piece_bin_256x256x256.raw", "./dmap/test_piece_result", "../test_input_data/test_piece_dmap_GT_256x256x256.raw", 0.5);
+			dmap<uint32_t>("../test_input_data/test_piece_bin_512x512x512.raw", "./dmap/test_piece_result", "../test_input_data/test_piece_dmap_GT_512x512x512.raw", 0.5);
 		}
 		
 	}

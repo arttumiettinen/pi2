@@ -4,9 +4,9 @@ fbppreprocess
 *************
 
 
-**Syntax:** :code:`fbppreprocess(input image, output image, reconstruction settings)`
+**Syntax:** :code:`fbppreprocess(input image, output image)`
 
-Performs preprocessing of transmission projection data for filtered backprojection. This command is experimental and may change in the near future.
+Performs preprocessing of transmission projection data for filtered backprojection. Reconstruction settings are read from the metadata of the input image. This command is experimental and may change in the near future.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 
@@ -27,16 +27,7 @@ output image [output]
 
 Output image.
 
-reconstruction settings [input]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Data type:** string
-
-**Default value:** ""
-
-Settings for the reconstruction. If this string contains only a name of an existing file, the settings are read from that file. Otherwise, the string is treated as contents of the settings file.
-
 See also
 --------
 
-:ref:`fbp`
+:ref:`fbppreprocess`, :ref:`fbp`, :ref:`deadpixelremoval`, :ref:`createfbpfilter`, :ref:`defaultrecsettings`

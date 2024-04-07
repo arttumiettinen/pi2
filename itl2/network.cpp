@@ -2,6 +2,7 @@
 #include "network.h"
 #include "io/raw.h"
 #include "traceskeleton.h"
+#include "listandimage.h"
 
 #include <fstream>
 #include <iostream>
@@ -612,25 +613,27 @@ namespace itl2
 
 	void Network::toImage(Image<float32_t>& vertices, Image<uint64_t>& edges, Image<float32_t>* pEdgeMeasurements, Image<int32_t>* pEdgePoints) const
 	{
-		vertices.ensureSize(3, this->vertices.size());
-		edges.ensureSize(2, this->edges.size());
+		//vertices.ensureSize(3, this->vertices.size());
+		//edges.ensureSize(2, this->edges.size());
 
-		#pragma omp parallel for if(!omp_in_parallel())
-		for (coord_t n = 0; n < (coord_t)this->vertices.size(); n++)
-		{
-			const Vec3f& p = this->vertices[n];
-			vertices(0, n) = p.x;
-			vertices(1, n) = p.y;
-			vertices(2, n) = p.z;
-		}
+		//#pragma omp parallel for if(!omp_in_parallel())
+		//for (coord_t n = 0; n < (coord_t)this->vertices.size(); n++)
+		//{
+		//	const Vec3f& p = this->vertices[n];
+		//	vertices(0, n) = p.x;
+		//	vertices(1, n) = p.y;
+		//	vertices(2, n) = p.z;
+		//}
 
-		#pragma omp parallel for if(!omp_in_parallel())
-		for (coord_t n = 0; n < (coord_t)this->edges.size(); n++)
-		{
-			const Edge& p = this->edges[n];
-			edges(0, n) = p.verts.x;
-			edges(1, n) = p.verts.y;
-		}
+		//#pragma omp parallel for if(!omp_in_parallel())
+		//for (coord_t n = 0; n < (coord_t)this->edges.size(); n++)
+		//{
+		//	const Edge& p = this->edges[n];
+		//	edges(0, n) = p.verts.x;
+		//	edges(1, n) = p.verts.y;
+		//}
+		listToImage(this->vertices, vertices);
+		listToImage(this->edges, edges);
 
 		if (pEdgeMeasurements)
 		{
@@ -681,18 +684,19 @@ namespace itl2
 
 	void Network::fromImage(const Image<float32_t>& verts, const Image<uint64_t>& edg, const Image<float32_t>* pEdgeMeasurements, const Image<int32_t>* pEdgePoints)
 	{
-		vertices.clear();
 		edges.clear();
 		incompleteVertices.clear();
 
-		vertices.resize(verts.height());
-		#pragma omp parallel for if(!omp_in_parallel())
-		for (coord_t n = 0; n < verts.height(); n++)
-		{
-			vertices[n].x = verts(0, n);
-			vertices[n].y = verts(1, n);
-			vertices[n].z = verts(2, n);
-		}
+		//vertices.clear();
+		//vertices.resize(verts.height());
+		//#pragma omp parallel for if(!omp_in_parallel())
+		//for (coord_t n = 0; n < verts.height(); n++)
+		//{
+		//	vertices[n].x = verts(0, n);
+		//	vertices[n].y = verts(1, n);
+		//	vertices[n].z = verts(2, n);
+		//}
+		imageToList(verts, vertices);
 
 		edges.resize(edg.height());
 		#pragma omp parallel for if(!omp_in_parallel())

@@ -6,6 +6,7 @@
 #include "io/io.h"
 #include "commandlist.h"
 #include "standardhelp.h"
+#include "timing.h"
 
 #include <vector>
 
@@ -18,11 +19,13 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		IsImageFileCommand() : Command("isimagefile", "Checks if a file with given name is image file.",
+		IsImageFileCommand() : Command("isimagefile", "Checks if a file with given name is an image file.",
 			{
 				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name of image file."),
 				CommandArgument<Image<uint8_t> >(ParameterDirection::In, "result", "Set to 1 if the given file name is a readable image file, and to 0 otherwise.")
-			})
+			},
+			"",
+			"In Python/pi2py2, the result parameter is not specified, but the test result is returned as a boolean return value.")
 		{
 
 		}
@@ -31,6 +34,8 @@ namespace pilib
 
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 			Image<uint8_t>& result = *pop<Image<uint8_t>*>(args);
 
@@ -58,6 +63,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 			Image<uint32_t>& results = *pop<Image<uint32_t>*>(args);
 
@@ -94,6 +101,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 
 			Vec3c dims;
@@ -128,6 +137,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 
 			Vec3c dims;
@@ -153,7 +164,7 @@ namespace pilib
 
 		ShowSequenceInfoCommand() : Command("sequenceinfo", "Displays metadata of image sequence.",
 			{
-				CommandArgument<std::string>(ParameterDirection::In, "filename template", "Filename template corresponding to the sequence, as described in readsequence command documentation.")
+				CommandArgument<std::string>(ParameterDirection::In, "filename template", "Filename template corresponding to the sequence. The template must specify a directory name and/or file name template including wildcards *, ?, @ that identifies files that belong to the sequence. Wildcard * corresponds to any sequence, ? to any character, and @ to one or more numerical digits.")
 			})
 		{
 
@@ -162,6 +173,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 
 			Vec3c dims;
@@ -232,10 +245,41 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
 			itl2::tiff::writed(in, fname);
+		}
+	};
+
+
+	template<typename pixel_t> class WritePngCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WritePngCommand() : Command("writepng", "Write an image to a .png file. This command supports 1- and 2-dimensional images only.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the file to write. If the file exists, its current contents are erased. Extension .png is automatically appended to the name of the file.")
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			TimingFlag flag(TimeClass::IO);
+
+			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			if (in.depth() > 1)
+				throw ITLException("3-dimensional images cannot be saved to a .png file. Consider saving to an image sequence instead.");
+
+			itl2::png::writed(in, fname);
 		}
 	};
 
@@ -256,6 +300,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -279,6 +325,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -303,6 +351,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			Vec3c chunkSize = pop<Vec3c>(args);
@@ -314,6 +364,8 @@ namespace pilib
 
 		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			distributor.flush();
 
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
@@ -366,14 +418,20 @@ namespace pilib
 			{
 				// The input is not stored as .nn5 dataset so actual copying must be made.
 
+				auto oldStorageType = in.currentWriteTargetType();
 				in.setWriteTarget(fname, DistributedImageStorageType::NN5);
 
 				std::vector<ParamVariant> args2;
 				ParamVariant p;
 				p = &in;
 				args2.push_back(p);
-				auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-				return cmd.runDistributed(distributor, args2);
+				NopSingleImageCommand<pixel_t>& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
+				std::vector<std::string> result = cmd.runDistributed(distributor, args2);
+
+				// Ensure that following operations do not write to the same file.
+				// Retain old write target storage type.
+				in.newWriteTarget(oldStorageType);
+				return result;
 			}
 
 			return std::vector<std::string>();
@@ -398,6 +456,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			bool append = pop<bool>(args);
@@ -409,6 +469,8 @@ namespace pilib
 
 		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			distributor.flush();
 
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
@@ -465,16 +527,22 @@ namespace pilib
 			}
 			else
 			{
-				// The input is not stored as .raw file so actual copying must be made.
+				// The input is not stored as a .raw file so actual copying must be made.
 				
+				auto oldStorageType = in.currentWriteTargetType();
 				in.setWriteTarget(fname, DistributedImageStorageType::Raw);
 				
 				std::vector<ParamVariant> args2;
 				ParamVariant p;
 				p = &in;
 				args2.push_back(p);
-				auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-				return cmd.runDistributed(distributor, args2);
+				NopSingleImageCommand<pixel_t>& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
+				std::vector<std::string> result = cmd.runDistributed(distributor, args2);
+
+				// Ensure that following operations do not write to the same file.
+				// Retain old write target storage type.
+				in.newWriteTarget(oldStorageType);
+				return result;
 			}
 
 			return std::vector<std::string>();
@@ -501,6 +569,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<uint8_t>& r = *pop<Image<uint8_t>* >(args);
 			Image<uint8_t>& g = *pop<Image<uint8_t>* >(args);
 			Image<uint8_t>& b = *pop<Image<uint8_t>* >(args);
@@ -528,6 +598,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			sequence::write(in, fname);
@@ -535,6 +607,8 @@ namespace pilib
 
 		virtual std::vector<std::string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			distributor.flush();
 
 			DistributedImage<pixel_t>& in = *pop<DistributedImage<pixel_t>* >(args);
@@ -576,92 +650,30 @@ namespace pilib
 				}
 			}
 			
+			auto oldStorageType = in.currentWriteTargetType();
 			in.setWriteTarget(fname, DistributedImageStorageType::Sequence);
 
 			std::vector<ParamVariant> args2;
 			ParamVariant p;
 			p = &in;
 			args2.push_back(p);
-			auto& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
-			return cmd.runDistributed(distributor, args2);
+			NopSingleImageCommand<pixel_t>& cmd = CommandList::get<NopSingleImageCommand<pixel_t> >();
+			std::vector<std::string> result = cmd.runDistributed(distributor, args2);
+
+			// Ensure that following operations do not write to the same file.
+			// Retain old write target storage type.
+			in.newWriteTarget(oldStorageType);
+			return result;
 		}
 	};
 
-	//template<typename pixel_t> class WriteRawBlockCommand : public Command
-	//{
-	//protected:
-	//	friend class CommandList;
 
-	//	WriteRawBlockCommand() : Command("writerawblock", "Write an image to a specified position in a .raw file. Optionally can write only a block of the source image. " + rawFilenameFormatHelp(),
-	//		{
-	//			CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
-	//			CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of file to write."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "x", "X-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output file. Specify zero to parse dimensions from the file name.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output file. Specify zero to parse dimensions from the file name.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output file. Specify zero to parse dimensions from the file name.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "source x", "X-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "source y", "Y-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "source z", "Z-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "source width", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "source height", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "source depth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
-	//		})
-	//	{
-	//	}
-
-	//public:
-	//	virtual void run(std::vector<ParamVariant>& args) const override
-	//	{
-	//		Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
-	//		std::string fname = pop<std::string>(args);
-
-	//		coord_t x = pop<coord_t>(args);
-	//		coord_t y = pop<coord_t>(args);
-	//		coord_t z = pop<coord_t>(args);
-	//		
-	//		coord_t w = pop<coord_t>(args);
-	//		coord_t h = pop<coord_t>(args);
-	//		coord_t d = pop<coord_t>(args);
-
-	//		coord_t ix = pop<coord_t>(args);
-	//		coord_t iy = pop<coord_t>(args);
-	//		coord_t iz = pop<coord_t>(args);
-	//		coord_t iw = pop<coord_t>(args);
-	//		coord_t ih = pop<coord_t>(args);
-	//		coord_t id = pop<coord_t>(args);
-
-
-	//		if (iw <= 0 || ih <= 0 || id <= 0)
-	//		{
-	//			iw = img.width();
-	//			ih = img.height();
-	//			id = img.depth();
-	//		}
-
-	//		// Parse dimensions from file name if no dimensions are provided
-	//		if (w <= 0 || h <= 0 || d <= 0)
-	//		{
-	//			Vec3c dims;
-	//			if (!raw::internals::parseDimensions(fname, dims))
-	//				throw ParseException(std::string("Unable to find dimensions from file name: ") + fname);
-	//			w = dims.x;
-	//			h = dims.y;
-	//			d = dims.z;
-	//		}
-
-	//		raw::writeBlock(img, fname, Vec3c(x, y, z), Vec3c(w, h, d), Vec3c(ix, iy, iz), Vec3c(iw, ih, id), true);
-	//	}
-	//};
-
-	template<typename pixel_t> class WriteRawBlock2Command : public Command
+	template<typename pixel_t> class WriteRawBlockCommand : public Command
 	{
 	protected:
 		friend class CommandList;
 
-		WriteRawBlock2Command() : Command("writerawblock", "Write an image to a specified position in a .raw file. Optionally can write only a block of the source image. " + rawFilenameFormatHelp(),
+		WriteRawBlockCommand() : Command("writerawblock", "Write an image to a specified position in a .raw file. Optionally can write only a block of the source image. " + rawFilenameFormatHelp(),
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
 				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of file to write."),
@@ -676,6 +688,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -701,83 +715,12 @@ namespace pilib
 		}
 	};
 
-
-	//template<typename pixel_t> class WriteSequenceBlockCommand : public Command
-	//{
-	//protected:
-	//	friend class CommandList;
-
-	//	WriteSequenceBlockCommand() : Command("writesequenceblock", "Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.",
-	//		{
-	//			CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
-	//			CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of file to write."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "x", "X-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output file. Specify zero to parse dimensions from the files.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output file. Specify zero to parse dimensions from the files.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output file. Specify zero to parse dimensions from the files.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "ix", "X-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iy", "Y-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iz", "Z-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
-	//		})
-	//	{
-	//	}
-
-	//public:
-	//	virtual void run(std::vector<ParamVariant>& args) const override
-	//	{
-	//		Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
-	//		std::string fname = pop<std::string>(args);
-
-	//		coord_t x = pop<coord_t>(args);
-	//		coord_t y = pop<coord_t>(args);
-	//		coord_t z = pop<coord_t>(args);
-
-	//		coord_t w = pop<coord_t>(args);
-	//		coord_t h = pop<coord_t>(args);
-	//		coord_t d = pop<coord_t>(args);
-
-	//		coord_t ix = pop<coord_t>(args);
-	//		coord_t iy = pop<coord_t>(args);
-	//		coord_t iz = pop<coord_t>(args);
-	//		coord_t iw = pop<coord_t>(args);
-	//		coord_t ih = pop<coord_t>(args);
-	//		coord_t id = pop<coord_t>(args);
-
-	//		if (iw <= 0 || ih <= 0 || id <= 0)
-	//		{
-	//			iw = img.width();
-	//			ih = img.height();
-	//			id = img.depth();
-	//		}
-
-	//		// Parse dimensions from files if no dimensions are provided
-	//		if (w <= 0 || h <= 0 || d <= 0)
-	//		{
-	//			Vec3c dims;
-	//			itl2::ImageDataType dt2;
-	//			std::string reason;
-	//			if (!sequence::getInfo(fname, dims, dt2, reason))
-	//				throw ParseException(std::string("Unable to find metadata from sequence with template: ") + fname + ". " + reason);
-	//			w = dims.x;
-	//			h = dims.y;
-	//			d = dims.z;
-	//		}
-
-	//		sequence::writeBlock(img, fname, Vec3c(x, y, z), Vec3c(w, h, d), Vec3c(ix, iy, iz), Vec3c(iw, ih, id), true);
-	//	}
-	//};
-
-	template<typename pixel_t> class WriteSequenceBlock2Command : public Command
+	template<typename pixel_t> class WriteSequenceBlockCommand : public Command
 	{
 	protected:
 		friend class CommandList;
 
-		WriteSequenceBlock2Command() : Command("writesequenceblock", "Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.",
+		WriteSequenceBlockCommand() : Command("writesequenceblock", "Write an image to a specified position in an image sequence. Optionally can write only a block of the source image.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
 				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the file to write."),
@@ -792,6 +735,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -818,85 +763,12 @@ namespace pilib
 		}
 	};
 
-
-
-
-	//template<typename pixel_t> class WriteNN5BlockCommand : public Command
-	//{
-	//protected:
-	//	friend class CommandList;
-
-	//	WriteNN5BlockCommand() : Command("writenn5block", "Write an image to a specified position in an NN5 dataset. Optionally can write only a block of the source image.",
-	//		{
-	//			CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
-	//			CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the dataset to write."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "x", "X-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "y", "Y-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "z", "Z-position of the image in the target file."),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "width", "Width of the output file. Specify zero to parse dimensions from the files.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the output file. Specify zero to parse dimensions from the files.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output file. Specify zero to parse dimensions from the files.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "ix", "X-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iy", "Y-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iz", "Z-position of the block of the source image to write.", 0),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iwidth", "Width of the block to write. Specify a negative value to write the whole source image.", -1),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "iheight", "Height of the block to write. Specify a negative value to write the whole source image.", -1),
-	//			CommandArgument<coord_t>(ParameterDirection::In, "idepth", "Depth of the block to write. Specify a negative value to write the whole source image.", -1),
-	//		})
-	//	{
-	//	}
-
-	//public:
-	//	virtual void run(std::vector<ParamVariant>& args) const override
-	//	{
-	//		Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
-	//		std::string fname = pop<std::string>(args);
-
-	//		coord_t x = pop<coord_t>(args);
-	//		coord_t y = pop<coord_t>(args);
-	//		coord_t z = pop<coord_t>(args);
-
-	//		coord_t w = pop<coord_t>(args);
-	//		coord_t h = pop<coord_t>(args);
-	//		coord_t d = pop<coord_t>(args);
-
-	//		coord_t ix = pop<coord_t>(args);
-	//		coord_t iy = pop<coord_t>(args);
-	//		coord_t iz = pop<coord_t>(args);
-	//		coord_t iw = pop<coord_t>(args);
-	//		coord_t ih = pop<coord_t>(args);
-	//		coord_t id = pop<coord_t>(args);
-
-	//		if (iw <= 0 || ih <= 0 || id <= 0)
-	//		{
-	//			iw = img.width();
-	//			ih = img.height();
-	//			id = img.depth();
-	//		}
-
-	//		// Parse dimensions from files if no dimensions are provided
-	//		if (w <= 0 || h <= 0 || d <= 0)
-	//		{
-	//			Vec3c dims;
-	//			itl2::ImageDataType dt2;
-	//			std::string reason;
-	//			if (!nn5::getInfo(fname, dims, dt2, reason))
-	//				throw ParseException(std::string("Unable to find metadata from NN5 dataset: ") + fname + ". " + reason);
-	//			w = dims.x;
-	//			h = dims.y;
-	//			d = dims.z;
-	//		}
-
-	//		nn5::writeBlock(img, fname, nn5::DEFAULT_CHUNK_SIZE, nn5::NN5Compression::LZ4, Vec3c(x, y, z), Vec3c(w, h, d), Vec3c(ix, iy, iz), Vec3c(iw, ih, id));
-	//	}
-	//};
-
-	template<typename pixel_t> class WriteNN5Block2Command : public Command
+	template<typename pixel_t> class WriteNN5BlockCommand : public Command
 	{
 	protected:
 		friend class CommandList;
 
-		WriteNN5Block2Command() : Command("writenn5block", "Write an image to a specified position in an NN5 dataset. Optionally can write only a block of the source image.",
+		WriteNN5BlockCommand() : Command("writenn5block", "Write an image to a specified position in an NN5 dataset. Optionally can write only a block of the source image.",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
 				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the dataset to write."),
@@ -912,6 +784,8 @@ namespace pilib
 	public:
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 
@@ -962,6 +836,8 @@ namespace pilib
 
 		virtual void run(std::vector<ParamVariant>& args) const override
 		{
+			TimingFlag flag(TimeClass::IO);
+
 			std::string fname = pop<std::string>(args);
 			Vec3c chunkIndex = pop<Vec3c>(args);
 

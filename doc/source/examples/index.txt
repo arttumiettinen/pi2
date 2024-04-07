@@ -5,9 +5,9 @@ Examples
 
 This page contains some examples on how to use pi2 for simple (and some not so simple) tasks.
 All the examples are given in Python 3.6.
-They can be found in a single Python file `here <https://github.com/arttumiettinen/pi2/blob/master/python_scripts/generic/pi2py2_examples.py>`__.
+They can be found in a single Python file `here <https://github.com/arttumiettinen/pi2/blob/experimental/python_scripts/pi2py2_examples.py>`__.
 
-The examples require a few small images that can be downloaded from `here <https://github.com/arttumiettinen/pi2/releases>`__.
+The examples require a few small images that can be downloaded from `here <http://users.jyu.fi/~arilmiet/pi2-downloads/test_input_data.zip>`__, or from `GitHub <http://github.com/arttumiettinen/pi2/releases>`__.
 
 
 In order to run the examples, please run this initialization first (make sure that the file paths point to correct locations)::
@@ -19,13 +19,13 @@ In order to run the examples, please run this initialization first (make sure th
 	# Define convenience functions that return input and output file names.
 	# This is just to avoid copying the paths to all the examples in case they change.
 	def input_file(filename='t1-head_256x256x129.raw'):
-		return '../../testing/input_data/' + filename
+		return '../../test_input_data/' + filename
 
 	def input_file_bin():
-		return '../../testing/input_data/t1-head_bin_256x256x129.raw'
+		return '../../test_input_data/t1-head_bin_256x256x129.raw'
 
 	def output_file(name):
-		return '../../testing/pi2py2/' + name
+		return '../../test_output_data/pi2py2/' + name
 
 
 .. toctree::

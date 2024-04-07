@@ -15,6 +15,6 @@ namespace pilib
 		//new PlanarityCommand()
 		ADD_REAL(SurfaceCurvatureCommand);
 		ADD_REAL(MeanCurvatureCommand);
-
+		ADD_REAL(SurfaceAreaCommand);
 	}
 }

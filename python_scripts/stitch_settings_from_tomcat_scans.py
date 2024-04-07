@@ -29,6 +29,7 @@ def main():
         argsparser.add_argument('-xx', '--xx_sign', default='positive', type=str, help='Sign of the XX coordinate. Can be "positive" or "negative"')
         argsparser.add_argument('-zz', '--zz_sign', default='positive', type=str, help='Sign of the ZZ coordinate. Can be "positive" or "negative"')
 
+
         args = argsparser.parse_args()
 
         coord_factor = 1

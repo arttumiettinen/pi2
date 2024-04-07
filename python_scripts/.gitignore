@@ -1,1 +1,5 @@
 __pycache__/*
+lsf-io-files/*
+danielsson_table*.dat
+pi2_local_job.txt
+spherical_structuring_element_cache.txt

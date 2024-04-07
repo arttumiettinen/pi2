@@ -30,7 +30,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			scaleHelper(head16, 255);
 
@@ -50,7 +50,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			add(head16, 1);
 
@@ -77,7 +77,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<uint16_t> headb;
 			itl2::binning(head16, headb, 2);
@@ -101,7 +101,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16, headb;
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			vector<Vec3f> refPoints, defPoints;
 			defPoints.push_back(Vec3f(0, 0, 64));
@@ -135,7 +135,7 @@ namespace itl2
 			// Larger test
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/t1-head_bin");
+				raw::read(img, "../test_input_data/t1-head_bin");
 
 				Image<uint8_t> out;
 				itl2::scaleLabels(img, out, true, Vec3c(5, 5, 5));
@@ -173,7 +173,7 @@ namespace itl2
 		void rotate()
 		{
 			Image<uint16_t> orig;
-			raw::read(orig, "./input_data/t1-head");
+			raw::read(orig, "../test_input_data/t1-head");
 
 			Image<uint16_t> out(orig.dimensions());
 			rotate(orig, out, degToRad(45));
@@ -256,6 +256,37 @@ namespace itl2
 			singleCropTest(Vec3c(-10, -5, 0));
 			singleCropTest(Vec3c(110, 90, 0));
 			singleCropTest(Vec3c(-50, 90, 0));
+		}
+
+		void cylindricalConversion()
+		{
+			Image<uint16_t> orig;
+
+			// Create "coordinate system" image
+			orig.ensureSize(100, 200, 300);
+			
+			Vec3f origin(orig.width() / 2.0f, orig.height() / 2.0f, 0.0f);
+
+			// Draw r=30 circle
+			draw(orig,
+				Capsulef(origin,
+					origin + Vec3f(0, 0, (float)orig.depth()),
+					30),
+				(uint16_t)200);
+
+			// Draw theta=0 line
+			coord_t r = 10;
+			draw(orig, AABoxc::fromPosSize(Vec3c((coord_t)origin.x, (coord_t)origin.y - r, (coord_t)origin.z),
+										Vec3c(orig.width(), 2 * r, 2 * r)), (uint16_t)100);
+			
+
+			tiff::writed(orig, "./transform/cylindrical_conversion_orig");
+
+			
+			Image<uint16_t> conv(orig.dimensions());
+			cartesianToCylindrical(orig, conv, origin);
+
+			tiff::writed(conv, "./transform/cylindrical_conversion_transformed");
 		}
 	}
 }

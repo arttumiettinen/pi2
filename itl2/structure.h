@@ -347,9 +347,9 @@ namespace itl2
 
 				double r;
 				double phi1, theta1, phi2, theta2, phi3, theta3;
-				toSpherical(v1, r, phi1, theta1);
-				toSpherical(v2, r, phi2, theta2);
-				toSpherical(v3, r, phi3, theta3);
+				cartesianToSpherical(v1, r, phi1, theta1);
+				cartesianToSpherical(v2, r, phi2, theta2);
+				cartesianToSpherical(v3, r, phi3, theta3);
 
 				double energy = lambda1 + lambda2 + lambda3;
 				double planarity = (lambda1 - lambda2) / lambda1;

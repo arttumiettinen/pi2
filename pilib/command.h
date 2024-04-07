@@ -49,6 +49,11 @@ namespace pilib
 		std::string seeAlso;
 
 		/**
+		Notes about usage of the command in specific UIs.
+		*/
+		std::string uiNotes;
+
+		/**
 		Command argument definitions.
 		*/
 		std::vector<CommandArgumentBase> arguments;
@@ -57,10 +62,11 @@ namespace pilib
 		/**
 		Constructor
 		*/
-		Command(const std::string& name, const std::string& help, const std::vector<CommandArgumentBase>& args = {}, const std::string& seeAlso = "") :
+		Command(const std::string& name, const std::string& help, const std::vector<CommandArgumentBase>& args = {}, const std::string& seeAlso = "", const std::string& uiNotes = "") :
 			commandName(name),
 			help(help),
-			seeAlso(seeAlso)
+			seeAlso(seeAlso),
+			uiNotes(uiNotes)
 		{
 			arguments.insert(arguments.end(), args.begin(), args.end());
 		}

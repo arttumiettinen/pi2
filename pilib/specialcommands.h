@@ -11,7 +11,56 @@ namespace pilib
 
 	inline std::string helpSeeAlso()
 	{
-		return "help, info, license, echo, print, waitreturn, hello, timing";
+		return "help, info, license, echo, print, waitreturn, hello, timing, savetiming, resettiming";
+	}
+
+	inline std::string timeClassHelp()
+	{
+		return
+			"The output includes the following time classes.\n"
+			"\n"
+			"**Overhead**\n"
+			"\n"
+			"General overhead, e.g. parsing inputs, finding correct commands to run etc.\n"
+			"This includes the total overhead time spent in the main process, and in possible cluster job processes.\n"
+			"\n"
+			"**I/O**\n"
+			"\n"
+			"Time spent in I/O-bound processing. This is the time when the disk I/O is the bottleneck.\n"
+			"This includes the total I/O time spent in the main process, and in possible cluster job processes.\n"
+			"Time spent in output data compression is counted to this time class.\n"
+			"\n"
+			"**Computation**\n"
+			"\n"
+			"Time spent in CPU/GPU-bound processing. This is the time when the CPU/GPU is the bottleneck.\n"
+			"This includes the total computation time spent in the main process, and in possible cluster job processes.\n"
+			"This is the default mode for all commands.\n"
+			"\n"
+			"**Job execution**\n"
+			"\n"
+			"Total distributed job execution time.\n"
+			"This value includes Overhead+IO+Computation of all jobs, plus workload manager node reservation, process starting, etc. overhead.\n"
+			"This value does not include time spent in workload manager queue.\n"
+			"\n"
+			"**Job queuing**\n"
+			"\n"
+			"Total distributed job queuing time.\n"
+			"This is the total time all jobs have spent in the workload manager queue, waiting to be executed.\n"
+			"\n"
+			"**Total job waiting**\n"
+			"\n"
+			"Total time from submitting the first distributed job until all of them are found to be finished.\n"
+			"This is the total time spent in the job execution process, from submission to jobs until all of them are done.\n"
+			"\n"
+			"**Write preparation**\n"
+			"\n"
+			"Time spent in preparing for writing output images (e.g. NN5 write preparation).\n"
+			"This is the total time spent in the submitting process while preparing writing of output images.\n"
+			"\n"
+			"**Total write finalization waiting**\n"
+			"\n"
+			"Time spent in write finalization jobs, including queuing (e.g. NN5 write finalization jobs).\n"
+			"This is the total time spent in the submitting process, from submission of write finalization jobs until all of them are done.\n";
 	}
 
 	class TimingCommand : virtual public Command, public TrivialDistributable
@@ -19,7 +68,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		TimingCommand() : Command("timing", "Prints information about wall-clock time taken by various sub-processes.",
+		TimingCommand() : Command("timing", string("Prints information about wall-clock time taken by various sub-processes. Running this command causes all delayed commands to be executed. ") + timeClassHelp(),
 			{
 			},
 			helpSeeAlso())
@@ -28,6 +77,54 @@ namespace pilib
 
 	public:
 		virtual void run(vector<ParamVariant>& args) const override;
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
+	};
+
+	class SaveTimingCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		SaveTimingCommand() : Command("savetiming", string("Saves timing information to a file. Running this command causes all delayed commands to be executed. ") + timeClassHelp(),
+			{
+				CommandArgument<string>(ParameterDirection::In, "file name", "The name and path of the file where the information is to be saved.")
+			},
+			helpSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override;
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
+	};
+
+	class ResetTimingCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		ResetTimingCommand() : Command("resettiming", string("Zeroes all existing timing data."),
+			{
+			},
+			helpSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(vector<ParamVariant>& args) const override;
+
+		virtual bool canDelay(const std::vector<ParamVariant>& args) const override
+		{
+			return false;
+		}
 	};
 
 	
@@ -145,7 +242,9 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "image name", "Name of image in the system."),
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name (and path) of file to read or a sequence definition. " + sequenceDefinitionHelp()),
 				CommandArgument<string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + ". Specify empty value to infer data type from file content.", "")
-			})
+			},
+			"",
+			"In Python/pi2py2, the image name parameter is not specified, and the function returns the newly created image read from the disk.")
 		{
 		}
 
@@ -502,7 +601,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image. Omit width, height and depth to infer dimensions from file name."),
 				CommandArgument<bool>(ParameterDirection::In, "read only", "Set to true to do read-only mapping. This might be beneficial if the image file is accessed through a network share. WARNING: If set to true, writes to the image result in undefined behaviour, probably program crash to access violation or equivalent error.", false)
 			},
-			"readrawblock, readraw, getmapfile")
+			"readrawblock, readraw, getmapfile",
+			"In Python/pi2py2, the image name parameter is not specified, and the function returns a newly created image mapped to the .raw image file.")
 		{
 		}
 
@@ -527,7 +627,8 @@ namespace pilib
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image. Set to zero to infer dimensions from file name.", Vec3c(0, 0, 0)),
 				CommandArgument<bool>(ParameterDirection::In, "read only", "Set to true to do read-only mapping. This might be beneficial if the image file is accessed through a network share. WARNING: If set to true, writes to the image result in undefined behaviour, probably program crash to access violation or equivalent error.", false)
 			},
-			"readrawblock, readraw, getmapfile")
+			"readrawblock, readraw, getmapfile",
+			"In Python/pi2py2, the image name parameter is not specified, and the function returns a newly created image mapped to the .raw image file.")
 		{
 		}
 
@@ -591,6 +692,89 @@ namespace pilib
 
 
 
+	class SetIntCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetIntCommand() : Command("set", "Sets value of an integer variable",
+			{
+				CommandArgument<coord_t>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<coord_t>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+
+	class SetRealCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetRealCommand() : Command("set", "Sets value of an real number variable",
+			{
+				CommandArgument<double>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<double>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+	class SetBoolCommand : virtual public Command, public Distributable
+	{
+	protected:
+		friend class CommandList;
+
+		SetBoolCommand() : Command("set", "Sets value of an boolean variable",
+			{
+				CommandArgument<bool>(ParameterDirection::Out, "name", "Variable to set."),
+				CommandArgument<bool>(ParameterDirection::In, "value", "New value."),
+			},
+			"set, clear")
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+
+		using Distributable::runDistributed;
+
+		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override;
+	};
+
+
+
 	class NewValueCommand : virtual public Command, public Distributable
 	{
 	protected:
@@ -599,10 +783,11 @@ namespace pilib
 		NewValueCommand() : Command("newvalue", "Creates a new variable.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "name", "Name of the variable in the system."),
-				CommandArgument<string>(ParameterDirection::In, "type", "Data type of the variable. Can be 'string'.", "string"),
+				CommandArgument<string>(ParameterDirection::In, "type", "Data type of the variable. Can be 'string', 'int', 'real', or 'bool'.", "string"),
 				CommandArgument<string>(ParameterDirection::In, "value", "Initial value of the variable", ""),
 			},
-			"set, clear")
+			"set, clear",
+			"In Python/pi2py2, one should use the newstring command.")
 		{
 		}
 
@@ -632,7 +817,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "height", "Height of the image.", 1),
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the image.", 1)
 			},
-			"ensuresize, newlike")
+			"ensuresize, newlike",
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is a Pi2Image object that can be passed to any command expecting an image name as an argument.")
 		{
 		}
 
@@ -659,7 +845,8 @@ namespace pilib
 				CommandArgument<string>(ParameterDirection::In, "data type", "Data type of the image. Can be " + listSupportedImageDataTypes() + "."),
 				CommandArgument<Vec3c>(ParameterDirection::In, "dimensions", "Dimensions of the image."),
 			},
-			"ensuresize, newlike")
+			"ensuresize, newlike",
+			"In Python/pi2py2, the image name parameter is not specified, and the return value is a Pi2Image object that can be passed to any command expecting an image name as an argument.")
 		{
 		}
 
@@ -799,9 +986,31 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		MaxMemoryCommand() : Command("maxmemory", "Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm distribution mode).",
+		MaxMemoryCommand() : Command("maxmemory", "Sets the maximum memory setting used in distributed processing. This command overrides the value read from the configuration file. The maximum memory is the amount of memory that can be used either on the local computer (Local distribution mode) or in a compute node (Slurm etc. distribution modes).",
 			{
 				CommandArgument<double>(ParameterDirection::In, "maximum memory", "Maximum amount of memory to use, in megabytes. Specify zero to calculate the value automatically.", 0.0)
+			},
+			distributeSeeAlso())
+		{
+		}
+
+	public:
+		virtual void runInternal(PISystem* system, vector<ParamVariant>& args) const override;
+
+		virtual void run(vector<ParamVariant>& args) const override
+		{
+		}
+	};
+
+
+	class GetMaxMemoryCommand : virtual public Command, public TrivialDistributable
+	{
+	protected:
+		friend class CommandList;
+
+		GetMaxMemoryCommand() : Command("getmaxmemory", "Gets the amount of available RAM. The value is the amount RAM in the local computer (Local distribution mode or no distribution mode at all) or in a compute node (Slurm etc. distribution modes), or value defined in the relevant _config.txt file.",
+			{
+				CommandArgument<double>(ParameterDirection::Out, "maximum memory", "Amount of RAM available, in megabytes.")
 			},
 			distributeSeeAlso())
 		{

@@ -53,7 +53,7 @@ namespace itl2
 		{
 
 			Image<uint16_t> head(256, 256, 129);
-			raw::read(head, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> maxy;
 			max(head, 1, maxy, false);
@@ -69,9 +69,9 @@ namespace itl2
 			raw::writed(yprojection, "./projections/yproj_sum");
 			raw::writed(xprojection, "./projections/xproj_sum");
 
-			checkResult(zprojection, "./input_data/zproj_sum_true_256x256x1.raw", "z projection");
-			checkResult(yprojection, "./input_data/yproj_sum_true_256x129x1.raw", "y projection");
-			checkResult(xprojection, "./input_data/xproj_sum_true_129x256x1.raw", "x projection");
+			checkResult(zprojection, "../test_input_data/zproj_sum_true_256x256x1.raw", "z projection");
+			checkResult(yprojection, "../test_input_data/yproj_sum_true_256x129x1.raw", "y projection");
+			checkResult(xprojection, "../test_input_data/xproj_sum_true_129x256x1.raw", "x projection");
 
 			double count;
 			double sum = maskedSum(zprojection, (float32_t)0, count);
@@ -86,9 +86,9 @@ namespace itl2
 			raw::writed(maxproj, "./projections/zproj_max");
 			raw::writed(meanproj, "./projections/zproj_mean");
 
-			checkResult(minproj, "./input_data/zproj_min_true_256x256x1.raw", "min projection");
-			checkResult(maxproj, "./input_data/zproj_max_true_256x256x1.raw", "max projection");
-			checkResult(meanproj, "./input_data/zproj_mean_true_256x256x1.raw", "mean projection");
+			checkResult(minproj, "../test_input_data/zproj_min_true_256x256x1.raw", "min projection");
+			checkResult(maxproj, "../test_input_data/zproj_max_true_256x256x1.raw", "max projection");
+			checkResult(meanproj, "../test_input_data/zproj_mean_true_256x256x1.raw", "mean projection");
 
 			// Test also 2-image variants
 			Image<uint16_t> rampImage(head.dimensions());

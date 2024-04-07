@@ -4,7 +4,7 @@ setmeta
 *******
 
 
-**Syntax:** :code:`setmeta(image, key, value, i, j)`
+**Syntax:** :code:`setmeta(image, key, value, column, row)`
 
 Sets metadata item of an image.
 
@@ -34,17 +34,8 @@ value [input]
 
 Value of the metadata item.
 
-i [input]
-~~~~~~~~~
-
-**Data type:** positive integer
-
-**Default value:** 0
-
-Row index of the item to set in the data matrix.
-
-j [input]
-~~~~~~~~~
+column [input]
+~~~~~~~~~~~~~~
 
 **Data type:** positive integer
 
@@ -52,7 +43,16 @@ j [input]
 
 Column index of the item to set in the data matrix.
 
+row [input]
+~~~~~~~~~~~
+
+**Data type:** positive integer
+
+**Default value:** 0
+
+Row index of the item to set in the data matrix.
+
 See also
 --------
 
-:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`
+:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`, :ref:`metarowcount`, :ref:`metacolumncount`

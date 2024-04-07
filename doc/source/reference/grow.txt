@@ -48,7 +48,7 @@ Connectivity of the regions to grow. Can be Nearest for connectivity to nearest 
 See also
 --------
 
-:ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`
+:ref:`grow`, :ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`, :ref:`morphorec`
 
 :code:`grow(image, parameter image)`
 ====================================
@@ -77,4 +77,4 @@ Parameter image.
 See also
 --------
 
-:ref:`grow`, :ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`
+:ref:`grow`, :ref:`growlabels`, :ref:`floodfill`, :ref:`regionremoval`, :ref:`morphorec`

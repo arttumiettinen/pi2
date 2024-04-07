@@ -5,6 +5,7 @@
 
 #include "structure.h"
 #include "surfacecurvature.h"
+#include "marchingcubes.h"
 
 namespace pilib
 {
@@ -87,7 +88,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		CylinderOrientationCommand() : OverlapDistributable<Command>("cylinderorientation", "Estimates local orientation of cylindrical structures using the structure tensor method.",
+		CylinderOrientationCommand() : OverlapDistributable<Command>("cylinderorientation", "Estimates local orientation of cylindrical structures using the structure tensor method. See also B. Jähne, Practical handbook on image processing for scientific and technical applications. CRC Press, 2004.",
 			{
 				CommandArgument<Image<float32_t> >(ParameterDirection::InOut, "geometry", "At input, an image that contains the geometry for which local orientation should be determined. At output, the orientation 'energy' will be stored in this image. It equals the sum of the eigenvalues of the structure tensor, and can be used to distinguish regions without any interfaces (i.e. no orientation, low energy value) from regions with interfaces (i.e. orientation available, high energy value)."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "phi", R"(The azimuthal angle of orientation direction will be stored in this image. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
@@ -145,7 +146,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		PlateOrientationCommand() : OverlapDistributable<Command>("plateorientation", "Estimates local orientation of planar structures (normal of the plane) using the structure tensor method.",
+		PlateOrientationCommand() : OverlapDistributable<Command>("plateorientation", "Estimates local orientation of planar structures (normal of the plane) using the structure tensor method. See also B. Jähne, Practical handbook on image processing for scientific and technical applications. CRC Press, 2004.",
 			{
 				CommandArgument<Image<float32_t> >(ParameterDirection::InOut, "geometry", "At input, an image that contains the geometry for which local orientation should be determined. At output, the orientation 'energy' will be stored in this image. It equals the sum of the eigenvalues of the structure tensor, and can be used to distinguish regions without any interfaces (i.e. no orientation, low energy value) from regions with interfaces (i.e. orientation available, high energy value)."),
 				CommandArgument<Image<float32_t> >(ParameterDirection::Out, "phi", R"(The azimuthal angle of orientation direction will be stored in this image. The angle is given in radians and measured from positive $x$-axis towards positive $y$-axis and is given in range $[-\pi, \pi]$.)"),
@@ -563,5 +564,46 @@ namespace pilib
 		{
 			return JobType::Slow;
 		}
+	};
+
+
+
+	template<typename pixel_t> class SurfaceAreaCommand : public Command //OverlapDistributable<Command>
+	{
+	protected:
+		friend class CommandList;
+
+		SurfaceAreaCommand() : Command("surfacearea",
+			R"(Calculates the total surface area between foreground and background in an image.)"
+			R"(Foreground and background are defined by a threshold value (isovalue parameter)."
+			R"(Uses Marching Cubes algorithm.)",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "geometry", "An image containing the input geometry. If using a non-binary image, please specify isovalue parameter, too."),
+				CommandArgument<double>(ParameterDirection::Out, "surface area", "The total surface area in square pixels will be returned in this value."),
+				CommandArgument<double>(ParameterDirection::In, "isovalue", "Threshold value that separates foreground and background.", 1.0f)
+			},
+			"curvature, derivative")
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& geom = *pop<Image<pixel_t>* >(args);
+			double* area = pop<double*>(args);
+			double isovalue = pop<double>(args);
+
+			*area = itl2::getMarchingCubesArea<pixel_t>(geom, isovalue);
+		}
+
+		//virtual Vec3c calculateOverlap(const std::vector<ParamVariant>& args) const override
+		//{
+		//	return Vec3c(1, 1, 1);
+		//}
+
+		//virtual JobType getJobType(const std::vector<ParamVariant>& args) const override
+		//{
+		//	return JobType::Fast;
+		//}
 	};
 }

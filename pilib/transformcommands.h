@@ -16,8 +16,44 @@ namespace pilib
 
 	inline std::string transformSeeAlso()
 	{
-		return "rot90cw, rot90ccw, rotate, flip, reslice, crop, copy, scalelabels";
+		return "rot90cw, rot90ccw, rotate, flip, reslice, crop, copy, scalelabels, carttocyl";
 	}
+
+	template<typename pixel_t> class CartesianToCylindricalCommand : public TwoImageInputOutputCommand<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		CartesianToCylindricalCommand() : TwoImageInputOutputCommand<pixel_t>("carttocyl",
+			R"(Converts input image in cartesian coordinates $(x, y, z)$ to cylindrical coordinates $(r, azimuthal, z)$. )"
+			R"(For 2D images, converts from cartesian coordinates $(x, y)$ to cylindrical coordinates $(z, azimuthal)$. )"
+			R"("The size of the output must be set to the desired image size. The output image size defines sampling of the cylindrical coordinate space as follows. )"
+			R"("The $x$-coordinate of the output image corresponds to $r$, and the width of the output corresponds to the maximum $r$ considered; )"
+			R"("The $y$-coordinate corresponds to azimuthal angle such that $y = 0$ equals $azimuthal = 0$, and $y = \text{height}$ equals $2\pi$; )"
+			R"("The $z$-coordinate is the same coordinate than in the input image (but accounts for the position of the origin given in the origin parameter).)"
+			,
+			{
+				CommandArgument<Vec3d>(ParameterDirection::In, "origin", "The origin of the cylindrical coordinates in the input image.", Vec3d()),
+				CommandArgument<InterpolationMode>(ParameterDirection::In, "interpolation mode", string("Interpolation mode. ") + interpolationHelp(), InterpolationMode::Linear),
+				CommandArgument<BoundaryCondition>(ParameterDirection::In, "boundary condition", string("Boundary condition. ") + boundaryConditionHelp(), BoundaryCondition::Zero),
+
+			},
+			transformSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, vector<ParamVariant>& args) const override
+		{
+			Vec3d origin = pop<Vec3d>(args);
+			InterpolationMode imode = pop<InterpolationMode>(args);
+			BoundaryCondition bc = pop<BoundaryCondition>(args);
+
+			cartesianToCylindrical(in, out, Vec3f(origin), *createInterpolator<pixel_t, pixel_t>(imode, bc));
+		}
+
+		// TODO: Distributed version. Each z-slice can be processed separately.
+	};
 
 	template<typename pixel_t> class Rotate90CWCommand : public TwoImageInputOutputCommand<pixel_t>, public Distributable
 	{
@@ -485,15 +521,15 @@ namespace pilib
 		}
 	};
 
-	template<typename pixel_t> class BinCommand : public TwoImageInputOutputCommand<pixel_t>, public Distributable
+	template<typename pixel_t, typename out_t> class BinCommand : public TwoImageInputOutputCommand<pixel_t, out_t>, public Distributable
 	{
 	protected:
 		friend class CommandList;
 
-		BinCommand() : TwoImageInputOutputCommand<pixel_t>("bin", "Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.",
+		BinCommand() : TwoImageInputOutputCommand<pixel_t, out_t>("bin", "Reduces size of input image by given integer factor. Each output pixel corresponds to factor^dimensionality block of pixels in the input image.",
 			{
 				CommandArgument<Vec3c>(ParameterDirection::In, "factor", "Binning factor in each coordinate direction. Value 2 makes the output image dimension half of the input image dimension, 3 makes them one third etc."),
-				CommandArgument<string>(ParameterDirection::In, "binning type", "Name of binning type to be performed. Currently 'mean', 'min' and 'max' are supported.", "mean")
+				CommandArgument<string>(ParameterDirection::In, "binning type", "Name of binning type to be performed. Currently 'mean', 'sum', 'min' and 'max' are supported.", "mean")
 			},
 			scaleSeeAlso())
 		{
@@ -504,6 +540,7 @@ namespace pilib
 		enum class BinType
 		{
 			Mean,
+			Sum,
 			Min,
 			Max
 		};
@@ -513,6 +550,8 @@ namespace pilib
 			toLower(s);
 			if (s == "mean" || s == "average" || s == "avg" || s == "normal")
 				return BinType::Mean;
+			if (s == "sum")
+				return BinType::Sum;
 			if (s == "max" || s == "maximum")
 				return BinType::Max;
 			if (s == "min" || s == "minimum")
@@ -525,6 +564,7 @@ namespace pilib
 		{
 			switch (b)
 			{
+			case BinType::Sum: return "sum";
 			case BinType::Mean: return "mean";
 			case BinType::Max: return "max";
 			case BinType::Min: return "min";
@@ -534,7 +574,7 @@ namespace pilib
 
 
 	public:
-		virtual void run(Image<pixel_t>& in, Image<pixel_t>& out, vector<ParamVariant>& args) const override
+		virtual void run(Image<pixel_t>& in, Image<out_t>& out, vector<ParamVariant>& args) const override
 		{
 			Vec3c binSize = pop<Vec3c>(args);
 			string binType = pop<string>(args);
@@ -545,14 +585,17 @@ namespace pilib
 			BinType type = fromString(binType);
 			switch (type)
 			{
+			case BinType::Sum:
+				binning<pixel_t, out_t, binningop::sum<pixel_t, out_t> >(in, out, binSize);
+				break;
 			case BinType::Mean:
-				binning<pixel_t, pixel_t, binningop::mean<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::mean<pixel_t, out_t> >(in, out, binSize);
 				break;
 			case BinType::Max:
-				binning<pixel_t, pixel_t, binningop::max<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::max<pixel_t, out_t> >(in, out, binSize);
 				break;
 			case BinType::Min:
-				binning<pixel_t, pixel_t, binningop::min<pixel_t, pixel_t> >(in, out, binSize);
+				binning<pixel_t, out_t, binningop::min<pixel_t, out_t> >(in, out, binSize);
 				break;
 			default:
 				throw ITLException(string("Unsupported binning type: ") + toString(type));
@@ -562,7 +605,7 @@ namespace pilib
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
 		{
 			DistributedImage<pixel_t>& in = * std::get<DistributedImage<pixel_t>* >(args[0]);
-			DistributedImage<pixel_t>& out = * std::get<DistributedImage<pixel_t>* >(args[1]);
+			DistributedImage<out_t>& out = * std::get<DistributedImage<out_t>* >(args[1]);
 			Vec3c binSize =  std::get<Vec3c>(args[2]);
 			string binType =  std::get<string>(args[3]);
 
@@ -608,7 +651,7 @@ namespace pilib
 		{
 			// Calculate expected output size and if current output image size is not correct, calculate amount of extra memory needed to create it.
 			DistributedImage<pixel_t>& in = * std::get<DistributedImage<pixel_t>* >(args[0]);
-			DistributedImage<pixel_t>& out = * std::get<DistributedImage<pixel_t>* >(args[1]);
+			DistributedImage<out_t>& out = * std::get<DistributedImage<out_t>* >(args[1]);
 			Vec3c binSize =  std::get<Vec3c>(args[2]);
 
 			Vec3c expectedOutSize = in.dimensions().componentwiseDivide(binSize);

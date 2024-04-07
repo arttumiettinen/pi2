@@ -762,8 +762,8 @@ namespace itl2
 		template<typename dmap_t> void singleDanielssonTest()
 		{
 			Image<float32_t> geom;
-			//raw::read(geom, "./input_data/simple_structures_128x128x128.raw");
-			raw::read(geom, "./input_data/simple_structures_256x256x256.raw");
+			//raw::read(geom, "../test_input_data/simple_structures_128x128x128.raw");
+			raw::read(geom, "../test_input_data/simple_structures_256x256x256.raw");
 
 			double nonzeroCount = 0;
 			for (coord_t n = 0; n < geom.pixelCount(); n++)

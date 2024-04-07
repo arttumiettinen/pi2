@@ -111,8 +111,45 @@ const char* getString(void* pi, const char* name)
 	std::lock_guard<std::mutex> lock(mutex);
 	PISystem* sys = (PISystem*)pi;
 
-	std::string* s = sys->getStringNoThrow(name);
-	if (s)
-		return s->c_str();
+	Value* val = sys->getValueNoThrow(name);
+
+	if (val != nullptr && val->getType() == ValueType::String)
+		return val->stringValue.c_str();
 	return nullptr;
+}
+
+PILIB_API const int64_t getInt(void* pi, const char* name)
+{
+	std::lock_guard<std::mutex> lock(mutex);
+	PISystem* sys = (PISystem*)pi;
+
+	Value* val = sys->getValueNoThrow(name);
+
+	if (val != nullptr && val->getType() == ValueType::Int)
+		return val->intValue;
+	return std::numeric_limits<int64_t>::lowest();
+}
+
+PILIB_API const float32_t getReal(void* pi, const char* name)
+{
+	std::lock_guard<std::mutex> lock(mutex);
+	PISystem* sys = (PISystem*)pi;
+
+	Value* val = sys->getValueNoThrow(name);
+
+	if (val != nullptr && val->getType() == ValueType::Real)
+		return (float)val->realValue;
+	return std::numeric_limits<float32_t>::lowest();
+}
+
+PILIB_API const uint8_t getBool(void* pi, const char* name)
+{
+	std::lock_guard<std::mutex> lock(mutex);
+	PISystem* sys = (PISystem*)pi;
+
+	Value* val = sys->getValueNoThrow(name);
+
+	if (val != nullptr && val->getType() == ValueType::Bool)
+		return val->boolValue ? 1 : 0;
+	return std::numeric_limits<uint8_t>::max();
 }

@@ -47,9 +47,19 @@ namespace pilib
 
 		using Distributable::runDistributed;
 
+		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const override
+		{
+			return 2;
+		}
+
 		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
+		}
+
+		virtual size_t getDistributionDirection3(const std::vector<ParamVariant>& args) const override
+		{
+			return 0;
 		}
 
 		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
@@ -101,9 +111,19 @@ namespace pilib
 
 		using Distributable::runDistributed;
 
+		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const override
+		{
+			return 2;
+		}
+
 		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
+		}
+
+		virtual size_t getDistributionDirection3(const std::vector<ParamVariant>& args) const override
+		{
+			return 0;
 		}
 
 		virtual std::vector<string> runDistributed(Distributor& distributor, std::vector<ParamVariant>& args) const override
@@ -516,9 +536,19 @@ namespace pilib
 			return distributor.distribute(this, args);
 		}
 
+		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const override
+		{
+			return 2;
+		}
+
 		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
+		}
+
+		virtual size_t getDistributionDirection3(const std::vector<ParamVariant>& args) const override
+		{
+			return 0;
 		}
 	};
 

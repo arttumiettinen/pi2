@@ -8,6 +8,8 @@ namespace pilib
 	{
 		ADD_REAL(BlockMatchCommand);
 		ADD_REAL(BlockMatchMultiCommand);
+		ADD_REAL(BlockMatchNoDiskCommand);
+		ADD_REAL(BlockMatchNoDiskMultiCommand);
 		CommandList::add<PointsToDeformedCommand>();
 		CommandList::add<BlockMatchPartialLoadCommand>(); // Only one as this command determines data type itself
 		CommandList::add<FilterDisplacementsCommand>(); // Only one no data type dependence
@@ -18,19 +20,11 @@ namespace pilib
 		ADD_REAL(StitchVer3Command);
 		CommandList::add<DetermineWorldToLocalCommand>();
 
-		ADD_REAL(FloodFillBlockCommand);
-		ADD_REAL(FloodFillCommand);
-
 		ADD_REAL(NormalizeZCommand);
 
 		ADD_REAL(CannyCommand);
 		ADD_REAL(CannyPart1Command);
 		ADD_REAL(CannyPart2Command);
-
-		ADD_REAL(DualThresholdCommand);
-		ADD_REAL(GrowCommand);
-		ADD_REAL2(GrowPriorityCommand);
-		ADD_REAL(GrowLabelsCommand);
 
 		ADD_REAL(NoiseCommand);
 

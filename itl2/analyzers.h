@@ -626,9 +626,9 @@ namespace itl2
 				double r2, phi2, theta2;
 				double r3, phi3, theta3;
 
-				toSpherical(t1.x, t1.y, t1.z, r1, phi1, theta1);
-				toSpherical(t2.x, t2.y, t2.z, r2, phi2, theta2);
-				toSpherical(t3.x, t3.y, t3.z, r3, phi3, theta3);
+				cartesianToSpherical(t1, r1, phi1, theta1);
+				cartesianToSpherical(t2, r2, phi2, theta2);
+				cartesianToSpherical(t3, r3, phi3, theta3);
 				
 				double e = 0.0;
 				if(abs(lambda1) > 1e-6)
@@ -783,7 +783,7 @@ namespace itl2
 
 				double r1, phi1;
 
-				toPolar(t1.x, t1.y, r1, phi1);
+				cartesianToPolar(t1.x, t1.y, r1, phi1);
 
 				double e = 0.0;
 				if (abs(lambda1) > 1e-6)
@@ -1132,7 +1132,7 @@ namespace itl2
 	{
 		inline int isnotalnum(int ch)
 		{
-			return !isalnum(ch);
+			return isalnum(ch) == 0;
 		}
 
 		/**

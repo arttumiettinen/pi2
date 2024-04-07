@@ -827,12 +827,12 @@ namespace itl2
 		Bilateral filter
 		Mask is not used.
 		*/
-		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType bilateralOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask, Vec2d spatialandrangesigma)
+		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType bilateralOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask, Vec4d spatialandrangesigma)
 		{
-			typename NumberUtils<pixel_t>::RealFloatType sigmas = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[0];
-			typename NumberUtils<pixel_t>::RealFloatType sigmat = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[1];
-
-
+			//typename NumberUtils<pixel_t>::RealFloatType sigmas = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[0];
+			//typename NumberUtils<pixel_t>::RealFloatType sigmat = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[1];
+			typename Vec4<NumberUtils<pixel_t>::RealFloatType> sigma(spatialandrangesigma);
+			
 			typename NumberUtils<pixel_t>::FloatType sum = 0.0;
 			typename NumberUtils<pixel_t>::RealFloatType wsum = 0.0;
 
@@ -847,14 +847,26 @@ namespace itl2
 					{
 						typename NumberUtils<pixel_t>::FloatType pix = (typename NumberUtils<pixel_t>::FloatType)nb(x, y, z);
 						
-						typename NumberUtils<pixel_t>::RealFloatType r2 = (Vec3c(x, y, z) - center).normSquared<typename NumberUtils<pixel_t>::RealFloatType>();
-						//double r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz);
 						typename NumberUtils<pixel_t>::FloatType c = pix - centerVal;
+						
+						typename Vec3<NumberUtils<pixel_t>::RealFloatType> r(Vec3c(x, y, z) - center);
 
 						typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)(
-							(1 / (sigmas * sqrt(2 * PI)) * ::exp(-(r2) / (2 * sigmas * sigmas))) *	    // Spatial
-							(1 / (sigmat * sqrt(2 * PI)) * ::exp(-(c * c) / (2 * sigmat * sigmat)))     // Range
+							::exp(-(r.x * r.x) / (2 * sigma.x * sigma.x)	// Spatial x
+								- (r.y * r.y) / (2 * sigma.y * sigma.y)		// Spatial y
+								- (r.z * r.z) / (2 * sigma.z * sigma.z)		// Spatial z
+								- (c * c) / (2 * sigma.w * sigma.w)	// Radiometric
+								)
 							);
+
+						// This works if the sigma is the same in all coordinate directions.
+						//typename NumberUtils<pixel_t>::RealFloatType r2 = (Vec3c(x, y, z) - center).normSquared<typename NumberUtils<pixel_t>::RealFloatType>();
+						//double r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz);
+						//typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)(
+						//	(1 / (sigmas * sqrt(2 * PI)) * ::exp(-(r2) / (2 * sigmas * sigmas))) *	    // Spatial
+						//	(1 / (sigmat * sqrt(2 * PI)) * ::exp(-(c * c) / (2 * sigmat * sigmat)))     // Range
+						//	);
+
 						// This approximation seems to create decent quality image but it is not really faster.
 						//double w = (1 / (2 * PI)) * normPdfApprox(sqrt(r2), 0, sigmas)    // Spatial
 						//	* normPdfApprox(c, 0, sigmat);								// Range
@@ -1775,6 +1787,22 @@ template<typename pixel_t, typename out_t> void name##Filter(const Image<pixel_t
 		closingFilter(img, tmp, Vec3c(nbRadius, nbRadius, nbRadius), nbType, bc, allowOpt);
 	}
 
+
+	/**
+	Calculates bilateral filtering.
+	@param in Input image.
+	@param out Output image.
+	@param spatialSigma Standard deviation of Gaussian kernel used for spatial smoothing.
+	@param rangeSigma Standard deviation of Gaussian kernel used to avoid smoothing edges of features. Order of magnitude must be similar to difference between gray levels of background and objects.
+	@param bc Boundary condition (BoundaryCondition::Zero or Nearest).
+	*/
+	template<typename pixel_t, typename out_t> void bilateralFilter(const Image<pixel_t>& in, Image<out_t>& out, const Vec3d& spatialSigma, double rangeSigma, BoundaryCondition bc = BoundaryCondition::Nearest)
+	{
+		Vec4d sigma(spatialSigma.x, spatialSigma.y, spatialSigma.z, rangeSigma);
+		Vec3c nbRadius = ceil(3 * spatialSigma);
+		filter<pixel_t, out_t, Vec4d, internals::bilateralOp<pixel_t> >(in, out, nbRadius, sigma, NeighbourhoodType::Rectangular, bc);
+	}
+
 	/**
 	Calculates bilateral filtering.
 	@param in Input image.
@@ -1785,9 +1813,10 @@ template<typename pixel_t, typename out_t> void name##Filter(const Image<pixel_t
 	*/
 	template<typename pixel_t, typename out_t> void bilateralFilter(const Image<pixel_t>& in, Image<out_t>& out, double spatialSigma, double rangeSigma, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		coord_t nbRadius = (coord_t)ceil(3 * spatialSigma);
-		filter<pixel_t, out_t, Vec2d, internals::bilateralOp<pixel_t> >(in, out, Vec3c(nbRadius, nbRadius, nbRadius), Vec2d(spatialSigma, rangeSigma), NeighbourhoodType::Rectangular, bc);
+		bilateralFilter(in, out, Vec3d(spatialSigma, spatialSigma, spatialSigma), rangeSigma, bc);
 	}
+
+	
 
 
 

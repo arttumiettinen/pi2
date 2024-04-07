@@ -6,7 +6,11 @@ isimagefile
 
 **Syntax:** :code:`isimagefile(filename, result)`
 
-Checks if a file with given name is image file.
+Checks if a file with given name is an image file.
+
+.. note::
+	In Python/pi2py2, the result parameter is not specified, but the test result is returned as a boolean return value.
+
 
 This command can be used in the distributed processing mode, but it does not participate in distributed processing.
 

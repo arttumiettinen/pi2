@@ -23,4 +23,4 @@ String to print
 See also
 --------
 
-:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`, :ref:`savetiming`, :ref:`resettiming`
