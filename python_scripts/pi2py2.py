@@ -78,6 +78,14 @@ class NeighbourhoodType(Enum):
     Ellipsoidal = ELLIPSOIDAL
     SPHERE = ELLIPSOIDAL
     Sphere = SPHERE
+    SPHERICAL = SPHERE
+    Spherical = SPHERE
+    ROUND = SPHERE
+    Round = SPHERE
+    CIRCLE = SPHERE
+    Circle = SPHERE
+    CIRCULAR = SPHERE
+    Circular = SPHERE
 
     def __str__(self):
         return str(self.value)

@@ -4,6 +4,7 @@ Articles where pi2 has been used
 This is an incomplete list of journal articles where this software (pi2 or NRStitcher) or some of its previous versions has been used.
 If you want to add your paper here, please email arttu.i.miettinen@jyu.fi.
 
+* Hyväluoma J. et al., Comparing structural soil properties of boreal clay fields under contrasting soil management, Soil Use and Management 40(2), 2024. https://doi.org/10.1111/sum.13040
 * Albers J. et al., High Throughput Tomography (HiTT) on EMBL beamline P14 on PETRA III, Journal of Synchrotron Radiation 31(1), 2024. https://doi.org/10.1107/S160057752300944X
 * Zhao B. et al., Wood-based superblack, Nature Communications 14, 2023. https://doi.org/10.1038/s41467-023-43594-4
 * Mattos B.D. et al., Black Bioinks from Superstructured Carbonized Lignin Particles, Advanced Functional Materials 33(45), 2023. https://doi.org/10.1002/adfm.202304867
