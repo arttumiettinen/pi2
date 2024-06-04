@@ -155,7 +155,7 @@ namespace pilib
 
 			vector<vector<Vec3sc>> arr = unpackFromImage(maxima);
 
-			removeMaximaInsideLargerOnes(arr, img, mul);
+			removeMaximaInsideLargerOnes(arr, img, mul, true);
 
 			packToImage(arr, maxima);
 		}

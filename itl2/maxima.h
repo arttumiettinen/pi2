@@ -18,7 +18,7 @@ namespace itl2
 	@param orig Maxima of this image are to be found.
 	@return List of pixel locations for each maximum.
 	*/
-	template<typename pixel_t> std::vector<std::vector<Vec3sc> > findLocalMaxima(Image<pixel_t>& orig, Connectivity connectivity = Connectivity::AllNeighbours)
+	template<typename pixel_t> std::vector<std::vector<Vec3sc> > findLocalMaxima(Image<pixel_t>& orig, Connectivity connectivity = Connectivity::AllNeighbours, bool showProgress = false)
 	{
 		pixel_t tempColor = findUnusedValue(orig);
 
@@ -28,6 +28,7 @@ namespace itl2
 		std::vector<Vec3sc> filledPoints;
 		std::set<pixel_t> neighbourValues;
 
+		ProgressIndicator progress(orig.depth(), showProgress);
 		for (coord_t z = 0; z < orig.depth(); z++)
 		{
 			for (coord_t y = 0; y < orig.height(); y++)
@@ -44,7 +45,7 @@ namespace itl2
 						neighbourValues.clear();
 
 						// Find all points in the current region
-						floodfillSingleThreaded(orig, p, tempColor, tempColor, connectivity, nullptr, &filledPoints, 0, &neighbourValues);
+						floodfillSingleThreaded(orig, p, tempColor, tempColor, connectivity, nullptr, &filledPoints, 0, &neighbourValues, false);
 
 						// Put the correct value back
 						draw(orig, filledPoints, v);
@@ -71,8 +72,8 @@ namespace itl2
 					}
 				}
 			}
-
-			showProgress(z, orig.depth());
+			
+			progress.step();
 		}
 
 		return results;
@@ -89,145 +90,130 @@ namespace itl2
 	@param orig Original image from which the maxima were found.
 	@param radiusMultiplier Multiplier to apply to the radius of the larger maximum.
 	*/
-	template<typename pixel_t> void removeMaximaInsideLargerOnes(std::vector<std::vector<Vec3sc> >& maximaList, const Image<pixel_t>& orig, double radiusMultiplier = 1)
+	template<typename pixel_t> void removeMaximaInsideLargerOnes(std::vector<std::vector<Vec3sc> >& maximaList, const Image<pixel_t>& orig, double radiusMultiplier = 1, bool showProgressIndicator = false)
 	{
-		std::vector<Vec3d> centroids;
-		centroids.reserve(maximaList.size());
-
-		std::vector<double> radii;
-		radii.reserve(maximaList.size());
-
-		std::vector<bool> removalFlags;
-		removalFlags.reserve(maximaList.size());
-
+		std::vector<Vec3d> centroids(maximaList.size(), Vec3d());
+		std::vector<double> radii(maximaList.size(), 0.0);
+		std::vector<bool> removalFlags(maximaList.size(), false);
 		IndexForest sets(maximaList.size());
 
 		// Calculate centroid and radius for each maximum
-		for (size_t n = 0; n < maximaList.size(); n++)
 		{
-			const auto& points = maximaList[n];
-			double radius = (double)orig(points[0]);
-			radii.push_back(radius);
-
-			Vec3d centroid;
-			for (size_t m = 0; m < points.size(); m++)
+			ProgressIndicator progress(maximaList.size(), showProgressIndicator);
+#pragma omp parallel for if(maximaList.size() > PARALLELIZATION_THRESHOLD)
+			for (int n = 0; n < maximaList.size(); n++)
 			{
-				centroid += Vec3d(points[m]);
-			}
-			centroid /= (double)points.size();
-			centroids.push_back(centroid);
+				const auto& points = maximaList[n];
+				double radius = (double)orig(points[0]);
+				radii[n] = radius;
 
-			removalFlags.push_back(false);
+				Vec3d centroid;
+				for (size_t m = 0; m < points.size(); m++)
+				{
+					centroid += Vec3d(points[m]);
+				}
+				centroid /= (double)points.size();
+				centroids[n] = centroid;
+
+				// removalFlags[n] is already false due to the initialization above.
+
+				progress.step();
+			}
 		}
 
+		double radiusMultiplier2 = radiusMultiplier * radiusMultiplier;
+
 		// Calculate removal flag for each maximum
-		for (size_t n = 0; n < maximaList.size(); n++)
 		{
-			// Find all maxima inside radius of this maximum and mark those to be removed if their radius is less than radius of the current maximum.
-
-			Vec3d p0 = centroids[n];
-			double radius = radii[n];
-
-			for (size_t m = 0; m < maximaList.size(); m++)
+			ProgressIndicator progress(maximaList.size(), showProgressIndicator);
+#pragma omp parallel for if(maximaList.size() > PARALLELIZATION_THRESHOLD)
+			for (int n = 0; n < maximaList.size(); n++)
 			{
-				/*
-				Version 1, only remove smaller maxima but do not combine.
-				if(m != n && radii[m] < radius)
+				// Find all maxima inside radius of this maximum and mark those to be removed if their radius is less than radius of the current maximum.
+				Vec3d cn = centroids[n];
+				double rn = radii[n];
+				double rn2 = rn * rn;
+
+				for (size_t m = n + 1; m < maximaList.size(); m++)
 				{
-					if((centroids[m] - p0).norm() < radius)
-					{
-						removalFlags[m] = true;
-					}
-				}
-				*/
-				// Version 2, remove small maxima and combine ones with equal radius.
-				if (m != n)
-				{
-					double distance = (centroids[m] - p0).norm();
-					if (distance < radiusMultiplier * radius)
+					// Version 2, remove small maxima and combine ones with equal radius.
+					double distance2 = (centroids[m] - cn).normSquared();
+					double rm = radii[m];
+					
+
+					// n -> m comparison
+					if (distance2 < radiusMultiplier2 * rn2)
 					{
 						// At this point maximum m is near maximum n.
 
-						if (NumberUtils<double>::equals(radii[m], radius))
+						if (NumberUtils<double>::equals(rm, rn))
 						{
 							// Maxima m and n are equal in radius. Combine them.
-							sets.union_sets(n, m);
+#pragma omp critical(cleanmaxima_union)
+							{
+								sets.union_sets(n, m);
+							}
 						}
-						else if (radii[m] < radius)
+						else if(rm < rn)
 						{
 							// Maximum m is smaller than maximum n => remove maximum m.
 							removalFlags[m] = true;
 						}
 					}
+
+					double rm2 = rm * rm;
+
+					// m -> n comparison (for symmetry due to multiplier * radii[m] term)
+					if (distance2 < radiusMultiplier2 * rm2)
+					{
+						// At this point maximum n is near maximum m.
+
+						if (NumberUtils<double>::equals(rn, rm))
+						{
+							// Maxima n and m are equal in radius. Combine them.
+#pragma omp critical(cleanmaxima_union)
+							{
+								sets.union_sets(m, n);
+							}
+						}
+						else if(rn < rm)
+						{
+							// Maximum n is smaller than maximum m => remove maximum n.
+							removalFlags[n] = true;
+						}
+					}
 				}
+
+				progress.step();
 			}
 		}
-
-		/*
-		// Version 1: combined maximum = single point at common centroid of all combined maxima.
-
-		// Remove non-root maxima
-		for(size_t n = 0; n < maximaList.size(); n++)
-		{
-			size_t root = sets.find_set(n);
-			if(root != n)
-				removalFlags[n] = true;
-		}
-
-		// Calculate new centroid for each maximum
-		std::vector<Tvecd> newCentroids;
-		std::vector<double> counts;
-
-		newCentroids.reserve(maximaList.size());
-		counts.reserve(maximaList.size());
-
-		for(size_t n = 0; n < maximaList.size(); n++)
-		{
-			newCentroids.push_back(Tvecd());
-			counts.push_back(0);
-		}
-
-		for(size_t n = 0; n < maximaList.size(); n++)
-		{
-			size_t root = sets.find_set(n);
-			newCentroids[root] += centroids[n];
-			counts[root]++;
-		}
-
-		for(size_t n = 0; n < maximaList.size(); n++)
-		{
-			newCentroids[n] /= counts[n];
-		}
-
-		// If new centroid is different from old one, replace points of the maximum by one point corresponding
-		// to the new centroid
-		for(size_t n = 0; n < maximaList.size(); n++)
-		{
-			if(!centroids[n].equals(newCentroids[n]))
-			{
-				// Replace points of the maximum
-				maximaList[n].clear();
-				maximaList[n].push_back(round(newCentroids[n]));
-				centroids[n] = newCentroids[n];
-			}
-		}
-		*/
 
 		// Version 2: No maxima points are removed, but they are combined instead.
-		for (size_t n = 0; n < maximaList.size(); n++)
 		{
-			size_t root = sets.find_set(n);
-			if (root != n)
+			ProgressIndicator progress(maximaList.size(), showProgressIndicator);
+			for (size_t n = 0; n < maximaList.size(); n++)
 			{
-				removalFlags[n] = true;
-				for (size_t m = 0; m < maximaList[n].size(); m++)
-					maximaList[root].push_back(maximaList[n][m]);
+				size_t root = sets.find_set(n);
+				if (root != n)
+				{
+					// NOTE: Enable this if to make the entire maximum be removed if one of its members is marked to be removed.
+					// If not enabled, the result depends on the order of maxima, e.g., in case, where max A erases max B,
+					// and max B is combined to max C. Here, if root is max B, the entire combined max will be removed,
+					// but if root is max C, it will remain. This is usually not good.
+					if (removalFlags[n])
+						removalFlags[root] = true;
+
+					removalFlags[n] = true;
+					for (size_t m = 0; m < maximaList[n].size(); m++)
+						maximaList[root].push_back(maximaList[n][m]);
+				}
+
+				progress.step();
 			}
 		}
 
 		// Remove all flagged maxima
 		std::vector<std::vector<Vec3sc> > newMaximaList;
-
 		for (size_t n = 0; n < maximaList.size(); n++)
 		{
 			if (!removalFlags[n])
@@ -235,7 +221,6 @@ namespace itl2
 		}
 
 		maximaList = newMaximaList;
-
 	}
 
 

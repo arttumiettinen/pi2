@@ -873,7 +873,7 @@ def particle_segmentation():
     """
 
     # Generate particle image
-    generate_particles(1000, 0)
+    #generate_particles(1000, 0)
 
     
     # Read generated data file
@@ -1634,7 +1634,7 @@ def autothresholdvalue():
 #fill_particles()
 #histogram()
 #bivariate_histogram()
-#particle_segmentation()
+particle_segmentation()
 #levelset_fill_cavity()
 #find_surface()
 #orientation_analysis()
