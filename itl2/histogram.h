@@ -11,6 +11,7 @@
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "pointprocess.h"
+#include "progress.h"
 
 namespace itl2
 {

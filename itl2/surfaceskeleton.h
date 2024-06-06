@@ -5,6 +5,7 @@
 #include "utilities.h"
 #include "minhash.h"
 #include "math/vec3.h"
+#include "progress.h"
 
 #include <algorithm>
 

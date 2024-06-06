@@ -3,6 +3,7 @@
 #include "image.h"
 #include "boundarycondition.h"
 #include "math/vec3.h"
+#include "progress.h"
 
 #include <vector>
 

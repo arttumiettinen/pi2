@@ -11,6 +11,7 @@
 #include "fastmaxminfilters.h"
 #include "median.h"
 #include "math/vec4.h"
+#include "progress.h"
 
 namespace itl2
 {

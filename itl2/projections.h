@@ -4,6 +4,7 @@
 #include "utilities.h"
 #include "math/mathutils.h"
 #include "pointprocess.h"
+#include "progress.h"
 
 #include <set>
 #include <unordered_set>

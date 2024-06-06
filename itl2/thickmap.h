@@ -17,6 +17,7 @@
 #include "math/vec3.h"
 #include "math/aabox.h"
 #include "danielsson.h"
+#include "progress.h"
 
 namespace itl2
 {

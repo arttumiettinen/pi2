@@ -9,6 +9,7 @@
 #include "image.h"
 #include "math/vec3.h"
 #include "connectivity.h"
+#include "progress.h"
 
 namespace itl2
 {

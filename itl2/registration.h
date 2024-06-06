@@ -10,6 +10,7 @@
 #include "inpaint.h"
 #include "projections.h"
 #include "io/io.h"
+#include "progress.h"
 
 namespace itl2
 {
@@ -113,13 +114,13 @@ namespace itl2
 		while (accuracy.size() < refPoints.size())
 			accuracy.push_back(0);
 
-		size_t counter = 0;
+		ProgressIndicator progress(refPoints.size());
 		#pragma omp parallel for if(!omp_in_parallel())
 		for (coord_t n = 0; n < (coord_t)refPoints.size(); n++)
 		{
 			internals::blockMatchOnePoint(reference, deformed, blockRadius, refPoints[n], defPoints[n], accuracy[n], 1, mode);
 
-			showThreadProgress(counter, refPoints.size());
+			progress.step();
 		}
 	}
 

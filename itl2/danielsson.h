@@ -3,6 +3,7 @@
 #include "datatypes.h"
 #include "image.h"
 #include "neighbourhood.h"
+#include "progress.h"
 
 namespace itl2
 {

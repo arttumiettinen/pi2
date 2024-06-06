@@ -18,6 +18,7 @@ Calvin R. Maurer, Vijay Raghavan, A Linear Time Algorithm for Computing Exact Eu
 #include "pointprocess.h"
 #include "utilities.h"
 #include "type.h"
+#include "progress.h"
 
 namespace itl2
 {

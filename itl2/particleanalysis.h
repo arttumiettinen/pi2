@@ -6,20 +6,16 @@
 #include "image.h"
 #include "floodfill.h"
 #include "utilities.h"
-
 #include "math/vec2.h"
 #include "math/vec3.h"
-
 #include "indexforest.h"
 #include "math/aabox.h"
 #include "misc.h"
-
 #include "resultstable.h"
 #include "analyzers.h"
-
 #include "math/vectoroperations.h"
-
 #include "generation.h"
+#include "progress.h"
 
 
 namespace itl2
@@ -1086,7 +1082,7 @@ namespace itl2
 
 		prepareParticleAnalysis(image);
 
-		size_t counter = 0;
+		ProgressIndicator progress(results.size());
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)results.size(); n++)
 		{
@@ -1105,7 +1101,7 @@ namespace itl2
 				floodfill<pixel_t>(image, pos, fillColor, fillColor, conn);
 			}
 
-			showThreadProgress(counter, results.size());
+			progress.step();
 		}
 	}
 
@@ -1126,7 +1122,7 @@ namespace itl2
 
 		prepareParticleAnalysis(image);
 
-		size_t counter = 0;
+		ProgressIndicator progress(results.size());
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)results.size(); n++)
 		{
@@ -1141,7 +1137,7 @@ namespace itl2
 
 			floodfill<pixel_t>(image, pos, value, value, conn);
 
-			showThreadProgress(counter, results.size());
+			progress.step();
 		}
 	}
 
