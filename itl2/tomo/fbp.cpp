@@ -355,7 +355,7 @@ namespace itl2
 
 		// Calculate Paganin (single material) filtering
 
-		size_t counter = 0;
+		ProgressIndicator progress(transmissionProjections.depth());
 		#pragma omp parallel for
 		for (coord_t anglei = 0; anglei < transmissionProjections.depth(); anglei++)
 		{
@@ -363,7 +363,7 @@ namespace itl2
 
 			paganinSlice(slice, padType, padFraction, objectSourceDistance, objectCameraDistance, delta, mu);
 
-			showThreadProgress(counter, transmissionProjections.depth());
+			progress.step();
 		}
 	}
 
@@ -971,7 +971,7 @@ namespace itl2
 		float32_t averageBadPixels = 0;
 		size_t maxBadPixels = 0;
 
-		size_t counter = 0;
+		ProgressIndicator progress(img.depth());
 		#pragma omp parallel
 		{
 
@@ -991,7 +991,7 @@ namespace itl2
 					maxBadPixels = std::max(maxBadPixels, badPixelCount);
 				}
 
-				showThreadProgress(counter, img.depth());
+				progress.step();
 			}
 		}
 
@@ -1107,7 +1107,7 @@ namespace itl2
 		// Process slice by slice to reduce disk I/O when the transmission projection image is memory-mapped.
 		float32_t averageBadPixels = 0;
 		size_t maxBadPixels = 0;
-		size_t counter = 0;
+		ProgressIndicator progress(preprocessedProjections.depth());
 		#pragma omp parallel num_threads(8)
 		{
 			Image<float32_t> med;
@@ -1132,13 +1132,13 @@ namespace itl2
 				else if (settings.cropSize.max() <= 0 && origBinning > 1)
 				{
 					// Binning but no cropping
-					binning(origSlice, slice, Vec3c(origBinning, origBinning, 1), false);
+					binning(origSlice, slice, Vec3c(origBinning, origBinning, 1));
 				}
 				else if (settings.cropSize.max() > 0 && origBinning > 1)
 				{
 					// Cropping and binning
 					crop(origSlice, cropTmp, Vec3c(settings.cropSize.x, settings.cropSize.y, 0));
-					binning(cropTmp, slice, Vec3c(origBinning, origBinning, 1), false);
+					binning(cropTmp, slice, Vec3c(origBinning, origBinning, 1));
 				}
 				else
 				{
@@ -1169,7 +1169,7 @@ namespace itl2
 				
 				filterSlice(slice, filterSettings, settings.padType);
 				
-				showThreadProgress(counter, preprocessedProjections.depth());
+				progress.step();
 			}
 		}
 

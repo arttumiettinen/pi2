@@ -146,12 +146,12 @@ namespace itl2
 		Uses standard Hildebrand & Ruegsegger algorithm.
 		Plots maximal spheres corresponding to squared distance map, larger distance values replacing smaller ones.
 		*/
-		void thickmap2(const Image<int32_t>& dmap2, Image<int32_t>& result, bool showProgressInfo)
+		void thickmap2(const Image<int32_t>& dmap2, Image<int32_t>& result)
 		{
 			result.mustNotBe(dmap2);
 			result.ensureSize(dmap2);
 
-			size_t counter = 0;
+			ProgressIndicator progress(result.depth());
 			for (coord_t z = 0; z < result.depth(); z++)
 			{
 				for (coord_t y = 0; y < result.height(); y++)
@@ -162,7 +162,7 @@ namespace itl2
 						internals::drawMax2(result, Vec3c(x, y, z), r2);
 					}
 				}
-				showThreadProgress(counter, result.depth(), showProgressInfo);
+				progress.step();
 			}
 		}
 	}
@@ -527,6 +527,7 @@ namespace itl2
 			//cout << "Fits = " << dimred::doesDiscretizedCircle1FitInto2(r2_2, r2_1) << endl;
 
 			internals::buildCircleLookup(MAX);
+			ProgressIndicator progress(MAX);
 			for (int32_t r2_1 = 0; r2_1 < MAX; r2_1++)
 			{
 				int32_t r = largestIntWhoseSquareIsLessThan(r2_1);
@@ -549,7 +550,7 @@ namespace itl2
 					testAssert(fits == fitsCached, "difference between cached and non-cached result");
 				}
 
-				showProgress(r2_1, MAX);
+				progress.step();
 			}
 		}
 

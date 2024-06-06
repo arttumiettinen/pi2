@@ -229,8 +229,7 @@ namespace itl2
 				}
 			}
 
-			
-			size_t counter = 0;
+			ProgressIndicator progress(startPoints.size());
 			#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
 				std::vector<pixel_t> g(img.width() + img.height() + img.depth(), 0);
@@ -266,7 +265,7 @@ namespace itl2
 						n++;
 					}
 
-					showThreadProgress(counter, startPoints.size());
+					progress.step();
 				}
 			}
 

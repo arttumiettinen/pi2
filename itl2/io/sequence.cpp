@@ -228,7 +228,7 @@ namespace itl2
 						{
 							cout << x << "/2, " << y << "/2, " << z << "/2" << endl;
 							Vec3c pos(x * blockSize.x, y * blockSize.y, z * blockSize.z);
-							sequence::writeBlock(head, outFile, pos, outputDimensions, blockStart, blockSize, true);
+							sequence::writeBlock(head, outFile, pos, outputDimensions, blockStart, blockSize);
 						}
 					}
 				}

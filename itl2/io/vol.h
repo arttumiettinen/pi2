@@ -61,7 +61,7 @@ namespace itl2
 		/**
 		Reads a block of .vol file from the given path.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start)
 		{
 			Vec3c dimensions;
 			ImageDataType dataType;
@@ -69,7 +69,7 @@ namespace itl2
 			bool isBigEndianFile;
 			getInfoAndCheck<pixel_t>(filename, dimensions, dataType, headerSize, isBigEndianFile);
 
-			raw::readBlockNoParse(img, filename, dimensions, start, showProgressInfo, headerSize);
+			raw::readBlockNoParse(img, filename, dimensions, start, headerSize);
 
 			if (isBigEndianFile != isBigEndian())
 				swapByteOrder(img);

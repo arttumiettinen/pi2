@@ -455,9 +455,8 @@ namespace itl2
 	@param in Input image.
 	@param out Output image. The image is automatically initialized to correct size.
 	@param binSize Bin size. 2 makes the output image dimensions half of the input image dimensions, 3 makes them one third etc.
-	@param indicateProgress Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t, out_t operation(const std::vector<pixel_t>&)> void binning(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& binSize, bool indicateProgress = true)
+	template<typename pixel_t, typename out_t, out_t operation(const std::vector<pixel_t>&)> void binning(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& binSize)
 	{
 		if (binSize.min() <= 0)
 			throw ITLException("Bins size must be positive.");
@@ -467,7 +466,7 @@ namespace itl2
 
 		// TODO: This is separable operation for most operations.
 
-		size_t counter = 0;
+		ProgressIndicator progress(out.depth());
 		#pragma omp parallel if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		{
 			std::vector<pixel_t> block;
@@ -489,7 +488,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, out.depth(), indicateProgress);
+				progress.step();
 			}
 		}
 	}
@@ -499,11 +498,10 @@ namespace itl2
 	@param in Input image.
 	@param out Output image. The image is automatically initialized to correct size.
 	@param binSize Bin size. 2 makes the output image dimensions half of the input image dimensions, 3 makes them one third etc.
-	@param indicateProgress Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& binSize, bool indicateProgress = true)
+	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& binSize)
 	{
-		binning<pixel_t, out_t, binningop::mean<pixel_t> >(in, out, binSize, indicateProgress);
+		binning<pixel_t, out_t, binningop::mean<pixel_t> >(in, out, binSize);
 	}
 
 	/**
@@ -511,11 +509,10 @@ namespace itl2
 	@param in Input image.
 	@param out Output image. The image is automatically initialized to correct size.
 	@param binSize Bin size. 2 makes the output image dimensions half of the input image dimensions, 3 makes them one third etc.
-	@param indicateProgress Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t, out_t operation(const std::vector<pixel_t>&)> void binning(const Image<pixel_t>& in, Image<out_t>& out, size_t binSize, bool indicateProgress = true)
+	template<typename pixel_t, typename out_t, out_t operation(const std::vector<pixel_t>&)> void binning(const Image<pixel_t>& in, Image<out_t>& out, size_t binSize)
 	{
-		binning<pixel_t, out_t, operation>(in, out, Vec3c(binSize, binSize, binSize), indicateProgress);
+		binning<pixel_t, out_t, operation>(in, out, Vec3c(binSize, binSize, binSize));
 	}
 
 	/**
@@ -523,11 +520,10 @@ namespace itl2
 	@param in Input image.
 	@param out Output image. The image is automatically initialized to correct size.
 	@param binSize Bin size. 2 makes the output image dimensions half of the input image dimensions, 3 makes them one third etc.
-	@param indicateProgress Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, size_t binSize, bool indicateProgress = true)
+	template<typename pixel_t, typename out_t> void binning(const Image<pixel_t>& in, Image<out_t>& out, size_t binSize)
 	{
-		binning<pixel_t, out_t, binningop::mean<pixel_t> >(in, out, Vec3c(binSize, binSize, binSize), indicateProgress);
+		binning<pixel_t, out_t, binningop::mean<pixel_t> >(in, out, Vec3c(binSize, binSize, binSize));
 	}
 
 	/**
@@ -539,13 +535,13 @@ namespace itl2
 	@param badValue Value that should not be considered in the averaging calculations.
 	@param undefinedValue Value that is placed to those pixels of the output image that do not correspond to any valid pixels in the input image.
 	*/
-	template<typename pixel_t, typename out_t> void maskedBinning(const Image<pixel_t>& in, Image<out_t>& out, size_t amount, pixel_t badValue, out_t undefinedValue, bool indicateProgress = true)
+	template<typename pixel_t, typename out_t> void maskedBinning(const Image<pixel_t>& in, Image<out_t>& out, size_t amount, pixel_t badValue, out_t undefinedValue)
 	{
 		out.mustNotBe(in);
 		coord_t binSize = (coord_t)amount;
 		out.ensureSize(round(Vec3d(in.dimensions()) / (double)binSize));
 
-		size_t counter = 0;
+		ProgressIndicator progress(out.depth());
 #pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
 		{
@@ -591,15 +587,15 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, out.depth(), indicateProgress);
+			progress.step();
 		}
 	}
 
 	namespace internals
 	{
-		template<typename in_t, typename out_t, typename real_t> void scaleHelper(const Image<in_t>& in, Image<out_t>& out, const Interpolator<out_t, in_t, real_t>& interpolate = LinearInterpolator<out_t, in_t>(BoundaryCondition::Zero), bool indicateProgress = true, const Vec3d& factor = Vec3d(0, 0, 0), const Vec3d& delta = Vec3d(0, 0, 0))
+		template<typename in_t, typename out_t, typename real_t> void scaleHelper(const Image<in_t>& in, Image<out_t>& out, const Interpolator<out_t, in_t, real_t>& interpolate = LinearInterpolator<out_t, in_t>(BoundaryCondition::Zero), const Vec3d& factor = Vec3d(0, 0, 0), const Vec3d& delta = Vec3d(0, 0, 0))
 		{
-			size_t counter = 0;
+			ProgressIndicator progress(out.depth());
 			#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t z = 0; z < out.depth(); z++)
 			{
@@ -614,7 +610,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, out.depth(), indicateProgress);
+				progress.step();
 			}
 
 		}
@@ -625,11 +621,10 @@ namespace itl2
 	@param in Input image.
 	@param out Output image.
 	@param interp Interpolation type.
-	@param indicateProgress Set to true to show a progress bar.
 	@param factor Scaling factor. If zero or negative, determined from dimensions of input and output image.
 	@param delta Shift that is added to coordinates of each input point. Used in distributed processing.
 	*/
-	template<typename in_t, typename out_t> void scale(const Image<in_t>& in, Image<out_t>& out, bool averageWhenDownSizing = true, InterpolationMode interp = InterpolationMode::Linear, BoundaryCondition bc = BoundaryCondition::Zero, bool indicateProgress = true, Vec3d factor = Vec3d(0, 0, 0), const Vec3d& delta = Vec3d(0, 0, 0))
+	template<typename in_t, typename out_t> void scale(const Image<in_t>& in, Image<out_t>& out, bool averageWhenDownSizing = true, InterpolationMode interp = InterpolationMode::Linear, BoundaryCondition bc = BoundaryCondition::Zero, Vec3d factor = Vec3d(0, 0, 0), const Vec3d& delta = Vec3d(0, 0, 0))
 	{
 		in.mustNotBe(out);
 
@@ -675,11 +670,11 @@ namespace itl2
 			Image<typename NumberUtils<in_t>::FloatType> temp;
 			convert(in, temp);
 			internals::sepgauss(temp, sigma, -1, -1, bc);
-			internals::scaleHelper<typename NumberUtils<in_t>::FloatType, out_t, typename NumberUtils<in_t>::RealFloatType>(temp, out, *createInterpolator<out_t, typename NumberUtils<in_t>::FloatType>(interp, bc), indicateProgress, factor, delta);
+			internals::scaleHelper<typename NumberUtils<in_t>::FloatType, out_t, typename NumberUtils<in_t>::RealFloatType>(temp, out, *createInterpolator<out_t, typename NumberUtils<in_t>::FloatType>(interp, bc), factor, delta);
 		}
 		else
 		{
-			internals::scaleHelper<in_t, out_t>(in, out, *createInterpolator<out_t, in_t>(interp, bc), indicateProgress, factor, delta);
+			internals::scaleHelper<in_t, out_t>(in, out, *createInterpolator<out_t, in_t>(interp, bc), factor, delta);
 		}
 	}
 
@@ -691,11 +686,10 @@ namespace itl2
 	Supports only positive integer scaling factors, i.e. only upscaling.
 	@param in Input image.
 	@param out Output image.
-	@param indicateProgress Set to true to show a progress bar.
 	@param factor Scaling factor. If zero or negative, determined from dimensions of input and output image.
 	@param outputOrigin If processing a block of a full image, value of this argument is the origin of the output image in the coordinates of the full image. Used in distributed processing.
 	*/
-	template<typename pixel_t> void scaleLabels(const Image<pixel_t>& in, Image<pixel_t>& out, bool indicateProgress = true, Vec3c factor = Vec3c(0, 0, 0), const Vec3c& outputOrigin = Vec3c(0, 0, 0))
+	template<typename pixel_t> void scaleLabels(const Image<pixel_t>& in, Image<pixel_t>& out, Vec3c factor = Vec3c(0, 0, 0), const Vec3c& outputOrigin = Vec3c(0, 0, 0))
 	{
 		// TODO: This might work better if the radius of the median filtering was 0.5 * scale and not 1.0 * scale.
 
@@ -709,7 +703,7 @@ namespace itl2
 		if((out.dimensions() - in.dimensions().componentwiseMultiply(factor)).abs().max() > 1)
 			out.ensureSize(in.dimensions().componentwiseMultiply(factor));
 
-		size_t counter = 0;
+		ProgressIndicator progress(out.depth());
 		#pragma omp parallel if(!omp_in_parallel() && out.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
 			std::array<coord_t, 27> counts;
@@ -844,7 +838,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, out.depth(), indicateProgress);
+				progress.step();
 			}
 		}
 	}
@@ -904,7 +898,7 @@ namespace itl2
 
 		std::vector<Vec3f> shifts = defPoints - refPoints;
 
-		size_t counter = 0;
+		ProgressIndicator progress(out.depth());
 		#pragma omp parallel for if (!omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
 		{
@@ -921,7 +915,7 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, out.pixelCount());
+			progress.step();
 		}
 
 	}
@@ -937,14 +931,12 @@ namespace itl2
 	z coordinate is the same coordinate than in the input image (but accounts for the position of the origin given in the inCenter parameter).
 	@param inCenter Origin of the cylindrical coordinates in the input image.
 	@param interpolate Interpolator object.
-	@param showProgressIndicator Flag to indicate whether progress info should be shown.
 	*/
 	template<typename pixel_t> void cartesianToCylindrical(
 		Image<pixel_t>& input,
 		Image<pixel_t>& output,
 		const Vec3f& inCenter,
-		const Interpolator<pixel_t, pixel_t>& interpolate = LinearInterpolator<pixel_t, pixel_t>(BoundaryCondition::Zero),
-		bool showProgressIndicator = true)
+		const Interpolator<pixel_t, pixel_t>& interpolate = LinearInterpolator<pixel_t, pixel_t>(BoundaryCondition::Zero))
 	{
 		// In the output image
 		// x == r
@@ -968,8 +960,7 @@ namespace itl2
 
 				// Assign to output image.
 				output(x, y, z) = inval;
-			},
-			showProgressIndicator);
+			});
 	}
 
 

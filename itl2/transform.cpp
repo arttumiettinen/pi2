@@ -128,7 +128,7 @@ namespace itl2
 				img(2, 2) = 255;
 
 				Image<uint8_t> out;
-				itl2::scaleLabels(img, out, true, Vec3c(10, 10, 10));
+				itl2::scaleLabels(img, out, Vec3c(10, 10, 10));
 				raw::writed(out, "./scale_labels/small");
 			}
 
@@ -138,7 +138,7 @@ namespace itl2
 				raw::read(img, "../test_input_data/t1-head_bin");
 
 				Image<uint8_t> out;
-				itl2::scaleLabels(img, out, true, Vec3c(5, 5, 5));
+				itl2::scaleLabels(img, out, Vec3c(5, 5, 5));
 				raw::writed(out, "./scale_labels/head");
 			}
 		}

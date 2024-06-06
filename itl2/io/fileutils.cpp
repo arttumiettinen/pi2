@@ -124,8 +124,9 @@ namespace itl2
 		LPVOID lpData
 	)
 	{
-		//showProgress(TotalBytesTransferred.QuadPart, TotalFileSize.QuadPart + 1);
-		cout << bytesToString((double)TotalBytesTransferred.QuadPart) << " / " << bytesToString((double)TotalFileSize.QuadPart) << "\r";
+		// TODO: This should use ProgressIndicator.
+		//cout << bytesToString((double)TotalBytesTransferred.QuadPart) << " / " << bytesToString((double)TotalFileSize.QuadPart) << "\r";
+		
 		return PROGRESS_CONTINUE;
 	};
 #endif
@@ -134,7 +135,7 @@ namespace itl2
 	Copies a file.
 	The destination file is overwritten.
 	*/
-	void copyFile(const std::string& sourceName, const std::string& destinationName, bool showProgressInfo)
+	void copyFile(const std::string& sourceName, const std::string& destinationName)
 	{
 		fs::path p1(sourceName);
 		fs::path p2(destinationName);
@@ -158,14 +159,9 @@ namespace itl2
 
 		BOOL cancel = FALSE;
 		LPPROGRESS_ROUTINE progress = nullptr;
-		if (showProgressInfo)
-			progress = &progressRoutine;
 		
 		if (CopyFileExA(sourceName.c_str(), destinationName.c_str(), progress, NULL, &cancel, 0) == 0)
 			throw ITLException(string("Unable to copy ") + sourceName + " to " + destinationName);
-
-		if(showProgressInfo)
-			cout << "                          \r" << flush;
 #else
 
 #error fileutils.cpp not configured for this platform.

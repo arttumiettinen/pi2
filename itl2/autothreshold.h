@@ -689,8 +689,7 @@ namespace itl2
 			double arg0,
 			double arg1,
 			double arg2,
-			double arg3,
-			bool showProgressInfo)
+			double arg3)
 		{
 			double th;
 
@@ -722,7 +721,7 @@ namespace itl2
 				size_t count = pixelRound<size_t>(binCount);
 
 				Image<double> hist(count);
-				histogram<pixel_t, double, double>(img, hist, Vec2d(rangeMin, rangeMax), 0, nullptr, showProgressInfo);
+				histogram<pixel_t, double, double>(img, hist, Vec2d(rangeMin, rangeMax), 0, nullptr);
 
 				double bin = internals::histogramAutoThreshold(hist, method, arg);
 				th = bin / count * (rangeMax - rangeMin) + rangeMin;
@@ -782,7 +781,7 @@ namespace itl2
 		double arg2 = std::numeric_limits<double>::quiet_NaN(),
 		double arg3 = std::numeric_limits<double>::quiet_NaN())
 	{
-		double th = internals::autoThresholdValue(img, method, arg0, arg1, arg2, arg3, true);
+		double th = internals::autoThresholdValue(img, method, arg0, arg1, arg2, arg3);
 
 		pixel_t thi = pixelRound<pixel_t>(th);
 
@@ -806,7 +805,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType localThresholdProcessNeighbourhood(const Image<pixel_t>& nb, const Image<pixel_t>& mask, const LocalThresholdSettings& settings)
 		{
-			double th = autoThresholdValue(nb, settings.method, settings.arg0, settings.arg1, settings.arg2, settings.arg3, false);
+			double th = autoThresholdValue(nb, settings.method, settings.arg0, settings.arg1, settings.arg2, settings.arg3);
 			if (intuitive::gt(nb(nb.dimensions() / 2), th))
 				return (typename NumberUtils<pixel_t>::FloatType)1;
 			else

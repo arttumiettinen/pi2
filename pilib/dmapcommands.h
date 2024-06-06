@@ -83,7 +83,7 @@ namespace pilib
 		{
 			size_t dim = pop<size_t>(args);
 
-			itl2::internals::processDimension(img, dim, nullptr, true);
+			itl2::internals::processDimension(img, dim, nullptr);
 		}
 
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override

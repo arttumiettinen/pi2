@@ -351,7 +351,7 @@ namespace itl2
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
 
 			size_t unsafeChunkCount = 0;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			internals::forAllChunks(imageDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
 					fs::create_directories(chunkFolder);
@@ -404,7 +404,7 @@ namespace itl2
 
 			size_t dimensionality = getDimensionality(imageDimensions);
 			vector<Vec3c> result;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			internals::forAllChunks(imageDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						result.push_back(chunkIndex);
@@ -537,7 +537,7 @@ namespace itl2
 			internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
 		}
 
-		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
+		void endConcurrentWrite(const std::string& path)
 		{
 			bool isNativeByteOrder;
 			Vec3c fileDimensions;
@@ -549,7 +549,7 @@ namespace itl2
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 			size_t dimensionality = getDimensionality(fileDimensions);
 
-			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			internals::forAllChunks(fileDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
@@ -609,11 +609,11 @@ namespace itl2
 				cout << "Testing chunk size " << chunkSize << ", compression = " << toString(compression) << endl;
 
 				// Write
-				nn5::write(img, "./nn5_testimage", chunkSize, compression, true);
+				nn5::write(img, "./nn5_testimage", chunkSize, compression);
 
 				// Read
 				Image<uint16_t> read;
-				nn5::read(read, "./nn5_testimage", true);
+				nn5::read(read, "./nn5_testimage");
 
 				raw::writed(read, "./nn5_results/read_from_disk");
 
@@ -829,7 +829,7 @@ namespace itl2
 					vector<nn5::NN5Process> processes;
 
 					Vec3c processBlockSize(30, 30, 30);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
@@ -870,13 +870,13 @@ namespace itl2
 					vector<nn5::NN5Process> processes;
 
 					Vec3c processBlockSize(30, 31, 32);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					nn5::internals::forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							nn5::writeBlock(img, entireImageFile, chunkSize, compression, processBlockStart, dimensions, processBlockStart, processBlockSize);
 						});

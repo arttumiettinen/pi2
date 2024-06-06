@@ -65,7 +65,7 @@ int main()
 
 	//test(itl2::io::tests::badnn5, "reading bad nn5");
 
-	//test(itl2::tests::progress, "progress indicator");
+	test(itl2::tests::progress, "progress indicator");
 
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
@@ -240,7 +240,7 @@ int main()
 	//test(itl2::tests::pathopening2d, "Path opening 2D");
 	//test(itl2::tests::csa, "Cross-section analysis");
 
-	test(itl2::tests::imagemetadata, "image metadata");
+	//test(itl2::tests::imagemetadata, "image metadata");
 
 	//test(itl2::tests::pointsToDeformed, "points to deformed");
 	

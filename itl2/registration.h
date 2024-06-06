@@ -46,8 +46,8 @@ namespace itl2
 				getNeighbourhood(reference, refPoint, r, refBlockOrig, BoundaryCondition::Zero);
 				getNeighbourhood(deformed, defPointRounded, r, defBlockOrig, BoundaryCondition::Zero);
 
-				maskedBinning(refBlockOrig, refBlock, binningSize, (float32_t)0, (float32_t)0, false);
-				maskedBinning(defBlockOrig, defBlock, binningSize, (float32_t)0, (float32_t)0, false);
+				maskedBinning(refBlockOrig, refBlock, binningSize, (float32_t)0, (float32_t)0);
+				maskedBinning(defBlockOrig, defBlock, binningSize, (float32_t)0, (float32_t)0);
 			}
 			else
 			{
@@ -261,7 +261,7 @@ namespace itl2
 		accuracy.ensureSize(refGrid.pointCounts());
 		defPoints.ensureSize(refGrid.pointCounts());
 
-		size_t counter = 0;
+		ProgressIndicator progress(defPoints.depth());
 		#pragma omp parallel for if(!omp_in_parallel())
 		for (coord_t z = 0; z < defPoints.depth(); z++)
 		{
@@ -278,9 +278,8 @@ namespace itl2
 					defPoints(x, y, z) = defPoint;
 					accuracy(x, y, z) = (float32_t)gof;
 				}
-
-				showThreadProgress(counter, defPoints.depth() * defPoints.height());
 			}
+			progress.step();
 		}
 	}
 
@@ -297,7 +296,7 @@ namespace itl2
 		accuracy.ensureSize(refGrid.pointCounts());
 		defPoints.ensureSize(refGrid.pointCounts());
 
-		size_t counter = 0;
+		ProgressIndicator progress(defPoints.depth());
 #pragma omp parallel for if(!omp_in_parallel())
 		for (coord_t z = 0; z < defPoints.depth(); z++)
 		{
@@ -314,9 +313,9 @@ namespace itl2
 					defPoints(x, y, z) = defPoint;
 					accuracy(x, y, z) = (float32_t)gof;
 				}
-
-				showThreadProgress(counter, defPoints.depth() * defPoints.height());
 			}
+
+			defPoints.depth();
 		}
 	}
 
@@ -353,10 +352,10 @@ namespace itl2
 		Image<def_t> deformedBlock(defEnd - defStart);
 
 		std::cout << "Loading block of reference image, size = " << (referenceBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << std::endl;
-		io::readBlock(referenceBlock, referenceFile, refStart, true);
+		io::readBlock(referenceBlock, referenceFile, refStart);
 
 		std::cout << "Loading block of deformed image, size  = " << (deformedBlock.pixelCount() * sizeof(ref_t) / (1024 * 1024)) << " MiB." << std::endl;
-		io::readBlock(deformedBlock, deformedFile, defStart, true);
+		io::readBlock(deformedBlock, deformedFile, defStart);
 
 		// Calculate normalization factors for gray values
 		// NOTE: This calculates the normalization factors for region that is not the assumed overlapping region but
@@ -397,7 +396,7 @@ namespace itl2
 		//std::cout << "Initial translation = " << mipTranslation << std::endl;
 
 
-		size_t counter = 0;
+		ProgressIndicator progress(defPoints.depth());
 		#pragma omp parallel for if(!omp_in_parallel())
 		for (coord_t z = 0; z < defPoints.depth(); z++)
 		{
@@ -414,9 +413,8 @@ namespace itl2
 					defPoints(x, y, z) = defPoint + Vec3d(defStart);
 					accuracy(x, y, z) = (float32_t)gof;
 				}
-
-				showThreadProgress(counter, defPoints.depth() * defPoints.height());
 			}
+			progress.step();
 		}
 	}
 
@@ -497,7 +495,7 @@ namespace itl2
 	@param defPoints Locations of points in the deformed image corresponding to the reference points.
 	@param pullbackPos Position of the pullback image in the reference image coordinates.
 	*/
-	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Vec3d& pullbackPos, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
 	{
 		deformed.mustNotBe(pullback);
 
@@ -509,7 +507,7 @@ namespace itl2
 
 		LinearInterpolator<Vec3d, Vec3d, double, Vec3d> shiftInterpolator(BoundaryCondition::Nearest);
 
-		size_t counter = 0;
+		ProgressIndicator progress(pullback.depth());
 		#pragma omp parallel for if(pullback.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < pullback.depth(); z++)
 		{
@@ -528,13 +526,13 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, pullback.depth(), showProgressInfo);
+			progress.step();
 		}
 	}
 
-	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest), bool showProgressInfo = true)
+	template<typename def_t, typename result_t> void reverseDeformation(const Image<def_t>& deformed, Image<result_t>& pullback, const PointGrid3D<coord_t>& refGrid, const Image<Vec3d>& defPoints, const Interpolator<result_t, def_t, double>& interpolator = LinearInterpolator<result_t, def_t, double, double>(BoundaryCondition::Nearest))
 	{
-		reverseDeformation<def_t, result_t>(deformed, pullback, refGrid, defPoints, Vec3d(0, 0, 0), interpolator, showProgressInfo);
+		reverseDeformation<def_t, result_t>(deformed, pullback, refGrid, defPoints, Vec3d(0, 0, 0), interpolator);
 	}
 
 	/*

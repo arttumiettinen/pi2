@@ -32,7 +32,7 @@ namespace itl2
 	Copies a file.
 	The destination file is overwritten.
 	*/
-	void copyFile(const std::string& sourceName, const std::string& destinationName, bool showProgressInfo);
+	void copyFile(const std::string& sourceName, const std::string& destinationName);
 
 	/**
 	Moves a file.

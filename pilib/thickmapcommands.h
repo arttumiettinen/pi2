@@ -179,7 +179,7 @@ namespace pilib
 
 			// Process
 			// TODO: If reading from memory mapped file becomes a problem, we can make a version that saves more data to the temp files, but does not need dmap2Full.
-			itl2::internals::processDimensionSuper<pixel_t>(ri, dim, dmap2, tmap2, true, AABox<coord_t>::fromMinMax(blockOrigin, dmap2.dimensions()), dmap2Full);
+			itl2::internals::processDimensionSuper<pixel_t>(ri, dim, dmap2, tmap2, AABox<coord_t>::fromMinMax(blockOrigin, dmap2.dimensions()), dmap2Full);
 
 
 			// Write temporary file, if any
@@ -285,12 +285,12 @@ namespace pilib
 		{
 			if (!saveMemory)
 			{
-				dimredsuper::thickmap2<pixel_t>(in, out, nullptr, nullptr, true);
+				dimredsuper::thickmap2<pixel_t>(in, out, nullptr, nullptr);
 			}
 			else
 			{
 				setValue(out, in);
-				optimized::thickmap2(out, nullptr, true);
+				optimized::thickmap2(out, nullptr);
 			}
 		}
 

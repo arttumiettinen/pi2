@@ -44,9 +44,10 @@ namespace itl2
 		Classifies all pixels in the image. Overwrites the image.
 		*/
 		template<typename pixel_t, bool test(Image<pixel_t>& nb), int value>
-		void classify(Image<pixel_t>& img, bool showProgress)
+		void classify(Image<pixel_t>& img)
 		{
 			size_t totalProcessed = 0;
+			ProgressIndicator progress(img.depth());
 			#pragma omp parallel if(!omp_in_parallel())
 			{
 
@@ -69,7 +70,7 @@ namespace itl2
 						}
 					}
 
-					showThreadProgress(totalProcessed, img.depth(), showProgress);
+					progress.step();
 				}
 			}
 		}
@@ -339,27 +340,27 @@ namespace itl2
 	@param curveEnds Set to true to classify curve endpoints separately from curve points.
 	@param curveAndIntersectionOnly Set to true to skip classes JUNCTION, INTERNAL, and EDGE, and to set all those to BRANCHING.
 	*/
-	template<typename pixel_t> void classifySkeleton(Image<pixel_t>& img, bool curveEnds, bool curveAndIntersectionOnly, bool showProgress, pixel_t edgeValue = internals::BRANCHING)
+	template<typename pixel_t> void classifySkeleton(Image<pixel_t>& img, bool curveEnds, bool curveAndIntersectionOnly, pixel_t edgeValue = internals::BRANCHING)
 	{
 		threshold(img, (pixel_t)0);
 
 		if(curveEnds)
-			internals::classify<pixel_t, internals::testCurveEnd<pixel_t>, internals::ENDPOINT>(img, showProgress);
+			internals::classify<pixel_t, internals::testCurveEnd<pixel_t>, internals::ENDPOINT>(img);
 
-		internals::classify<pixel_t, internals::testCurve<pixel_t>, internals::CURVE>(img, showProgress);
+		internals::classify<pixel_t, internals::testCurve<pixel_t>, internals::CURVE>(img);
 
 		if (!curveAndIntersectionOnly)
 		{
 			// Proceed with classification normally
-			internals::classify<pixel_t, internals::testBranching<pixel_t>, internals::BRANCHING>(img, showProgress);
-			internals::classify<pixel_t, internals::testJunction<pixel_t>, internals::JUNCTION>(img, showProgress);
-			internals::classify<pixel_t, internals::testInternal<pixel_t>, internals::INTERNAL>(img, showProgress);
-			internals::classify<pixel_t, internals::testAlwaysTrue<pixel_t>, internals::EDGE>(img, showProgress);
+			internals::classify<pixel_t, internals::testBranching<pixel_t>, internals::BRANCHING>(img);
+			internals::classify<pixel_t, internals::testJunction<pixel_t>, internals::JUNCTION>(img);
+			internals::classify<pixel_t, internals::testInternal<pixel_t>, internals::INTERNAL>(img);
+			internals::classify<pixel_t, internals::testAlwaysTrue<pixel_t>, internals::EDGE>(img);
 		}
 		else
 		{
 			// Set all unclassified points to BRANCHING
-			internals::classify<pixel_t, internals::testAlwaysTrue<pixel_t>, internals::BRANCHING>(img, showProgress);
+			internals::classify<pixel_t, internals::testAlwaysTrue<pixel_t>, internals::BRANCHING>(img);
 		}
 
 		internals::handleEdges(img, edgeValue);
@@ -818,7 +819,7 @@ namespace itl2
 			//classifySkeleton(img, true, false, false, edgeValue);
 			// Set edges to zero as non-zero edges cause confusion between real and block edges in multithreading and distributed processing.
 			setEdges(img, 0);
-			classifySkeleton(img, true, false, false);
+			classifySkeleton(img, true, false);
 
 			// Convert non-CURVE labels to BRANCHING so that all intersection regions have the same value.
 			// (We will flood fill them later)
@@ -847,6 +848,7 @@ namespace itl2
 			}
 
 			// Find intersection point or fibre end point
+			ProgressIndicator progress(classified.depth());
 			for (coord_t z = 0; z < classified.depth(); z++)
 			{
 				for (coord_t y = 0; y < classified.height(); y++)
@@ -865,7 +867,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, progressMax);
+				progress.step();
 			}
 
 
@@ -1097,7 +1099,7 @@ namespace itl2
 			// Process all edges where both end points are known.
 			{
 				std::vector<IncompleteEdge> incompleteEdgesTemp;
-				size_t counter = 0;
+				ProgressIndicator progress(incompleteEdges.size());
 				for (size_t n = 0; n < incompleteEdges.size(); n++)
 				{
 					IncompleteEdge& e = incompleteEdges[n];
@@ -1117,7 +1119,7 @@ namespace itl2
 						incompleteEdgesTemp.push_back(e);
 					}
 
-					showThreadProgress(counter, incompleteEdges.size());
+					progress.step();
 				}
 				incompleteEdges = incompleteEdgesTemp;
 			}
@@ -1153,62 +1155,66 @@ namespace itl2
 
 			Image<std::vector<size_t> > grid(100, 100, 100);
 
-			std::cout << "Divide end points to a grid..." << std::endl;
-			size_t counter = 0;
-			for (size_t n = 0; n < incompleteEdges.size(); n++)
 			{
-				IncompleteEdge& e = incompleteEdges[n];
+				std::cout << "Divide end points to a grid..." << std::endl;
+				ProgressIndicator progress(incompleteEdges.size());
+				for (size_t n = 0; n < incompleteEdges.size(); n++)
+				{
+					IncompleteEdge& e = incompleteEdges[n];
 
-				if (e.verts[0] < 0)
-					insertPoint(e.points.front(), n, grid, m, M);
+					if (e.verts[0] < 0)
+						insertPoint(e.points.front(), n, grid, m, M);
 
-				if (e.verts[1] < 0)
-					insertPoint(e.points.back(), n, grid, m, M);
+					if (e.verts[1] < 0)
+						insertPoint(e.points.back(), n, grid, m, M);
 
-				showThreadProgress(counter, incompleteEdges.size());
+					progress.step();
+				}
 			}
 
 
-			std::cout << "Determine overlaps..." << std::endl;
-			counter = 0;
-			#pragma omp parallel for if(!omp_in_parallel())
-			for (coord_t i = 0; i < grid.pixelCount(); i++)
 			{
-				auto& list = grid(i);
-
-				for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
+				std::cout << "Determine overlaps..." << std::endl;
+				ProgressIndicator progress(grid.pixelCount());
+#pragma omp parallel for if(!omp_in_parallel())
+				for (coord_t i = 0; i < grid.pixelCount(); i++)
 				{
-					size_t n = list[ni];
-					const IncompleteEdge& v1 = incompleteEdges[n];
+					auto& list = grid(i);
 
-					for (size_t mi = ni + 1; mi < list.size(); mi++)
+					for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
 					{
-						size_t m = list[mi];
-						const IncompleteEdge& v2 = incompleteEdges[m];
+						size_t n = list[ni];
+						const IncompleteEdge& v1 = incompleteEdges[n];
 
-						// Only test if the vertices have not been connected yet.
-						// There is a race condition between union_sets below and find_sets on this line, but
-						// that may only result in the test below evaluating true even though it should be
-						// false, and in that case we just do some extra work.
-						if (forest.find_set(n) != forest.find_set(m))
+						for (size_t mi = ni + 1; mi < list.size(); mi++)
 						{
-							// Test if the incomplete edges are neighbours in some way
-							if (isNeighbour(v2.points.front(), v1.points.back()) ||
-								isNeighbour(v2.points.front(), v1.points.front()) ||
-								isNeighbour(v2.points.back(), v1.points.front()) ||
-								isNeighbour(v2.points.back(), v1.points.back()))
+							size_t m = list[mi];
+							const IncompleteEdge& v2 = incompleteEdges[m];
+
+							// Only test if the vertices have not been connected yet.
+							// There is a race condition between union_sets below and find_sets on this line, but
+							// that may only result in the test below evaluating true even though it should be
+							// false, and in that case we just do some extra work.
+							if (forest.find_set(n) != forest.find_set(m))
 							{
-								// v1 and v2 are neighbours, so the edges must be combined
-								#pragma omp critical(forestInsert)
+								// Test if the incomplete edges are neighbours in some way
+								if (isNeighbour(v2.points.front(), v1.points.back()) ||
+									isNeighbour(v2.points.front(), v1.points.front()) ||
+									isNeighbour(v2.points.back(), v1.points.front()) ||
+									isNeighbour(v2.points.back(), v1.points.back()))
 								{
-									forest.union_sets(n, m);
+									// v1 and v2 are neighbours, so the edges must be combined
+#pragma omp critical(forestInsert)
+									{
+										forest.union_sets(n, m);
+									}
 								}
 							}
 						}
 					}
-				}
 
-				showThreadProgress(counter, grid.pixelCount());
+					progress.step();
+				}
 			}
 
 
@@ -1228,222 +1234,224 @@ namespace itl2
 			// Combine edge point groups
 			// TODO: This loop is slow-ish compared to other processes that happen in this function. Are findVertex function calls the reason?
 			std::vector<IncompleteEdge> newIncompleteEdges;
-			counter = 0;
-			#pragma omp parallel for if(!omp_in_parallel())
-			for (coord_t n = 0; n < (coord_t)combinedEdges.size(); n++)
 			{
-				std::vector<size_t> indices = combinedEdges[n];
-				if (indices.size() > 0)
+				ProgressIndicator progress(combinedEdges.size());
+#pragma omp parallel for if(!omp_in_parallel())
+				for (coord_t n = 0; n < (coord_t)combinedEdges.size(); n++)
 				{
-
-
-					//for (size_t i : indices)
-					//{
-					//	IncompleteEdge& e = incompleteEdges[i];
-					//	if (e.points.front() == stopPoint ||
-					//		e.points.back() == stopPoint)
-					//	{
-					//		std::cout << "Stop point encountered" << std::endl;
-					//	}
-					//}
-
-
-					// Measure average area
-					double w = 0;
-					double sum = 0;
-					for (size_t i : indices)
+					std::vector<size_t> indices = combinedEdges[n];
+					if (indices.size() > 0)
 					{
-						EdgeMeasurements& m = incompleteEdges[i].properties;
-						if (!std::isnan(m.area)) // area may be nan if the length of the branch is too short for area to be measured.
+
+
+						//for (size_t i : indices)
+						//{
+						//	IncompleteEdge& e = incompleteEdges[i];
+						//	if (e.points.front() == stopPoint ||
+						//		e.points.back() == stopPoint)
+						//	{
+						//		std::cout << "Stop point encountered" << std::endl;
+						//	}
+						//}
+
+
+						// Measure average area
+						double w = 0;
+						double sum = 0;
+						for (size_t i : indices)
 						{
-							sum += (double)m.area * (double)m.length;
-							w += m.length;
-						}
-					}
-					float32_t areaApproximation = (float32_t)(sum / w);
-
-					// Build point list and measure length
-					Vec2c finalVerts = incompleteEdges[indices[0]].verts;
-					std::vector<Vec3sc> finalPoints = incompleteEdges[indices[0]].points;
-
-					indices.erase(indices.begin());
-					while (indices.size() > 0)
-					{
-						// Find the next edge to be combined with the current one.
-						bool found = false;
-						for (size_t m = 0; m < indices.size(); m++)
-						{
-							IncompleteEdge& candidate = incompleteEdges[indices[m]];
-							if (candidate.verts[0] < 0 && finalVerts[1] < 0 &&
-								isNeighbour(finalPoints.back(), candidate.points.front()))
+							EdgeMeasurements& m = incompleteEdges[i].properties;
+							if (!std::isnan(m.area)) // area may be nan if the length of the branch is too short for area to be measured.
 							{
-								// Combine like this: finalPoints -- candidate
-
-								finalPoints.insert(finalPoints.end(), candidate.points.begin(), candidate.points.end());
-
-								//if (candidate.verts[0] >= 0 || finalVerts[1] >= 0)
-								//	throw logic_error("Invalid graph (back-front).");
-
-								finalVerts[1] = candidate.verts[1];
-								found = true;
-							}
-							else if (candidate.verts[1] < 0 && finalVerts[1] < 0 &&
-								isNeighbour(finalPoints.back(), candidate.points.back()))
-							{
-								// Combine like this: finalPoints -- candidate reversed
-								std::reverse(candidate.points.begin(), candidate.points.end());
-								finalPoints.insert(finalPoints.end(), candidate.points.begin(), candidate.points.end());
-
-								//if (candidate.verts[1] >= 0 || finalVerts[1] >= 0)
-								//	throw logic_error("Invalid graph (back-back).");
-
-								finalVerts[1] = candidate.verts[0];
-								found = true;
-							}
-							else if (candidate.verts[1] < 0 && finalVerts[0] < 0 &&
-								isNeighbour(finalPoints.front(), candidate.points.back()))
-							{
-								// Combine like this: candidate -- finalPoints
-
-								finalPoints.insert(finalPoints.begin(), candidate.points.begin(), candidate.points.end());
-
-								//if (candidate.verts[1] >= 0 || finalVerts[0] >= 0)
-								//	throw logic_error("Invalid graph (front-back).");
-
-								finalVerts[0] = candidate.verts[0];
-								found = true;
-							}
-							else if (candidate.verts[0] < 0 && finalVerts[0] < 0 &&
-								isNeighbour(finalPoints.front(), candidate.points.front()))
-							{
-								// Combine like this: candidate reversed -- finalPoints
-								std::reverse(candidate.points.begin(), candidate.points.end());
-								finalPoints.insert(finalPoints.begin(), candidate.points.begin(), candidate.points.end());
-
-								//if (candidate.verts[0] >= 0 || finalVerts[0] >= 0)
-								//	throw logic_error("Invalid graph (front-front).");
-
-								finalVerts[0] = candidate.verts[1];
-								found = true;
-							}
-
-							if (found)
-							{
-								indices.erase(indices.begin() + m);
-								break;
+								sum += (double)m.area * (double)m.length;
+								w += m.length;
 							}
 						}
+						float32_t areaApproximation = (float32_t)(sum / w);
 
-						if (!found)
-							throw std::logic_error("Continuation not found.");
-					}
+						// Build point list and measure length
+						Vec2c finalVerts = incompleteEdges[indices[0]].verts;
+						std::vector<Vec3sc> finalPoints = incompleteEdges[indices[0]].points;
 
-					// If some end of the edge is still unknown, try connecting it to one of the incomplete vertices.
-					// Try also completed vertices if the incomplete ones do not match.
-					// NOTE: This does not account for the possibility that there are multiple incomplete vertices that should
-					// be connected to this edge. Is that situation even possible?
-					//if (finalVerts[0] < 0)
-					//	finalVerts[0] = findVertex(net.incompleteVertices, finalPoints.front(), -1);
-					//if (finalVerts[0] < 0)
-					//	finalVerts[0] = findVertex(completedVertices, finalPoints.front(), -1);
+						indices.erase(indices.begin());
+						while (indices.size() > 0)
+						{
+							// Find the next edge to be combined with the current one.
+							bool found = false;
+							for (size_t m = 0; m < indices.size(); m++)
+							{
+								IncompleteEdge& candidate = incompleteEdges[indices[m]];
+								if (candidate.verts[0] < 0 && finalVerts[1] < 0 &&
+									isNeighbour(finalPoints.back(), candidate.points.front()))
+								{
+									// Combine like this: finalPoints -- candidate
 
-					//if (finalVerts[1] < 0)
-					//	finalVerts[1] = findVertex(net.incompleteVertices, finalPoints.back(), -1);
-					//if (finalVerts[1] < 0)
-					//	finalVerts[1] = findVertex(completedVertices, finalPoints.back(), -1);
+									finalPoints.insert(finalPoints.end(), candidate.points.begin(), candidate.points.end());
 
-					if (finalVerts[0] < 0)
-					{
-						finalVerts[0] = findVertex(completedVertices, finalPoints.front(), -1);
+									//if (candidate.verts[0] >= 0 || finalVerts[1] >= 0)
+									//	throw logic_error("Invalid graph (back-front).");
+
+									finalVerts[1] = candidate.verts[1];
+									found = true;
+								}
+								else if (candidate.verts[1] < 0 && finalVerts[1] < 0 &&
+									isNeighbour(finalPoints.back(), candidate.points.back()))
+								{
+									// Combine like this: finalPoints -- candidate reversed
+									std::reverse(candidate.points.begin(), candidate.points.end());
+									finalPoints.insert(finalPoints.end(), candidate.points.begin(), candidate.points.end());
+
+									//if (candidate.verts[1] >= 0 || finalVerts[1] >= 0)
+									//	throw logic_error("Invalid graph (back-back).");
+
+									finalVerts[1] = candidate.verts[0];
+									found = true;
+								}
+								else if (candidate.verts[1] < 0 && finalVerts[0] < 0 &&
+									isNeighbour(finalPoints.front(), candidate.points.back()))
+								{
+									// Combine like this: candidate -- finalPoints
+
+									finalPoints.insert(finalPoints.begin(), candidate.points.begin(), candidate.points.end());
+
+									//if (candidate.verts[1] >= 0 || finalVerts[0] >= 0)
+									//	throw logic_error("Invalid graph (front-back).");
+
+									finalVerts[0] = candidate.verts[0];
+									found = true;
+								}
+								else if (candidate.verts[0] < 0 && finalVerts[0] < 0 &&
+									isNeighbour(finalPoints.front(), candidate.points.front()))
+								{
+									// Combine like this: candidate reversed -- finalPoints
+									std::reverse(candidate.points.begin(), candidate.points.end());
+									finalPoints.insert(finalPoints.begin(), candidate.points.begin(), candidate.points.end());
+
+									//if (candidate.verts[0] >= 0 || finalVerts[0] >= 0)
+									//	throw logic_error("Invalid graph (front-front).");
+
+									finalVerts[0] = candidate.verts[1];
+									found = true;
+								}
+
+								if (found)
+								{
+									indices.erase(indices.begin() + m);
+									break;
+								}
+							}
+
+							if (!found)
+								throw std::logic_error("Continuation not found.");
+						}
+
+						// If some end of the edge is still unknown, try connecting it to one of the incomplete vertices.
+						// Try also completed vertices if the incomplete ones do not match.
+						// NOTE: This does not account for the possibility that there are multiple incomplete vertices that should
+						// be connected to this edge. Is that situation even possible?
+						//if (finalVerts[0] < 0)
+						//	finalVerts[0] = findVertex(net.incompleteVertices, finalPoints.front(), -1);
+						//if (finalVerts[0] < 0)
+						//	finalVerts[0] = findVertex(completedVertices, finalPoints.front(), -1);
+
+						//if (finalVerts[1] < 0)
+						//	finalVerts[1] = findVertex(net.incompleteVertices, finalPoints.back(), -1);
+						//if (finalVerts[1] < 0)
+						//	finalVerts[1] = findVertex(completedVertices, finalPoints.back(), -1);
+
 						if (finalVerts[0] < 0)
 						{
-							#pragma omp critical(netIncompleteVerticesAccess)
+							finalVerts[0] = findVertex(completedVertices, finalPoints.front(), -1);
+							if (finalVerts[0] < 0)
 							{
-								finalVerts[0] = findVertex(net.incompleteVertices, finalPoints.front(), -1);
-							}
-						}
-					}
-
-					if (finalVerts[1] < 0)
-					{
-						// Try non-loop first
-						finalVerts[1] = findVertex(completedVertices, finalPoints.back(), finalVerts[0]);
-						if (finalVerts[1] < 0)
-						{
-							#pragma omp critical(netIncompleteVerticesAccess)
-							{
-								finalVerts[1] = findVertex(net.incompleteVertices, finalPoints.back(), finalVerts[0]);
-							}
-						}
-
-						if (isFinal) // If this is not final combine call, networks to be added might contain node that corresponds to this end without causing a loop.
-						{
-							// If non-loop possibility is not found, try to find loop. (this should always succeed!)
-							if (finalVerts[1] < 0)
-							{
-								finalVerts[1] = findVertex(completedVertices, finalPoints.back(), -1);
-								if (finalVerts[1] < 0)
+#pragma omp critical(netIncompleteVerticesAccess)
 								{
-									#pragma omp critical(netIncompleteVerticesAccess)
-									{
-										finalVerts[1] = findVertex(net.incompleteVertices, finalPoints.back(), -1);
-									}
+									finalVerts[0] = findVertex(net.incompleteVertices, finalPoints.front(), -1);
 								}
 							}
 						}
-						else
+
+						if (finalVerts[1] < 0)
 						{
-							// If there is a loop possibility, we must store the possible vertex in the incomplete list again so that we can check
-							// the status in the final round.
+							// Try non-loop first
+							finalVerts[1] = findVertex(completedVertices, finalPoints.back(), finalVerts[0]);
 							if (finalVerts[1] < 0)
 							{
-								coord_t possibility = findVertex(completedVertices, finalPoints.back(), -1);
-								if (possibility >= 0)
+#pragma omp critical(netIncompleteVerticesAccess)
 								{
-									auto obj = std::find_if(completedVertices.begin(), completedVertices.end(), [&](const IncompleteVertex& v) { return v.vertexIndex == possibility; });
-									#pragma omp critical(netIncompleteVerticesAccess)
+									finalVerts[1] = findVertex(net.incompleteVertices, finalPoints.back(), finalVerts[0]);
+								}
+							}
+
+							if (isFinal) // If this is not final combine call, networks to be added might contain node that corresponds to this end without causing a loop.
+							{
+								// If non-loop possibility is not found, try to find loop. (this should always succeed!)
+								if (finalVerts[1] < 0)
+								{
+									finalVerts[1] = findVertex(completedVertices, finalPoints.back(), -1);
+									if (finalVerts[1] < 0)
 									{
-										if (!net.isIncompleteVertex(obj->vertexIndex)) // We may have moved the vertex to the 'alive incomplete' list already.
+#pragma omp critical(netIncompleteVerticesAccess)
 										{
-											net.incompleteVertices.push_back(*obj);
+											finalVerts[1] = findVertex(net.incompleteVertices, finalPoints.back(), -1);
+										}
+									}
+								}
+							}
+							else
+							{
+								// If there is a loop possibility, we must store the possible vertex in the incomplete list again so that we can check
+								// the status in the final round.
+								if (finalVerts[1] < 0)
+								{
+									coord_t possibility = findVertex(completedVertices, finalPoints.back(), -1);
+									if (possibility >= 0)
+									{
+										auto obj = std::find_if(completedVertices.begin(), completedVertices.end(), [&](const IncompleteVertex& v) { return v.vertexIndex == possibility; });
+#pragma omp critical(netIncompleteVerticesAccess)
+										{
+											if (!net.isIncompleteVertex(obj->vertexIndex)) // We may have moved the vertex to the 'alive incomplete' list already.
+											{
+												net.incompleteVertices.push_back(*obj);
+											}
 										}
 									}
 								}
 							}
 						}
-					}
 
 
 
 
 
-					//if (finalPoints.front() == stopPoint ||
-					//	finalPoints.back() == stopPoint)
-					//{
-					//	std::cout << "stop" << std::endl;
-					//}
+						//if (finalPoints.front() == stopPoint ||
+						//	finalPoints.back() == stopPoint)
+						//{
+						//	std::cout << "stop" << std::endl;
+						//}
 
 
-					#pragma omp critical(addEdge)
-					{
-						addEdge<orig_t>(finalPoints, finalVerts[0], finalVerts[1], net, pOriginal, Vec3d(), storeAllEdgePoints, smoothingSigma, maxDisplacement, areaApproximation);
-					}
+#pragma omp critical(addEdge)
+						{
+							addEdge<orig_t>(finalPoints, finalVerts[0], finalVerts[1], net, pOriginal, Vec3d(), storeAllEdgePoints, smoothingSigma, maxDisplacement, areaApproximation);
+						}
 
 #if defined(DEBUG)
-					// Sanity check
-					std::sort(finalPoints.begin(), finalPoints.end(), vecComparer<int32_t>);
-					if (std::unique(finalPoints.begin(), finalPoints.end()) != finalPoints.end())
-					{
-						std::cout << "final vert 0: " << finalVerts[0] << std::endl;
-						std::cout << "final vert 1: " << finalVerts[1] << std::endl;
-						for (const auto& p : finalPoints)
-							std::cout << p << std::endl;
+						// Sanity check
+						std::sort(finalPoints.begin(), finalPoints.end(), vecComparer<int32_t>);
+						if (std::unique(finalPoints.begin(), finalPoints.end()) != finalPoints.end())
+						{
+							std::cout << "final vert 0: " << finalVerts[0] << std::endl;
+							std::cout << "final vert 1: " << finalVerts[1] << std::endl;
+							for (const auto& p : finalPoints)
+								std::cout << p << std::endl;
 
-						throw logic_error("edge contains non-unique points.");
-					}
+							throw logic_error("edge contains non-unique points.");
+						}
 #endif
+					}
+					progress.step();
 				}
-				showThreadProgress(counter, combinedEdges.size());
 			}
 
 
@@ -1505,7 +1513,7 @@ namespace itl2
 			if (subNets.size() <= 0)
 				return;
 
-			size_t counter = 0;
+			ProgressIndicator progress(subNets.size());
 			net = subNets[0];
 			for (size_t n = 1; n < subNets.size(); n++)
 			{
@@ -1560,7 +1568,7 @@ namespace itl2
 				//std::cout << "Combine incomplete edges on processing block boundaries..." << std::endl;
 				//internals::combineIncompleteEdges(net, completedVertices, pOriginal, isLast);
 
-				showThreadProgress(counter, subNets.size());
+				progress.step();
 			}
 
 			

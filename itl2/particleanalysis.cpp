@@ -101,7 +101,8 @@ namespace itl2
 					size_t counter = 0;
 					uint8_t fillColor = internals::SpecialColors<uint8_t>::fillColor();
 					uint8_t largeColor = internals::SpecialColors<uint8_t>::largeColor();
-					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, conn, volumeLimit, fillColor, largeColor, counter, img3.depth() * img3.height(), Vec3sc(0, 0, (int32_t)minZ));
+					ProgressIndicator progress(block.depth());
+					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, conn, volumeLimit, fillColor, largeColor, Vec3sc(0, 0, (int32_t)minZ), progress);
 
 					allResults.push_back(blockResults);
 

@@ -425,7 +425,7 @@ namespace itl2
 			}
 
 
-			void inpaintNanShifts(Image<Vec3<real_t> >& shifts, float32_t tolerance = 0, bool indicateProgress = false)
+			void inpaintNanShifts(Image<Vec3<real_t> >& shifts, float32_t tolerance = 0)
 			{
 				// Convert shifts to three separate images, convert NaN values to FLAG values.
 				Image<double> u(shifts.dimensions());
@@ -442,9 +442,9 @@ namespace itl2
 				}
 
 				// Inpaint
-				inpaintGarcia(u, FLAG, indicateProgress, tolerance);
-				inpaintGarcia(v, FLAG, indicateProgress, tolerance);
-				inpaintGarcia(w, FLAG, indicateProgress, tolerance);
+				inpaintGarcia(u, FLAG, tolerance);
+				inpaintGarcia(v, FLAG, tolerance);
+				inpaintGarcia(w, FLAG, tolerance);
 
 				// Convert shifts back to vector image
 				for (coord_t n = 0; n < shifts.pixelCount(); n++)
@@ -584,7 +584,7 @@ namespace itl2
 				if (allowLocalShifts)
 				{
 					// Fill shifts with values derived from parent to me displacement fields, where available.
-					size_t counter = 0;
+					ProgressIndicator progress(worldShifts->depth());
 #pragma omp parallel for if(worldShifts->pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 					for (coord_t z = 0; z < worldShifts->depth(); z++)
 					{
@@ -693,7 +693,7 @@ namespace itl2
 							}
 						}
 
-						showThreadProgress(counter, worldShifts->depth());
+						progress.step();
 					}
 
 					// Set shifts near to valid values to nan to create a border of nans around values set from parent to me transformations.
@@ -753,7 +753,7 @@ namespace itl2
 				}
 
 				// Inpaint nan values.
-				inpaintNanShifts(*worldShifts, 0.5, true);
+				inpaintNanShifts(*worldShifts, 0.5);
 
 				if (imageDimensions.z <= 1)
 					zeroThirdDimension();
@@ -935,7 +935,7 @@ namespace itl2
 
 			std::cout << "Transforming..." << std::endl;
 			// Process all pixels in the relevant region of the target image and find source image value at each location.
-			size_t counter = 0;
+			ProgressIndicator progress(zmax - zmin);
 #pragma omp parallel for if((zmax-zmin)*(ymax-ymin)*(xmax-xmin) > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t z = zmin; z < zmax; z++)
 			{
@@ -1023,7 +1023,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, zmax - zmin);
+				progress.step();
 			}
 		}
 	}

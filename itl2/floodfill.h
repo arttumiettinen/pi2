@@ -60,7 +60,7 @@ namespace itl2
 	@param pNeighbouringColors Pointer to a set that will contain colors neighbouring the filled region. Set to null not to collect this information. Values of seed points that are not origColor, fillColor, or stopColor are added to the set, too.
 	@return True if the fill was terminated naturally; false if the fill was terminated by reaching fillLimit in filled pixel count; by encountering pixel with stopColor value; or if the origColor is fillColor.
 	*/
-	template<typename pixel_t> bool floodfillSingleThreaded(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true)
+	template<typename pixel_t> bool floodfillSingleThreaded(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr)
 	{
 		if (pFilledPointCount)
 			*pFilledPointCount = 0;
@@ -108,12 +108,12 @@ namespace itl2
 			}
 		}
 
-		size_t lastPrinted = 0;
 		size_t tmp = 0;
 		size_t* pCount = &tmp;
 		if (pFilledPointCount)
 			pCount = pFilledPointCount;
 
+		ProgressIndicator progress("");
 		while (!points.empty())
 		{
 			const Vec3c p = Vec3c(points.front());
@@ -192,21 +192,11 @@ namespace itl2
 			points.pop();
 
 			// Progress report for large fills
-			if (showProgressInfo)
+			size_t s = points.size();
+			if (s > 0 && s % 50000 == 0)
 			{
-				size_t s = points.size();
-				if (s > 0 && s % 50000 == 0 && lastPrinted != s)
-				{
-					lastPrinted = s;
-					std::cout << s << " seeds...\r" << std::flush;
-				}
+				progress.showMessage(toString(s) + " seeds");
 			}
-		}
-
-		if (showProgressInfo)
-		{
-			if (lastPrinted != 0)
-				std::cout << std::endl;
 		}
 
 		return true;
@@ -225,7 +215,7 @@ namespace itl2
 	@param pNeighbouringColors Pointer to set that will contain the colors of non-filled points neighbouring the filled region.
 	@return True if the fill was terminated naturally; false if the fill was terminated by reaching fillLimit in filled pixel count; by encountering pixel with stopColor value; or if the origColor is fillColor.
 	*/
-	template<typename pixel_t> bool floodfillSingleThreaded(Image<pixel_t>& image, const Vec3c& start, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true)
+	template<typename pixel_t> bool floodfillSingleThreaded(Image<pixel_t>& image, const Vec3c& start, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr)
 	{
 		if (!image.isInImage(start))
 			return true;
@@ -234,7 +224,7 @@ namespace itl2
 		std::vector<Vec3sc> seeds;
 		seeds.push_back(Vec3sc(start));
 
-		return floodfillSingleThreaded(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
+		return floodfillSingleThreaded(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors);
 	}
 
 	/**
@@ -251,7 +241,7 @@ namespace itl2
 	@param minBlockSize Minimum z-directional size of a block assigned to a single thread.
 	@return True if the fill was terminated naturally; false if the fill was terminated by reaching fillLimit in filled pixel count; by encountering pixel with stopColor value; or if the origColor is fillColor.
 	*/
-	template<typename pixel_t> bool floodfillBlocks(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true,
+	template<typename pixel_t> bool floodfillBlocks(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr,
 		coord_t minBlockSize = 700)
 	{
 		// Algorithm:
@@ -286,6 +276,8 @@ namespace itl2
 
 		bool totalResult = true;
 
+		ProgressIndicator progress("");
+
 		size_t round = 0;
 		do
 		{
@@ -298,15 +290,7 @@ namespace itl2
 
 				if (idx == 0)
 				{
-					if (showProgressInfo)
-					{
-						#pragma omp critical
-						{
-							if (round <= 1)
-								std::cout << "Flood-filling in maximum of " << count << " blocks." << std::endl;
-							std::cout << "Iteration " << round << std::endl;
-						}
-					}
+					progress.showMessage(string("Flood-filling in maximum of ") + toString(count) + " blocks, iteration " + toString(round));
 				}
 
 				// This barrier is required such that it is guaranteed that outputs above are shown before thread-specific
@@ -353,15 +337,9 @@ namespace itl2
 							blockSeeds.push_back(v);
 					}
 
-					if (showProgressInfo)
+					if (blockSeeds.size() > 0)
 					{
-						if (blockSeeds.size() > 0)
-						{
-							#pragma omp critical
-							{
-								std::cout << "Thread " << idx << " has " << blockSeeds.size() << " seeds to process." << std::endl;
-							}
-						}
+						progress.showMessage(string("Thread ") + toString(idx) + " has " + toString(blockSeeds.size()) + " seeds to process.");
 					}
 
 					if (blockSeeds.size() > 0)
@@ -391,7 +369,7 @@ namespace itl2
 						std::vector<Vec3sc>* pBlockFilledPoints = pFilledPoints ? &blockFilledPoints : nullptr;
 						std::set<pixel_t> blockNeighbouringColors;
 						std::set<pixel_t>* pBlockNeighbouringColors = pNeighbouringColors ? &blockNeighbouringColors : nullptr;
-						bool blockResult = floodfillSingleThreaded(block, blockSeeds, origColor, fillColor, stopColor, connectivity, pBlockFilledPointCount, pBlockFilledPoints, fillLimit, pBlockNeighbouringColors, false);
+						bool blockResult = floodfillSingleThreaded(block, blockSeeds, origColor, fillColor, stopColor, connectivity, pBlockFilledPointCount, pBlockFilledPoints, fillLimit, pBlockNeighbouringColors);
 
 						// Iterate block edge values and compare to saved, make a list of points that changed.
 						// Neighbours of the changed points that are not in the current block are new seeds for the neighbouring block.
@@ -505,7 +483,7 @@ namespace itl2
 		std::vector<Vec3sc> seeds;
 		seeds.push_back(Vec3sc(start));
 
-		return floodfillBlocks(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo, minBlockSize);
+		return floodfillBlocks(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, minBlockSize);
 	}
 
 	/**
@@ -521,12 +499,12 @@ namespace itl2
 	@param pNeighbouringColors Pointer to set that will contain the colors of non-filled points neighbouring the filled region.
 	@return True if the fill was terminated naturally; false if the fill was terminated by reaching fillLimit in filled pixel count; by encountering pixel with stopColor value; or if the origColor is fillColor.
 	*/
-	template<typename pixel_t> bool floodfill(Image<pixel_t>& image, const Vec3c& start, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true)
+	template<typename pixel_t> bool floodfill(Image<pixel_t>& image, const Vec3c& start, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr)
 	{
 		if (image.pixelCount() < 700 * 700 * 700 || image.dimensionality() < 3)
-			return floodfillSingleThreaded(image, start, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
+			return floodfillSingleThreaded(image, start, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors);
 		else
-			return floodfillBlocks(image, start, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
+			return floodfillBlocks(image, start, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors);
 	}
 
 	/**
@@ -542,12 +520,12 @@ namespace itl2
 	@param pNeighbouringColors Pointer to set that will contain the colors of non-filled points neighbouring the filled region.
 	@return True if the fill was terminated naturally; false if the fill was terminated by reaching fillLimit in filled pixel count; by encountering pixel with stopColor value; or if the origColor is fillColor.
 	*/
-	template<typename pixel_t> bool floodfill(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr, bool showProgressInfo = true)
+	template<typename pixel_t> bool floodfill(Image<pixel_t>& image, const std::vector<Vec3sc>& seeds, pixel_t origColor, pixel_t fillColor, pixel_t stopColor, Connectivity connectivity = Connectivity::NearestNeighbours, size_t* pFilledPointCount = nullptr, std::vector<Vec3sc>* pFilledPoints = nullptr, size_t fillLimit = 0, std::set<pixel_t>* pNeighbouringColors = nullptr)
 	{
 		if (image.pixelCount() < 700 * 700 * 700 || image.dimensionality() < 3)
-			return floodfillSingleThreaded(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
+			return floodfillSingleThreaded(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors);
 		else
-			return floodfillBlocks(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors, showProgressInfo);
+			return floodfillBlocks(image, seeds, origColor, fillColor, stopColor, connectivity, pFilledPointCount, pFilledPoints, fillLimit, pNeighbouringColors);
 	}
 
 	/**
@@ -1011,14 +989,13 @@ namespace itl2
 		size_t totalChanged = 0;
 
 		// Grow each of them
-		size_t n = 0;
+		ProgressIndicator progress(values.size());
 		for (label_t srcColor : values)
 		{
 			if(srcColor != backgroundColor && srcColor != allowedColor)
 				totalChanged += grow(labels, srcColor, allowedColor, connectivity);
 
-			n++;
-			showProgress(n, values.size());
+			progress.step();
 		}
 
 		return totalChanged;

@@ -440,7 +440,7 @@ namespace itl2
 	/**
 	Draws spheres and boxes to the image until volume fraction of filled pixels is at least targetVolumeFraction.
 	*/
-	inline void generateGeometry(Image<uint8_t>& geom, unsigned int seed, double targetVolumeFraction, bool indicateProgress = false)
+	inline void generateGeometry(Image<uint8_t>& geom, unsigned int seed, double targetVolumeFraction)
 	{
 
 		setValue(geom, 0);

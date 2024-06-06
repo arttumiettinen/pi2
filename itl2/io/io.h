@@ -125,7 +125,7 @@ namespace itl2
 		The size of the block to read is determined by the size of the image.
 		@param blockStart The start position of the block.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& blockStart, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& blockStart)
 		{
 			Vec3c dimensions;
 			ImageDataType dt;
@@ -133,11 +133,11 @@ namespace itl2
 			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, lz4Reason;
 			if (vol::getInfo(filename, dimensions, dt, volReason))
 			{
-				vol::readBlock(img, filename, blockStart, showProgressInfo);
+				vol::readBlock(img, filename, blockStart);
 			}
 			else if (tiff::getInfo(filename, dimensions, dt, tiffReason))
 			{
-				tiff::readBlock(img, filename, blockStart, showProgressInfo);
+				tiff::readBlock(img, filename, blockStart);
 			}
 			else if (nrrd::getInfo(filename, dimensions, dt, nrrdReason))
 			{
@@ -145,19 +145,19 @@ namespace itl2
 			}
 			else if (sequence::getInfo(filename, dimensions, dt, sequenceReason))
 			{
-				sequence::readBlock(img, filename, blockStart, showProgressInfo);
+				sequence::readBlock(img, filename, blockStart);
 			}
 			else if (pcr::getInfo(filename, dimensions, dt, pcrReason))
 			{
-				pcr::readBlock(img, filename, blockStart, showProgressInfo);
+				pcr::readBlock(img, filename, blockStart);
 			}
 			else if (raw::getInfo(filename, dimensions, dt, rawReason))
 			{
-				raw::readBlock(img, filename, blockStart, showProgressInfo);
+				raw::readBlock(img, filename, blockStart);
 			}
 			else if (nn5::getInfo(filename, dimensions, dt, nn5Reason))
 			{
-				nn5::readBlock(img, filename, blockStart, showProgressInfo);
+				nn5::readBlock(img, filename, blockStart);
 			}
 			else if (lz4::getInfo(filename, dimensions, dt, lz4Reason))
 			{

@@ -112,6 +112,7 @@ namespace itl2
 		// Linear interpolation may make the carpet a bit more stable, Zero boundary condition reduces bulging out of image.
 		LinearInterpolator<float32_t, pixel_t> interp(BoundaryCondition::Zero);
 
+		ProgressIndicator progress(iterations);
 		for (size_t n = 0; n < iterations; n++)
 		{
 			// Move
@@ -144,7 +145,7 @@ namespace itl2
 
 			internals::visualizeLayer(geometry, heightMap, pVisualization, visualizeY, visColor, (coord_t)n);
 
-			showProgress(n, iterations);
+			progress.step();
 		}
 	}
 

@@ -526,7 +526,7 @@ namespace pilib
 
 			pullback.ensureSize(deformed);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp, false);
+			reverseDeformation(deformed, pullback, refPoints, defPoints, *interp);
 		}
 	};
 
@@ -645,7 +645,7 @@ namespace pilib
 
 			pullback.ensureSize(pullbackSize);
 
-			reverseDeformation(deformed, pullback, refPoints, defPoints, pullbackPos, *interp, false);
+			reverseDeformation(deformed, pullback, refPoints, defPoints, pullbackPos, *interp);
 		}
 	};
 

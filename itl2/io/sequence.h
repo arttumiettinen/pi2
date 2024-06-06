@@ -126,7 +126,7 @@ namespace itl2
 			std::string errorMessage;
 			OmpAtomic<bool> broken = false;
 
-			size_t counter = 0;
+			ProgressIndicator progress(lastSlice - firstSlice + 1);
 			#pragma omp parallel for if(!omp_in_parallel())
 			for (coord_t z = (coord_t)firstSlice; z <= (coord_t)lastSlice; z++)
 			{
@@ -165,7 +165,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, img.depth() + 1);
+				progress.step();
 			}
 
 			if (broken)
@@ -180,7 +180,7 @@ namespace itl2
 		@param filename Directory name and possibly file name template including wildcards *, ?, @ that identifies files that belong to the sequence. (@ corresponds to one or more numerical digits)
 		@param start Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start)
 		{
 			std::vector<std::string> files = buildFilteredFileList(filename);
 
@@ -208,7 +208,7 @@ namespace itl2
 			std::string errorMessage;
 			OmpAtomic<bool> broken = false;
 			
-			size_t counter = 0;
+			ProgressIndicator progress(cEnd.z - cStart.z);
 			// TODO: Here we limit the number of threads as we might have e.g. 256 threads reading at once
 			// => very large RAM requirement for the whole slice temp images if the slices are large.
 			// But what is a good maximum amount of threads?
@@ -244,7 +244,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, img.depth() + 1, showProgressInfo);
+				progress.step();
 			}
 
 			if (broken)
@@ -351,6 +351,7 @@ namespace itl2
 			std::string errorMessage;
 			OmpAtomic<bool> broken = false;
 
+			ProgressIndicator progress(lastSlice - firstSlice + 1);
 			#pragma omp parallel for if(!omp_in_parallel())
 			for (coord_t z = firstSlice; z <= (coord_t)lastSlice; z++)
 			{
@@ -373,7 +374,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, lastSlice - firstSlice + 1);
+				progress.step();
 			}
 
 			if (broken)
@@ -395,11 +396,9 @@ namespace itl2
 		@param fileDimension Total dimensions of the output file.
 		@param imagePosition Position in the image where the block to be written starts.
 		@param imageDimensions Dimensions of the block of the source image to write.
-		@param showProgressInfo Set to true to show a progress bar.
 		*/
 		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions,
-			const Vec3c& imagePosition, const Vec3c& imageDimensions,
-			bool showProgressInfo = false)
+			const Vec3c& imagePosition, const Vec3c& imageDimensions)
 		{
 			constexpr size_t READ_WRITE_TRIALS = 12;
 			constexpr int INITIAL_WAIT_TIME = 1;
@@ -425,7 +424,7 @@ namespace itl2
 			std::string errorMessage;
 			OmpAtomic<bool> broken = false;
 
-			size_t counter = 0;
+			ProgressIndicator progress(cEnd.z - cStart.z);
 			#pragma omp parallel for if(!omp_in_parallel())
 			for (coord_t z = cStart.z; z < cEnd.z; z++)
 			{
@@ -521,7 +520,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, cEnd.z - cStart.z, showProgressInfo);
+				progress.step();
 			}
 
 			if (broken)
@@ -537,11 +536,10 @@ namespace itl2
 		@param filename Name of file to write.
 		@param filePosition Position in the file to write to.
 		@param fileDimension Total dimensions of the output file.
-		@param showProgressInfo Set to true to show a progress bar.
 		*/
-		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions, bool showProgressInfo = false)
+		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions)
 		{
-			writeBlock(img, filename, filePosition, fileDimensions, Vec3c(0, 0, 0), img.dimensions(), showProgressInfo);
+			writeBlock(img, filename, filePosition, fileDimensions, Vec3c(0, 0, 0), img.dimensions());
 		}
 
 		/**

@@ -80,10 +80,8 @@ namespace itl2
 	@param firstLabelValue Label value for the first particle encountered.
 	@returns The largest label value used in the image.
 	*/
-	template<typename pixel_t> pixel_t labelParticles(Image<pixel_t>& image, pixel_t particleColor = 0, pixel_t firstLabelValue = 1, Connectivity connectivity = Connectivity::NearestNeighbours, bool showProgress = true)
+	template<typename pixel_t> pixel_t labelParticles(Image<pixel_t>& image, pixel_t particleColor = 0, pixel_t firstLabelValue = 1, Connectivity connectivity = Connectivity::NearestNeighbours)
 	{
-		size_t counter = 0;
-
 		// Handle "color all particles" case first
 		if (particleColor == 0)
 		{
@@ -101,6 +99,7 @@ namespace itl2
 		if(particleNumber == particleColor)
 			particleNumber++;
 
+		ProgressIndicator progress(image.depth());
 		for (coord_t z = 0; z < image.depth(); z++)
 		{
 			for (coord_t y = 0; y < image.height(); y++)
@@ -123,9 +122,8 @@ namespace itl2
 
 					
 				}
-
-				showThreadProgress(counter, image.depth() * image.height(), showProgress);
 			}
+			progress.step();
 		}
 
 		return particleNumber - 1;
@@ -222,11 +220,12 @@ namespace itl2
 		@param largeColor Particles that are skipped because their size is larger than volumeLimit are colored with this color.
 		@param backgroundColor Color of background.
 		*/
-		template<typename pixel_t> void analyzeParticlesSingleBlock(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, std::vector<std::vector<Vec3sc> >* pIncompleteParticles, std::vector<std::vector<Vec3sc> >* pLargeEdgePoints, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, size_t& counter, size_t counterMax, const Vec3sc& coordinateShift)
+		template<typename pixel_t> void analyzeParticlesSingleBlock(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, std::vector<std::vector<Vec3sc> >* pIncompleteParticles, std::vector<std::vector<Vec3sc> >* pLargeEdgePoints, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, const Vec3sc& coordinateShift, ProgressIndicator& progress)
 		{
 			std::vector<Vec3sc> particlePoints;
 			particlePoints.reserve(1000);
 
+			//ProgressIndicator progress(image.depth());
 			for (coord_t z = 0; z < image.depth(); z++)
 			{
 				for (coord_t y = 0; y < image.height(); y++)
@@ -323,9 +322,9 @@ namespace itl2
 
 
 					}
-
-					showThreadProgress(counter, counterMax);
 				}
+
+				progress.step();
 			}
 
 		}
@@ -347,7 +346,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void analyzeParticlesBlocks(Image<pixel_t>& image, AnalyzerSet<Vec3sc, pixel_t>& analyzers, Results& results, std::vector<std::vector<Vec3sc> >& largeEdgePoints, std::vector<std::vector<Vec3sc> >& incompleteParticles, Connectivity connectivity, size_t volumeLimit, pixel_t fillColor, pixel_t largeColor, const Vec3sc& origin, std::vector<coord_t>& blockEdgeZ)
 		{
-			size_t counter = 0;
+			ProgressIndicator progress(image.depth());
 
 			//int count = 4;
 			//int idx[] = { 0, 1, 2, 3 };
@@ -410,7 +409,7 @@ namespace itl2
 					Results blockResults;
 					std::vector<std::vector<Vec3sc> > blockLargeEdgePoints;
 					std::vector<std::vector<Vec3sc> > blockIncompleteParticles;
-					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, connectivity, volumeLimit, fillColor, largeColor, counter, image.depth() * image.height(), origin + Vec3sc(0, 0, (int32_t)minZ));
+					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, connectivity, volumeLimit, fillColor, largeColor, origin + Vec3sc(0, 0, (int32_t)minZ), progress);
 
 					//raw::writed(block, "./particleanalysis/block");
 					//raw::writed(image, "./particleanalysis/image");
@@ -495,92 +494,95 @@ namespace itl2
 			Image<std::vector<size_t> > grid(100, 100, 100);
 
 			std::cout << "Divide boxes to a grid..." << std::endl;
-			size_t counter = 0;
-			for (size_t n = 0; n < boundingBoxes.size(); n++)
 			{
-				if (edgePoints[n].size() > 0)
+				ProgressIndicator progress(boundingBoxes.size());
+				for (size_t n = 0; n < boundingBoxes.size(); n++)
 				{
-					Vec3c mcell(itl2::floor((double)(boundingBoxes[n].minc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
-								itl2::floor((double)(boundingBoxes[n].minc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
-								itl2::floor((double)(boundingBoxes[n].minc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
-
-					Vec3c Mcell(itl2::ceil((double)(boundingBoxes[n].maxc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
-								itl2::ceil((double)(boundingBoxes[n].maxc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
-								itl2::ceil((double)(boundingBoxes[n].maxc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
-
-					for (coord_t zc = mcell.z; zc <= Mcell.z; zc++)
+					if (edgePoints[n].size() > 0)
 					{
-						for (coord_t yc = mcell.y; yc <= Mcell.y; yc++)
+						Vec3c mcell(itl2::floor((double)(boundingBoxes[n].minc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
+							itl2::floor((double)(boundingBoxes[n].minc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
+							itl2::floor((double)(boundingBoxes[n].minc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
+
+						Vec3c Mcell(itl2::ceil((double)(boundingBoxes[n].maxc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
+							itl2::ceil((double)(boundingBoxes[n].maxc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
+							itl2::ceil((double)(boundingBoxes[n].maxc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
+
+						for (coord_t zc = mcell.z; zc <= Mcell.z; zc++)
 						{
-							for (coord_t xc = mcell.x; xc <= Mcell.x; xc++)
+							for (coord_t yc = mcell.y; yc <= Mcell.y; yc++)
 							{
-								grid(xc, yc, zc).push_back(n);
+								for (coord_t xc = mcell.x; xc <= Mcell.x; xc++)
+								{
+									grid(xc, yc, zc).push_back(n);
+								}
 							}
 						}
 					}
-				}
 
-				showThreadProgress(counter, boundingBoxes.size());
+					progress.step();
+				}
 			}
 
-			std::cout << "Determine overlaps..." << std::endl;
-			counter = 0;
-			
-			#pragma omp parallel if(!omp_in_parallel())
 			{
-				std::set<std::tuple<size_t, size_t> > nonOverlapping;
-
-				#pragma omp for schedule(dynamic)
-				for (coord_t i = 0; i < grid.pixelCount(); i++)
+				std::cout << "Determine overlaps..." << std::endl;
+				ProgressIndicator progress(grid.pixelCount());
+#pragma omp parallel if(!omp_in_parallel())
 				{
-					auto& list = grid(i);
+					std::set<std::tuple<size_t, size_t> > nonOverlapping;
 
-					for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
+#pragma omp for schedule(dynamic)
+					for (coord_t i = 0; i < grid.pixelCount(); i++)
 					{
-						size_t n = list[ni];
-						const std::vector<Vec3sc>& v1 = edgePoints[n];
-						const AABox<int32_t>& b1 = boundingBoxes[n];
+						auto& list = grid(i);
 
-						if (v1.size() > 0)
+						for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
 						{
-							for (size_t mi = ni + 1; mi < list.size(); mi++)
+							size_t n = list[ni];
+							const std::vector<Vec3sc>& v1 = edgePoints[n];
+							const AABox<int32_t>& b1 = boundingBoxes[n];
+
+							if (v1.size() > 0)
 							{
-								size_t m = list[mi];
-								const std::vector<Vec3sc>& v2 = edgePoints[m];
-								const AABox<int32_t>& b2 = boundingBoxes[m];
-
-								//if (std::min(n, m) == 308 && std::max(n, m) == 417)
-								//{
-								//	std::cout << "testing " << n << ", " << m << std::endl;
-								//}
-
-								if (v2.size() > 0)
+								for (size_t mi = ni + 1; mi < list.size(); mi++)
 								{
-									// Only test if the particles have not been connected yet.
-									// There is a race condition between union_sets and find_sets on this line, but
-									// that may only result in the test below evaluating true even though it should be
-									// false, and in that case we just do some extra work.
-									if (forest.find_set(n) != forest.find_set(m))
+									size_t m = list[mi];
+									const std::vector<Vec3sc>& v2 = edgePoints[m];
+									const AABox<int32_t>& b2 = boundingBoxes[m];
+
+									//if (std::min(n, m) == 308 && std::max(n, m) == 417)
+									//{
+									//	std::cout << "testing " << n << ", " << m << std::endl;
+									//}
+
+									if (v2.size() > 0)
 									{
-
-										if (b1.overlapsInclusive(b2)) // Do bounding boxes overlap?
+										// Only test if the particles have not been connected yet.
+										// There is a race condition between union_sets and find_sets on this line, but
+										// that may only result in the test below evaluating true even though it should be
+										// false, and in that case we just do some extra work.
+										if (forest.find_set(n) != forest.find_set(m))
 										{
-											auto key = std::make_tuple(std::min(n, m), std::max(n, m));
 
-											// Only test points if they have not been determined to be non-overlapping.
-											if(nonOverlapping.find(key) == nonOverlapping.end())
+											if (b1.overlapsInclusive(b2)) // Do bounding boxes overlap?
 											{
-												if (isNeighbouring(v1, v2, connectivity))
+												auto key = std::make_tuple(std::min(n, m), std::max(n, m));
+
+												// Only test points if they have not been determined to be non-overlapping.
+												if (nonOverlapping.find(key) == nonOverlapping.end())
 												{
-													// v1 and v2 are the neighbouring, so the regions must be combined
-													#pragma omp critical(forestInsert)
+													if (isNeighbouring(v1, v2, connectivity))
 													{
-														forest.union_sets(n, m);
+														// v1 and v2 are the neighbouring, so the regions must be combined
+#pragma omp critical(forestInsert)
+														{
+															forest.union_sets(n, m);
+														}
 													}
-												}
-												else
-												{
-													nonOverlapping.emplace(key);
+													else
+													{
+														nonOverlapping.emplace(key);
+													}
 												}
 											}
 										}
@@ -588,9 +590,9 @@ namespace itl2
 								}
 							}
 						}
-					}
 
-					showThreadProgress(counter, grid.pixelCount());
+						progress.step();
+					}
 				}
 			}
 		}
@@ -629,21 +631,23 @@ namespace itl2
 			// Create list of edge points for each incomplete particle
 			std::cout << "Find edge points of particles..." << std::endl;
 			std::vector<std::vector<Vec3sc> > edgePoints;
-			size_t counter = 0;
-			for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 			{
-				auto& points = incompleteParticles[n];
-				std::vector<Vec3sc> currEdgePoints;
-				for (size_t m = 0; m < points.size(); m++)
+				ProgressIndicator progress(incompleteParticles.size());
+				for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 				{
-					if (find(blockEdgeZ.begin(), blockEdgeZ.end(), points[m].z) != blockEdgeZ.end())
-						currEdgePoints.push_back(points[m]);
+					auto& points = incompleteParticles[n];
+					std::vector<Vec3sc> currEdgePoints;
+					for (size_t m = 0; m < points.size(); m++)
+					{
+						if (find(blockEdgeZ.begin(), blockEdgeZ.end(), points[m].z) != blockEdgeZ.end())
+							currEdgePoints.push_back(points[m]);
+					}
+
+					// Order of insertions must be the same than order of particles in incompleteParticles list.
+					edgePoints.push_back(currEdgePoints);
+
+					progress.step();
 				}
-
-				// Order of insertions must be the same than order of particles in incompleteParticles list.
-				edgePoints.push_back(currEdgePoints);
-
-				showThreadProgress(counter, incompleteParticles.size());
 			}
 
 			// Add big particles to edge points
@@ -660,7 +664,7 @@ namespace itl2
 
 				// Move all points to roots
 				std::cout << "Combine particles..." << std::endl;
-				size_t counter = 0;
+				ProgressIndicator progress(incompleteParticles.size());
 				for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 				{
 					size_t base = forest.find_set(n);
@@ -691,7 +695,7 @@ namespace itl2
 						}
 					}
 
-					showThreadProgress(counter, incompleteParticles.size());
+					progress.step();
 				}
 
 				if (volumeLimit > 0)
@@ -717,7 +721,6 @@ namespace itl2
 
 			// Analyze combined particles
 			std::cout << "Analyze combined particles..." << std::endl;
-			counter = 0;
 
 			std::vector<std::vector<Vec3sc> > remainingLargeEdgePoints;
 			std::vector<std::vector<Vec3sc> > remainingIncompleteParticles;
@@ -726,52 +729,55 @@ namespace itl2
 			remainingBlockEdgeZ.push_back(0);
 			remainingBlockEdgeZ.push_back(maxZ);
 
-			#pragma omp parallel for if(!omp_in_parallel() && incompleteParticles.size() > 1000) schedule(dynamic)
-			for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 			{
-
-				auto& points = incompleteParticles[n];
-				// NOTE: Empty point list is used to indicate that the particle has been combined with some other particle,
-				// and thus must not be analyzed. (the other particle to which this one was combined contains all the points)
-				if(points.size() > 0)
+				ProgressIndicator progress(incompleteParticles.size());
+#pragma omp parallel for if(!omp_in_parallel() && incompleteParticles.size() > 1000) schedule(dynamic)
+				for (coord_t n = 0; n < (coord_t)incompleteParticles.size(); n++)
 				{
 
-					if(volumeLimit <= 0 || (volumeLimit > 0 && !isBig[n]))
+					auto& points = incompleteParticles[n];
+					// NOTE: Empty point list is used to indicate that the particle has been combined with some other particle,
+					// and thus must not be analyzed. (the other particle to which this one was combined contains all the points)
+					if (points.size() > 0)
 					{
-						if (isSubBlock && isOnZEdge(points, maxZ))
+
+						if (volumeLimit <= 0 || (volumeLimit > 0 && !isBig[n]))
 						{
-							// The particle is incomplete.
-							#pragma omp critical(remainingIncompleteParticlesInsert)
+							if (isSubBlock && isOnZEdge(points, maxZ))
 							{
-								remainingIncompleteParticles.push_back(points);
+								// The particle is incomplete.
+#pragma omp critical(remainingIncompleteParticlesInsert)
+								{
+									remainingIncompleteParticles.push_back(points);
+								}
+							}
+							else
+							{
+								// The particle is complete and not big. Analyze it.
+								// Note: the parts of particles originating from different calculation blocks
+								// do not overlap so there are no duplicate points in the point list
+								//Vec3c point = points[0];
+								std::vector<double> resultLine;
+								analyzers.analyze(points, resultLine);
+
+#pragma omp critical(resultsInsert)
+								{
+									results.push_back(resultLine);
+								}
 							}
 						}
-						else
+						else if (volumeLimit > 0 && isBig[n])
 						{
-							// The particle is complete and not big. Analyze it.
-							// Note: the parts of particles originating from different calculation blocks
-							// do not overlap so there are no duplicate points in the point list
-							//Vec3c point = points[0];
-							std::vector<double> resultLine;
-							analyzers.analyze(points, resultLine);
-
-							#pragma omp critical(resultsInsert)
+							// The particle is big. Add its edge points to the new largeEdgePoints list.
+#pragma omp critical(remainingLargeEdgePointsInsert)
 							{
-								results.push_back(resultLine);
+								remainingLargeEdgePoints.push_back(points);
 							}
 						}
-					}
-					else if (volumeLimit > 0 && isBig[n])
-					{
-						// The particle is big. Add its edge points to the new largeEdgePoints list.
-						#pragma omp critical(remainingLargeEdgePointsInsert)
-						{
-							remainingLargeEdgePoints.push_back(points);
-						}
-					}
 
+					}
+					progress.step();
 				}
-				showThreadProgress(counter, incompleteParticles.size());
 			}
 
 			if (isSubBlock)
@@ -914,13 +920,12 @@ namespace itl2
 		if (largeColor == 0)
 			throw ITLException("Large color must not be zero as zero is background color.");
 
-		size_t counter;
-
 		results.headers() = analyzers.headers();
 
 		prepareParticleAnalysis(image, fillColor, largeColor);
 
-		internals::analyzeParticlesSingleBlock(image, analyzers, results, nullptr, nullptr, connectivity, volumeLimit, fillColor, largeColor, counter, image.depth() * image.height(), Vec3sc());
+		ProgressIndicator progress(image.depth());
+		internals::analyzeParticlesSingleBlock(image, analyzers, results, nullptr, nullptr, connectivity, volumeLimit, fillColor, largeColor, Vec3sc(), progress);
 
 		//raw::writed(image, "particleanalysis/labels");
 	}
@@ -1022,6 +1027,7 @@ namespace itl2
 		std::vector<Vec3sc> particlePoints;
         particlePoints.reserve(1000);
 
+		ProgressIndicator progress(image.depth());
 		for (coord_t z = 0; z < image.depth(); z++)
 		{
 			for (coord_t y = 0; y < image.height(); y++)
@@ -1055,7 +1061,7 @@ namespace itl2
 				}
 			}
 
-			showProgress(z, image.depth());
+			progress.step();
 		}
 
     }
@@ -1156,7 +1162,7 @@ namespace itl2
 
 		prepareParticleAnalysis(image);
 
-		size_t counter = 0;
+		ProgressIndicator progress(results.size());
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)results.size(); n++)
 		{
@@ -1169,7 +1175,7 @@ namespace itl2
 
 			floodfillSingleThreaded<pixel_t>(image, pos + shift, fillColor, fillColor, conn);
 
-			showThreadProgress(counter, results.size());
+			progress.step();
 		}
 	}
 
@@ -1277,6 +1283,7 @@ namespace itl2
 			bsri = results.getColumnIndex("bounding sphere radius [pixel]");
 		}
 
+		ProgressIndicator progress(results.size());
 		for(size_t n = 0; n < results.size(); n++)
 		{
 			if (type != EllipsoidType::BoundingSphere)
@@ -1332,7 +1339,7 @@ namespace itl2
 
 				draw(image, Sphere(pos, r), color);
 			}
-			showProgress(n, results.size());
+			progress.step();
 		}
 	}
 

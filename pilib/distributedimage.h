@@ -581,7 +581,7 @@ namespace pilib
 			std::string infile = currentReadSource();
 
 			Image<pixel_t> tmp(1, 1, 1);
-			itl2::io::readBlock(tmp, infile, p, false);
+			itl2::io::readBlock(tmp, infile, p);
 			return tmp(0);
 		}
 
@@ -642,7 +642,7 @@ namespace pilib
 			case DistributedImageStorageType::NN5:
 			{
 				// TODO: NN5 compression default
-				itl2::nn5::internals::write(img, currentWriteTarget(), getChunkSize(), itl2::nn5::NN5Compression::LZ4, true, false);
+				itl2::nn5::internals::write(img, currentWriteTarget(), getChunkSize(), itl2::nn5::NN5Compression::LZ4, true);
 				break;
 			}
 			case DistributedImageStorageType::Raw:

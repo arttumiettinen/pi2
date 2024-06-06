@@ -58,9 +58,9 @@ namespace itl2
 	@param dim1, dim2 Dimensions where the derivative should be calculated. If dim2 is negative, calculates df/dx_i where f is img and i is dim1; otherwise, calculates d^2f/(dx_i dx_j), where j is dim2.
 	@param gamma Scaling exponent. Set to zero to disable scaling.
 	*/
-	template<typename pixel_t, typename out_t> void normalizedDerivative(const Image<pixel_t>& img, Image<out_t>& df, double sigma, coord_t dim1, coord_t dim2, double gamma, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void normalizedDerivative(const Image<pixel_t>& img, Image<out_t>& df, double sigma, coord_t dim1, coord_t dim2, double gamma)
 	{
-		gaussDerivative(img, df, sigma, dim1, dim2, BoundaryCondition::Nearest, showProgressInfo);
+		gaussDerivative(img, df, sigma, dim1, dim2, BoundaryCondition::Nearest);
 		if (gamma != 0)
 		{
 			double m = (double)dim1;
@@ -77,24 +77,23 @@ namespace itl2
 	Calculates gradient of img.
 	@param gamma Scale-space scaling exponent. Set to zero to disable scaling.
 	*/
-	template<typename pixel_t, typename out_t> void gradient(const Image<pixel_t>& img, Image<out_t>& dfdx, Image<out_t>& dfdy, Image<out_t>& dfdz, double sigma, double gamma = 0, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void gradient(const Image<pixel_t>& img, Image<out_t>& dfdx, Image<out_t>& dfdy, Image<out_t>& dfdz, double sigma, double gamma = 0)
 	{
 		dfdx.ensureSize(img);	// Allocate memory here to fail fast if there is not enough memory.
 		dfdy.ensureSize(img);
 		dfdz.ensureSize(img);
 
-		if(showProgressInfo)
-			std::cout << "df / dx..." << std::endl;
-		normalizedDerivative(img, dfdx, sigma, 0, -1, gamma, showProgressInfo);
+		//if(showProgressInfo)
+		//	std::cout << "df / dx..." << std::endl;
+		normalizedDerivative(img, dfdx, sigma, 0, -1, gamma);
 
-		if (showProgressInfo)
-			std::cout << "df / dy..." << std::endl;
+		//if (showProgressInfo)
+		//	std::cout << "df / dy..." << std::endl;
+		normalizedDerivative(img, dfdy, sigma, 1, -1, gamma);
 
-		normalizedDerivative(img, dfdy, sigma, 1, -1, gamma, showProgressInfo);
-
-		if (showProgressInfo)
-			std::cout << "df / dz..." << std::endl;
-		normalizedDerivative(img, dfdz, sigma, 2, -1, gamma, showProgressInfo);
+		//if (showProgressInfo)
+		//	std::cout << "df / dz..." << std::endl;
+		normalizedDerivative(img, dfdz, sigma, 2, -1, gamma);
 	}
 
 	/**
@@ -129,10 +128,10 @@ namespace itl2
 	Allocates 3 temporary images of the same size and pixel type than original.
 	@param gradientMagnitude Output image, can be the same than the input image.
 	*/
-	template<typename pixel_t, typename out_t> void gradientMagnitude(const Image<pixel_t>& img, Image<out_t>& gradientMagnitude, double derivativeSigma, double gamma = 0, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void gradientMagnitude(const Image<pixel_t>& img, Image<out_t>& gradientMagnitude, double derivativeSigma, double gamma = 0)
 	{
 		Image<typename NumberUtils<pixel_t>::FloatType> dfdx, dfdy, dfdz;
-		gradient(img, dfdx, dfdy, dfdz, derivativeSigma, gamma, showProgressInfo);
+		gradient(img, dfdx, dfdy, dfdz, derivativeSigma, gamma);
 		norm(dfdx, dfdy, dfdz, gradientMagnitude);
 	}
 
@@ -146,7 +145,7 @@ namespace itl2
 	TODO: Gaussian curvature can be calculated with similar means.
 	@param curvature Output image, can equal to input image.
 	*/
-	template<typename pixel_t, typename out_t> void meanCurvature(const Image<pixel_t>& img, double sigma, Image<out_t>& curvature, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void meanCurvature(const Image<pixel_t>& img, double sigma, Image<out_t>& curvature)
 	{
 		curvature.ensureSize(img);
 
@@ -184,7 +183,7 @@ namespace itl2
 		//	Fxz.ensureSize(img);
 		//	Fyz.ensureSize(img);
 
-		//	gradient(img, Fx, Fy, Fz, sigma, 0.0, showProgressInfo);
+		//	gradient(img, Fx, Fy, Fz, sigma, 0.0);
 		//	hessian(img, Fxx, Fyy, Fzz, Fxy, Fxz, Fyz, sigma, 0.0);
 
 		//	size_t counter = 0;
@@ -201,7 +200,7 @@ namespace itl2
 		//		pixel_t c = nablaFNorm * (Hess.bilinear(nablaF, nablaF) - nablaFNorm * nablaFNorm * Hess.trace()) / ((pixel_t)1e-8 + 2 * nablaFNorm * nablaFNorm * nablaFNorm);
 		//		curvature(n) = pixelRound<pixel_t>(c);
 
-		//		showThreadProgress(counter, Fx.pixelCount(), showProgressInfo);
+		//		showThreadProgress(counter, Fx.pixelCount());
 		//	}
 		//}
 
@@ -212,7 +211,7 @@ namespace itl2
 
 		Image<float32_t> phix, phiy, phiz, L;
 
-		gradient(img, phix, phiy, phiz, sigma, 0, false);
+		gradient(img, phix, phiy, phiz, sigma, 0);
 		norm(phix, phiy, phiz, L);
 
 		add(L, 1e-8); // Add small number to stabilize regions where L is zero.
@@ -220,9 +219,9 @@ namespace itl2
 		divide(phiy, L);
 		divide(phiz, L);
 
-		gaussDerivative(phix, sigma, 0, -1, BoundaryCondition::Nearest, false);
-		gaussDerivative(phiy, sigma, 1, -1, BoundaryCondition::Nearest, false);
-		gaussDerivative(phiz, sigma, 2, -1, BoundaryCondition::Nearest, false);
+		gaussDerivative(phix, sigma, 0, -1, BoundaryCondition::Nearest);
+		gaussDerivative(phiy, sigma, 1, -1, BoundaryCondition::Nearest);
+		gaussDerivative(phiz, sigma, 2, -1, BoundaryCondition::Nearest);
 
 		setValue(curvature, phix);
 		add(curvature, phiy);
@@ -528,7 +527,7 @@ namespace itl2
 		out.ensureSize(dx);
 
 		LinearInterpolator<real2_t, real_t> interp(BoundaryCondition::Nearest);
-		size_t counter = 0;
+		ProgressIndicator progress(out.depth());
 		#pragma omp parallel for if(out.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		for (coord_t z = 0; z < out.depth(); z++)
 		{
@@ -572,7 +571,7 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, out.depth());
+			progress.step();
 		}
 	}
 

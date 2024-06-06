@@ -56,7 +56,7 @@ namespace itl2
 			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> maxy;
-			max(head, 1, maxy, false);
+			max(head, 1, maxy);
 			raw::writed(maxy, "./projections/maxy");
 
 			Image<float32_t> zprojection;

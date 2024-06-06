@@ -8,6 +8,7 @@ namespace itl2
 {
 	/**
 	Progress indicator that clears itself when it goes out of scope.
+	Progress indicators can be nested and only the top-most one will be shown.
 	*/
 	class ProgressIndicator
 	{
@@ -17,39 +18,62 @@ namespace itl2
 		size_t maxSteps;
 		bool showIndicator;
 		bool isTerm;
+		size_t messageLength;
 
-	public:
-		ProgressIndicator(size_t maxSteps, bool showIndicator = true) : 
-			counter(0),
-			maxSteps(maxSteps),
-			showIndicator(showIndicator)
+		static int nestingCount;
+
+		void eraseMessage()
 		{
-			isTerm = isTerminal();
-			// Always show the indicator
-			if(showIndicator && isTerm)
-				std::cout << "0 %\r" << std::flush;
+			for (size_t n = 0; n < messageLength; n++)
+			{
+				std::cout << " ";
+			}
+			std::cout << "\r" << std::flush;
 		}
 
+	public:
+		
+		/**
+		Constructor
+		Creates a progress indicator that shows a bar/percentage that has maxSteps steps.
+		Proceed to next step by calling step() function.
+		@param maxSteps The total number of times step() function will be called.
+		@param showIndicator Set to false to not show the indicator at all.
+		*/
+		ProgressIndicator(size_t maxSteps, bool showIndicator = true);
 
-		virtual ~ProgressIndicator()
+		/**
+		Constructor
+		Creates a progress indicator that shows a message instead of counting steps until completion.
+		Show a message by calling showMessage function.
+		*/
+		ProgressIndicator(const string& initialMessage, bool showIndicator = true);
+
+
+		virtual ~ProgressIndicator();
+
+		/**
+		Show a progress message.
+		Progress message and bar cannot be used interchangeably.
+		*/
+		void showMessage(const string& message)
 		{
 			if (showIndicator)
 			{
-				if (isTerm)
+				// TODO: Don't update if the message does not change.
+#pragma omp critical(showProgress)
 				{
-					// Remove the indicator
-					std::cout << "                   \r" << std::flush;
-				}
-				else
-				{
-					// Move to next line so that the progress bar does not conflict with future printing.
-					std::cout << std::endl;
+					eraseMessage();
+					messageLength = message.length();
+					std::cout << message << "\r" << std::flush;
 				}
 			}
 		}
 
 		/**
-		Step progress indicator to the next position
+		Step progress indicator to the next position.
+		Progress message and bar cannot be used interchangeably.
+		This function is thread-safe.
 		*/
 		void step()
 		{

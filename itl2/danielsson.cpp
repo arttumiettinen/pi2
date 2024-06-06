@@ -511,34 +511,37 @@ namespace itl2
 			coord_t Rmax = largestIntWhoseSquareIsLessThan(R2max) + 1;
 			constexpr coord_t invalidValue = -1;
 			constexpr coord_t toBeDeterminedValue = numeric_limits<coord_t>::max();
-			for (coord_t z = 0; z < Rmax; z++)
 			{
-				for (coord_t y = 0; y < Rmax; y++)
+				ProgressIndicator progress(Rmax);
+				for (coord_t z = 0; z < Rmax; z++)
 				{
-					for (coord_t x = 0; x < Rmax; x++)
+					for (coord_t y = 0; y < Rmax; y++)
 					{
-						coord_t R2 = x * x + y * y + z * z;
-						if (R2 <= R2max)
+						for (coord_t x = 0; x < Rmax; x++)
 						{
-							// radius is less than maximum, add it to the tables.
-							while ((coord_t)table1.size() <= R2)
+							coord_t R2 = x * x + y * y + z * z;
+							if (R2 <= R2max)
 							{
-								table1.push_back(invalidValue);
-								table2.push_back(invalidValue);
-								table3.push_back(invalidValue);
-							}
+								// radius is less than maximum, add it to the tables.
+								while ((coord_t)table1.size() <= R2)
+								{
+									table1.push_back(invalidValue);
+									table2.push_back(invalidValue);
+									table3.push_back(invalidValue);
+								}
 
-							if (table1[R2] == invalidValue)
-							{
-								table1[R2] = toBeDeterminedValue;
-								table2[R2] = toBeDeterminedValue;
-								table3[R2] = toBeDeterminedValue;
+								if (table1[R2] == invalidValue)
+								{
+									table1[R2] = toBeDeterminedValue;
+									table2[R2] = toBeDeterminedValue;
+									table3[R2] = toBeDeterminedValue;
+								}
 							}
 						}
 					}
-				}
 
-				showProgress(z, Rmax);
+					progress.step();
+				}
 			}
 
 			// Create a list of possible radius^2 values.
@@ -572,17 +575,20 @@ namespace itl2
 			initSquareTable(max(radii2));
 
 			// Calculate the missing entries
-			size_t counter = 0;
-			#pragma omp parallel for if(!omp_in_parallel()) schedule(dynamic)
-			for (coord_t r2 = 0; r2 < (coord_t)table1.size(); r2++)
 			{
-				if (table1[r2] == toBeDeterminedValue)
+				coord_t tableSize = (coord_t)table1.size();
+				ProgressIndicator progress(tableSize);
+#pragma omp parallel for if(!omp_in_parallel()) schedule(dynamic)
+				for (coord_t r2 = 0; r2 < tableSize; r2++)
 				{
-					table1[r2] = internals::getMaxSphereRadius(1, 0, 0, radii2, r2);
-					table2[r2] = internals::getMaxSphereRadius(1, 1, 0, radii2, r2);
-					table3[r2] = internals::getMaxSphereRadius(1, 1, 1, radii2, r2);
+					if (table1[r2] == toBeDeterminedValue)
+					{
+						table1[r2] = internals::getMaxSphereRadius(1, 0, 0, radii2, r2);
+						table2[r2] = internals::getMaxSphereRadius(1, 1, 0, radii2, r2);
+						table3[r2] = internals::getMaxSphereRadius(1, 1, 1, radii2, r2);
+					}
+					progress.step();
 				}
-				showThreadProgress(counter, table1.size());
 			}
 		}
 

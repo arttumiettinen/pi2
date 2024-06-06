@@ -53,19 +53,19 @@ namespace itl2
 
 					if (z == 0)
 					{
-						itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)offset);
+						itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), (size_t)offset);
 					}
 					else
 					{
 						Image<pixel_t> view(img, z, z);
-						itl2::raw::readBlockNoParse(view, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)offset);
+						itl2::raw::readBlockNoParse(view, filename, dimensions, Vec3c(0, 0, 0), (size_t)offset);
 					}
 				}
 				else
 				{
 					if (allowResize)
 						img.ensureSize(dimensions);
-					itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)offset);
+					itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), (size_t)offset);
 				}
 			}
 		}

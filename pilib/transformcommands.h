@@ -732,7 +732,7 @@ namespace pilib
 
 			out.ensureSize(outSize);
 
-			scale(in, out, averageWhenDownSizing, ip, bc, true, factor, delta);
+			scale(in, out, averageWhenDownSizing, ip, bc, factor, delta);
 		}
 
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override
@@ -870,7 +870,7 @@ namespace pilib
 
 			out.ensureSize(outSize);
 
-			scaleLabels(in, out, true, factor, outputOrigin);
+			scaleLabels(in, out, factor, outputOrigin);
 		}
 
 		virtual vector<string> runDistributed(Distributor& distributor, vector<ParamVariant>& args) const override

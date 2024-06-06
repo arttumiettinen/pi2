@@ -404,7 +404,7 @@ namespace pilib
 					{
 						// The image has been saved to a non-temporary file, so we cannot just move it.
 						// The file must be copied.
-						copyFile(in.currentReadSource(), fname, true);
+						copyFile(in.currentReadSource(), fname);
 					}
 					else
 					{
@@ -515,7 +515,7 @@ namespace pilib
 					{
 						// The image has been saved to a non-temporary file, so we cannot just move it.
 						// The file must be copied.
-						copyFile(in.currentReadSource(), fname, true);
+						copyFile(in.currentReadSource(), fname);
 					}
 					else
 					{
@@ -711,7 +711,7 @@ namespace pilib
 				fileSize = dims;
 			}
 
-			raw::writeBlock(img, fname, position, fileSize, blockPosition, blockSize, true);
+			raw::writeBlock(img, fname, position, fileSize, blockPosition, blockSize);
 		}
 	};
 
@@ -759,7 +759,7 @@ namespace pilib
 				fileSize = dims;
 			}
 
-			sequence::writeBlock(img, fname, position, fileSize, blockPosition, blockSize, true);
+			sequence::writeBlock(img, fname, position, fileSize, blockPosition, blockSize);
 		}
 	};
 
@@ -809,7 +809,7 @@ namespace pilib
 				fileSize = dims;
 			}
 
-			nn5::writeBlock(img, fname, chunkSize, nn5::NN5Compression::LZ4, position, fileSize, blockPosition, blockSize, true);
+			nn5::writeBlock(img, fname, chunkSize, nn5::NN5Compression::LZ4, position, fileSize, blockPosition, blockSize);
 		}
 	};
 

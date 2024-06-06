@@ -716,11 +716,10 @@ namespace itl2
 		@param ri Image containing ri values from processing of previous dimension.
 		@param dim Dimension to process.
 		@param result Result image.
-		@param showProgressInfo Set to true to show progress indicator.
 		*/
 		template<typename pixel_t> void processDimensionSuper(Image<internals::RiStorageSet>& ri, size_t dim,
 			const Image<pixel_t>& dmap2,
-			Image<pixel_t>& result, bool showProgressInfo,
+			Image<pixel_t>& result,
 			const AABox<coord_t>& currBlock, const Image<pixel_t>& dmap2Full)
 		{
 			// Determine count of pixels to process
@@ -732,7 +731,7 @@ namespace itl2
 
 			bool isFinalPass = !(dim < dmap2Full.dimensionality() - 1);
 
-			size_t counter = 0;
+			ProgressIndicator progress(rowCount);
 #pragma omp parallel if(!omp_in_parallel() && ri.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
 				// Temporary buffer
@@ -774,7 +773,7 @@ namespace itl2
 						singlePassFinalSuper<pixel_t>(inRow, result, start, dim, -1);
 					}
 
-					showThreadProgress(counter, rowCount, showProgressInfo);
+					progress.step();
 				}
 			}
 		}
@@ -820,7 +819,7 @@ namespace itl2
 		@param tmap2 At output, squared radius map.
 		@param extraBytes Approximation of memory used in addition to the input image.
 		*/
-		template<typename pixel_t> void thickmap2(const Image<pixel_t>& dmap2, Image<pixel_t>& tmap2, double* extraBytes = nullptr, Vec3d* riCounts = nullptr, bool showProgressInfo = true)
+		template<typename pixel_t> void thickmap2(const Image<pixel_t>& dmap2, Image<pixel_t>& tmap2, double* extraBytes = nullptr, Vec3d* riCounts = nullptr)
 		{
 			tmap2.mustNotBe(dmap2);
 
@@ -837,7 +836,7 @@ namespace itl2
 			double totalRiMem = 0;
 			for (size_t n = 0; n < ri.dimensionality(); n++)
 			{
-				internals::processDimensionSuper<pixel_t>(ri, n, dmap2, tmap2, showProgressInfo, AABox<coord_t>::fromMinMax(Vec3c(0, 0, 0), dmap2.dimensions()), dmap2);
+				internals::processDimensionSuper<pixel_t>(ri, n, dmap2, tmap2, AABox<coord_t>::fromMinMax(Vec3c(0, 0, 0), dmap2.dimensions()), dmap2);
 
 				if (extraBytes || riCounts)
 				{
@@ -992,7 +991,7 @@ namespace itl2
 		Plots maximal spheres corresponding to squared distance map, larger distance values replacing smaller ones.
 		@param extraBytes Approximation of memory used in addition to the input image.
 		*/
-		template<typename pixel_t> void thickmap2(Image<pixel_t>& dmap2, double* extraBytes = nullptr, bool showProgressInfo = true)
+		template<typename pixel_t> void thickmap2(Image<pixel_t>& dmap2, double* extraBytes = nullptr)
 		{
 			// In order to parallelize by sorting method, first find radii and locations (linear indices to save some memory) of non-zero pixels.
 			std::vector<std::tuple<pixel_t, coord_t> > centers;
@@ -1020,6 +1019,7 @@ namespace itl2
 				(*extraBytes) = (double)(centers.size() * sizeof(std::tuple<int32_t, coord_t>) + bitmask.pixelCount() * sizeof(uint8_t));
 			}
 
+			ProgressIndicator progress(centers.size());
 			coord_t previ = 0;
 			for (coord_t n = 0; n < (coord_t)centers.size(); n++)
 			{
@@ -1033,7 +1033,7 @@ namespace itl2
 					previ = n;
 				}
 
-				showProgress(n, centers.size(), showProgressInfo);
+				progress.step();
 			}
 
 			// Draw the final span of spheres from previ to end of ridgePoints list.
@@ -1050,7 +1050,7 @@ namespace itl2
 		Uses standard Hildebrand & Ruegsegger algorithm without optimizations.
 		Plots maximal spheres corresponding to squared distance map, larger distance values replacing smaller ones.
 		*/
-		void thickmap2(const Image<int32_t>& dmap2, Image<int32_t>& result, bool showProgressInfo = true);
+		void thickmap2(const Image<int32_t>& dmap2, Image<int32_t>& result);
 	}
 
 

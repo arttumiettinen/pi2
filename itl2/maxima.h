@@ -18,7 +18,7 @@ namespace itl2
 	@param orig Maxima of this image are to be found.
 	@return List of pixel locations for each maximum.
 	*/
-	template<typename pixel_t> std::vector<std::vector<Vec3sc> > findLocalMaxima(Image<pixel_t>& orig, Connectivity connectivity = Connectivity::AllNeighbours, bool showProgress = false)
+	template<typename pixel_t> std::vector<std::vector<Vec3sc> > findLocalMaxima(Image<pixel_t>& orig, Connectivity connectivity = Connectivity::AllNeighbours)
 	{
 		pixel_t tempColor = findUnusedValue(orig);
 
@@ -28,7 +28,7 @@ namespace itl2
 		std::vector<Vec3sc> filledPoints;
 		std::set<pixel_t> neighbourValues;
 
-		ProgressIndicator progress(orig.depth(), showProgress);
+		ProgressIndicator progress(orig.depth());
 		for (coord_t z = 0; z < orig.depth(); z++)
 		{
 			for (coord_t y = 0; y < orig.height(); y++)
@@ -45,7 +45,7 @@ namespace itl2
 						neighbourValues.clear();
 
 						// Find all points in the current region
-						floodfillSingleThreaded(orig, p, tempColor, tempColor, connectivity, nullptr, &filledPoints, 0, &neighbourValues, false);
+						floodfillSingleThreaded(orig, p, tempColor, tempColor, connectivity, nullptr, &filledPoints, 0, &neighbourValues);
 
 						// Put the correct value back
 						draw(orig, filledPoints, v);
@@ -90,7 +90,7 @@ namespace itl2
 	@param orig Original image from which the maxima were found.
 	@param radiusMultiplier Multiplier to apply to the radius of the larger maximum.
 	*/
-	template<typename pixel_t> void removeMaximaInsideLargerOnes(std::vector<std::vector<Vec3sc> >& maximaList, const Image<pixel_t>& orig, double radiusMultiplier = 1, bool showProgressIndicator = false)
+	template<typename pixel_t> void removeMaximaInsideLargerOnes(std::vector<std::vector<Vec3sc> >& maximaList, const Image<pixel_t>& orig, double radiusMultiplier = 1)
 	{
 		std::vector<Vec3d> centroids(maximaList.size(), Vec3d());
 		std::vector<double> radii(maximaList.size(), 0.0);
@@ -99,7 +99,7 @@ namespace itl2
 
 		// Calculate centroid and radius for each maximum
 		{
-			ProgressIndicator progress(maximaList.size(), showProgressIndicator);
+			ProgressIndicator progress(maximaList.size());
 #pragma omp parallel for if(maximaList.size() > PARALLELIZATION_THRESHOLD)
 			for (int n = 0; n < maximaList.size(); n++)
 			{
@@ -125,7 +125,7 @@ namespace itl2
 
 		// Calculate removal flag for each maximum
 		{
-			ProgressIndicator progress(maximaList.size(), showProgressIndicator);
+			ProgressIndicator progress(maximaList.size());
 #pragma omp parallel for if(maximaList.size() > PARALLELIZATION_THRESHOLD)
 			for (int n = 0; n < maximaList.size(); n++)
 			{
@@ -190,7 +190,7 @@ namespace itl2
 
 		// Version 2: No maxima points are removed, but they are combined instead.
 		{
-			ProgressIndicator progress(maximaList.size(), showProgressIndicator);
+			ProgressIndicator progress(maximaList.size());
 			for (size_t n = 0; n < maximaList.size(); n++)
 			{
 				size_t root = sets.find_set(n);

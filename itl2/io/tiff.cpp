@@ -387,7 +387,7 @@ namespace itl2
 
 				// Read block of head
 				Image<uint16_t> headBlock(128, 128, 64);
-				tiff::readBlock(headBlock, "../test_input_data/t1-head.tif", Vec3c(128, 128, 63), true);
+				tiff::readBlock(headBlock, "../test_input_data/t1-head.tif", Vec3c(128, 128, 63));
 				raw::writed(headBlock, "./tiff/head_block");
 
 				Image<uint16_t> headBlockGTFull, headBlockGT(128, 128, 64);

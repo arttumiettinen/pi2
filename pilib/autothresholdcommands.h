@@ -374,7 +374,7 @@ namespace pilib
 			AutoThresholdMethod method = fromString<AutoThresholdMethod>(methods);
 
 			out.ensureSize(1, 1, 1);
-			out(0, 0, 0) = pixelRound<pixel_t>(itl2::internals::autoThresholdValue(img, method, arg0, arg1, arg2, arg3, false));
+			out(0, 0, 0) = pixelRound<pixel_t>(itl2::internals::autoThresholdValue(img, method, arg0, arg1, arg2, arg3));
 		}
 
 		static double distributedAutoThresholdValue(DistributedImage<pixel_t>& img, AutoThresholdMethod method, double arg0, double arg1, double arg2, double arg3, Distributor& distributor)

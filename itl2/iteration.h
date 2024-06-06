@@ -15,7 +15,7 @@ namespace itl2
 	Call lambda(x, y, z) for all (x, y, z) in range [block.minc, block.maxc[.
 	*/
 	template<typename F>
-	void forAllInBox(const AABox<coord_t>& block, F&& lambda, bool showProgressIndicator = false)
+	void forAllInBox(const AABox<coord_t>& block, F&& lambda)
 	{
 		//#pragma omp parallel for if(block.volume() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		//for (coord_t z = block.minc.z; z < block.maxc.z; z++)
@@ -55,7 +55,7 @@ namespace itl2
 		else if (d <= 1)
 		{
 			// 2D image
-			ProgressIndicator progress(block.maxc.y - block.minc.y, showProgressIndicator);
+			ProgressIndicator progress(block.maxc.y - block.minc.y);
 			#pragma omp parallel for if(block.volume() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t y = block.minc.y; y < block.maxc.y; y++)
 			{
@@ -69,7 +69,7 @@ namespace itl2
 		else
 		{
 			// 3D image
-			ProgressIndicator progress(block.maxc.z - block.minc.z, showProgressIndicator);
+			ProgressIndicator progress(block.maxc.z - block.minc.z);
 			#pragma omp parallel for if(block.volume() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t z = block.minc.z; z < block.maxc.z; z++)
 			{
@@ -89,36 +89,34 @@ namespace itl2
 	Call lambda(coord_t x, coord_t y, coord_t z) for all pixels in the image.
 	*/
 	template<typename F>
-	void forAllPixels(const ImageBase& img, F&& lambda, bool showProgressIndicator = false)
+	void forAllPixels(const ImageBase& img, F&& lambda)
 	{
-		forAllInBox(AABox<coord_t>::fromMinMax(Vec3c(), img.dimensions()), lambda, showProgressIndicator);
+		forAllInBox(AABox<coord_t>::fromMinMax(Vec3c(), img.dimensions()), lambda);
 	}
 
 	/**
 	Perform img(x, y, z) = pixelRound<pixel_t>(lambda(img(x, y, z))) for all (x, y, z) in the image.
 	*/
 	template<typename pixel_t, typename F>
-	void forAll(Image<pixel_t>& img, F&& lambda, bool showProgressIndicator = false)
+	void forAll(Image<pixel_t>& img, F&& lambda)
 	{
 		forAllPixels(img, [&](coord_t x, coord_t y, coord_t z)
 			{
 				img(x, y, z) = pixelRound<pixel_t>(lambda(img(x, y, z)));
-			},
-			showProgressIndicator);
+			});
 	}
 
 	/**
 	Perform l(x, y, z) = pixelRound<pixel_t>(lambda(l(x, y, z), r(x, y, z))) for all (x, y, z) in the image.
 	*/
 	template<typename pixel1_t, typename pixel2_t, typename F>
-	void forAll(Image<pixel1_t>& l, const Image<pixel2_t>& r, F&& lambda, bool showProgressIndicator = false)
+	void forAll(Image<pixel1_t>& l, const Image<pixel2_t>& r, F&& lambda)
 	{
 		l.ensureSize(r);
 		forAllPixels(l, [&](coord_t x, coord_t y, coord_t z)
 			{
 				l(x, y, z) = pixelRound<pixel1_t>(lambda(l(x, y, z), r(x, y, z)));
-			},
-			showProgressIndicator);
+			});
 	}
 
 

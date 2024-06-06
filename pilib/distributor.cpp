@@ -290,7 +290,7 @@ namespace pilib
 		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
 		Vec3c refDims = img->dimensions();
 
-		nn5::internals::forAllChunks(refDims, blockSize, false, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
+		nn5::internals::forAllChunks(refDims, blockSize, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
 			{
 
 				// Add margins to the reference block

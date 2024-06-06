@@ -109,12 +109,11 @@ namespace itl2
 
 	@param x Image that is to be inpainted.
 	@param val Value that marks missing pixels.
-	@param indicateProgress Set to true to show progress indicator.
 	@param n Number of iterations.
 	@param RF Relaxation factor.
 	@param m Some undocumented parameter.
 	*/
-	template<typename pixel_t> void inpaintGarcia(Image<pixel_t>& img, pixel_t val = 0, bool indicateProgress = false, float32_t tolerance = 0, int n = 100, float32_t RF = 2, float32_t m = 2)
+	template<typename pixel_t> void inpaintGarcia(Image<pixel_t>& img, pixel_t val = 0, float32_t tolerance = 0, int n = 100, float32_t RF = 2, float32_t m = 2)
 	{
 		// Skip processing if there are no zeroes in the image
 		bool process = false;
@@ -160,6 +159,7 @@ namespace itl2
 
 		// Inpainting iterations
 		Image<float32_t> tmp(img.dimensions());
+		ProgressIndicator progress(n);
 		for (coord_t i = 0; i < n; i++)
 		{
 			// Smoothness parameter range
@@ -222,14 +222,11 @@ namespace itl2
 			//cout << maxDiff << endl;
 
 			if (maxDiff <= tolerance)
-			{ 
-				if (indicateProgress)
-					std::cout << "\r" << std::flush;
+			{
 				break;
 			}
 
-			if (indicateProgress)
-				showProgress(i, n);
+			progress.step();
 		}
 
 		// Pick output pixels

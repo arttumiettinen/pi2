@@ -236,7 +236,7 @@ namespace itl2
 		}
 
 
-		template<typename pixel_t>  void processDimension(Image<pixel_t>& output, size_t currentDimension, Image<Vec3c>* nearestObjectPoint, bool showProgressInfo = false)
+		template<typename pixel_t>  void processDimension(Image<pixel_t>& output, size_t currentDimension, Image<Vec3c>* nearestObjectPoint)
 		{
 			// Determine count of pixels to process
 			Vec3c reducedDimensions = output.dimensions();
@@ -245,7 +245,7 @@ namespace itl2
 
 			bool failed = false;
 			ITLException error("");
-			size_t counter = 0;
+			ProgressIndicator progress(rowCount);
 			#pragma omp parallel if(!omp_in_parallel() && output.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
 				// Temporary buffer
@@ -282,7 +282,7 @@ namespace itl2
 						    failed = true;
 					    }
                     }
-					showThreadProgress(counter, rowCount, showProgressInfo);
+					progress.step();
 				}
 			}
 

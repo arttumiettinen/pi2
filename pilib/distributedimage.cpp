@@ -344,7 +344,7 @@ namespace pilib
     {
 		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
 		{
-			nn5::endConcurrentWrite(currentWriteTarget(), false);
+			nn5::endConcurrentWrite(currentWriteTarget());
 		}
 
         // Temporary image corresponding to old read source is not needed anymore as it

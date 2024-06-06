@@ -100,7 +100,7 @@ namespace itl2
 						for (coord_t x = 0; x < 3; x++)
 						{
 							Vec3c pos(x * blockSize.x, y * blockSize.y, z * blockSize.z);
-							raw::writeBlock(head, outFile, pos, outputDimensions, blockStart, blockSize, true);
+							raw::writeBlock(head, outFile, pos, outputDimensions, blockStart, blockSize);
 						}
 					}
 				}
@@ -124,7 +124,7 @@ namespace itl2
 					
 					if (pos.z + blockSize.z > head.dimensions().z)
 						blockSize.z = head.dimensions().z - pos.z;
-					raw::writeBlock(head, outFile, pos, outputDimensions, pos, blockSize, true);
+					raw::writeBlock(head, outFile, pos, outputDimensions, pos, blockSize);
 				}
 
 				Image<uint16_t> headBlocks(256, 256, 129);

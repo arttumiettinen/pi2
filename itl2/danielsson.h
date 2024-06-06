@@ -43,7 +43,7 @@ namespace itl2
 		internals::getDanielssonTables(table1, table2, table3, maxr2);
 
 		//cout << "Finding centers of locally maximal disks..." << endl;
-		size_t counter = 0;
+		ProgressIndicator progress(dmap2.depth());
 		#pragma omp parallel if(dmap2.pixelCount() >= PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 		{
 
@@ -106,7 +106,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, dmap2.depth());
+				progress.step();
 			}
 		}
 	}

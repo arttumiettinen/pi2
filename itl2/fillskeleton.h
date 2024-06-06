@@ -22,7 +22,7 @@ namespace itl2
 	@param skeleton Image containing the skeleton as non-zero pixels.
 	@param network Network structure returned from skeleton tracing.
 	*/
-	template<typename pixel_t> void fillSkeleton(Image<pixel_t>& skeleton, const Network& network, size_t propertyIndex, bool indicateProgress = true)
+	template<typename pixel_t> void fillSkeleton(Image<pixel_t>& skeleton, const Network& network, size_t propertyIndex)
 	{
 		// Find intersection regions
 		//internals::classifyForTracing<pixel_t>(skeleton, (pixel_t)internals::BRANCHING);
@@ -38,6 +38,7 @@ namespace itl2
 		// There is one flood fill per edge, so the filled regions never overlap and we can do a multithreaded fill.
 		bool hasInvalid = false;
 		size_t counter = 0;
+		ProgressIndicator progress(network.edges.size());
 		#pragma omp parallel for
 		for(coord_t n = 0; n < (coord_t)network.edges.size(); n++)
 		{
@@ -59,7 +60,7 @@ namespace itl2
 			if (edge.properties.edgePoints.size() <= 0)
 				hasInvalid = true;
 
-			showThreadProgress(counter, network.edges.size(), indicateProgress);
+			progress.step();
 		}
 		
 		// Inform user if there was a problem.

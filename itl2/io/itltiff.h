@@ -40,7 +40,7 @@ namespace itl2
 				if (rawDataOffset != 0)
 				{
 					// This is an ImageJ fake tiff. Read it as raw data file.
-					::itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), false, (size_t)rawDataOffset);
+					::itl2::raw::readBlockNoParse(img, filename, dimensions, Vec3c(0, 0, 0), (size_t)rawDataOffset);
 					return;
 				}
 
@@ -240,7 +240,7 @@ namespace itl2
 		@param filename The name of the file to read.
 		@param start Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start)
 		{
 			internals::initTIFF();
 
@@ -273,7 +273,7 @@ namespace itl2
 					if (rawDataOffset != 0)
 					{
 						// This is an ImageJ fake tiff. Read it as a .raw file.
-						raw::readBlockNoParse(img, filename, dimensions, start, showProgressInfo, rawDataOffset);
+						raw::readBlockNoParse(img, filename, dimensions, start, rawDataOffset);
 						return;
 					}
 

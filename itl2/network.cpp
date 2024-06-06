@@ -21,7 +21,7 @@ namespace itl2
 
 	const Vec3f Network::INVALID_VERTEX = Vec3f(numeric_limits<float32_t>::signaling_NaN(), numeric_limits<float32_t>::signaling_NaN(), numeric_limits<float32_t>::signaling_NaN());
 
-	void Network::degree(vector<size_t>& deg, bool reportProgress) const
+	void Network::degree(vector<size_t>& deg) const
 	{
 		deg.resize(vertices.size());
 
@@ -227,9 +227,10 @@ namespace itl2
 	//	clean(reportProgress);
 	//}
 
-	void Network::clean(bool reportProgress)
+	void Network::clean()
 	{
 	    vector<Edge> newEdges;
+		ProgressIndicator progress(edges.size());
 		for (size_t n = 0; n < edges.size(); n++)
 		{
 			if (edges[n] == Edge::INVALID)
@@ -242,7 +243,7 @@ namespace itl2
 			    newEdges.push_back(edges[n]);
 			}
 
-			showProgress(n, edges.size(), reportProgress);
+			progress.step();
 		}
 		
 		edges = newEdges;
@@ -265,178 +266,188 @@ namespace itl2
 		list.erase(list.begin() + n);
 	}
 
-	void Network::markStraightThroughNodes(bool reportProgress)
+	void Network::markStraightThroughNodes()
 	{
 		// For each node, list of [neighbour node index, edge properties]
 		vector<vector<tuple<size_t, EdgeMeasurements> > > net(vertices.size());
 
 		// Populate net list from edges
-		cout << "Convert to neighbour list format..." << endl;
-		for (size_t n = 0; n < edges.size(); n++)
 		{
-			const Edge& edge = edges[n];
-			net[edge.verts[0]].push_back(make_tuple(edge.verts[1], edge.properties));
-			net[edge.verts[1]].push_back(make_tuple(edge.verts[0], edge.properties));
-			showProgress(n, edges.size(), reportProgress);
+			cout << "Convert to neighbour list format..." << endl;
+			ProgressIndicator progress(edges.size());
+			for (size_t n = 0; n < edges.size(); n++)
+			{
+				const Edge& edge = edges[n];
+				net[edge.verts[0]].push_back(make_tuple(edge.verts[1], edge.properties));
+				net[edge.verts[1]].push_back(make_tuple(edge.verts[0], edge.properties));
+				progress.step();
+			}
+			edges.clear();
 		}
-		edges.clear();
 
 		// Find nodes with exactly 2 neighbours
-		cout << "Erase connections to nodes with 2 neighbours..." << endl;
-		for (size_t n = 0; n < net.size(); n++)
 		{
-			if (net[n].size() == 2)
+			cout << "Erase connections to nodes with 2 neighbours..." << endl;
+			ProgressIndicator progress(net.size());
+			for (size_t n = 0; n < net.size(); n++)
 			{
-				// Connect a to b by replacing
-				// - n by b in a:s neighbour list and
-				// - n by a in b:s neighbour list.
-				size_t a = get<0>(net[n][0]);
-				size_t b = get<0>(net[n][1]);
-
-				if (a != n && b != n) // Don't adjust connections if any of the neighbours is this node, i.e. there is a loop.
+				if (net[n].size() == 2)
 				{
-					EdgeMeasurements p1 = get<1>(net[n][0]);
-					EdgeMeasurements p2 = get<1>(net[n][1]);
+					// Connect a to b by replacing
+					// - n by b in a:s neighbour list and
+					// - n by a in b:s neighbour list.
+					size_t a = get<0>(net[n][0]);
+					size_t b = get<0>(net[n][1]);
 
-					EdgeMeasurements combined;
-					combined.pointCount = p1.pointCount + p2.pointCount;
-					combined.length = p1.length + p2.length;
-					combined.area = (p1.length * p1.area + p2.length * p2.area) / (p1.length + p2.length);
-
-
-					// Combine edgePoints lists in correct order
-					combined.edgePoints.reserve(p1.edgePoints.size() + p2.edgePoints.size());
-
-					Vec3f startVertex = vertices[a];
-					Vec3f endVertex = vertices[b];
-
-					vector<vector<Vec3sc>> pointLists;
-					pointLists.push_back(p1.edgePoints);
-					pointLists.push_back(p2.edgePoints);
-					Vec3f currentEnd = startVertex;
-					while (pointLists.size() > 0)
+					if (a != n && b != n) // Don't adjust connections if any of the neighbours is this node, i.e. there is a loop.
 					{
-						coord_t minIndex = -1;
-						bool isStart = true;
-						float32_t minDist = numeric_limits<float32_t>::infinity();
+						EdgeMeasurements p1 = get<1>(net[n][0]);
+						EdgeMeasurements p2 = get<1>(net[n][1]);
 
-						for (size_t n = 0; n < pointLists.size(); n++)
+						EdgeMeasurements combined;
+						combined.pointCount = p1.pointCount + p2.pointCount;
+						combined.length = p1.length + p2.length;
+						combined.area = (p1.length * p1.area + p2.length * p2.area) / (p1.length + p2.length);
+
+
+						// Combine edgePoints lists in correct order
+						combined.edgePoints.reserve(p1.edgePoints.size() + p2.edgePoints.size());
+
+						Vec3f startVertex = vertices[a];
+						Vec3f endVertex = vertices[b];
+
+						vector<vector<Vec3sc>> pointLists;
+						pointLists.push_back(p1.edgePoints);
+						pointLists.push_back(p2.edgePoints);
+						Vec3f currentEnd = startVertex;
+						while (pointLists.size() > 0)
 						{
-							const vector<Vec3sc>& list = pointLists[n];
-							if (list.size() > 0)
-							{
-								// Test if one end of the list is closer to the current end point than any previous end.
-								float32_t d = (currentEnd - Vec3f(list.front())).norm<float32_t>();
-								if (d < minDist)
-								{
-									minDist = d;
-									minIndex = n;
-									isStart = true;
-								}
+							coord_t minIndex = -1;
+							bool isStart = true;
+							float32_t minDist = numeric_limits<float32_t>::infinity();
 
-								d = (currentEnd - Vec3f(list.back())).norm<float32_t>();
-								if (d < minDist)
+							for (size_t n = 0; n < pointLists.size(); n++)
+							{
+								const vector<Vec3sc>& list = pointLists[n];
+								if (list.size() > 0)
 								{
-									minDist = d;
-									minIndex = n;
-									isStart = false;
+									// Test if one end of the list is closer to the current end point than any previous end.
+									float32_t d = (currentEnd - Vec3f(list.front())).norm<float32_t>();
+									if (d < minDist)
+									{
+										minDist = d;
+										minIndex = n;
+										isStart = true;
+									}
+
+									d = (currentEnd - Vec3f(list.back())).norm<float32_t>();
+									if (d < minDist)
+									{
+										minDist = d;
+										minIndex = n;
+										isStart = false;
+									}
 								}
 							}
+
+							// No non-empty list available.
+							if (minIndex < 0)
+								break;
+
+							vector<Vec3sc>& list = pointLists[minIndex];
+							if (!isStart)
+								reverse(list.begin(), list.end());
+
+							combined.edgePoints.insert(combined.edgePoints.end(), list.begin(), list.end());
+
+							pointLists.erase(pointLists.begin() + minIndex);
+
+							currentEnd = Vec3f(combined.edgePoints.back());
 						}
 
-						// No non-empty list available.
-						if (minIndex < 0)
-							break;
+						//combined.edgePoints.insert(combined.edgePoints.end(), p1.edgePoints.begin(), p1.edgePoints.end());
+						//// Test if order of p2.edgePoints must be reversed
+						//if (p2.edgePoints.size() > 0)
+						//{
+						//	float32_t d1 = (combined.edgePoints.back() - p2.edgePoints.back()).norm<float32_t>();
+						//	float32_t d2 = (combined.edgePoints.back() - p2.edgePoints.front()).norm<float32_t>();
+						//	float32_t d3 = (combined.edgePoints.front() - p2.edgePoints.back()).norm<float32_t>();
+						//	float32_t d4 = (combined.edgePoints.front() - p2.edgePoints.front()).norm<float32_t>();
 
-						vector<Vec3sc>& list = pointLists[minIndex];
-						if (!isStart)
-							reverse(list.begin(), list.end());
+						//	if(d1 <= d2 && d1 <= d3 && d1 <= d4)
+						//		combined.edgePoints.insert(combined.edgePoints.end(), p2.edgePoints.rbegin(), p2.edgePoints.rend());
+						//	else if (d2 <= d1 && d2 <= d3 && d2 <= d4)
+						//		combined.edgePoints.insert(combined.edgePoints.end(), p2.edgePoints.begin(), p2.edgePoints.end());
+						//	else if (d3 <= d1 && d3 <= d2 && d3 <= d4)
+						//		combined.edgePoints.insert(combined.edgePoints.begin(), p2.edgePoints.begin(), p2.edgePoints.end());
+						//	else
+						//		combined.edgePoints.insert(combined.edgePoints.begin(), p2.edgePoints.rbegin(), p2.edgePoints.rend());
+						//}
 
-						combined.edgePoints.insert(combined.edgePoints.end(), list.begin(), list.end());
 
-						pointLists.erase(pointLists.begin() + minIndex);
+						// Make sure that we don't propagate nan areas
+						if (std::isnan(combined.area))
+						{
+							if (!std::isnan(p1.area))
+								combined.area = p1.area;
+							else
+								combined.area = p2.area;
+						}
 
-						currentEnd = Vec3f(combined.edgePoints.back());
+						size_t nInd;
+						nInd = find(n, net[a]);
+						net[a][nInd] = make_tuple(b, combined);
+						nInd = find(n, net[b]);
+						net[b][nInd] = make_tuple(a, combined);
+
+						net[n].clear();
+
+						// The node should be removed (and it does not have any connections), so mark it as invalid.
+						vertices[n] = INVALID_VERTEX;
 					}
-
-					//combined.edgePoints.insert(combined.edgePoints.end(), p1.edgePoints.begin(), p1.edgePoints.end());
-					//// Test if order of p2.edgePoints must be reversed
-					//if (p2.edgePoints.size() > 0)
-					//{
-					//	float32_t d1 = (combined.edgePoints.back() - p2.edgePoints.back()).norm<float32_t>();
-					//	float32_t d2 = (combined.edgePoints.back() - p2.edgePoints.front()).norm<float32_t>();
-					//	float32_t d3 = (combined.edgePoints.front() - p2.edgePoints.back()).norm<float32_t>();
-					//	float32_t d4 = (combined.edgePoints.front() - p2.edgePoints.front()).norm<float32_t>();
-
-					//	if(d1 <= d2 && d1 <= d3 && d1 <= d4)
-					//		combined.edgePoints.insert(combined.edgePoints.end(), p2.edgePoints.rbegin(), p2.edgePoints.rend());
-					//	else if (d2 <= d1 && d2 <= d3 && d2 <= d4)
-					//		combined.edgePoints.insert(combined.edgePoints.end(), p2.edgePoints.begin(), p2.edgePoints.end());
-					//	else if (d3 <= d1 && d3 <= d2 && d3 <= d4)
-					//		combined.edgePoints.insert(combined.edgePoints.begin(), p2.edgePoints.begin(), p2.edgePoints.end());
-					//	else
-					//		combined.edgePoints.insert(combined.edgePoints.begin(), p2.edgePoints.rbegin(), p2.edgePoints.rend());
-					//}
-
-
-					// Make sure that we don't propagate nan areas
-					if (std::isnan(combined.area))
-					{
-						if (!std::isnan(p1.area))
-							combined.area = p1.area;
-						else
-							combined.area = p2.area;
-					}
-
-					size_t nInd;
-					nInd = find(n, net[a]);
-					net[a][nInd] = make_tuple(b, combined);
-					nInd = find(n, net[b]);
-					net[b][nInd] = make_tuple(a, combined);
-
-					net[n].clear();
-
-					// The node should be removed (and it does not have any connections), so mark it as invalid.
-					vertices[n] = INVALID_VERTEX;
 				}
+				progress.step();
 			}
-			showProgress(n, net.size(), reportProgress);
 		}
 
 		// Convert network back to edge list format
-		cout << "Convert to edge list format..." << endl;
-		for (size_t n = 0; n < net.size(); n++)
 		{
-			for (size_t m = 0; m < net[n].size(); m++)
+			cout << "Convert to edge list format..." << endl;
+			ProgressIndicator progress(net.size());
+			for (size_t n = 0; n < net.size(); n++)
 			{
-				size_t b = get<0>(net[n][m]);
-				EdgeMeasurements p = get<1>(net[n][m]);
-				edges.push_back(Edge(n, b, p));
+				for (size_t m = 0; m < net[n].size(); m++)
+				{
+					size_t b = get<0>(net[n][m]);
+					EdgeMeasurements p = get<1>(net[n][m]);
+					edges.push_back(Edge(n, b, p));
 
-				// Remove the other item corresponding to this edge.
-				remove(n, net[b]);
+					// Remove the other item corresponding to this edge.
+					remove(n, net[b]);
+				}
+				progress.step();
 			}
-			showProgress(n, net.size(), reportProgress);
 		}
 	}
 
-	void Network::removeStraightThroughNodes(bool reportProgress)
+	void Network::removeStraightThroughNodes()
 	{
 		// Mark nodes
-		markStraightThroughNodes(reportProgress);
+		markStraightThroughNodes();
 
 		// Remove nodes that were marked as invalid.
-		removeInvalidNodes(reportProgress);
+		removeInvalidNodes();
 	}
 
-	void Network::markIsolatedNodes(bool reportProgress)
+	void Network::markIsolatedNodes()
 	{
 		// Remove nodes with no connections
 		cout << "Calculate degree..." << endl;
 		vector<size_t> deg;
-		degree(deg, reportProgress);
+		degree(deg);
 
 		cout << "Remove nodes..." << endl;
+		ProgressIndicator progress(vertices.size());
 		for (size_t n = 0; n < vertices.size(); n++)
 		{
 			if (deg[n] <= 0)
@@ -444,31 +455,34 @@ namespace itl2
 				vertices[n] = INVALID_VERTEX;
 			}
 
-			showProgress(n, vertices.size(), reportProgress);
+			progress.step();
 		}
 	}
 
-	void Network::removeInvalidNodes(bool reportProgress)
+	void Network::removeInvalidNodes()
 	{
 		// Remove nodes with no connections
 		cout << "Calculate degree..." << endl;
 		vector<size_t> deg;
-		degree(deg, reportProgress);
+		degree(deg);
 
 		cout << "Remove nodes..." << endl;
 		vector<Vec3f> newNodes;
 		vector<size_t> oldToNewIndex(vertices.size());
-		for (size_t n = 0; n < vertices.size(); n++)
 		{
-			// remove if deg[n] <= 0 && (isnan(vertices[n].x) || isnan(vertices[n].y) || isnan(vertices[n].z))
-			//if (deg[n] > 0)
-			if(!(deg[n] <= 0 && (std::isnan(vertices[n].x) || std::isnan(vertices[n].y) || std::isnan(vertices[n].z))))
+			ProgressIndicator progress(vertices.size());
+			for (size_t n = 0; n < vertices.size(); n++)
 			{
-				newNodes.push_back(vertices[n]);
-				oldToNewIndex[n] = newNodes.size() - 1;
-			}
+				// remove if deg[n] <= 0 && (isnan(vertices[n].x) || isnan(vertices[n].y) || isnan(vertices[n].z))
+				//if (deg[n] > 0)
+				if (!(deg[n] <= 0 && (std::isnan(vertices[n].x) || std::isnan(vertices[n].y) || std::isnan(vertices[n].z))))
+				{
+					newNodes.push_back(vertices[n]);
+					oldToNewIndex[n] = newNodes.size() - 1;
+				}
 
-			showProgress(n, vertices.size(), reportProgress);
+				progress.step();
+			}
 		}
 
 		size_t removedCount = vertices.size() - newNodes.size();
@@ -477,20 +491,22 @@ namespace itl2
 
 		cout << "Removed " << removedCount << " nodes." << endl;
 
-		cout << "Update edges..." << endl;
-		size_t counter = 0;
-		#pragma omp parallel for if(!omp_in_parallel() && edges.size() > PARALLELIZATION_THRESHOLD)
-		for (coord_t n = 0; n < (coord_t)edges.size(); n++)
 		{
-			edges[n].verts[0] = oldToNewIndex[edges[n].verts[0]];
-			edges[n].verts[1] = oldToNewIndex[edges[n].verts[1]];
-			showThreadProgress(counter, edges.size(), reportProgress);
+			cout << "Update edges..." << endl;
+			ProgressIndicator progress(edges.size());
+#pragma omp parallel for if(!omp_in_parallel() && edges.size() > PARALLELIZATION_THRESHOLD)
+			for (coord_t n = 0; n < (coord_t)edges.size(); n++)
+			{
+				edges[n].verts[0] = oldToNewIndex[edges[n].verts[0]];
+				edges[n].verts[1] = oldToNewIndex[edges[n].verts[1]];
+				progress.step();
+			}
 		}
 
 		if (incompleteEdges.size() > 0)
 		{
 			cout << "Update incomplete edges..." << endl;
-			counter = 0;
+			ProgressIndicator progress(incompleteEdges.size());
 			#pragma omp parallel for if(!omp_in_parallel() && incompleteEdges.size() > PARALLELIZATION_THRESHOLD)
 			for (coord_t n = 0; n < (coord_t)incompleteEdges.size(); n++)
 			{
@@ -500,25 +516,25 @@ namespace itl2
 				if (verts[1] >= 0)
 					verts[1] = oldToNewIndex[verts[1]];
 
-				showThreadProgress(counter, incompleteEdges.size(), reportProgress);
+				progress.step();
 			}
 		}
 
 		if (incompleteVertices.size() > 0)
 		{
 			cout << "Update incomplete vertices..." << endl;
-			counter = 0;
+			ProgressIndicator progress(incompleteVertices.size());
 			#pragma omp parallel for if(!omp_in_parallel() && incompleteVertices.size() > PARALLELIZATION_THRESHOLD)
 			for (coord_t n = 0; n < (coord_t)incompleteVertices.size(); n++)
 			{
 				incompleteVertices[n].vertexIndex = oldToNewIndex[incompleteVertices[n].vertexIndex];
 
-				showThreadProgress(counter, incompleteVertices.size(), reportProgress);
+				progress.step();
 			}
 		}
 	}
 
-	void Network::removeEdges(const vector<coord_t>& edgeIndices, bool removeStraightThrough, bool removeIsolated, bool reportProgress)
+	void Network::removeEdges(const vector<coord_t>& edgeIndices, bool removeStraightThrough, bool removeIsolated)
 	{
 		for (coord_t n = 0; n < (coord_t)edgeIndices.size(); n++)
 		{
@@ -529,7 +545,7 @@ namespace itl2
 
 
 		vector<size_t> deg;
-		degree(deg, reportProgress);
+		degree(deg);
 
 		for (coord_t n = 0; n < (coord_t)edgeIndices.size(); n++)
 		{
@@ -549,25 +565,25 @@ namespace itl2
 
 		// Remove edges marked as INVALID
 		cout << "Remove unnecessary edges..." << endl;
-		clean(reportProgress);
+		clean();
 
 		// Combine x--x--x sequences into x--x (x=node, --=edge) (mark unnecessary nodes for removal)
 		if (removeStraightThrough)
-			markStraightThroughNodes(reportProgress);
+			markStraightThroughNodes();
 
 		// Remove (mark for removal) nodes with degree = 0
 		if (removeIsolated)
-			markIsolatedNodes(reportProgress);
+			markIsolatedNodes();
 
 		// Remove nodes that were marked as invalid.
-		removeInvalidNodes(reportProgress);
+		removeInvalidNodes();
 	}
 
-	void Network::prune(float32_t maxLength, bool removeStraightThrough, bool removeIsolated, bool reportProgress)
+	void Network::prune(float32_t maxLength, bool removeStraightThrough, bool removeIsolated)
 	{
 		cout << "Calculate degree..." << endl;
 		vector<size_t> deg;
-		degree(deg, reportProgress);
+		degree(deg);
 
         cout << "Find edges and nodes to prune..." << endl;
         #pragma omp parallel for if(!omp_in_parallel() && edges.size() >= PARALLELIZATION_THRESHOLD)
@@ -597,18 +613,18 @@ namespace itl2
 
 		// Remove edges marked as INVALID
 		cout << "Remove unnecessary edges..." << endl;
-		clean(reportProgress);
+		clean();
 
 		// Combine x--x--x sequences into x--x (x=node, --=edge) (mark unnecessary nodes for removal)
 		if(removeStraightThrough)
-			markStraightThroughNodes(reportProgress);
+			markStraightThroughNodes();
 
 		// Remove (mark for removal) nodes with degree = 0
 		if(removeIsolated)
-			markIsolatedNodes(reportProgress);
+			markIsolatedNodes();
 
 		// Remove nodes that were marked as invalid.
-		removeInvalidNodes(reportProgress);
+		removeInvalidNodes();
 	}
 
 	void Network::toImage(Image<float32_t>& vertices, Image<uint64_t>& edges, Image<float32_t>* pEdgeMeasurements, Image<int32_t>* pEdgePoints) const
@@ -1035,7 +1051,7 @@ namespace itl2
 			net.edges.push_back(Edge(7, 7, EdgeMeasurements(2, 1, 1)));
 
 			vector<size_t> deg;
-			net.degree(deg, true);
+			net.degree(deg);
 			if (testAssert(deg.size() == 8, "Wrong degree array size."))
 			{
 				testAssert(deg[0] == 1, "deg 0");
@@ -1048,9 +1064,9 @@ namespace itl2
 				testAssert(deg[7] == 2, "deg 7");
 			}
 
-			net.removeStraightThroughNodes(true);
+			net.removeStraightThroughNodes();
 			deg.clear();
-			net.degree(deg, true);
+			net.degree(deg);
 			if (testAssert(deg.size() == 6, "Wrong degree array size."))
 			{
 				testAssert(deg[0] == 1, "deg 0");
@@ -1102,7 +1118,7 @@ namespace itl2
 					net.edges.push_back(Edge(start, end, EdgeMeasurements(2, 1, 1)));
 			}
 
-			net.removeStraightThroughNodes(true);
+			net.removeStraightThroughNodes();
 
 //			net.removeIsolatedNodes(true);
 		}

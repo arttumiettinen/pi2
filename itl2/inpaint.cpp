@@ -39,7 +39,7 @@ namespace itl2
 
 			raw::writed(img, "./inpaint/data_missing");
 
-			itl2::inpaintGarcia<uint8_t>(img, 0, true, 0.5);
+			itl2::inpaintGarcia<uint8_t>(img, 0, 0.5);
 
 			raw::writed(img, "./inpaint/inpaint_garcia");
 
@@ -67,8 +67,8 @@ namespace itl2
 			raw::writed(img, "./inpaint/" + imgname + "_data_missing");
 
 			setValue(inpaintedZeroTolerance, img);
-			itl2::inpaintGarcia<float32_t>(inpaintedZeroTolerance, 0, true, 0);
-			itl2::inpaintGarcia<float32_t>(img, 0, true, tolerance);
+			itl2::inpaintGarcia<float32_t>(inpaintedZeroTolerance, 0, 0);
+			itl2::inpaintGarcia<float32_t>(img, 0, tolerance);
 
 			raw::writed(img, "./inpaint/" + imgname + "_inpaint_garcia_tol" + toString(tolerance));
 

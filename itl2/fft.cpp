@@ -886,6 +886,7 @@ namespace itl2
 			cout << "true y,\tmeas y,\tdelta" << endl;
 			cout << "true z,\tmeas z,\tdelta" << endl;
 			cout << "goodness" << endl;
+			ProgressIndicator progress(100);
 			for (coord_t n = 0; n < 100; n++)
 			{
 				Vec3d shiftGT(distribution(generator), distribution(generator), distribution(generator));
@@ -910,7 +911,7 @@ namespace itl2
 
 				out << shiftGT.x << ", " << shiftGT.y << ", " << shiftGT.z << ", " << shift.x << ", " << shift.y << ", " << shift.z << ", " << goodness << endl;
 
-				showProgress(n, 100);
+				progress.step();
 				
 				testAssert(abs(shift.x - shiftGT.x) < tolerance, "phase correlation dx");
 				testAssert(abs(shift.y - shiftGT.y) < tolerance, "phase correlation dy");

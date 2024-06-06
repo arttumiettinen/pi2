@@ -189,86 +189,90 @@ namespace itl2
 
 			Image<vector<size_t> > grid(100, 100, 100);
 
-			cout << "Divide boxes to a grid..." << endl;
-			size_t counter = 0;
-			for (size_t n = 0; n < boundingBoxes.size(); n++)
 			{
-				Vec3c mcell((coord_t)floor((double)(boundingBoxes[n].minc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
-					(coord_t)floor((double)(boundingBoxes[n].minc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
-					(coord_t)floor((double)(boundingBoxes[n].minc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
-
-				Vec3c Mcell((coord_t)ceil((double)(boundingBoxes[n].maxc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
-					(coord_t)ceil((double)(boundingBoxes[n].maxc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
-					(coord_t)ceil((double)(boundingBoxes[n].maxc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
-
-				for (coord_t zc = mcell.z; zc <= Mcell.z; zc++)
+				cout << "Divide boxes to a grid..." << endl;
+				ProgressIndicator progress(boundingBoxes.size());
+				for (size_t n = 0; n < boundingBoxes.size(); n++)
 				{
-					for (coord_t yc = mcell.y; yc <= Mcell.y; yc++)
+					Vec3c mcell((coord_t)floor((double)(boundingBoxes[n].minc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
+						(coord_t)floor((double)(boundingBoxes[n].minc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
+						(coord_t)floor((double)(boundingBoxes[n].minc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
+
+					Vec3c Mcell((coord_t)ceil((double)(boundingBoxes[n].maxc.x - m.x) / (double)(M.x - m.x) * (grid.width() - 1)),
+						(coord_t)ceil((double)(boundingBoxes[n].maxc.y - m.y) / (double)(M.y - m.y) * (grid.height() - 1)),
+						(coord_t)ceil((double)(boundingBoxes[n].maxc.z - m.z) / (double)(M.z - m.z) * (grid.depth() - 1)));
+
+					for (coord_t zc = mcell.z; zc <= Mcell.z; zc++)
 					{
-						for (coord_t xc = mcell.x; xc <= Mcell.x; xc++)
+						for (coord_t yc = mcell.y; yc <= Mcell.y; yc++)
 						{
-							grid(xc, yc, zc).push_back(n);
+							for (coord_t xc = mcell.x; xc <= Mcell.x; xc++)
+							{
+								grid(xc, yc, zc).push_back(n);
+							}
 						}
 					}
-				}
 
-				showThreadProgress(counter, boundingBoxes.size());
+					progress.step();
+				}
 			}
 
-			cout << "Determine overlaps..." << endl;
-			counter = 0;
-#pragma omp parallel if(!omp_in_parallel())
 			{
-				set<tuple<size_t, size_t> > nonOverlapping;
-#pragma omp for
-				for (coord_t i = 0; i < grid.pixelCount(); i++)
+				cout << "Determine overlaps..." << endl;
+				ProgressIndicator progress(grid.pixelCount());
+#pragma omp parallel if(!omp_in_parallel())
 				{
-					auto& list = grid(i);
-
-					for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
+					set<tuple<size_t, size_t> > nonOverlapping;
+#pragma omp for
+					for (coord_t i = 0; i < grid.pixelCount(); i++)
 					{
-						size_t n = list[ni];
-						const T& v1 = vertices[n];
-						const AABox<int32_t>& b1 = boundingBoxes[n];
+						auto& list = grid(i);
 
-						for (size_t mi = ni + 1; mi < list.size(); mi++)
+						for (coord_t ni = 0; ni < (coord_t)list.size(); ni++)
 						{
-							size_t m = list[mi];
-							const T& v2 = vertices[m];
-							const AABox<int32_t>& b2 = boundingBoxes[m];
+							size_t n = list[ni];
+							const T& v1 = vertices[n];
+							const AABox<int32_t>& b1 = boundingBoxes[n];
 
-							// Only test if the vertices have not been connected yet.
-							// There is a race condition between union_sets below and find_sets on this line, but
-							// that may only result in the test below evaluating true even though it should be
-							// false, and in that case we just do some extra work.
-							if (forest.find_set(n) != forest.find_set(m))
+							for (size_t mi = ni + 1; mi < list.size(); mi++)
 							{
-								if (b1.overlapsInclusive(b2)) // Do bounding boxes overlap?
-								{
-									auto key = make_tuple(std::min(n, m), std::max(n, m));
+								size_t m = list[mi];
+								const T& v2 = vertices[m];
+								const AABox<int32_t>& b2 = boundingBoxes[m];
 
-									// Only test points if they have not been determined to be non-overlapping.
-									if (nonOverlapping.find(key) == nonOverlapping.end())
+								// Only test if the vertices have not been connected yet.
+								// There is a race condition between union_sets below and find_sets on this line, but
+								// that may only result in the test below evaluating true even though it should be
+								// false, and in that case we just do some extra work.
+								if (forest.find_set(n) != forest.find_set(m))
+								{
+									if (b1.overlapsInclusive(b2)) // Do bounding boxes overlap?
 									{
-										if (isNeighbour(v1.points, v2.points))
+										auto key = make_tuple(std::min(n, m), std::max(n, m));
+
+										// Only test points if they have not been determined to be non-overlapping.
+										if (nonOverlapping.find(key) == nonOverlapping.end())
 										{
-											// v1 and v2 are neighbours, so the intersection regions must be combined
-#pragma omp critical(forestInsert)
+											if (isNeighbour(v1.points, v2.points))
 											{
-												forest.union_sets(n, m);
+												// v1 and v2 are neighbours, so the intersection regions must be combined
+#pragma omp critical(forestInsert)
+												{
+													forest.union_sets(n, m);
+												}
 											}
-										}
-										else
-										{
-											nonOverlapping.emplace(key);
+											else
+											{
+												nonOverlapping.emplace(key);
+											}
 										}
 									}
 								}
 							}
 						}
-					}
 
-					showThreadProgress(counter, grid.pixelCount());
+						progress.step();
+					}
 				}
 			}
 		}
@@ -287,55 +291,59 @@ namespace itl2
 			findIntersectingRegions(net.incompleteVertices, forest);
 
 			// Move all points to roots
-			cout << "Move points to roots..." << endl;
-			size_t counter = 0;
-			for (coord_t n = 0; n < (coord_t)net.incompleteVertices.size(); n++)
 			{
-				size_t base = forest.find_set(n);
-				if (base != n)
+				cout << "Move points to roots..." << endl;
+				ProgressIndicator progress(net.incompleteVertices.size());
+				for (coord_t n = 0; n < (coord_t)net.incompleteVertices.size(); n++)
 				{
-					auto& target = net.incompleteVertices[base].points;
-					auto& source = net.incompleteVertices[n].points;
-					target.insert(target.end(), source.begin(), source.end());
-					source.clear();
-					source.shrink_to_fit();
-					// Make the vertex to be deleted invalid.
-					net.vertices[net.incompleteVertices[n].vertexIndex] = Network::INVALID_VERTEX;
-				}
+					size_t base = forest.find_set(n);
+					if (base != n)
+					{
+						auto& target = net.incompleteVertices[base].points;
+						auto& source = net.incompleteVertices[n].points;
+						target.insert(target.end(), source.begin(), source.end());
+						source.clear();
+						source.shrink_to_fit();
+						// Make the vertex to be deleted invalid.
+						net.vertices[net.incompleteVertices[n].vertexIndex] = Network::INVALID_VERTEX;
+					}
 
-				showThreadProgress(counter, net.incompleteVertices.size());
+					progress.step();
+				}
 			}
 
 			// Calculate true position of each incomplete vertex.
-			cout << "Calculate new positions for root vertices..." << endl;
-			counter = 0;
-			#pragma omp parallel for if(!omp_in_parallel()) // Can be parallelized because incompleteVertices[n].vertexIndex is different for each n.
-			for (coord_t n = 0; n < (coord_t)net.incompleteVertices.size(); n++)
 			{
-				auto& v = net.incompleteVertices[n].points;
-				if (v.size() > 0)
+				cout << "Calculate new positions for root vertices..." << endl;
+				ProgressIndicator progress(net.incompleteVertices.size());
+#pragma omp parallel for if(!omp_in_parallel()) // Can be parallelized because incompleteVertices[n].vertexIndex is different for each n.
+				for (coord_t n = 0; n < (coord_t)net.incompleteVertices.size(); n++)
 				{
-					// Find unique points
-					//sort(v.begin(), v.end(), vecComparer<int32_t>);
-					//auto last = unique(v.begin(), v.end());
-					////v.erase(last, v.end());
-					//testAssert(last == v.end(), "Intersection region contains non-unique points.");
+					auto& v = net.incompleteVertices[n].points;
+					if (v.size() > 0)
+					{
+						// Find unique points
+						//sort(v.begin(), v.end(), vecComparer<int32_t>);
+						//auto last = unique(v.begin(), v.end());
+						////v.erase(last, v.end());
+						//testAssert(last == v.end(), "Intersection region contains non-unique points.");
 
-					// Calculate center point of the vertex
-					Vec3f center(0, 0, 0);
-					for (const auto& p : v)
-						center += Vec3f(p);
-					center /= (float32_t)v.size();
+						// Calculate center point of the vertex
+						Vec3f center(0, 0, 0);
+						for (const auto& p : v)
+							center += Vec3f(p);
+						center /= (float32_t)v.size();
 
 
-//if (center == Vec3f(161, 67, 85))
-//{
-//	cout << "found" << endl;
-//}
+						//if (center == Vec3f(161, 67, 85))
+						//{
+						//	cout << "found" << endl;
+						//}
 
-					net.vertices[net.incompleteVertices[n].vertexIndex] = center;
+						net.vertices[net.incompleteVertices[n].vertexIndex] = center;
+					}
+					progress.step();
 				}
-				showThreadProgress(counter, net.incompleteVertices.size());
 			}
 
 			// Replace removed vertices by the new ones.
@@ -364,55 +372,61 @@ namespace itl2
 			//	showThreadProgress(counter, net.incompleteVertices.size());
 			//}
 
-			cout << "Create map of vertex indices that have changed..." << endl;
 			map<size_t, size_t> vertexIndexMap;
-			counter = 0;
-			for (coord_t n = 0; n < (coord_t)net.incompleteVertices.size(); n++)
 			{
-				if (net.incompleteVertices[n].points.size() <= 0)
+				cout << "Create map of vertex indices that have changed..." << endl;
+				ProgressIndicator progress(net.incompleteVertices.size());;
+				for (coord_t n = 0; n < (coord_t)net.incompleteVertices.size(); n++)
 				{
-					size_t m = forest.find_set(n);
-					size_t sourceVertexIndex = net.incompleteVertices[n].vertexIndex;
-					size_t targetVertexIndex = net.incompleteVertices[m].vertexIndex;
-					vertexIndexMap[sourceVertexIndex] = targetVertexIndex;
+					if (net.incompleteVertices[n].points.size() <= 0)
+					{
+						size_t m = forest.find_set(n);
+						size_t sourceVertexIndex = net.incompleteVertices[n].vertexIndex;
+						size_t targetVertexIndex = net.incompleteVertices[m].vertexIndex;
+						vertexIndexMap[sourceVertexIndex] = targetVertexIndex;
+					}
+					progress.step();
 				}
-				showThreadProgress(counter, net.incompleteVertices.size());
 			}
 
-			cout << "Change vertex indices in edges list..." << endl;
-			counter = 0;
-			#pragma omp parallel for if(!omp_in_parallel())
-			for (coord_t i = 0; i < (coord_t)net.edges.size(); i++)
 			{
-				auto& edge = net.edges[i];
+				cout << "Change vertex indices in edges list..." << endl;
+				ProgressIndicator progress(net.edges.size());
+#pragma omp parallel for if(!omp_in_parallel())
+				for (coord_t i = 0; i < (coord_t)net.edges.size(); i++)
+				{
+					auto& edge = net.edges[i];
 
-				const auto it = vertexIndexMap.find(edge.verts[0]);
-				if (it != vertexIndexMap.end())
-					edge.verts[0] = it->second;
+					const auto it = vertexIndexMap.find(edge.verts[0]);
+					if (it != vertexIndexMap.end())
+						edge.verts[0] = it->second;
 
-				const auto it2 = vertexIndexMap.find(edge.verts[1]);
-				if (it2 != vertexIndexMap.end())
-					edge.verts[1] = it2->second;
+					const auto it2 = vertexIndexMap.find(edge.verts[1]);
+					if (it2 != vertexIndexMap.end())
+						edge.verts[1] = it2->second;
 
-				showThreadProgress(counter, net.edges.size());
+					progress.step();
+				}
 			}
 
 			// Change indices also in incomplete edge list
-			counter = 0;
-			#pragma omp parallel for if(!omp_in_parallel())
-			for (coord_t i = 0; i < (coord_t)net.incompleteEdges.size(); i++)
 			{
-				auto& edge = net.incompleteEdges[i];
+				ProgressIndicator progress(net.incompleteEdges.size());
+#pragma omp parallel for if(!omp_in_parallel())
+				for (coord_t i = 0; i < (coord_t)net.incompleteEdges.size(); i++)
+				{
+					auto& edge = net.incompleteEdges[i];
 
-				const auto it = vertexIndexMap.find(edge.verts[0]);
-				if (it != vertexIndexMap.end())
-					edge.verts[0] = it->second;
+					const auto it = vertexIndexMap.find(edge.verts[0]);
+					if (it != vertexIndexMap.end())
+						edge.verts[0] = it->second;
 
-				const auto it2 = vertexIndexMap.find(edge.verts[1]);
-				if (it2 != vertexIndexMap.end())
-					edge.verts[1] = it2->second;
+					const auto it2 = vertexIndexMap.find(edge.verts[1]);
+					if (it2 != vertexIndexMap.end())
+						edge.verts[1] = it2->second;
 
-				showThreadProgress(counter, net.incompleteEdges.size());
+					progress.step();
+				}
 			}
 
 			// Remove items corresponding to the completed incomplete vertices,

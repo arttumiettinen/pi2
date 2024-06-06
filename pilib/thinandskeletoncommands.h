@@ -227,7 +227,7 @@ namespace pilib
 	public:
 		virtual void run(Image<pixel_t>& in, vector<ParamVariant>& args) const override
 		{
-			classifySkeleton(in, true, false, true);
+			classifySkeleton(in, true, false);
 		}
 
 		virtual Vec3c calculateOverlap(const vector<ParamVariant>& args) const override
@@ -717,7 +717,7 @@ namespace pilib
 
 			Network net;
 			net.fromImage(vertices, edges, &measurements, &points);
-			net.removeStraightThroughNodes(true);
+			net.removeStraightThroughNodes();
 			net.toImage(vertices, edges, &measurements, &points);
 		}
 	};
@@ -766,7 +766,7 @@ namespace pilib
 					edgeIndices.push_back(n);
 			}
 
-			net.removeEdges(edgeIndices, disconnectStraightThrough, removeIsolated, true);
+			net.removeEdges(edgeIndices, disconnectStraightThrough, removeIsolated);
 
 			net.toImage(vertices, edges, &measurements, &points);
 		}
@@ -804,7 +804,7 @@ namespace pilib
 
 			Network net;
 			net.fromImage(vertices, edges, &measurements, &points);
-			net.prune((float32_t)maxLength, disconnectStraightThrough, removeIsolated, true);
+			net.prune((float32_t)maxLength, disconnectStraightThrough, removeIsolated);
 			net.toImage(vertices, edges, &measurements, &points);
 		}
 	};

@@ -547,7 +547,7 @@ namespace itl2
 		float32_t averageBadPixels = 0;
 		size_t maxBadPixels = 0;
 
-		size_t counter = 0;
+		ProgressIndicator progress(img.depth());
 #pragma omp parallel
 		{
 
@@ -568,7 +568,7 @@ namespace itl2
 					maxBadPixels = std::max(maxBadPixels, badPixelCount);
 				}
 
-				showThreadProgress(counter, img.depth());
+				progress.step();
 			}
 		}
 
@@ -841,8 +841,7 @@ namespace itl2
 				// Scaling
 				sum = (sum - settings.dynMin) / (settings.dynMax - settings.dynMin) * NumberUtils<out_t>::scale();
 				output(x, y, z) = pixelRound<out_t>(sum);
-			},
-			true);
+			});
 	}
 
 
