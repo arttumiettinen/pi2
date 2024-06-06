@@ -10,6 +10,7 @@
 #include "utilities.h"
 #include "fastmaxminfilters.h"
 #include "median.h"
+#include "math/vec4.h"
 
 namespace itl2
 {
@@ -842,7 +843,7 @@ namespace itl2
 		{
 			//typename NumberUtils<pixel_t>::RealFloatType sigmas = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[0];
 			//typename NumberUtils<pixel_t>::RealFloatType sigmat = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[1];
-			typename Vec4<NumberUtils<pixel_t>::RealFloatType> sigma(spatialandrangesigma);
+			Vec4<typename NumberUtils<pixel_t>::RealFloatType> sigma(spatialandrangesigma);
 			
 			typename NumberUtils<pixel_t>::FloatType sum = 0.0;
 			typename NumberUtils<pixel_t>::RealFloatType wsum = 0.0;
@@ -860,7 +861,7 @@ namespace itl2
 						
 						typename NumberUtils<pixel_t>::FloatType c = pix - centerVal;
 						
-						typename Vec3<NumberUtils<pixel_t>::RealFloatType> r(Vec3c(x, y, z) - center);
+						Vec3<typename NumberUtils<pixel_t>::RealFloatType> r(Vec3c(x, y, z) - center);
 
 						typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)(
 							::exp(-(r.x * r.x) / (2 * sigma.x * sigma.x)	// Spatial x
