@@ -338,6 +338,11 @@ namespace itl2
 			}
     };
 
+	extern template class Vec2<itl2::float32_t>;
+	extern template class Vec2<double>;
+	extern template class Vec2<itl2::coord_t>;
+	extern template class Vec2<int32_t>;
+
     typedef Vec2<double> Vec2d;
 	typedef Vec2<itl2::float32_t> Vec2f;
 	typedef Vec2<itl2::coord_t> Vec2c;

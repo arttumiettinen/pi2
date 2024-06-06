@@ -423,6 +423,11 @@ namespace itl2
             }
     };
 
+	extern template class Vec3<itl2::float32_t>;
+	extern template class Vec3<double>;
+	extern template class Vec3<itl2::coord_t>;
+	extern template class Vec3<int32_t>;
+
 	typedef Vec3<itl2::float32_t> Vec3f;
     typedef Vec3<double> Vec3d;
 	typedef Vec3<itl2::coord_t> Vec3c;

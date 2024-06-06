@@ -161,6 +161,7 @@
     <ClCompile Include="lz4\lz4hc.c" />
     <ClCompile Include="lz4\xxhash.c" />
     <ClCompile Include="math\aabox.cpp" />
+    <ClCompile Include="math\vec2.cpp" />
     <ClCompile Include="sdmap.cpp" />
     <ClCompile Include="eval.cpp" />
     <ClCompile Include="generation.cpp" />
