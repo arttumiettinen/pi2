@@ -338,6 +338,7 @@ namespace itl2
 		template<typename pixel_t, typename Operation> void sphereOpApprox(Image<pixel_t>& img, const DecomposedSphere& directions, BoundaryCondition bc, Operation op, pixel_t padValue)
 		{
 			coord_t j = 0;
+			ProgressIndicator progress(directions.dirs.size());
 			for (size_t i = 0; i < directions.Ns.size(); i++)
 			{
 				coord_t rl = directions.rls[i];
@@ -348,6 +349,7 @@ namespace itl2
 					if (rl > 0)
 						lineOp<pixel_t, Operation>(img, rl, directions.dirs[j], padValue, bc, op);
 					j++;
+					progress.step();
 				}
 			}
 		}
