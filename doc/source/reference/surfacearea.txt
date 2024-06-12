@@ -6,8 +6,7 @@ surfacearea
 
 **Syntax:** :code:`surfacearea(geometry, surface area, isovalue)`
 
-Calculates the total surface area between foreground and background in an image.Foreground and background are defined by a threshold value (isovalue parameter)."
-			R"(Uses Marching Cubes algorithm.
+Calculates the total surface area between foreground and background regions.Foreground and background are defined by a threshold value (isovalue parameter).Uses Marching Cubes algorithm, so the results are not multigrid convergent and will depend on image resolution.
 
 This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
 

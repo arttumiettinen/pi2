@@ -30,7 +30,7 @@ Output image.
 spatial sigma [input]
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Data type:** real
+**Data type:** 3-component real vector
 
 Standard deviation of Gaussian kernel used for spatial smoothing.
 
