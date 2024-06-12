@@ -574,8 +574,8 @@ namespace pilib
 		friend class CommandList;
 
 		SurfaceAreaCommand() : Command("surfacearea",
-			R"(Calculates the total surface area between foreground and background regions.)"
-			R"(Foreground and background are defined by a threshold value (isovalue parameter).)"
+			R"(Calculates the total surface area between foreground and background regions. )"
+			R"(Foreground and background are defined by a threshold value (isovalue parameter). )"
 			R"(Uses Marching Cubes algorithm, so the results are not multigrid convergent and will depend on image resolution.)",
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "geometry", "An image containing the input geometry. If using a non-binary image, please specify isovalue parameter, too."),
