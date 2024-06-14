@@ -320,5 +320,8 @@
     <ClCompile Include="floodfillcommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\itl2\interpolation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

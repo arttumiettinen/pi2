@@ -647,5 +647,8 @@
     <ClCompile Include="math\vec2.cpp">
       <Filter>Source Files\math</Filter>
     </ClCompile>
+    <ClCompile Include="interpolation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

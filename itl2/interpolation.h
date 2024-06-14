@@ -99,6 +99,8 @@ namespace itl2
 
 		}
 
+		using Interpolator::operator();
+
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t ix = (coord_t)::round(x);
@@ -128,6 +130,8 @@ namespace itl2
 		{
 
 		}
+
+		using Interpolator::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
@@ -188,6 +192,8 @@ namespace itl2
 		{
 
 		}
+
+		using Interpolator::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
@@ -280,6 +286,8 @@ namespace itl2
 
 		}
 
+		using Interpolator::operator();
+
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t u0 = (coord_t)floor(x);
@@ -352,6 +360,8 @@ namespace itl2
 
 		}
 
+		using Interpolator::operator();
+
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
 			coord_t u0 = (coord_t)floor(x);
@@ -422,5 +432,11 @@ namespace itl2
 			case InterpolationMode::Cubic: return std::make_shared<CubicInterpolator<output_t, input_t, real_t, intermediate_t> >(bc);
 		}
 		throw ITLException("Unsupported interpolation mode.");
+	}
+
+
+	namespace tests
+	{
+		void invalidValueInterpolation();
 	}
 }

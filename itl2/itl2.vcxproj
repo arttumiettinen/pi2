@@ -151,6 +151,7 @@
     <ClCompile Include="csa.cpp" />
     <ClCompile Include="danielsson.cpp" />
     <ClCompile Include="diskmappedbuffer.cpp" />
+    <ClCompile Include="interpolation.cpp" />
     <ClCompile Include="io\itldicom.cpp" />
     <ClCompile Include="io\itljpeg.cpp" />
     <ClCompile Include="io\itllz4.cpp" />
