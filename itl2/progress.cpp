@@ -11,11 +11,21 @@ namespace itl2
 		showIndicator(showIndicator),
 		messageLength(0)
 	{
-		nestingCount++;
+		int nestingCountLocal;
+#pragma omp critical(showProgress)
+		{
+			nestingCount++;
+			nestingCountLocal = nestingCount;
+		}
+		
 		isTerm = isTerminal();
 
-		if (nestingCount > 1)
+		if (nestingCountLocal > 1)
+		{
+			// Use for debugging:
+			//std::cout << "Hiding progress indicator due to nesting" << std::endl;
 			this->showIndicator = false;
+		}
 
 		if (this->showIndicator && isTerm)
 			std::cout << "0 %\r" << std::flush;
@@ -27,10 +37,16 @@ namespace itl2
 		showIndicator(showIndicator),
 		messageLength(0)
 	{
-		nestingCount++;
+		int nestingCountLocal;
+#pragma omp critical(showProgress)
+		{
+			nestingCount++;
+			nestingCountLocal = nestingCount;
+		}
+
 		isTerm = isTerminal();
 
-		if (nestingCount > 1)
+		if (nestingCountLocal > 1)
 			this->showIndicator = false;
 
 		showMessage(initialMessage);
@@ -39,10 +55,14 @@ namespace itl2
 
 	ProgressIndicator::~ProgressIndicator()
 	{
-		nestingCount--;
-		if (nestingCount < 0)
-			nestingCount = 0; // TODO: Deleting more objects than created; indicate error in code.
-
+#pragma omp critical(showProgress)
+		{
+			nestingCount--;
+			if (nestingCount < 0)
+				nestingCount = 0; // TODO: Deleting more objects than created; indicate error in code.
+		}
+		
+		
 		if (showIndicator)
 		{
 			if (isTerm)
@@ -80,6 +100,24 @@ namespace itl2
 					// Nesting
 					ProgressIndicator prog2(10000);
 					for (size_t m = 0; m < 10000; m++)
+					{
+						prog2.step();
+					}
+
+					prog.step();
+				}
+			}
+
+			std::cout << "Parallel nesting test..." << std::endl;
+			{
+				const int max = 100000;
+				ProgressIndicator prog(max);
+#pragma omp parallel for
+				for (int n = 0; n < max; n++)
+				{
+					// Nesting
+					ProgressIndicator prog2(100000);
+					for (size_t m = 0; m < 100000; m++)
 					{
 						prog2.step();
 					}

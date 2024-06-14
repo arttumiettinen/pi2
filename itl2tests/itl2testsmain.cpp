@@ -66,8 +66,8 @@ int main()
 
 	//test(itl2::io::tests::badnn5, "reading bad nn5");
 
-	//test(itl2::tests::progress, "progress indicator");
-	test(itl2::tests::invalidValueInterpolation, "invalid value interpolation");
+	test(itl2::tests::progress, "progress indicator");
+	//test(itl2::tests::invalidValueInterpolation, "invalid value interpolation");
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
 	//test(itl2::tests::saturatingArithmetic, "saturating arithmetic");
