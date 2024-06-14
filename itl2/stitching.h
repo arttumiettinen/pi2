@@ -899,11 +899,10 @@ namespace itl2
 		{
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
-			Interpolator<real_t, pixel_t, real_t>& interpolator = zeroesAreMissingValues ? 
-																	(Interpolator<real_t, pixel_t, real_t>&)CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0) :
-																	(Interpolator<real_t, pixel_t, real_t>&)CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
-			//const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
-
+			CubicInvalidValueInterpolator<real_t, pixel_t, real_t> cubicIV(BoundaryCondition::Zero, 0, 0);
+			CubicInterpolator<real_t, pixel_t, real_t> cubic(BoundaryCondition::Zero);
+			Interpolator<real_t, pixel_t, real_t>* interpolator = zeroesAreMissingValues ? (Interpolator<real_t, pixel_t, real_t>*)&cubicIV : (Interpolator<real_t, pixel_t, real_t>*)&cubic;
+			
 			// NOTE: Cubic interpolator will overshoot, linear is rough. Perhaps monotone cubic would be the best for shifts?
 			//const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = LinearInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
 			const Interpolator<Vec3<real_t>, Vec3<real_t>, real_t>& shiftInterpolator = CubicInterpolator<Vec3<real_t>, Vec3<real_t>, real_t, Vec3<real_t> >(BoundaryCondition::Nearest);
@@ -958,7 +957,7 @@ namespace itl2
 
 						if (src.isInImage(pdot))
 						{
-							real_t pix = interpolator(src, pdot);
+							real_t pix = (*interpolator)(src, pdot);
 							if (pix != 0) // Don't process pixels that could not be interpolated (are given background value)
 							{
 								if (normalize)
