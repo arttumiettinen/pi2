@@ -99,7 +99,7 @@ namespace itl2
 
 		}
 
-		using Interpolator::operator();
+		using Interpolator<output_t, input_t, real_t>::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
@@ -131,7 +131,7 @@ namespace itl2
 
 		}
 
-		using Interpolator::operator();
+		using Interpolator<output_t, input_t, real_t>::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
@@ -193,7 +193,7 @@ namespace itl2
 
 		}
 
-		using Interpolator::operator();
+		using Interpolator<output_t, input_t, real_t>::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
@@ -254,10 +254,13 @@ namespace itl2
 	};
 
 	/**
-	Cubic interpolation functor.
+	Cubic convolution interpolation functor.
 	This code is from
 	https://github.com/imagingbook/imagingbook-common/blob/master/src/main/java/imagingbook/lib/interpolation/BicubicInterpolator.java
 	See http://imagingbook.com
+	It is based on paper
+	Robert G. Keys. Cubic Convolution Interpolation for Digital Image Processing. IEEE Transactions on Acoustics, Speech, and Signal Processing ASSP-29(6), 1981.
+	Boundaries are not handled like in the paper but through BoundaryCondition enum just like elsewhere in this library.
 	*/
 	template<typename output_t, typename input_t, typename real_t = typename NumberUtils<output_t>::RealFloatType, typename intermediate_t = typename NumberUtils<output_t>::FloatType> class CubicInterpolator : public Interpolator<output_t, input_t, real_t>
 	{
@@ -286,7 +289,7 @@ namespace itl2
 
 		}
 
-		using Interpolator::operator();
+		using Interpolator<output_t, input_t, real_t>::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
@@ -324,11 +327,16 @@ namespace itl2
 
 
 	/**
-	Cubic interpolation functor with invalid value support.
+	Cubic convolution interpolation functor with invalid value support.
 	Pixels having a specific value are not used in the interpolation process.
 	This code is partially from
 	https://github.com/imagingbook/imagingbook-common/blob/master/src/main/java/imagingbook/lib/interpolation/BicubicInterpolator.java
 	See http://imagingbook.com
+	It is based on paper
+	Robert G. Keys. Cubic Convolution Interpolation for Digital Image Processing. IEEE Transactions on Acoustics, Speech, and Signal Processing ASSP-29(6), 1981.
+	Boundaries are not handled like in the paper but through BoundaryCondition enum just like elsewhere in this library.
+	Missing values are substituted by the average of non-missing values in the neighbourhood that participates in the interpolation.
+	If more than half of the input values are missing, the output is set to the missing value, too.
 	*/
 	template<typename output_t, typename input_t, typename real_t = typename NumberUtils<output_t>::RealFloatType, typename intermediate_t = typename NumberUtils<output_t>::FloatType> class CubicInvalidValueInterpolator : public Interpolator<output_t, input_t, real_t>
 	{
@@ -360,63 +368,73 @@ namespace itl2
 
 		}
 
-		using Interpolator::operator();
+		using Interpolator<output_t, input_t, real_t>::operator();
 
 		virtual output_t operator()(const Image<input_t>& img, real_t x, real_t y, real_t z) const override
 		{
+			// NOTE: As the weight w_cub is not positive everywhere, we cannot use similar strategy
+			// than in the linear invalid value interpolation. Instead, we impute the missing values with
+			// the average of all non-missing values in the neighbourhood used in the interpolation process.
+
 			coord_t u0 = (coord_t)floor(x);
 			coord_t v0 = (coord_t)floor(y);
 			coord_t w0 = (coord_t)floor(z);
 
-			intermediate_t r = intermediate_t();
-			real_t wTotR = 0;
+			intermediate_t avg = intermediate_t();
+			coord_t count = 0;
 			for (int k = 0; k <= 3; k++)
 			{
-				intermediate_t q = intermediate_t();
 				coord_t w = w0 - 1 + k;
-				real_t wTotQ = 0;
-
 				for (int j = 0; j <= 3; j++)
 				{
-					intermediate_t p = intermediate_t();
 					coord_t v = v0 - 1 + j;
-					real_t wTotP = 0;
-
 					for (int i = 0; i <= 3; i++)
 					{
 						coord_t u = u0 - 1 + i;
 						input_t pixval = this->getPixelSafe(img, u, v, w);
 						if (pixval != invalidInputValue)
 						{
-							real_t ww = w_cub(x - u);
-							p = p + pixval * ww;
-							wTotP += ww;
+							avg += (intermediate_t)pixval;
+							count++;
 						}
 					}
-
-					if (wTotP > 0)
-					{
-						real_t ww = w_cub(y - v);
-						q = q + p / wTotP * ww;
-						wTotQ += ww;
-					}
-				}
-
-				if (wTotQ > 0)
-				{
-					real_t ww = w_cub(z - w);
-					r = r + q / wTotQ * ww;
-					wTotR += ww;
 				}
 			}
 
-			if (wTotR > 0)
+			// Don't try to interpolate if more than half of the data is missing.
+			if (count <= 4 * 4 * 4 / 2)
+				return invalidOutputValue;
+
+			avg /= count;
+
+			intermediate_t r = intermediate_t();
+			for (int k = 0; k <= 3; k++)
 			{
-				r /= wTotR;
-				return pixelRound<output_t>(r);
+				coord_t w = w0 - 1 + k;
+				intermediate_t q = intermediate_t();
+
+				for (int j = 0; j <= 3; j++)
+				{
+					coord_t v = v0 - 1 + j;
+					intermediate_t p = intermediate_t();
+
+					for (int i = 0; i <= 3; i++)
+					{
+						coord_t u = u0 - 1 + i;
+						input_t pixval = this->getPixelSafe(img, u, v, w);
+						if (pixval == invalidInputValue)
+							p = p + avg * w_cub(x - u);
+						else
+							p = p + pixval * w_cub(x - u);
+					}
+
+					q = q + p * w_cub(y - v);
+				}
+
+				r = r + q * w_cub(z - w);
 			}
 
-			return invalidOutputValue;
+			return pixelRound<output_t>(r);
 		}
 	};
 
