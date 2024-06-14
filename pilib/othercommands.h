@@ -742,7 +742,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
 				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true),
 				CommandArgument<double>(ParameterDirection::In, "circle mask diameter", "Selects tile weighing method. Set to a negative value to use rect weight, where weight of a pixel is proportional to the distance from the edge of the tile. Set to 0 to use maximum circle weight, where the weight of a pixel is proportional to the distance from the edge of a maximal inscribed circle that fits inside the image in the xy-plane. Set to a positive value to use circle weight with user-specified diameter.", -1.0),
-				CommandArgument<Vec3c>(ParameterDirection::In, "tile block size", "Maximum size of tile image block to be processed at once.")
+				CommandArgument<Vec3c>(ParameterDirection::In, "tile block size", "Maximum size of tile image block to be processed at once."),
+				CommandArgument<bool>(ParameterDirection::In, "zeroes are missing", "Set to true to treat zero pixels in the input tiles as missing values.")
 			},
 			blockMatchSeeAlso())
 		{
@@ -768,11 +769,12 @@ namespace pilib
 			bool normalize = pop<bool>(args);
 			double maxCircleDiameter = pop<double>(args);
 			Vec3c srcBlockSize = pop<Vec3c>(args);
+			bool zeroesAreMissingValues = pop<bool>(args);
 
 			Vec3c pos(x, y, z);
 			Vec3c size(w, h, d);
 
-			stitchVer3<pixel_t>(indexFile, pos, size, output, nullptr, normalize, (float32_t)maxCircleDiameter, srcBlockSize);
+			stitchVer3<pixel_t>(indexFile, pos, size, output, nullptr, normalize, (float32_t)maxCircleDiameter, srcBlockSize, zeroesAreMissingValues);
 		}
 	};
 
@@ -794,7 +796,8 @@ namespace pilib
 				CommandArgument<coord_t>(ParameterDirection::In, "depth", "Depth of the output region."),
 				CommandArgument<bool>(ParameterDirection::In, "normalize", "Set to true to make mean gray value of images the same in the overlapping region.", true),
 				CommandArgument<double>(ParameterDirection::In, "circle mask diameter", "Selects tile weighing method. Set to a negative value to use rect weight, where weight of a pixel is proportional to the distance from the edge of the tile. Set to 0 to use maximum circle weight, where the weight of a pixel is proportional to the distance from the edge of a maximal inscribed circle that fits inside the image in the xy-plane. Set to a positive value to use circle weight with user-specified diameter.", -1.0),
-				CommandArgument<Vec3c>(ParameterDirection::In, "tile block size", "Maximum size of tile image block to be processed at once.")
+				CommandArgument<Vec3c>(ParameterDirection::In, "tile block size", "Maximum size of tile image block to be processed at once."),
+				CommandArgument<bool>(ParameterDirection::In, "zeroes are missing", "Set to true to treat zero pixels in the input tiles as missing values.")
 			},
 			blockMatchSeeAlso())
 		{
@@ -821,11 +824,12 @@ namespace pilib
 			bool normalize = pop<bool>(args);
 			double maxCircleDiameter = pop<double>(args);
 			Vec3c srcBlockSize = pop<Vec3c>(args);
+			bool zeroesAreMissingValues = pop<bool>(args);
 
 			Vec3c pos(x, y, z);
 			Vec3c size(w, h, d);
 
-			stitchVer3<pixel_t>(indexFile, pos, size, output, &goodness, normalize, (float32_t)maxCircleDiameter, srcBlockSize);
+			stitchVer3<pixel_t>(indexFile, pos, size, output, &goodness, normalize, (float32_t)maxCircleDiameter, srcBlockSize, zeroesAreMissingValues);
 		}
 	};
 

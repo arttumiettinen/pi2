@@ -97,6 +97,11 @@ normalize_while_stitching = True
 max_circle_diameter = -1
 
 
+# Set to True to treat pixels that have value 0 in the tiles as missing values.
+# Affects the final mosaic building phase only, zeroes are still treated as zeroes in the matching phase.
+zeroes_are_missing_values = True
+
+
 # Threshold value for displacement filtering.
 # This is the T value in the filtering process that is done before determination of
 # similarity transformations and before mosaic assembly.

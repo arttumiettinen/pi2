@@ -888,17 +888,20 @@ namespace itl2
 		- image mean does not need further processing.
 		- image S must be divided by image weight and to get standard deviation, sqrt must be taken.
 		@param maxCircleDiameter Set to 0 to use "normal" weight that is related to the distance from the edge of the image. Set to positive value to use weight that is proportional to distance from max circle of given diameter.
+		@param zeroesAreMissingBalues Set to True if zero pixels in the input tiles should be regarded as missing values.
 		*/
 		template<typename pixel_t, typename real_t> void stitchOneVer3(
 			const Image<pixel_t>& src, const Vec3<real_t>& srcBlockPos, const Vec3c fullSrcDimensions,
 			const PointGrid3D<coord_t>& refPoints, const Image<Vec3<real_t> >& shifts,
 			real_t normFactor, real_t normFactorStd, real_t meanDef,
 			const Vec3c& outPos, Image<real_t>& mean, Image<real_t>& weight, Image<real_t>* S,
-			bool normalize, real_t maxCircleDiameter)
+			bool normalize, real_t maxCircleDiameter, bool zeroesAreMissingValues)
 		{
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = NearestNeighbourInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = LinearInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
-			const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0);
+			Interpolator<real_t, pixel_t, real_t>& interpolator = zeroesAreMissingValues ? 
+																	(Interpolator<real_t, pixel_t, real_t>&)CubicInvalidValueInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero, 0, 0) :
+																	(Interpolator<real_t, pixel_t, real_t>&)CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 			//const Interpolator<real_t, pixel_t, real_t>& interpolator = CubicInterpolator<real_t, pixel_t, real_t>(BoundaryCondition::Zero);
 
 			// NOTE: Cubic interpolator will overshoot, linear is rough. Perhaps monotone cubic would be the best for shifts?
@@ -1150,7 +1153,8 @@ namespace itl2
 	@param srcBlockSize Maximum block size that is read from an input image at once. Use to limit RAM requirements.
 	*/
 	template<typename pixel_t> void stitchVer3(const string& indexFile, const Vec3c& outputPos, const Vec3c& outputSize,
-		Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, float32_t maxCircleMaskDiameter, const Vec3c& srcBlockSize)
+		Image<pixel_t>& output, Image<pixel_t>* std, bool normalize, float32_t maxCircleMaskDiameter, const Vec3c& srcBlockSize,
+		bool zeroesAreMissingValues)
 	{
 
 		// Read index file
@@ -1244,7 +1248,7 @@ namespace itl2
 
 							internals::stitchOneVer3<pixel_t, float32_t>(srcBlock, Vec3f(srcBlockPos), srcDimensions,
 								refPoints, shifts, normFact, normFactStd, meanDef, outputPos, out, weight, std ? &stdtmp : nullptr,
-								normalize, maskD);
+								normalize, maskD, zeroesAreMissingValues);
 						}
 					}
 				}

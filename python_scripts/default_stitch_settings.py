@@ -86,6 +86,11 @@ normalize_in_blockmatch = True
 normalize_while_stitching = {normalize_while_stitching}
 
 
+# Set to True to treat pixels that have value 0 in the tiles as missing values.
+# Affects the final mosaic building phase only, zeroes are still treated as zeroes in the matching phase.
+zeroes_are_missing_values = True
+
+
 # Selects tile pixel weighing method. Set to a negative value to use rect weight, where weight
 # of a pixel is proportional to the distance from the edge of the tile. Set to 0 to use
 # maximum circle weight, where the weight of a pixel is proportional to the distance from
