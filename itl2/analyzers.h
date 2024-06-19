@@ -344,42 +344,47 @@ namespace itl2
 
 			virtual std::vector<double> analyze(const std::vector<POINT>& points) const override
 			{
-				// Calculate bounding box for the points.
-				POINT min;
-				POINT max;
-				for (size_t n = 0; n < points.size(); n++)
+				double area = 0.0;
+
+				if (points.size() > 0)
 				{
-					POINT p = points[n];
-					if (p.x < min.x)
-						min.x = p.x;
-					if (p.y < min.y)
-						min.y = p.y;
-					if (p.z < min.z)
-						min.z = p.z;
+					// Calculate bounding box for the points.
+					POINT min = points[0];
+					POINT max = points[0];
+					for (size_t n = 0; n < points.size(); n++)
+					{
+						POINT p = points[n];
+						if (p.x < min.x)
+							min.x = p.x;
+						if (p.y < min.y)
+							min.y = p.y;
+						if (p.z < min.z)
+							min.z = p.z;
 
-					if (p.x > max.x)
-						max.x = p.x;
-					if (p.y > max.y)
-						max.y = p.y;
-					if (p.z > max.z)
-						max.z = p.z;
+						if (p.x > max.x)
+							max.x = p.x;
+						if (p.y > max.y)
+							max.y = p.y;
+						if (p.z > max.z)
+							max.z = p.z;
+					}
+
+					coord_t w = (coord_t)std::ceil(max.x) - (coord_t)std::floor(min.x) + 2;
+					coord_t h = (coord_t)std::ceil(max.y) - (coord_t)std::floor(min.y) + 2;
+					coord_t d = (coord_t)std::ceil(max.z) - (coord_t)std::floor(min.z) + 2;
+
+					// Plot the points into a temporary image
+					Image<uint8_t> block(w, h, d);
+
+					for (size_t n = 0; n < points.size(); n++)
+					{
+						POINT p = points[n] - min + POINT(1, 1, 1);
+						block(p) = 255;
+					}
+
+					// Calculate the area of the particle using Marching Cubes
+					area = getMarchingCubesArea<uint8_t>(block, 128);
 				}
-
-				coord_t w = (coord_t)std::ceil(max.x) - (coord_t)std::floor(min.x) + 2;
-				coord_t h = (coord_t)std::ceil(max.y) - (coord_t)std::floor(min.y) + 2;
-				coord_t d = (coord_t)std::ceil(max.z) - (coord_t)std::floor(min.z) + 2;
-
-				// Plot the points into a temporary image
-				Image<uint8_t> block(w, h, d);
-
-				for (size_t n = 0; n < points.size(); n++)
-				{
-					POINT p = points[n] - min + POINT(1, 1, 1);
-					block(p) = 255;
-				}
-
-				// Calculate the area of the particle using Marching Cubes
-				double area = getMarchingCubesArea<uint8_t>(block, 128);
 
 				std::vector<double> results;
 				results.push_back(area);

@@ -437,6 +437,8 @@ namespace itl2
 	*/
 	template<typename pixel_t> double getMarchingCubesArea(Image<pixel_t>& object, double isovalue)
 	{
+		return 0;
+
 		coord_t width = object.width();
 		coord_t height = object.height();
 		coord_t depth = object.depth();
