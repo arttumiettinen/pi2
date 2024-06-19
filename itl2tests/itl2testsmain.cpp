@@ -66,7 +66,7 @@ int main()
 
 	//test(itl2::io::tests::badnn5, "reading bad nn5");
 
-	test(itl2::tests::progress, "progress indicator");
+	//test(itl2::tests::progress, "progress indicator");
 	//test(itl2::tests::invalidValueInterpolation, "invalid value interpolation");
 	//test(itl2::tests::intermediateTypes, "intermediate type determination");
 	//test(itl2::tests::equals, "equals");
@@ -251,7 +251,7 @@ int main()
 
 	//test(itl2::tests::seededDMap, "seeded distance map");
 
-	//test(itl2::tests::stddevuint16, "standard deviation, uint16");
+	test(itl2::tests::stddevuint16, "standard deviation, uint16");
 
 	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
 	//test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");

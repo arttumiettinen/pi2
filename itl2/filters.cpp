@@ -101,7 +101,7 @@ namespace itl2
 			using DT = uint16_t;
 			Image<DT> img(1000, 1000);
 			ramp(img, 0);
-			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (DT)10000);
+			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (DT)50000);
 			raw::writed(img, "./filters/stddev_orig");	
 			Image<DT> filtered(img.dimensions());
 			stddevFilter(img, filtered, 5);

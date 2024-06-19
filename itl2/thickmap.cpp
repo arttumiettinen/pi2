@@ -512,9 +512,41 @@ namespace itl2
 		void discretizedCircles()
 		{
 			int32_t MAX = 100 * 100;
+			internals::buildCircleLookup(MAX);
 
 			Image<uint8_t> img1(210, 210);
 			Image<uint8_t> img2(210, 210);
+
+			/*
+			// Test equality of various fit-conditions.
+			for (int32_t r2_1 = 0; r2_1 < MAX; r2_1++)
+			//int32_t r2_1 = 6;
+			{
+				for (int32_t r2_2 = 0; r2_2 <= MAX; r2_2++)
+				//int32_t r2_2 = 5;
+				{
+					bool fits = internals::doesDiscretizedCircle1FitInto2(r2_1, r2_2);
+					bool fits2 = r2_1 <= r2_2;
+					//bool fits3 = largestIntWhoseSquareIsLessThan(r2_1) <= largestIntWhoseSquareIsLessThan(r2_2);
+					if (fits != fits2)
+					{
+						setValue(img1, 0);
+						setValue(img2, 0);
+						draw(img1, Sphere2(Vec3sc(50, 50, 0), r2_1), (uint8_t)255);
+						draw(img2, Sphere2(Vec3sc(50, 50, 0), r2_2), (uint8_t)255);
+
+						raw::writed(img1, "./discretized_circles/1");
+						raw::writed(img2, "./discretized_circles/2");
+
+						cout << "r1^2 = " << r2_1 << "; r2^2 = " << r2_2 << "; cache says " << fits << "; r1^2 <= r2^2: " << fits2 << endl;
+							//"; intsqrt(r1^2) <= intsqrt(r2^2) ==> " << largestIntWhoseSquareIsLessThan(r2_1) << " <= " << largestIntWhoseSquareIsLessThan(r2_2) << " ==> " << fits3 << endl;
+					}
+				}
+			}
+			*/
+
+
+			
 
 			//int32_t r2_1 = 390;
 			//int32_t r2_2 = 393;
@@ -526,7 +558,7 @@ namespace itl2
 
 			//cout << "Fits = " << dimred::doesDiscretizedCircle1FitInto2(r2_2, r2_1) << endl;
 
-			internals::buildCircleLookup(MAX);
+			
 			ProgressIndicator progress(MAX);
 			for (int32_t r2_1 = 0; r2_1 < MAX; r2_1++)
 			{
