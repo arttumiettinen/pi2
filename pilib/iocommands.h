@@ -164,7 +164,7 @@ namespace pilib
 
 		ShowSequenceInfoCommand() : Command("sequenceinfo", "Displays metadata of image sequence.",
 			{
-				CommandArgument<std::string>(ParameterDirection::In, "filename template", "Filename template corresponding to the sequence. The template must specify a directory name and/or file name template including wildcards *, ?, @ that identifies files that belong to the sequence. Wildcard * corresponds to any sequence, ? to any character, and @ to one or more numerical digits.")
+				CommandArgument<std::string>(ParameterDirection::In, "filename template", "Filename template corresponding to the sequence. The template must specify a directory name and/or file name template including wildcards \\*, ?, @ that identifies files that belong to the sequence. Wildcard \\* corresponds to any sequence, ? to any character, and @ to one or more numerical digits.")
 			})
 		{
 
