@@ -1,0 +1,71 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "C/C++: g++ build Debug no OpenCL",
+            "type": "shell",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-g",
+                "-DNO_OPENCL",
+                "${workspaceFolder}/itl2testsmain.cpp",
+                "-o",
+                "${workspaceFolder}/build/Debug_no_OpenCL/itl2testsmain"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Generated task for Debug no OpenCL configuration."
+        },
+        {
+            "label": "C/C++: g++ build Release no OpenCL",
+            "type": "shell",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-O3",
+                "-DNO_OPENCL",
+                "${workspaceFolder}/itl2testsmain.cpp",
+                "-o",
+                "${workspaceFolder}/build/Release_no_OpenCL/itl2testsmain"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Generated task for Release no OpenCL configuration."
+        },
+        {
+            "label": "C/C++: g++ build Debug",
+            "type": "shell",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-g",
+                "${workspaceFolder}/itl2testsmain.cpp",
+                "-o",
+                "${workspaceFolder}/build/Debug/itl2testsmain"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Generated task for Debug configuration."
+        },
+        {
+            "label": "C/C++: g++ build Release",
+            "type": "shell",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-O3",
+                "${workspaceFolder}/itl2testsmain.cpp",
+                "-o",
+                "${workspaceFolder}/build/Release/itl2testsmain"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Generated task for Release configuration."
+        }
+    ]
+}
