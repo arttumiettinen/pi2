@@ -8,7 +8,9 @@
             "args": [
                 "-g",
                 "-DNO_OPENCL",
-                "${workspaceFolder}/itl2testsmain.cpp",
+                "-I${workspaceFolder}/itl2",
+                "${workspaceFolder}/itl2tests/itl2testsmain.cpp",
+                "${workspaceFolder}/itl2/*.cpp", 
                 "-o",
                 "${workspaceFolder}/build/Debug_no_OpenCL/itl2testsmain"
             ],
@@ -25,7 +27,9 @@
             "args": [
                 "-O3",
                 "-DNO_OPENCL",
-                "${workspaceFolder}/itl2testsmain.cpp",
+                "-I${workspaceFolder}/itl2",
+                "${workspaceFolder}/itl2tests/itl2testsmain.cpp",
+                "${workspaceFolder}/itl2/*.cpp", 
                 "-o",
                 "${workspaceFolder}/build/Release_no_OpenCL/itl2testsmain"
             ],
@@ -34,14 +38,15 @@
                 "isDefault": false
             },
             "detail": "Generated task for Release no OpenCL configuration."
-        },
+        },        
         {
             "label": "C/C++: g++ build Debug",
             "type": "shell",
             "command": "/usr/bin/g++",
             "args": [
                 "-g",
-                "${workspaceFolder}/itl2testsmain.cpp",
+                "-I${workspaceFolder}/itl2",
+                "${workspaceFolder}/itl2tests/itl2testsmain.cpp",
                 "-o",
                 "${workspaceFolder}/build/Debug/itl2testsmain"
             ],
@@ -57,7 +62,8 @@
             "command": "/usr/bin/g++",
             "args": [
                 "-O3",
-                "${workspaceFolder}/itl2testsmain.cpp",
+                "-I${workspaceFolder}/itl2/math",
+                "${workspaceFolder}/itl2tests/itl2testsmain.cpp",
                 "-o",
                 "${workspaceFolder}/build/Release/itl2testsmain"
             ],
