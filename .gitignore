@@ -1,3 +1,7 @@
+venv/
+testoutput/
+
+.idea/
 
 *.raw
 __pycache__
