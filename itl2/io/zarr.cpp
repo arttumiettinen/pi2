@@ -10,8 +10,15 @@ using namespace std;
 
 namespace itl2
 {
-	namespace nn5
+	namespace zarr
 	{
+	    using itl2::nn5::NN5Process;
+	    using itl2::nn5::NN5Compression;
+	    using itl2::nn5::internals::readChunkFile;
+	    //using itl2::nn5::internals::concurrentTagFile;
+	    //using itl2::nn5::internals::forAllChunks;
+	    //using itl2::nn5::internals::writesFolder;
+
 		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason)
 		{
 			dimensions = Vec3c();
@@ -21,7 +28,7 @@ namespace itl2
 			compression = NN5Compression::Raw;
 
 			// Check that metadata file exists.
-			string metadataFilename = internals::nn5MetadataFilename(path);
+			string metadataFilename = nn5::internals::nn5MetadataFilename(path);
 			if (!fs::exists(metadataFilename))
 			{
 				reason = "Metadata file does not exist.";
@@ -167,7 +174,7 @@ namespace itl2
 				j["Chunk dimensions"][2] = chunkSize[2];
 				j["Compression"] = toString(compression);
 
-				string metadataFilename = internals::nn5MetadataFilename(path);
+				string metadataFilename = nn5::internals::nn5MetadataFilename(path);
 				ofstream of(metadataFilename, ios_base::trunc | ios_base::out);
 				of << std::setw(4) << j << endl;
 			}
@@ -209,7 +216,7 @@ namespace itl2
 					Vec3c oldChunkSize;
 					NN5Compression oldCompression;
 					string dummyReason;
-					if (!nn5::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCompression, dummyReason))
+					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCompression, dummyReason))
 					{
 						// The path does not contain an NN5 dataset.
 						// If it is no know image, do not delete it.
@@ -228,14 +235,14 @@ namespace itl2
 					{
 						// The path contains a compatible NN5 dataset.
 						// Delete it if we are not continuing a concurrent write.
-						if (!fs::exists(internals::concurrentTagFile(path)))
+						if (!fs::exists(nn5::internals::concurrentTagFile(path)))
 							if (deleteOldData)
 								fs::remove_all(path);
 					}
 					else
 					{
 						// The path contains an incompatible NN5 dataset. Delete it.
-						if (fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
+						if (fs::exists(nn5::internals::concurrentTagFile(path)) && !deleteOldData)
 							throw ITLException(string("The output folder contains an incompatible NN5 dataset that is currently being processed concurrently."));
 						fs::remove_all(path);
 					}
@@ -244,7 +251,7 @@ namespace itl2
 				fs::create_directories(path);
 
 				// Write metadata
-				internals::writeMetadata(path, imageDimensions, imageDataType, chunkSize, compression);
+				nn5::internals::writeMetadata(path, imageDimensions, imageDataType, chunkSize, compression);
 			}
 		}
 
@@ -326,18 +333,18 @@ namespace itl2
 			// * read from and written to by at least two separate processes,
 			// and tag those unsafe by creating writes folder into the chunk folder.
 
-			internals::beginWrite(imageDimensions, imageDataType, path, chunkSize, compression, false);
+			nn5::internals::beginWrite(imageDimensions, imageDataType, path, chunkSize, compression, false);
 
 			// Tag the image as concurrently processed
-			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
+			ofstream out(nn5::internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
 
 			size_t unsafeChunkCount = 0;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			nn5::internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
-					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
+					string chunkFolder = nn5::internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
 					fs::create_directories(chunkFolder);
 
-					string writesFolder = internals::writesFolder(chunkFolder);
+					string writesFolder = nn5::internals::writesFolder(chunkFolder);
 
 					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
 
@@ -353,8 +360,8 @@ namespace itl2
 
 		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
 		{
-			string chunkFolder = internals::chunkFolder(path, dimensionality, chunkIndex);
-			string writesFolder = internals::writesFolder(chunkFolder);
+			string chunkFolder = nn5::internals::chunkFolder(path, dimensionality, chunkIndex);
+			string writesFolder = nn5::internals::writesFolder(chunkFolder);
 			return fs::exists(writesFolder);
 		}
 
@@ -366,7 +373,7 @@ namespace itl2
 			Vec3c chunkSize;
 			NN5Compression compression;
 			string reason;
-			if (!getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
@@ -380,12 +387,12 @@ namespace itl2
 			Vec3c chunkSize;
 			NN5Compression compression;
 			string reason;
-			if (!getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			size_t dimensionality = getDimensionality(imageDimensions);
 			vector<Vec3c> result;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			nn5::internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						result.push_back(chunkIndex);
@@ -431,8 +438,8 @@ namespace itl2
 			public:
 				static void run(const string& path, const Vec3c& datasetSize, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& chunkIndex)
 				{
-					string chunkFolder = internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
-					string writesFolder = internals::writesFolder(chunkFolder);
+					string chunkFolder = nn5::internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
+					string writesFolder = nn5::internals::writesFolder(chunkFolder);
 
 					if (fs::exists(writesFolder))
 					{
@@ -441,7 +448,7 @@ namespace itl2
 
 						if (writesFiles.size() > 0)
 						{
-							Vec3c realChunkSize = internals::clampedChunkSize(chunkIndex, chunkSize, datasetSize);
+							Vec3c realChunkSize = nn5::internals::clampedChunkSize(chunkIndex, chunkSize, datasetSize);
 							Image<pixel_t> img(realChunkSize);
 
 							// Read old data if it exists.
@@ -498,7 +505,7 @@ namespace itl2
 
 			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& chunkIndex)
 			{
-				pick<internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, compression, chunkIndex);
+				pick<zarr::internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, compression, chunkIndex);
 			}
 		}
 
@@ -512,10 +519,10 @@ namespace itl2
 			Vec3c chunkSize;
 			NN5Compression compression;
 			string reason;
-			if (!getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
-			internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
+			zarr::internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
 		}
 
 		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
@@ -526,19 +533,19 @@ namespace itl2
 			Vec3c chunkSize;
 			NN5Compression compression;
 			string reason;
-			if (!getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 			size_t dimensionality = getDimensionality(fileDimensions);
 
-			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			nn5::internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
-						internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
+						zarr::internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
 				});
 			
 			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
 			// the endConcurrentWrite can continue simply by re-running it.
-			fs::remove_all(internals::concurrentTagFile(path));
+			fs::remove_all(nn5::internals::concurrentTagFile(path));
 		}
 
 
@@ -565,7 +572,7 @@ namespace itl2
 				string reason;
 				bool isNativeByteOrder;
 				nn5::NN5Compression compression;
-				bool result = nn5::getInfo(path, dimensions, isNativeByteOrder, datatype, chunkSize, compression, reason);
+				bool result = zarr::getInfo(path, dimensions, isNativeByteOrder, datatype, chunkSize, compression, reason);
 
 				testAssert(result == true, "nn5 getinfo result");
 				testAssert(dimensions == Vec3c(10, 20, 30), "nn5 dimensions");
@@ -575,7 +582,7 @@ namespace itl2
 				testAssert(reason == "", "nn5 reason");
 
 				nn5::internals::writeMetadata(path, dimensions, datatype, chunkSize, compression);
-				result = nn5::getInfo(path, dimensions, isNativeByteOrder, datatype, chunkSize, compression, reason);
+				result = zarr::getInfo(path, dimensions, isNativeByteOrder, datatype, chunkSize, compression, reason);
 				testAssert(result == true, "nn5 getinfo result from written file");
 				testAssert(dimensions == Vec3c(10, 20, 30), "nn5 dimensions from written file");
 				testAssert(datatype == ImageDataType::UInt8, "nn5 datatype from written file");

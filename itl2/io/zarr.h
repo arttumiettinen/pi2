@@ -11,14 +11,10 @@
 
 namespace itl2
 {
-	namespace io
-	{
-		// Forward declaration of io::getInfo to avoid header loop.
-		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, std::string& reason);
-	}
 
 	namespace zarr
 	{
+	    using nn5::NN5Compression;
 		namespace internals
 		{
 			/**
@@ -87,7 +83,7 @@ namespace itl2
 				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, NN5Compression compression)
 			{
 				// Build path to chunk folder.
-				string filename = internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
+				string filename = chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
 
 				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
 				// Chunk is unsafe if its folder contains writes folder.
@@ -242,7 +238,7 @@ namespace itl2
 			*/
 			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize, bool showProgressInfo)
 			{
-				internals::forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, compression);
 				});
@@ -261,7 +257,7 @@ namespace itl2
 
 				AABoxc fileTargetBlock = AABoxc::fromPosSize(filePosition, blockDimensions);
 
-				internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						// This is done for all chunks in the output file.
 						// We will need to update the chunk if the file block to be written (fileTargetBlock)
@@ -416,7 +412,7 @@ namespace itl2
 			{
 				Image<pixel_t> temp;
 
-				internals::forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, compression, temp);
 					});
@@ -436,7 +432,7 @@ namespace itl2
 				AABoxc imageBox = AABoxc::fromMinMax(start, end);
 
 				// This is a check-all-chunks algoritm. Alternatively, we could calculate the required chunk range.
-				internals::forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
 						if (currentChunk.overlapsExclusive(imageBox))
@@ -472,7 +468,7 @@ namespace itl2
 			bool dummyIsNative;
 			Vec3c dummyChunkSize;
 			NN5Compression dummyCompression;
-			return getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, dummyCompression, reason);
+			return itl2::zarr::getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, dummyCompression, reason);
 		}
 
 		/**
@@ -493,7 +489,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, bool showProgressInfo = false)
 		{
-			write(img, path, chunkSize, NN5Compression::LZ4, showProgressInfo);
+			zarr::write(img, path, chunkSize, NN5Compression::LZ4, showProgressInfo);
 		}
 
 		/**
@@ -554,7 +550,7 @@ namespace itl2
 			Vec3c chunkSize;
 			NN5Compression compression;
 			string reason;
-			if (!getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -583,7 +579,7 @@ namespace itl2
 			Vec3c chunkSize;
 			NN5Compression compression;
 			string reason;
-			if (!getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -591,7 +587,7 @@ namespace itl2
 
 
 			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= fileDimensions.x || fileStart.y >= fileDimensions.y || fileStart.z >= fileDimensions.z)
-				throw ITLException("Out of bounds start position in nn5::readBlock.");
+				throw ITLException("Out of bounds start position in readBlock.");
 
 			Vec3c cStart = fileStart;
 			clamp(cStart, Vec3c(0, 0, 0), fileDimensions);
