@@ -147,7 +147,7 @@ def main():
             rec_dir = ""
             if args.recdir:
                 # Use reconstruction directory override
-                rec_dir = args.recdir % tuple(list(scan_name for _ in range(str(args.recdir).count('%s')))) # Allow the user to pass multiple %s in the string, happens sometimes
+                rec_dir = args.recdir % tuple(scan_name for _ in range(str(args.recdir).count('%s'))) # Allow the user to pass multiple %s in the string, happens sometimes
             elif 'Reconstruction Parameters Reconstruction Dir' in logDict:
                 rec_dir = parser.logDict['Reconstruction Parameters Reconstruction Dir']
             else:
