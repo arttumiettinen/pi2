@@ -43,21 +43,21 @@ namespace itl2
 			*/
 			std::vector<string> getFileList(const std::string& dir);
 
-			inline std::string chunkFolder(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
+			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
 			{
-				// 0-dimensional images get a special treatment.
-				if (dimensionality <= 0)
-					return path + string("/0");
-
-				string filename = path;
+                //TODO: use separator from zarr metadata
+                string separator = string("/");
+				string filename = path + string("/c");
 				for (size_t n = 0; n < dimensionality; n++)
-					filename += string("/") + toString(chunkIndex[n]);
+					filename += separator + toString(chunkIndex[n]);
 				return filename;
 			}
 
-			inline std::string writesFolder(const std::string& chunkFolder)
+			inline std::string writesFolder(const std::string& chunkFile)
 			{
-				return chunkFolder + "/writes";
+                // the file is a flag
+                // if it exists, the chunk is unsafe to write to because it is currently being written to.
+				return chunkFile + "_writes";
 			}
 
 			inline Vec3c clampedChunkSize(const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize)
@@ -86,7 +86,7 @@ namespace itl2
 				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				// Build path to chunk folder.
-				string filename = chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
+				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex);
 
 				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
 				// Chunk is unsafe if its folder contains writes folder.
@@ -96,13 +96,12 @@ namespace itl2
 				{
 					// Unsafe chunk, write to separate writes folder.
 					unsafe = true;
-					filename = writesFolder + string("/chunk_") + toString(startInChunkCoords.x) + string("-") + toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
+					filename = writesFolder + toString(startInChunkCoords.x) + string("-") + toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
 				}
 				else
 				{
 					// Safe chunk, write directly to the chunk file.
 					unsafe = false;
-					filename += "/chunk";
 				}
 
 				// Clamp write size to the size of the image.
@@ -126,6 +125,13 @@ namespace itl2
 				Vec3c realChunkSize = clampedChunkSize(chunkIndex, chunkSize, datasetSize);
 
 				realWriteSize = min(realWriteSize, realChunkSize);
+
+                //iterate over codecs
+                for (auto& codec : codecs)
+                {
+                    ///////////////--------hier weiterarbeiten ------------////////////
+                }
+
 
 				if (!unsafe)
 				{
@@ -379,7 +385,7 @@ namespace itl2
 			*/
 			template<typename pixel_t> void readSingleChunk(Image<pixel_t>& target, const std::string& path, const Vec3c& datasetDimensions, const Vec3c& chunkIndex, const Vec3c& chunkStartInTarget, const Vec3c& readSize, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
 			{
-				string dir = chunkFolder(path, getDimensionality(datasetDimensions), chunkIndex);
+				string dir = chunkFile(path, getDimensionality(datasetDimensions), chunkIndex);
 
 				//Vec3c chunkEnd = chunkStartInTarget + readSize;
 				//for (size_t n = 0; n < chunkEnd.size(); n++)

@@ -435,10 +435,10 @@ namespace itl2
 //			size_t unsafeChunkCount = 0;
 //			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 //				{
-//					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
-//					fs::create_directories(chunkFolder);
+//					string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex);
+//					fs::create_directories(chunkFile);
 //
-//					string writesFolder = internals::writesFolder(chunkFolder);
+//					string writesFolder = internals::writesFolder(chunkFile);
 //
 //					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
 //
@@ -454,8 +454,8 @@ namespace itl2
 //
 //		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
 //		{
-//			string chunkFolder = internals::chunkFolder(path, dimensionality, chunkIndex);
-//			string writesFolder = internals::writesFolder(chunkFolder);
+//			string chunkFile = internals::chunkFile(path, dimensionality, chunkIndex);
+//			string writesFolder = internals::writesFolder(chunkFile);
 //			return fs::exists(writesFolder);
 //		}
 //
@@ -534,9 +534,10 @@ namespace itl2
 			public:
 				static void run(const string& path, const Vec3c& datasetSize, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
 				{
-					string chunkFolder = internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
-					string writesFolder = internals::writesFolder(chunkFolder);
+					string chunkFile = internals::chunkFile(path, getDimensionality(datasetSize), chunkIndex);
+					string writesFolder = internals::writesFolder(chunkFile);
 
+                    //TODO handle writesFolder
 					if (fs::exists(writesFolder))
 					{
 						// Find all files in the writes folder
@@ -549,7 +550,7 @@ namespace itl2
 
 							// Read old data if it exists.
 							// TODO: No need to read if the written blocks overwrite the chunk completely.
-							std::vector<string> originalFiles = getFileList(chunkFolder);
+							std::vector<string> originalFiles = getFileList(chunkFile);
 							if (originalFiles.size() <= 0)
 							{
 								// No file => all pixels in the block are zeroes.
@@ -557,12 +558,12 @@ namespace itl2
 							}
 							else if (originalFiles.size() == 1)
 							{
-								string filename = chunkFolder + "/" + originalFiles[0];
+								string filename = chunkFile + "/" + originalFiles[0];
 								readChunkFile(img, filename, fillValue, codecs);
 							}
 							else
 							{
-								throw ITLException(string("Multiple image files found in block directory ") + chunkFolder + " while combining chunk writes.");
+								throw ITLException(string("Multiple image files found in block directory ") + chunkFile + " while combining chunk writes.");
 							}
 
 							// Modify data with the new writes.
@@ -576,13 +577,13 @@ namespace itl2
 							{
 								case NN5Compression::Raw:
 								{
-									string filename = concatDimensions(chunkFolder + "/chunk", img.dimensions());
-									raw::write(img, filename);
+									string filename = concatDimensions(chunkFile + "/chunk", img.dimensions());
+									raw::write(img, chunkFile);
 									break;
 								}
 								case NN5Compression::LZ4:
 								{
-									string filename = chunkFolder + "/chunk.lz4raw";
+									string filename = chunkFile + "/chunk.lz4raw";
 									lz4::write(img, filename);
 									break;
 								}
