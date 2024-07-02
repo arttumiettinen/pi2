@@ -83,7 +83,7 @@ namespace itl2
 			@param writeSize Size of block to be written.
 			*/
 			template<typename pixel_t> void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize,
-				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, NN5Compression compression)
+				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				// Build path to chunk folder.
 				string filename = chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
@@ -239,15 +239,16 @@ namespace itl2
 			/**
 			Writes NN5 chunk files.
 			*/
-			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize, bool showProgressInfo)
+			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& datasetSize, bool showProgressInfo)
 			{
+
 				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
-					writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, compression);
+					writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, fillValue, codecs);
 				});
 			}
 
-			template<typename pixel_t> void writeChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
+			template<typename pixel_t> void writeChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
 				const Vec3c& filePosition, const Vec3c& fileDimensions,
 				const Vec3c& imagePosition,
 				const Vec3c& blockDimensions,
@@ -452,7 +453,7 @@ namespace itl2
 			Checks that provided NN5 information is correct and writes metadata.
 			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
-			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData);
+            void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int fillValue, bool deleteOldData);
 
 
 			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData, bool showProgressInfo)
@@ -464,14 +465,15 @@ namespace itl2
 			}
 		}
 
-		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, NN5Compression& compression, std::string& reason);
+		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, std::string& reason);
 
 		inline bool getInfo(const std::string& path, Vec3c& dimensions, ImageDataType& dataType, std::string& reason)
-		{
+        {
 			bool dummyIsNative;
 			Vec3c dummyChunkSize;
-			NN5Compression dummyCompression;
-			return itl2::zarr::getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, dummyCompression, reason);
+            int fillValue;
+            std::list<ZarrCodec> codecs;
+			return itl2::zarr::getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, fillValue, codecs, reason);
 		}
 
 		/**
@@ -479,31 +481,33 @@ namespace itl2
 		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo = false)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool showProgressInfo = false)
 		{
-			internals::write(img, path, chunkSize, compression, false, showProgressInfo);
+			internals::write(img, path, chunkSize, fillValue, codecs, false, showProgressInfo);
 		}
 
 
 		/**
-		Write an image to an nn5 dataset.
+		Write an image to a zarr dataset.
 		@param targetImg Image to write.
-		@param path Name of the top directory of the nn5 dataset.
+		@param path Name of the top directory of the zarr dataset.
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, bool showProgressInfo = false)
 		{
-			zarr::write(img, path, chunkSize, NN5Compression::LZ4, showProgressInfo);
+            std::list<ZarrCodec> defaultCodecs;
+            defaultCodecs.push_back(ZarrBytesCodec());
+			zarr::write(img, path, chunkSize, 0, defaultCodecs, showProgressInfo);
 		}
 
 		/**
-		Default chunk size for NN5 dataset.
+		Default chunk size for Zarr dataset.
 		*/
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 
 		/**
-		Write an image to an nn5 dataset.
+		Write an image to a zarr dataset.
 		@param targetImg Image to write.
-		@param path Name of the top directory of the nn5 dataset.
+		@param path Name of the top directory of the zarr dataset.
 		*/
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
 		{
@@ -511,7 +515,7 @@ namespace itl2
 		}
 
 		/**
-		Writes a block of an image to the specified location in an .nn5 dataset.
+		Writes a block of an image to the specified location in an .zarr dataset.
 		The output dataset is not truncated if it exists.
 		If the output file does not exist, it is created.
 		@param targetImg Image to write.
@@ -521,7 +525,7 @@ namespace itl2
 		@param imagePosition Position in the image where the block to be written starts.
 		@param blockDimensions Dimensions of the block of the source image to write.
 		*/
-		template<typename pixel_t> void writeBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
+		template<typename pixel_t> void writeBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
 			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions,
@@ -532,10 +536,10 @@ namespace itl2
 			fs::create_directories(path);
 
 			// Write metadata
-			internals::writeMetadata(path, fileDimensions, img.dataType(), chunkSize, compression);
+			internals::writeMetadata(path, fileDimensions, img.dataType(), chunkSize, fillValue, codecs);
 
 			// Write data
-			internals::writeChunksInRange(img, path, chunkSize, compression, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
+			internals::writeChunksInRange(img, path, chunkSize, fillValue, codecs, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
 
 

@@ -6,6 +6,7 @@
 #include "json.h"
 #include "byteorder.h"
 #include "generation.h"
+#include "nn5.h"
 
 using namespace std;
 
@@ -194,7 +195,13 @@ namespace itl2
                     }
                     try
                     {
+                        nlohmann::json codecConfig = {};
+                        if (codec.contains("configuration"))
+                        {
+                            codecConfig = codec["configuration"];
+                        }
                         zarr::ZarrCodec zarrCodec = fromString<zarr::ZarrCodec>(codec["name"].get<string>());
+                        zarrCodec.readConfig(codecConfig);
                         codecs.push_back(zarrCodec);
                         switch(zarrCodec.type)
                         {
@@ -238,7 +245,8 @@ namespace itl2
 		namespace internals
 		{
 		    //zarr updated
-			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression)
+            //TODO: write codecs
+			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				nlohmann::json j =
                         {
@@ -248,11 +256,14 @@ namespace itl2
                             {"data_type", toString(dataType)},//zarr updated
                             {"chunk_grid", {{"name", "regular"}, {"configuration", {{"chunk_shape", {chunkSize[0], chunkSize[1], chunkSize[2]}}}}}},
                             {"chunk_key_encoding", {{"name", "default"}, {"configuration", {{"separator", "/"}}}}},
-                            {"fill_value", 0},
-                            {"codecs", {{"codec", "zlib"}, {"configuration", {{"level", 1}}}}},
+                            {"fill_value", fillValue},
+                            {"codecs", {}}
                         };
-
-                // TODO: allow other chunk_key_encoding, fill_value, codecs
+                for (auto& codec : codecs)
+                {
+                    j["codecs"].push_back({codec.toJSON()});
+                }
+                // TODO: allow other chunk_key_encoding
                 // TODO: optional parameters
 
 				string metadataFilename = zarr::internals::zarrMetadataFilename(path);
@@ -284,7 +295,7 @@ namespace itl2
 					throw ITLException(string("NN5 chunk size must be positive, but it is ") + toString(chunkSize));
 			}
 
-			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData)
+			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool deleteOldData)
 			{
 				check(chunkSize);
 
@@ -295,16 +306,17 @@ namespace itl2
 					Vec3c oldDimensions;
 					ImageDataType oldDataType;
 					Vec3c oldChunkSize;
-					NN5Compression oldCompression;
+                    std::list<ZarrCodec> oldCodecs;
 					string dummyReason;
-					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCompression, dummyReason))
+					int oldFillValue;
+					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCodecs, oldFillValue, dummyReason))
 					{
-						// The path does not contain an NN5 dataset.
-						// If it is no know image, do not delete it.
+						// The path does not contain a Zarr dataset.
+						// If it is no known image, do not delete it.
 						if (!io::getInfo(path, oldDimensions, oldDataType, dummyReason))
-							throw ITLException(string("Unable to write an NN5 as the output folder already exists but cannot be verified to be an image: ") + path + " Consider removing the existing dataset manually.");
+							throw ITLException(string("Unable to write a Zarr as the output folder already exists but cannot be verified to be an image: ") + path + " Consider removing the existing dataset manually.");
 
-						// Here the path does not contain NN5 but contains an image of known type.
+						// Here the path does not contain Zarr but contains an image of known type.
 						// Delete the old image.
 						fs::remove_all(path);
 					}
@@ -312,7 +324,8 @@ namespace itl2
 						oldIsNativeByteOrder == true &&
 						oldDataType == imageDataType &&
 						oldChunkSize == chunkSize &&
-						oldCompression == compression)
+                        oldCodecs == codecs &&
+                        oldFillValue == fillValue)
 					{
 						// The path contains a compatible NN5 dataset.
 						// Delete it if we are not continuing a concurrent write.
@@ -332,7 +345,7 @@ namespace itl2
 				fs::create_directories(path);
 
 				// Write metadata
-				internals::writeMetadata(path, imageDimensions, imageDataType, chunkSize, compression);
+				internals::writeMetadata(path, imageDimensions, imageDataType, chunkSize, fillValue, codecs);
 			}
 		}
 
@@ -407,14 +420,18 @@ namespace itl2
 			}
 		}
 
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, nn5::NN5Compression compression, const std::vector<NN5Process>& processes)
 		{
 			// Find chunks that are
 			// * written to by separate processes, or
 			// * read from and written to by at least two separate processes,
 			// and tag those unsafe by creating writes folder into the chunk folder.
 
-			internals::beginWrite(imageDimensions, imageDataType, path, chunkSize, compression, false);
+            //TODO change this
+            std::list<ZarrCodec> codecs = std::list<ZarrCodec>();
+            int fillValue = 0;
+
+			zarr::internals::beginWrite(imageDimensions, imageDataType, path, chunkSize,  fillValue, codecs, false);
 
 			// Tag the image as concurrently processed
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
@@ -452,9 +469,10 @@ namespace itl2
 			Vec3c imageDimensions;
 			ImageDataType dataType;
 			Vec3c chunkSize;
-			NN5Compression compression;
+			int fillValue;
+            std::list<ZarrCodec> codecs;
 			string reason;
-			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
