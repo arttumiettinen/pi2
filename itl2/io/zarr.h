@@ -36,7 +36,7 @@ namespace itl2
 			/**
 			Writes NN5 metadata file.
 			*/
-			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression);
+			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs);
 
 			/**
 			Retrieve a list of all files in the given directory.
@@ -301,7 +301,7 @@ namespace itl2
 
 							// Write chunk data only if the update region is non-empty.
 							if(chunkUpdateRegion.size().min() > 0)
-								writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, chunkUpdateRegion.position(), imageUpdateRegion.position(), chunkUpdateRegion.size(), compression);
+								writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, chunkUpdateRegion.position(), imageUpdateRegion.position(), chunkUpdateRegion.size(), fillValue, codecs);
 						}
 
 						//// We need to write the chunk only if the current output chunk overlaps with the region to be written = imageBlock
@@ -315,7 +315,7 @@ namespace itl2
 						//		// Chunk end is in file target block, so we write the entire chunk.
 						//		Vec3c startInChunkCoords = Vec3c(0, 0, 0);
 						//		Vec3c startInImageCoords = chunkStart - filePosition + imagePosition;
-						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, Vec3c(0, 0, 0), startInImageCoords, chunkSize, compression);
+						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, Vec3c(0, 0, 0), startInImageCoords, chunkSize, fillValue, codecs);
 						//	}
 						//	else if (fileTargetBlock.contains(chunkStart))
 						//	{
@@ -325,7 +325,7 @@ namespace itl2
 						//		Vec3c startInImageCoords = chunkStart - filePosition + imagePosition;
 						//		Vec3c endInImageCoords = imagePosition + blockDimensions;
 						//		Vec3c writeSize = endInImageCoords - startInImageCoords;
-						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, compression);
+						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, fillValue, codecs);
 						//	}
 						//	else
 						//	{
@@ -335,14 +335,14 @@ namespace itl2
 						//		Vec3c endInChunkCoords = chunkSize;
 						//		Vec3c startInImageCoords = imagePosition;
 						//		Vec3c writeSize = endInChunkCoords - startInChunkCoords;
-						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, compression);
+						//		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, fillValue, codecs);
 						//	}
 						//}
 					});
 			}
 
 
-			template<typename pixel_t> void readChunkFile(Image<pixel_t>& img, const string& filename, NN5Compression compression)
+			template<typename pixel_t> void readChunkFile(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				switch (compression)
 				{
@@ -364,12 +364,12 @@ namespace itl2
 			}
 
 			
-			template<typename pixel_t> void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, NN5Compression compression, Image<pixel_t>& temp)
+			template<typename pixel_t> void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
 			{
 				// TODO: This is not very efficient due to the copying of the block, and memory allocation, improve?
 				//			Note that this could be easily improved using an image view to the desired block in the targetImg.
 
-				readChunkFile(temp, filename, compression);
+				readChunkFile(temp, filename, fillValue, codecs);
 
 				copyValues(img, temp, imagePosition);
 			}
@@ -377,7 +377,7 @@ namespace itl2
 			/**
 			Reads single NN5 chunk file.
 			*/
-			template<typename pixel_t> void readSingleChunk(Image<pixel_t>& target, const std::string& path, const Vec3c& datasetDimensions, const Vec3c& chunkIndex, const Vec3c& chunkStartInTarget, const Vec3c& readSize, NN5Compression compression, Image<pixel_t>& temp)
+			template<typename pixel_t> void readSingleChunk(Image<pixel_t>& target, const std::string& path, const Vec3c& datasetDimensions, const Vec3c& chunkIndex, const Vec3c& chunkStartInTarget, const Vec3c& readSize, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
 			{
 				string dir = chunkFolder(path, getDimensionality(datasetDimensions), chunkIndex);
 
@@ -400,7 +400,7 @@ namespace itl2
 				else if (files.size() == 1)
 				{
 					string filename = dir + "/" + files[0];
-					readFileIntoImageBlock(target, filename, chunkStartInTarget, compression, temp);
+					readFileIntoImageBlock(target, filename, chunkStartInTarget, fillValue, codecs, temp);
 				}
 				else
 				{
@@ -412,13 +412,13 @@ namespace itl2
 			/**
 			Reads NN5 chunk files.
 			*/
-			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo)
+			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool showProgressInfo)
 			{
 				Image<pixel_t> temp;
 
 				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
-						readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, compression, temp);
+						readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, fillValue, codecs, temp);
 					});
 			}
 
@@ -426,7 +426,7 @@ namespace itl2
 			/**
 			Reads NN5 chunk files.
 			*/
-			template<typename pixel_t> void readChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
+			template<typename pixel_t> void readChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
 				const Vec3c& datasetDimensions,
 				const Vec3c& start, const Vec3c& end,
 				bool showProgressInfo)
@@ -440,7 +440,7 @@ namespace itl2
 					{
 						AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
 						if (currentChunk.overlapsExclusive(imageBox))
-							readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), compression, temp);
+							readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), fillValue, codecs, temp);
 					});
 			}
 
@@ -453,15 +453,15 @@ namespace itl2
 			Checks that provided NN5 information is correct and writes metadata.
 			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
-            void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int fillValue, bool deleteOldData);
+            void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,  bool deleteOldData);
 
 
-			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData, bool showProgressInfo)
+			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool deleteOldData, bool showProgressInfo)
 			{
-				internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, compression, deleteOldData);
+				internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, fillValue, codecs, deleteOldData);
 
 				// Write data
-				internals::writeChunks(img, path, chunkSize, compression, img.dimensions(), showProgressInfo);
+				internals::writeChunks(img, path, chunkSize, fillValue, codecs, img.dimensions(), showProgressInfo);
 			}
 		}
 
@@ -555,9 +555,10 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dataType;
 			Vec3c chunkSize;
-			NN5Compression compression;
+            int fillValue;
+            std::list<ZarrCodec> codecs;
 			string reason;
-			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -565,7 +566,7 @@ namespace itl2
 
 			img.ensureSize(dimensions);
 
-			internals::readChunks(img, path, chunkSize, compression, showProgressInfo);
+			internals::readChunks(img, path, chunkSize, fillValue, codecs, showProgressInfo);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
@@ -584,9 +585,10 @@ namespace itl2
 			Vec3c fileDimensions;
 			ImageDataType dataType;
 			Vec3c chunkSize;
-			NN5Compression compression;
+            int fillValue;
+            std::list<ZarrCodec> codecs;
 			string reason;
-			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -608,7 +610,7 @@ namespace itl2
 				return;
 			}
 
-			internals::readChunksInRange(img, path, chunkSize, compression, fileDimensions, cStart, cEnd, showProgressInfo);
+			internals::readChunksInRange(img, path, chunkSize, fillValue, codecs, fileDimensions, cStart, cEnd, showProgressInfo);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
@@ -616,13 +618,14 @@ namespace itl2
 
 		
 
-		struct NN5Process
+		struct ZarrProcess
 		{
 			AABoxc readBlock;
 			AABoxc writeBlock;
 		};
 
 		/**
+		 * TODO change docstrings
 		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
 		This function should be called before the processes are started.
 		@param imageDimensions Dimensions of the image to be saved into the NN5 dataset.
@@ -633,7 +636,7 @@ namespace itl2
 		@param processes A list of NN5Process objects that define the block that where each process will have read and write access. The blocks may overlap.
 		@return Number of chunks that require special processing in endConcurrentWrite.
 		*/
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes);
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const std::vector<ZarrProcess>& processes);
 
 		/**
 		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
@@ -644,9 +647,9 @@ namespace itl2
 		@param compression Compression method to be used.
 		@param processes A list of NN5Process objects that define the block that where each process will have read and write access. The blocks may overlap.
 		*/
-		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
+		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const std::vector<ZarrProcess>& processes)
 		{
-			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, compression, processes);
+			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, fillValue, codecs, processes);
 		}
 
 		/**
@@ -683,7 +686,8 @@ namespace itl2
 
 
 		namespace tests
-		{
+        {
+            //TODO: Implement tests
 			void nn5Metadata();
 			void nn5io();
 			void nn5BlockIo();

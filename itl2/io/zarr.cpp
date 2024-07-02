@@ -364,7 +364,7 @@ namespace itl2
 		Finds out if a chunk (given its bounding box) is 'safe' or not.
 		Safe chunks can be written to without any synchronization or post-processing of the results.
 		*/
-		bool isChunkSafe(const AABoxc& box, const std::vector<NN5Process>& processes)
+		bool isChunkSafe(const AABoxc& box, const std::vector<ZarrProcess>& processes)
 		{
 			vector<size_t> readerIndices;
 			vector<size_t> writerIndices;
@@ -420,16 +420,12 @@ namespace itl2
 			}
 		}
 
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, nn5::NN5Compression compression, const std::vector<NN5Process>& processes)
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const std::vector<ZarrProcess>& processes)
 		{
 			// Find chunks that are
 			// * written to by separate processes, or
 			// * read from and written to by at least two separate processes,
 			// and tag those unsafe by creating writes folder into the chunk folder.
-
-            //TODO change this
-            std::list<ZarrCodec> codecs = std::list<ZarrCodec>();
-            int fillValue = 0;
 
 			zarr::internals::beginWrite(imageDimensions, imageDataType, path, chunkSize,  fillValue, codecs, false);
 
@@ -484,7 +480,8 @@ namespace itl2
 			Vec3c imageDimensions;
 			ImageDataType dataType;
 			Vec3c chunkSize;
-			NN5Compression compression;
+            int fillValue;
+            std::list<ZarrCodec> codecs;
 			string reason;
 			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
@@ -522,12 +519,12 @@ namespace itl2
 				return Vec3c(x, y, z);
 			}
 
-			template<typename pixel_t> void readAndAdd(Image<pixel_t>& img, const string& filename, NN5Compression compression)
+			template<typename pixel_t> void readAndAdd(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				Vec3c blockPos = parsePosition(filename);
 
 				Image<pixel_t> block;
-				readChunkFile(block, filename, compression);
+				readChunkFile(block, filename, fillValue, codecs);
 
 				copyValues(img, block, blockPos);
 			}
@@ -535,7 +532,7 @@ namespace itl2
 			template<typename pixel_t> struct CombineChunkWrites
 			{
 			public:
-				static void run(const string& path, const Vec3c& datasetSize, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& chunkIndex)
+				static void run(const string& path, const Vec3c& datasetSize, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
 				{
 					string chunkFolder = internals::chunkFolder(path, getDimensionality(datasetSize), chunkIndex);
 					string writesFolder = internals::writesFolder(chunkFolder);
@@ -561,7 +558,7 @@ namespace itl2
 							else if (originalFiles.size() == 1)
 							{
 								string filename = chunkFolder + "/" + originalFiles[0];
-								readChunkFile(img, filename, compression);
+								readChunkFile(img, filename, fillValue, codecs);
 							}
 							else
 							{
@@ -571,7 +568,7 @@ namespace itl2
 							// Modify data with the new writes.
 							for (const string& file : writesFiles)
 							{
-								readAndAdd(img, file, compression);
+								readAndAdd(img, file, fillValue, codecs);
 							}
 
 							// Write back to disk.
@@ -602,9 +599,9 @@ namespace itl2
 				}
 			};
 
-			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& chunkIndex)
+			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
 			{
-				pick<zarr::internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, compression, chunkIndex);
+				pick<zarr::internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, fillValue, codecs, chunkIndex);
 			}
 		}
 
@@ -616,12 +613,13 @@ namespace itl2
 			Vec3c imageDimensions;
 			ImageDataType dataType;
 			Vec3c chunkSize;
-			NN5Compression compression;
+            int fillValue;
+            std::list<ZarrCodec> codecs;
 			string reason;
-			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
-			zarr::internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
+			zarr::internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
 		}
 
 		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
@@ -630,376 +628,22 @@ namespace itl2
 			Vec3c fileDimensions;
 			ImageDataType dataType;
 			Vec3c chunkSize;
-			NN5Compression compression;
+            int fillValue;
+            std::list<ZarrCodec> codecs;
 			string reason;
-			if (!zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+			if (!zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 			size_t dimensionality = getDimensionality(fileDimensions);
 
 			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
-						zarr::internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
+						zarr::internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
 				});
 			
 			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
 			// the endConcurrentWrite can continue simply by re-running it.
 			fs::remove_all(internals::concurrentTagFile(path));
-		}
-
-
-		namespace tests
-		{
-
-			void nn5Metadata()
-			{
-				string data =
-					R"END({
-"Dimensions": [10, 20, 30],
-"Data type": "uint8",
-"Byte order": "Little endian",
-"Chunk dimensions": [8, 9, 11],
-"Compression": "Raw",
-"extra data": "doh doh boh boh"
-})END";
-				string path = "./nn5_metadata";
-				writeText(path + "/metadata.json", data);
-
-				Vec3c dimensions;
-				Vec3c chunkSize;
-				ImageDataType datatype;
-				string reason;
-				bool isNativeByteOrder;
-				NN5Compression compression;
-				bool result = zarr::getInfo(path, dimensions, isNativeByteOrder, datatype, chunkSize, compression, reason);
-
-				testAssert(result == true, "nn5 getinfo result");
-				testAssert(dimensions == Vec3c(10, 20, 30), "nn5 dimensions");
-				testAssert(datatype == ImageDataType::UInt8, "nn5 datatype");
-				testAssert(isNativeByteOrder == true, "nn5 native byte order");
-				testAssert(chunkSize == Vec3c(8, 9, 11), "nn5 chunk size");
-				testAssert(reason == "", "nn5 reason");
-
-				internals::writeMetadata(path, dimensions, datatype, chunkSize, compression);
-				result = zarr::getInfo(path, dimensions, isNativeByteOrder, datatype, chunkSize, compression, reason);
-				testAssert(result == true, "nn5 getinfo result from written file");
-				testAssert(dimensions == Vec3c(10, 20, 30), "nn5 dimensions from written file");
-				testAssert(datatype == ImageDataType::UInt8, "nn5 datatype from written file");
-				testAssert(isNativeByteOrder == true, "nn5 native byte order from written file");
-				testAssert(chunkSize == Vec3c(8, 9, 11), "nn5 chunk size from written file");
-				testAssert(reason == "", "nn5 reason from written file");
-
-			}
-
-			void onenn5ioTest(const Image<uint16_t>& img, const Vec3c& chunkSize, NN5Compression compression)
-			{
-				cout << "Testing chunk size " << chunkSize << ", compression = " << toString(compression) << endl;
-
-				// Write
-				write(img, "./nn5_testimage", chunkSize, compression, true);
-
-				// Read
-				Image<uint16_t> read;
-				zarr::read(read, "./nn5_testimage", true);
-
-				raw::writed(read, "./nn5_results/read_from_disk");
-
-				testAssert(equals(img, read), string("nn5 read image compared to written image, chunk size = ") + toString(chunkSize));
-			}
-
-			void nn5ioSimpleTest(const Vec3c& dimensions)
-			{
-				Image<uint16_t> img(dimensions);
-				ramp3(img);
-				add(img, 10);
-				write(img, "./nn5_results/simpletest");
-
-				Image<uint16_t> fromDisk;
-                zarr::read(fromDisk, "./nn5_results/simpletest");
-
-				testAssert(equals(img, fromDisk), string("NN5 simple test, dimensions = ") + toString(dimensions));
-			}
-
-			void nn5io()
-			{
-				// 0-dimensional image
-				nn5ioSimpleTest(Vec3c(1, 1, 1));
-				nn5ioSimpleTest(Vec3c(2, 1, 1));
-				nn5ioSimpleTest(Vec3c(2, 2, 1));
-				nn5ioSimpleTest(Vec3c(2, 2, 2));
-
-				nn5ioSimpleTest(Vec3c(10, 1, 1));
-				nn5ioSimpleTest(Vec3c(20, 1, 1));
-				nn5ioSimpleTest(Vec3c(20, 20, 1));
-				nn5ioSimpleTest(Vec3c(20, 20, 20));
-
-				nn5ioSimpleTest(Vec3c(10, 10, 10));
-				nn5ioSimpleTest(Vec3c(20, 10, 10));
-				nn5ioSimpleTest(Vec3c(20, 20, 10));
-				nn5ioSimpleTest(Vec3c(20, 20, 20));
-
-				// Different chunk sizes
-				{
-					coord_t w = 100;
-					coord_t h = 200;
-					coord_t d = 300;
-
-					Image<uint16_t> img(w, h, d);
-					ramp3(img);
-					raw::writed(img, "./nn5_results/true");
-
-					srand(1212);
-
-					for (coord_t n = 0; n < 100; n++)
-					{
-						Vec3c chunkSize(randc(10, w + 10), randc(10, h + 10), randc(10, d + 10));
-
-						onenn5ioTest(img, chunkSize, NN5Compression::Raw);
-						onenn5ioTest(img, chunkSize, NN5Compression::LZ4);
-					}
-				}
-			}
-
-			void nn5BlockIoOneTest(NN5Compression compression, const Vec3c& chunkSize,
-				const Vec3c& blockStart,
-				const Vec3c& blockSize)
-			{
-				cout << "Chunk size = " << chunkSize << endl;
-				cout << "Compression = " << toString(compression) << endl;
-				cout << "Block start = " << blockStart << endl;
-				cout << "Block size = " << blockSize << endl;
-
-				Vec3c dimensions(100, 200, 300);
-
-				Image<uint16_t> img(dimensions);
-				ramp3(img);
-
-				// Write entire image and read
-				write(img, "./nn5_block_io/entire_image", chunkSize, compression);
-				Image<uint16_t> entireFromDisk;
-				read(entireFromDisk, "./nn5_block_io/entire_image");
-				testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle");
-
-
-				// Write block and read
-				fs::remove_all("./nn5_block_io/block");
-				writeBlock(img, "./nn5_block_io/block", chunkSize, compression, Vec3c(0, 0, 0), blockSize, blockStart, blockSize);
-
-				// Generate ground truth block by cropping the image.
-				Image<uint16_t> gtBlock(blockSize);
-				crop(img, gtBlock, blockStart);
-
-				// Read entire file written using writeBlock and check against ground truth.
-				Image<uint16_t> fileBlock;
-				read(fileBlock, "./nn5_block_io/block");
-				testAssert(equals(fileBlock, gtBlock), "NN5 writeBlock");
-
-
-				// Read using readBlock and compare to the ground truth.
-				Image<uint16_t> readBlockResult(blockSize);
-				readBlock(readBlockResult, "./nn5_block_io/entire_image", blockStart);
-				testAssert(equals(readBlockResult, gtBlock), "NN5 readBlock");
-			}
-			
-			void nn5BlockIoOneTest(const Vec3c& chunkSize,
-				const Vec3c& blockStart,
-				const Vec3c& blockSize)
-			{
-				nn5BlockIoOneTest(NN5Compression::Raw, chunkSize, blockStart, blockSize);
-				nn5BlockIoOneTest(NN5Compression::LZ4, chunkSize, blockStart, blockSize);
-			}
-
-			void nn5BlockIoOneTest(
-				const Vec3c& blockStart,
-				const Vec3c& blockSize)
-			{
-				nn5BlockIoOneTest(Vec3c(50, 102, 99), blockStart, blockSize);
-				nn5BlockIoOneTest(Vec3c(50, 40, 65), blockStart, blockSize);
-				nn5BlockIoOneTest(Vec3c(40, 30, 20), blockStart, blockSize);
-			}
-
-			void nn5BlockIo()
-			{
-				//// Some specific edge cases
-				//if(true)
-				//{
-				//	Image<uint16_t> img(256, 256, 129);
-				//	ramp3(img);
-
-				//	nn5::write(img, "./nn5_block_tests1/full_image", Vec3c(30, 32, 33), NN5Compression::LZ4);
-
-
-				//	Image<uint16_t> block(256, 256, 64);
-				//	nn5::readBlock(block, "./nn5_block_tests1/full_image", Vec3c(0, 0, 65));
-
-				//	raw::writed(block, "./nn5_block_tests1/read_block_written_as_full_raw_file");
-				//	raw::writeBlock(block, concatDimensions("./nn5_block_tests1/read_block_written_as_raw_block", img.dimensions()),
-				//		Vec3c(0, 0, 65), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 256, 64));
-				//	//writerawblock("image_RJBTFVPJJR_1933", "../../testing/pi2py2/head_rotate_img_result_0.5233333333333333_[1, 0, 0]_[128, 128, 64]_[128, 128, 64]_distributed_256x256x129.raw", "[0, 0, 65]", "[256, 256, 129]", "[0, 0, 0]", "[256, 256, 64]")
-				//}
-
-				if (true)
-				{
-					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(1, 200, 300));
-					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(100, 1, 300));
-					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(100, 200, 1));
-
-					nn5BlockIoOneTest(Vec3c(99, 0, 0), Vec3c(1, 200, 300));
-					nn5BlockIoOneTest(Vec3c(0, 199, 0), Vec3c(100, 1, 300));
-					nn5BlockIoOneTest(Vec3c(0, 0, 299), Vec3c(100, 200, 1));
-
-					nn5BlockIoOneTest(Vec3c(0, 0, 0), Vec3c(50, 102, 99));
-					nn5BlockIoOneTest(Vec3c(1, 2, 3), Vec3c(50, 102, 99));
-				}
-
-				if(true)
-				{
-					Image<uint16_t> img(256, 256, 129);
-					ramp3(img);
-
-					//vector<NN5Process> processes;
-					coord_t z = 0;
-					while (z < img.depth())
-					{
-						coord_t y = 0;
-						while (y < img.height())
-						{
-							//processes.push_back(NN5Process{ AABoxc::fromPosSize(Vec3c(), Vec3c()), AABoxc::fromPosSize(Vec3c(0, y, z), Vec3c(256, 128, 1)) });
-							
-							coord_t d = 2;
-							if (z + d >= img.depth())
-								d = 1;
-
-							writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
-								Vec3c(0, y, z), img.dimensions(), Vec3c(0, y, z), Vec3c(256, 128, d));
-
-							y += 128;
-						}
-						z += 2;
-					}
-					//nn5::startConcurrentWrite(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4, processes);
-					//nn5::writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
-					//	Vec3c(0,   0, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
-					//nn5::writeBlock(img, "./nn5_block_tests2/nn5", Vec3c(30, 32, 33), NN5Compression::LZ4,
-					//	Vec3c(0, 128, 128), img.dimensions(), Vec3c(0, 0, 0), Vec3c(256, 128, 1));
-					//nn5::endConcurrentWrite("./nn5_block_tests2/nn5");
-
-
-
-					Image<uint16_t> imgRaw, imgNN5;
-					//raw::read(imgRaw, "./nn5_block_tests2/raw");
-					read(imgNN5, "./nn5_block_tests2/nn5");
-					raw::writed(imgNN5, "./nn5_block_tests2/nn5_to_raw");
-					testAssert(equals(img, imgNN5), "orig vs NN5 writeBlock");
-				}
-
-			}
-
-
-			void concurrencyOneTest(NN5Compression compression, const Vec3c& chunkSize)
-			{
-				cout << "Chunk size = " << chunkSize << ", compression = " << toString(compression) << endl;
-
-				Vec3c dimensions(100, 200, 300);
-
-				Image<uint16_t> img(dimensions);
-				ramp3(img);
-
-				Vec3c blockStart(10, 20, 30);
-				Vec3c blockSize(50, 60, 70);
-
-				string entireImageFile = "./nn5_concurrency/entire_image";
-
-				// Write entire image and read.
-				fs::remove_all(entireImageFile);
-				{
-					vector<NN5Process> processes;
-
-					Vec3c processBlockSize(30, 30, 30);
-					internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
-						{
-							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
-						});
-
-					startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					write(img, entireImageFile, chunkSize, compression);
-					endConcurrentWrite(entireImageFile);
-
-					Image<uint16_t> entireFromDisk;
-					read(entireFromDisk, entireImageFile);
-					testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle with concurrency enabled");
-				}
-
-				// Write in 2 blocks and read.
-				fs::remove_all(entireImageFile);
-				{
-					Vec3c block1Start(0, 0, 0);
-					Vec3c block1Size(dimensions.x / 2 + 3, dimensions.y, dimensions.z);
-					Vec3c block2Start(block1Size.x, 0, 0);
-					Vec3c block2Size(dimensions.x - block1Size.x, dimensions.y, dimensions.z);
-
-					vector<NN5Process> processes;
-					processes.push_back(NN5Process{ AABoxc::fromPosSize(block1Start, block1Size + Vec3c(10, 0, 0)), AABoxc::fromPosSize(block1Start, block1Size) });
-					processes.push_back(NN5Process{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
-
-					startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					writeBlock(img, entireImageFile, chunkSize, compression, block1Start, dimensions, block1Start, block1Size);
-					writeBlock(img, entireImageFile, chunkSize, compression, block2Start, dimensions, block2Start, block2Size);
-					endConcurrentWrite(entireImageFile);
-
-					Image<uint16_t> entireFromDisk;
-					read(entireFromDisk, entireImageFile);
-					testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle in 2 pseudo-concurrent blocks");
-				}
-
-				// Write in multiple blocks and read.
-				{
-					vector<NN5Process> processes;
-
-					Vec3c processBlockSize(30, 31, 32);
-					internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
-						{
-							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
-						});
-
-					startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
-						{
-							writeBlock(img, entireImageFile, chunkSize, compression, processBlockStart, dimensions, processBlockStart, processBlockSize);
-						});
-					endConcurrentWrite(entireImageFile);
-
-					Image<uint16_t> entireFromDisk;
-					read(entireFromDisk, entireImageFile);
-					testAssert(equals(entireFromDisk, img), "NN5 entire image read/write cycle with concurrency enabled");
-				}
-			}
-
-			void concurrency()
-			{
-				concurrencyOneTest(NN5Compression::Raw, Vec3c(40, 200, 300));
-				concurrencyOneTest(NN5Compression::LZ4, Vec3c(40, 200, 300));
-
-				concurrencyOneTest(NN5Compression::Raw, Vec3c(40, 30, 20));
-				concurrencyOneTest(NN5Compression::LZ4, Vec3c(40, 30, 20));
-			}
-
-			void concurrencyLong()
-			{
-				coord_t w = 100;
-				coord_t h = 200;
-				coord_t d = 300;
-
-				srand(1212);
-
-				for (coord_t n = 0; n < 100; n++)
-				{
-					Vec3c chunkSize(randc(10, w + 10), randc(10, h + 10), randc(10, d + 10));
-
-					concurrencyOneTest(NN5Compression::Raw, chunkSize);
-					concurrencyOneTest(NN5Compression::LZ4, chunkSize);
-				}
-			}
 		}
 	}
 }
