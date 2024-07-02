@@ -6,23 +6,26 @@
 #include "io/raw.h"
 #include "io/itllz4.h"
 #include "math/aabox.h"
-#include "io/nn5compression.h"
+#include "io/zarrcodecs.h"
 #include "generation.h"
 
 namespace itl2
 {
-
+    namespace io
+    {
+        // Forward declaration of io::getInfo to avoid header loop.
+        bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, std::string& reason);
+    }
 	namespace zarr
 	{
-	    using nn5::NN5Compression;
 		namespace internals
 		{
 			/**
 			Constructs NN5 dataset metadata filename.
 			*/
-			inline string nn5MetadataFilename(const string& path)
+			inline string zarrMetadataFilename(const string& path)
 			{
-				return path + "/metadata.json";
+				return path + "/zarr.json";
 			}
 
 			inline string concurrentTagFile(const string& path)
@@ -450,7 +453,7 @@ namespace itl2
 			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
 			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData);
-		
+
 
 			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData, bool showProgressInfo)
 			{
