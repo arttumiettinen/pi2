@@ -327,7 +327,7 @@ namespace itl2
                         oldCodecs == codecs &&
                         oldFillValue == fillValue)
 					{
-						// The path contains a compatible NN5 dataset.
+						// The path contains a compatible Zarr dataset.
 						// Delete it if we are not continuing a concurrent write.
 						if (!fs::exists(internals::concurrentTagFile(path)))
 							if (deleteOldData)
@@ -335,9 +335,9 @@ namespace itl2
 					}
 					else
 					{
-						// The path contains an incompatible NN5 dataset. Delete it.
+						// The path contains an incompatible Zarr dataset. Delete it.
 						if (fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
-							throw ITLException(string("The output folder contains an incompatible NN5 dataset that is currently being processed concurrently."));
+							throw ITLException(string("The output folder contains an incompatible zarr dataset that is currently being processed concurrently."));
 						fs::remove_all(path);
 					}
 				}
@@ -420,81 +420,81 @@ namespace itl2
 			}
 		}
 
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const std::vector<ZarrProcess>& processes)
-		{
-			// Find chunks that are
-			// * written to by separate processes, or
-			// * read from and written to by at least two separate processes,
-			// and tag those unsafe by creating writes folder into the chunk folder.
-
-			zarr::internals::beginWrite(imageDimensions, imageDataType, path, chunkSize,  fillValue, codecs, false);
-
-			// Tag the image as concurrently processed
-			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
-
-			size_t unsafeChunkCount = 0;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
-					fs::create_directories(chunkFolder);
-
-					string writesFolder = internals::writesFolder(chunkFolder);
-
-					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
-
-					if (!isChunkSafe(chunkBox, processes))
-					{
-						// Mark the chunk as unsafe by creating writes folder.
-						fs::create_directories(writesFolder);
-						unsafeChunkCount++;
-					}
-				});
-			return unsafeChunkCount;
-		}
-
-		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
-		{
-			string chunkFolder = internals::chunkFolder(path, dimensionality, chunkIndex);
-			string writesFolder = internals::writesFolder(chunkFolder);
-			return fs::exists(writesFolder);
-		}
-
-		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
-		{
-			bool isNativeByteOrder;
-			Vec3c imageDimensions;
-			ImageDataType dataType;
-			Vec3c chunkSize;
-			int fillValue;
-            std::list<ZarrCodec> codecs;
-			string reason;
-			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
-				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-
-			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
-		}
-
-		vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path)
-		{
-			bool isNativeByteOrder;
-			Vec3c imageDimensions;
-			ImageDataType dataType;
-			Vec3c chunkSize;
-            int fillValue;
-            std::list<ZarrCodec> codecs;
-			string reason;
-			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
-				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-
-			size_t dimensionality = getDimensionality(imageDimensions);
-			vector<Vec3c> result;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
-						result.push_back(chunkIndex);
-				});
-			return result;
-		}
+//		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const std::vector<ZarrProcess>& processes)
+//		{
+//			// Find chunks that are
+//			// * written to by separate processes, or
+//			// * read from and written to by at least two separate processes,
+//			// and tag those unsafe by creating writes folder into the chunk folder.
+//
+//			zarr::internals::beginWrite(imageDimensions, imageDataType, path, chunkSize,  fillValue, codecs, false);
+//
+//			// Tag the image as concurrently processed
+//			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
+//
+//			size_t unsafeChunkCount = 0;
+//			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+//				{
+//					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
+//					fs::create_directories(chunkFolder);
+//
+//					string writesFolder = internals::writesFolder(chunkFolder);
+//
+//					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
+//
+//					if (!isChunkSafe(chunkBox, processes))
+//					{
+//						// Mark the chunk as unsafe by creating writes folder.
+//						fs::create_directories(writesFolder);
+//						unsafeChunkCount++;
+//					}
+//				});
+//			return unsafeChunkCount;
+//		}
+//
+//		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
+//		{
+//			string chunkFolder = internals::chunkFolder(path, dimensionality, chunkIndex);
+//			string writesFolder = internals::writesFolder(chunkFolder);
+//			return fs::exists(writesFolder);
+//		}
+//
+//		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
+//		{
+//			bool isNativeByteOrder;
+//			Vec3c imageDimensions;
+//			ImageDataType dataType;
+//			Vec3c chunkSize;
+//			int fillValue;
+//            std::list<ZarrCodec> codecs;
+//			string reason;
+//			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
+//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+//
+//			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
+//		}
+//
+//		vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path)
+//		{
+//			bool isNativeByteOrder;
+//			Vec3c imageDimensions;
+//			ImageDataType dataType;
+//			Vec3c chunkSize;
+//            int fillValue;
+//            std::list<ZarrCodec> codecs;
+//			string reason;
+//			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
+//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+//
+//			size_t dimensionality = getDimensionality(imageDimensions);
+//			vector<Vec3c> result;
+//			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+//				{
+//					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
+//						result.push_back(chunkIndex);
+//				});
+//			return result;
+//		}
 
 		namespace internals
 		{
@@ -599,51 +599,51 @@ namespace itl2
 				}
 			};
 
-			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
-			{
-				pick<zarr::internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, fillValue, codecs, chunkIndex);
-			}
+//			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
+//			{
+//				pick<zarr::internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, fillValue, codecs, chunkIndex);
+//			}
 		}
 
 		
 
-		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
-		{
-			bool isNativeByteOrder;
-			Vec3c imageDimensions;
-			ImageDataType dataType;
-			Vec3c chunkSize;
-            int fillValue;
-            std::list<ZarrCodec> codecs;
-			string reason;
-			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
-				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-
-			zarr::internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
-		}
-
-		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
-		{
-			bool isNativeByteOrder;
-			Vec3c fileDimensions;
-			ImageDataType dataType;
-			Vec3c chunkSize;
-            int fillValue;
-            std::list<ZarrCodec> codecs;
-			string reason;
-			if (!zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
-				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-			size_t dimensionality = getDimensionality(fileDimensions);
-
-			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
-						zarr::internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
-				});
-			
-			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
-			// the endConcurrentWrite can continue simply by re-running it.
-			fs::remove_all(internals::concurrentTagFile(path));
-		}
+//		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
+//		{
+//			bool isNativeByteOrder;
+//			Vec3c imageDimensions;
+//			ImageDataType dataType;
+//			Vec3c chunkSize;
+//            int fillValue;
+//            std::list<ZarrCodec> codecs;
+//			string reason;
+//			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
+//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+//
+//			zarr::internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
+//		}
+//
+//		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
+//		{
+//			bool isNativeByteOrder;
+//			Vec3c fileDimensions;
+//			ImageDataType dataType;
+//			Vec3c chunkSize;
+//            int fillValue;
+//            std::list<ZarrCodec> codecs;
+//			string reason;
+//			if (!zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
+//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+//			size_t dimensionality = getDimensionality(fileDimensions);
+//
+//			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+//				{
+//					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
+//						zarr::internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
+//				});
+//
+//			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
+//			// the endConcurrentWrite can continue simply by re-running it.
+//			fs::remove_all(internals::concurrentTagFile(path));
+//		}
 	}
 }
