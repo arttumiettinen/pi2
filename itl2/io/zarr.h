@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 
 #include "filesystem.h"
 #include "image.h"
@@ -83,101 +84,52 @@ namespace itl2
 			@param writeSize Size of block to be written.
 			*/
 			template<typename pixel_t> void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize,
-				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs)
-			{
-				// Build path to chunk folder.
-				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex);
+				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs) {
+                // Build path to chunk folder.
+                string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex);
 
-				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
-				// Chunk is unsafe if its folder contains writes folder.
-				string writesFolder = internals::writesFolder(filename);
-				bool unsafe;
-				if (fs::exists(writesFolder))
-				{
-					// Unsafe chunk, write to separate writes folder.
-					unsafe = true;
-					filename = writesFolder + toString(startInChunkCoords.x) + string("-") + toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
-				}
-				else
-				{
-					// Safe chunk, write directly to the chunk file.
-					unsafe = false;
-				}
-
-				// Clamp write size to the size of the image.
-				Vec3c imageChunkEnd = startInImageCoords + writeSize;
-				for (size_t n = 0; n < imageChunkEnd.size(); n++)
-				{
-					if (imageChunkEnd[n] > img.dimension(n))
-						imageChunkEnd[n] = img.dimension(n);
-				}
-				Vec3c realWriteSize = imageChunkEnd - startInImageCoords;
-
-				// Determine if this is the last chunk, and reduce chunk size accordingly so that image size stays correct.
-				//Vec3c datasetChunkStart = chunkIndex.componentwiseMultiply(chunkSize);
-				//Vec3c datasetChunkEnd = datasetChunkStart + chunkSize;
-				//for (size_t n = 0; n < datasetChunkEnd.size(); n++)
-				//{
-				//	if (datasetChunkEnd[n] > datasetSize[n])
-				//		datasetChunkEnd[n] = datasetSize[n];
-				//}
-				//Vec3c realChunkSize = datasetChunkEnd - datasetChunkStart;
-				Vec3c realChunkSize = clampedChunkSize(chunkIndex, chunkSize, datasetSize);
-
-				realWriteSize = min(realWriteSize, realChunkSize);
-
-                //iterate over codecs
-                for (auto& codec : codecs)
-                {
-                    ///////////////--------hier weiterarbeiten ------------////////////
+                // Clamp write size to the size of the image.
+                Vec3c imageChunkEnd = startInImageCoords + writeSize;
+                for (size_t n = 0; n < imageChunkEnd.size(); n++) {
+                    if (imageChunkEnd[n] > img.dimension(n))
+                        imageChunkEnd[n] = img.dimension(n);
                 }
+                Vec3c realWriteSize = imageChunkEnd - startInImageCoords;
+
+                Vec3c realChunkSize = clampedChunkSize(chunkIndex, chunkSize, datasetSize);
+
+                realWriteSize = min(realWriteSize, realChunkSize);
+
+                // Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
+                // Chunk is unsafe if its folder contains writes folder.
+                string writesFolder = internals::writesFolder(filename);
+                bool unsafe = fs::exists(writesFolder);
 
 
-				if (!unsafe)
-				{
-					switch (compression)
-					{
-					case NN5Compression::Raw:
-					{
-						filename = concatDimensions(filename, realWriteSize);
-						raw::writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords, realWriteSize, false);
-						break;
-					}
-					case NN5Compression::LZ4:
-					{
-						filename += ".lz4raw";
-						lz4::writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords, realWriteSize);
-						break;
-					}
-					default:
-					{
-						throw ITLException(string("Unsupported nn5 compression algorithm: ") + toString(compression));
-					}
-					}
-				}
-				else
-				{
-					switch (compression)
-					{
-					case NN5Compression::Raw:
-					{
-						filename = concatDimensions(filename, realWriteSize);
-						raw::writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize, false);
-						break;
-					}
-					case NN5Compression::LZ4:
-					{
-						filename += ".lz4raw";
-						lz4::writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize);
-						break;
-					}
-					default:
-					{
-						throw ITLException(string("Unsupported nn5 compression algorithm: ") + toString(compression));
-					}
-					}
-				}
-			}
+
+                if (codecs.size() == 1) {
+                    //only bytes codec
+                    if (unsafe) {
+                        // Unsafe chunk: write to separate writes folder.
+                        filename = writesFolder + toString(startInChunkCoords.x) + string("-") +
+                                   toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
+                        raw::writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize,
+                                        false);
+                    } else {
+                        // Safe chunk: write directly to the chunk file.
+                        raw::writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
+                                        realWriteSize, false);
+                    }
+
+                } else {
+                    //TODO other codecs
+                    throw ITLException("multiple codecs not yet supported");
+                    //iterate over codecs
+                    for (auto &codec: codecs) {
+                    }
+                }
+            }
+
 
 			inline size_t countChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize)
 			{
@@ -350,23 +302,14 @@ namespace itl2
 
 			template<typename pixel_t> void readChunkFile(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
-				switch (compression)
-				{
-					case NN5Compression::Raw:
-					{
-						raw::read(img, filename);
-						break;
-					}
-					case NN5Compression::LZ4:
-					{
-						lz4::read(img, filename);
-						break;
-					}
-					default:
-					{
-						throw ITLException(string("Unsupported nn5 decompression algorithm: ") + toString(compression));
-					}
-				}
+                if(codecs.size()==1){
+                    //only bytes codec
+                    raw::read(img, filename);
+                }
+                else{
+                    //TODO other codecs
+                    throw ITLException("multiple codecs not yet supported");
+                }
 			}
 
 			

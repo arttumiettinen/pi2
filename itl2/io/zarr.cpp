@@ -1,6 +1,5 @@
 
 #include <iostream>
-#include <list>
 
 #include "zarr.h"
 #include "json.h"
@@ -550,21 +549,9 @@ namespace itl2
 
 							// Read old data if it exists.
 							// TODO: No need to read if the written blocks overwrite the chunk completely.
-							std::vector<string> originalFiles = getFileList(chunkFile);
-							if (originalFiles.size() <= 0)
-							{
-								// No file => all pixels in the block are zeroes.
-								setValue(img, (pixel_t)0);
-							}
-							else if (originalFiles.size() == 1)
-							{
-								string filename = chunkFile + "/" + originalFiles[0];
-								readChunkFile(img, filename, fillValue, codecs);
-							}
-							else
-							{
-								throw ITLException(string("Multiple image files found in block directory ") + chunkFile + " while combining chunk writes.");
-							}
+
+                            readChunkFile(img, chunkFile, fillValue, codecs);
+
 
 							// Modify data with the new writes.
 							for (const string& file : writesFiles)
@@ -573,25 +560,16 @@ namespace itl2
 							}
 
 							// Write back to disk.
-							switch (compression)
-							{
-								case NN5Compression::Raw:
-								{
-									string filename = concatDimensions(chunkFile + "/chunk", img.dimensions());
-									raw::write(img, chunkFile);
-									break;
-								}
-								case NN5Compression::LZ4:
-								{
-									string filename = chunkFile + "/chunk.lz4raw";
-									lz4::write(img, filename);
-									break;
-								}
-								default:
-								{
-									throw ITLException(string("Unsupported nn5 compression algorithm: ") + toString(compression));
-								}
-							}
+                            if(codecs.size()==1)
+                            {
+                                //only bytes codec
+                                raw::write(img, chunkFile);
+                            }
+                            else
+                            {
+                                //TODO other codecs
+                                throw ITLException("multiple codecs not yet supported");
+                            }
 						}
 
 						// Remove the writes folder in order to mark this chunk processed.
