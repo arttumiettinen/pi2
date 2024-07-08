@@ -23,15 +23,16 @@ namespace itl2 {
     }
 
     template<>
-    inline std::string toString(const zarr::ZarrCodecName& x) {
+    inline std::string toString(const zarr::ZarrCodecName &x) {
         switch (x) {
-            case zarr::ZarrCodecName::Bytes: return "bytes";
+            case zarr::ZarrCodecName::Bytes:
+                return "bytes";
         }
         throw ITLException("Invalid ZarrCodecName.");
     }
 
     template<>
-    inline zarr::ZarrCodecName fromString(const std::string& str0) {
+    inline zarr::ZarrCodecName fromString(const std::string &str0) {
         std::string str = str0;
         toLower(str);
         if (str == "bytes")
@@ -43,35 +44,27 @@ namespace itl2 {
     namespace zarr {
 
         class ZarrCodec {
-            // TODO: make this an abstract class
         public:
-            static const ZarrCodecType type = ZarrCodecType::None;
-            static const ZarrCodecName name = ZarrCodecName::None;
+            ZarrCodecType type;
+            ZarrCodecName name;
+            nlohmann::json configuration;
 
-            void readConfig(nlohmann::json config) {}
+            ZarrCodec(const ZarrCodecName name, const nlohmann::json configuration) {
+                this->name = name;
+                this->configuration = configuration;
+                switch (name) {
+                    case ZarrCodecName::Bytes:
+                        this->type = ZarrCodecType::ArrayBytesCodec;
 
-            nlohmann::json toJSON() const {
-                nlohmann::json j;
-                j["name"] = toString(this->name);
-                return j;
+                        break;
+                    default:
+                        throw ITLException(std::string("Invalid zarr codec"));
+
+                }
             }
 
-            bool operator==(const ZarrCodec &t) const {
-                return toJSON() == t.toJSON();
-            }
-        };
-
-        class ZarrBytesCodec: public ZarrCodec {
-        public:
-            static const ZarrCodecType type = ZarrCodecType::ArrayBytesCodec;
-            static const ZarrCodecName name = ZarrCodecName::Bytes;
-            std::string endian;
-
-            ZarrBytesCodec() {
-                endian = "little";
-            }
-
-            void readConfig(nlohmann::json config) {
+            void readBytesCodecConfig(nlohmann::json config) {
+                std::string endian = "little";
                 for (auto it = config.begin(); it != config.end(); ++it) {
                     if (it.key() == "endian") {
                         endian = it.value();
@@ -82,27 +75,33 @@ namespace itl2 {
                         throw ITLException("Invalid key in bytes codec config: " + it.key());
                     }
                 }
+                //TODO
             }
 
-            nlohmann::json toJSON() {
-                nlohmann::json j = ZarrCodec::toJSON();
-                j["configuration"]["endian"] = endian;
+            nlohmann::json toJSON() const {
+                nlohmann::json j;
+                j["name"] = toString(this->name);
+                j["configuration"] = configuration; //this does not return the reference to the configuration just a copy, right?
                 return j;
+            }
+
+            bool operator==(const ZarrCodec &t) const {
+                return toJSON() == t.toJSON();
             }
         };
     }
 
     template<>
-    inline std::string toString(const zarr::ZarrCodec& x) {
+    inline std::string toString(const zarr::ZarrCodec &x) {
         return toString(x.name);
     }
 
     template<>
-    inline zarr::ZarrCodec fromString(const std::string& str0) {
+    inline zarr::ZarrCodec fromString(const std::string &str0) {
         std::string str = str0;
         toLower(str);
         if (str == "bytes")
-            return *new zarr::ZarrBytesCodec();
+            return *new zarr::ZarrCodec(zarr::ZarrCodecName::Bytes, "");
 
         throw ITLException(std::string("Invalid zarr codec: ") + str);
     }
