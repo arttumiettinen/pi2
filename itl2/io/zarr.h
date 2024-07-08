@@ -422,7 +422,7 @@ namespace itl2
 			Vec3c dummyChunkSize;
             int fillValue;
             std::list<ZarrCodec> codecs;
-			return itl2::zarr::getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, fillValue, codecs, reason);
+			return getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, fillValue, codecs, reason);
 		}
 
 		/**

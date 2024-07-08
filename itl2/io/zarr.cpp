@@ -166,24 +166,25 @@ namespace itl2
                 reason = "fill_value is missing in zarr metadata.";
                 return false;
             }
-            else
-            {
-                try
-                {
+            else {
+                try {
                     fillValue = j["fill_value"].get<int>();
                 }
-                catch(nlohmann::json::exception ex)
-                {
-                    reason = string("Unable to parse fill_value in zarr metadata (this implementation only supports integers): ") + ex.what();
+                catch (nlohmann::json::exception ex) {
+                    reason =
+                            string("Unable to parse fill_value in zarr metadata (this implementation only supports integers): ") +
+                            ex.what();
                     return false;
                 }
+            }
 
-			if (!j.contains("codecs"))
+            if (!j.contains("codecs"))
 			{
-				reason = "codecs is missing in zarr metadata.";
+                reason = "codecs is missing in zarr metadata.";
                 return false;
             }
-			{
+            else
+            {
                 int numberArrayBytesCodecs = 0;
 				for (auto& codec : j["codecs"])
                 {
@@ -221,6 +222,9 @@ namespace itl2
                                     return false;
                                 }
                                 break;
+                            default:
+                                reason = "Unknown codec type.";
+                                return false;
                         }
                     }
                     catch (ITLException& e)
@@ -235,10 +239,7 @@ namespace itl2
                     return false;
                 }
             }
-
-			}
-
-			return true;
+            return true;
 		}
 
 		namespace internals
