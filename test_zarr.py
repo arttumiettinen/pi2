@@ -23,7 +23,7 @@ def pi2_write(provide_chunk_shape=True):
     write_img.set_data(arr)
     args = write_img, output_file(name)
     if provide_chunk_shape:
-        args = write_img, output_file(name), [1, 5, 5]
+        args = write_img, output_file(name), [5, 5, 5]
     pi2.writezarr(*args)
 
 def zarrita_write():
@@ -35,6 +35,7 @@ def zarrita_write():
         shape=arr.shape,
         dtype='int32',
         chunk_shape=arr.shape,
+        fill_value=42
     )
     a[:] = arr
 
@@ -52,11 +53,7 @@ def zarrita_read(name):
     return read_arr
 
 
-def test_zarrita_to_pi2():
-    zarrita_write()
-    read_arr = pi2_read("zarrita.zarr")
-    assert np.array_equal(arr, read_arr)
-    print("passed")
+
 
 def test_pi2_to_zarrita():
     pi2_write()
@@ -90,5 +87,11 @@ def test_pi2_to_zarrita_transpose_corrected():
     pi2_write()
     read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr) or np.array_equal(arr, read_arr.transpose(1, 2, 0))
+    print("passed")
+
+def test_zarrita_to_pi2():
+    zarrita_write()
+    read_arr = pi2_read("zarrita.zarr")
+    assert np.array_equal(arr, read_arr)
     print("passed")
 

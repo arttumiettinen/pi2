@@ -328,34 +328,20 @@ namespace itl2
 			*/
 			template<typename pixel_t> void readSingleChunk(Image<pixel_t>& target, const std::string& path, const Vec3c& datasetDimensions, const Vec3c& chunkIndex, const Vec3c& chunkStartInTarget, const Vec3c& readSize, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
 			{
-				string dir = chunkFile(path, getDimensionality(datasetDimensions), chunkIndex);
+				string filename = chunkFile(path, getDimensionality(datasetDimensions), chunkIndex);
 
-				//Vec3c chunkEnd = chunkStartInTarget + readSize;
-				//for (size_t n = 0; n < chunkEnd.size(); n++)
-				//{
-				//	if (chunkEnd[n] > target.dimension(n))
-				//		chunkEnd[n] = target.dimension(n);
-				//}
-				//Vec3c realReadSize = chunkEnd - chunkStartInTarget;
-
-				// Search for files in the directory
-				std::vector<string> files = getFileList(dir);
-
-				if (files.size() <= 0)
-				{
-					// No file => all pixels in the block are fillValue.
-					draw<pixel_t>(target, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
+				if (fs::is_directory(filename)){
+					throw ITLException(filename + string(" is a directory, but it should be a file."));
 				}
-				else if (files.size() == 1)
+				if (fs::is_regular_file(filename))
 				{
-					string filename = dir + "/" + files[0];
 					readFileIntoImageBlock(target, filename, chunkStartInTarget, fillValue, codecs, temp);
 				}
 				else
 				{
-					throw ITLException(string("Multiple image files found in block directory ") + dir);
+					// No file => all pixels in the block are fillValue.
+					draw<pixel_t>(target, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
 				}
-
 			}
 
 			/**
