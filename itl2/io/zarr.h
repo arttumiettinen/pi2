@@ -304,7 +304,7 @@ namespace itl2
 			{
                 if(codecs.size()==1){
                     //only bytes codec
-                    raw::read(img, filename);
+					readBytesCodec(img, filename);
                 }
                 else{
                     //TODO other codecs
@@ -313,13 +313,12 @@ namespace itl2
 			}
 
 
+
 			template<typename pixel_t> void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
 			{
 				// TODO: This is not very efficient due to the copying of the block, and memory allocation, improve?
 				//			Note that this could be easily improved using an image view to the desired block in the targetImg.
-
 				readChunkFile(temp, filename, fillValue, codecs);
-
 				copyValues(img, temp, imagePosition);
 			}
 
@@ -345,11 +344,11 @@ namespace itl2
 			}
 
 			/**
-			Reads NN5 chunk files.
+			Reads zarr chunk files.
 			*/
 			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool showProgressInfo)
 			{
-				Image<pixel_t> temp;
+				Image<pixel_t> temp(img.dimensions(), fillValue);
 
 				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
@@ -366,7 +365,7 @@ namespace itl2
 				const Vec3c& start, const Vec3c& end,
 				bool showProgressInfo)
 			{
-				Image<pixel_t> temp;
+				Image<pixel_t> temp(img.dimensions(), fillValue);
 
 				AABoxc imageBox = AABoxc::fromMinMax(start, end);
 

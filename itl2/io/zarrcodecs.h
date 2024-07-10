@@ -121,6 +121,19 @@ namespace itl2
 				return toJSON() == t.toJSON();
 			}
 		};
+		/**
+			 * copy from raw::read
+			Reads a .raw file to the given image, initializes the image to correct size read from file name.
+			The file name must be in format image_name_100x200x300.raw or image_name_100x200.raw.
+			@param img Image where the data is placed. The size of the image will be set based on the .raw file name.
+			@param filename The name of the file to read.
+			@param bytesToSkip Skip this many bytes from the beginning of the file.
+			@param readPixel Function that reads one pixel. Relevant only for non-trivially copyable pixel data types.
+			*/
+		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void readBytesCodec(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+		{
+			raw::readNoParse<pixel_t, ReadPixel>(img, filename, bytesToSkip, readPixel);
+		}
 	}
 
 	template<>
