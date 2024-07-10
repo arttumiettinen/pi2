@@ -231,7 +231,7 @@ namespace itl2
 							// file block to be written.
 							// Here, the chunkUpdateRegion is in file coordinates.
 							AABoxc chunkUpdateRegion = fileTargetBlock.intersection(currentChunk);
-							
+
 							// Convert chunkUpdateRegion to image coordinates
 							Vec3c imageUpdateStartPosition = chunkUpdateRegion.position() - filePosition + imagePosition;
 							AABoxc imageUpdateRegion = AABoxc::fromPosSize(imageUpdateStartPosition, chunkUpdateRegion.size());
@@ -312,7 +312,7 @@ namespace itl2
                 }
 			}
 
-			
+
 			template<typename pixel_t> void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
 			{
 				// TODO: This is not very efficient due to the copying of the block, and memory allocation, improve?
@@ -355,7 +355,7 @@ namespace itl2
 				{
 					throw ITLException(string("Multiple image files found in block directory ") + dir);
 				}
-				
+
 			}
 
 			/**
@@ -413,8 +413,9 @@ namespace itl2
 				internals::writeChunks(img, path, chunkSize, fillValue, codecs, img.dimensions(), showProgressInfo);
 			}
 		}
+        bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason);
 
-		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, std::string& reason);
+//bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, std::string& reason);
 
 		inline bool getInfo(const std::string& path, Vec3c& dimensions, ImageDataType& dataType, std::string& reason)
         {
@@ -422,7 +423,7 @@ namespace itl2
 			Vec3c dummyChunkSize;
             int fillValue;
             std::list<ZarrCodec> codecs;
-			return getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, fillValue, codecs, reason);
+			return getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, codecs, fillValue, reason);
 		}
 
 		/**
@@ -444,7 +445,7 @@ namespace itl2
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, bool showProgressInfo = false)
 		{
             std::list<ZarrCodec> defaultCodecs;
-            defaultCodecs.push_back(ZarrBytesCodec());
+            defaultCodecs.push_back(ZarrCodec(ZarrCodecName::Bytes, ""));
 			zarr::write(img, path, chunkSize, 0, defaultCodecs, showProgressInfo);
 		}
 
@@ -507,7 +508,7 @@ namespace itl2
             int fillValue;
             std::list<ZarrCodec> codecs;
 			string reason;
-			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
+			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -537,7 +538,7 @@ namespace itl2
             int fillValue;
             std::list<ZarrCodec> codecs;
 			string reason;
-			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
+			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue,reason))
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -565,7 +566,7 @@ namespace itl2
 				swapByteOrder(img);
 		}
 
-		
+
 
 		struct ZarrProcess
 		{

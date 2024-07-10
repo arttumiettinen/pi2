@@ -63,6 +63,15 @@ namespace itl2 {
                 }
             }
 
+            void readConfig(nlohmann::json config) {
+                switch (this->name) {
+                    case ZarrCodecName::Bytes:
+                        readBytesCodecConfig(config);
+                        break;
+                    default:
+                        throw ITLException(std::string("Invalid zarr codec"));
+                }
+            }
             void readBytesCodecConfig(nlohmann::json config) {
                 std::string endian = "little";
                 for (auto it = config.begin(); it != config.end(); ++it) {

@@ -14,7 +14,7 @@ namespace itl2
 	namespace zarr
 	{
         //TODO: remove isNativeByteOrder
-		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
+        bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
 		{
 			dimensions = Vec3c();
 			isNativeByteOrder = true;
