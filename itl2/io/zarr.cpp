@@ -13,14 +13,14 @@ namespace itl2
 {
 	namespace zarr
 	{
-        //TODO: remove isNativeByteOrder
-        bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
+		//TODO: remove isNativeByteOrder
+		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
 		{
 			dimensions = Vec3c();
 			isNativeByteOrder = true;
 			dataType = ImageDataType::Unknown;
 			chunkSize = Vec3c();
-            fillValue = 0;
+			fillValue = 0;
 
 			// Check that metadata file exists.
 			string metadataFilename = zarr::internals::zarrMetadataFilename(path);
@@ -44,34 +44,34 @@ namespace itl2
 				reason = string("Unable to parse zarr metadata: ") + ex.what();
 				return false;
 			}
-            if(!j.contains("zarr_format"))
-            {
-                reason = "zarr_format is missing in zarr metadata.";
-                return false;
-            }
-            else
-            {
-                int zarr_format = j["zarr_format"].get<int>();
-                if(zarr_format != 3)
-                {
-                    reason = "This zarr implementation supports only zarr_format 3.";
-                    return false;
-                }
-            }
-            if(!j.contains("node_type"))
-            {
-                reason = "node_type is missing in zarr metadata.";
-                return false;
-            }
-            else
-            {
-                string node_type = j["node_type"].get<string>();
-                if(node_type != "array")
-                {
-                    reason = "This zarr implementation supports only node_type array.";
-                    return false;
-                }
-            }
+			if (!j.contains("zarr_format"))
+			{
+				reason = "zarr_format is missing in zarr metadata.";
+				return false;
+			}
+			else
+			{
+				int zarr_format = j["zarr_format"].get<int>();
+				if (zarr_format != 3)
+				{
+					reason = "This zarr implementation supports only zarr_format 3.";
+					return false;
+				}
+			}
+			if (!j.contains("node_type"))
+			{
+				reason = "node_type is missing in zarr metadata.";
+				return false;
+			}
+			else
+			{
+				string node_type = j["node_type"].get<string>();
+				if (node_type != "array")
+				{
+					reason = "This zarr implementation supports only node_type array.";
+					return false;
+				}
+			}
 			if (!j.contains("shape"))
 			{
 				reason = "shape is missing in zarr metadata.";
@@ -107,20 +107,19 @@ namespace itl2
 				return false;
 			}
 
-
 			if (!j.contains("chunk_grid")
-                    || !j["chunk_grid"].contains("configuration")
-                    || !j["chunk_grid"]["configuration"].contains("chunk_shape")
-                    || !j["chunk_grid"].contains("name")
-                    || j["chunk_grid"]["name"].get<string>() != "regular"
-                    )
-            {
-                reason = "chunk_grid is missing or malformed in zarr metadata.";
-                return false;
-            }
+				|| !j["chunk_grid"].contains("configuration")
+				|| !j["chunk_grid"]["configuration"].contains("chunk_shape")
+				|| !j["chunk_grid"].contains("name")
+				|| j["chunk_grid"]["name"].get<string>() != "regular"
+				)
+			{
+				reason = "chunk_grid is missing or malformed in zarr metadata.";
+				return false;
+			}
 			else
 			{
-                auto chunkDims = j["chunk_grid"]["configuration"]["chunk_shape"];
+				auto chunkDims = j["chunk_grid"]["configuration"]["chunk_shape"];
 				if (chunkDims.size() != dims.size())
 				{
 					reason = "Chunk dimensions and dataset dimensions contain different number of elements.";
@@ -135,143 +134,146 @@ namespace itl2
 					chunkSize[2] = chunkDims[2].get<size_t>();
 			}
 
-            if(!j.contains("chunk_key_encoding"))
-            {
-                reason = "chunk_key_encoding is missing in zarr metadata.";
-                return false;
-            }
-            else
-            {
-                if(!j["chunk_key_encoding"].contains("name"))
-                {
-                    reason = "chunk_key_encoding name is missing in zarr metadata.";
-                    return false;
-                }
-                if(j["chunk_key_encoding"]["name"].get<string>() != "default")
-                {
-                    reason = "This zarr implementation supports only default chunk_key_encoding.";
-                    return false;
-                }
-                if(j["chunk_key_encoding"].contains("configuration")
-                    && !j["chunk_key_encoding"]["configuration"].contains("separator")
-                    && j["chunk_key_encoding"]["configuration"]["separator"].get<string>() != "/")
-                {
-                    reason = "This zarr implementation supports only default chunk_key_encoding with separator \"/\".";
-                    return false;
-                }
-            }
-
-            if(!j.contains("fill_value"))
-            {
-                reason = "fill_value is missing in zarr metadata.";
-                return false;
-            }
-            else {
-                try {
-                    fillValue = j["fill_value"].get<int>();
-                }
-                catch (nlohmann::json::exception ex) {
-                    reason =
-                            string("Unable to parse fill_value in zarr metadata (this implementation only supports integers): ") +
-                            ex.what();
-                    return false;
-                }
-            }
-
-            if (!j.contains("codecs"))
+			if (!j.contains("chunk_key_encoding"))
 			{
-                reason = "codecs is missing in zarr metadata.";
-                return false;
-            }
-            else
-            {
-                int numberArrayBytesCodecs = 0;
+				reason = "chunk_key_encoding is missing in zarr metadata.";
+				return false;
+			}
+			else
+			{
+				if (!j["chunk_key_encoding"].contains("name"))
+				{
+					reason = "chunk_key_encoding name is missing in zarr metadata.";
+					return false;
+				}
+				if (j["chunk_key_encoding"]["name"].get<string>() != "default")
+				{
+					reason = "This zarr implementation supports only default chunk_key_encoding.";
+					return false;
+				}
+				if (j["chunk_key_encoding"].contains("configuration")
+					&& !j["chunk_key_encoding"]["configuration"].contains("separator")
+					&& j["chunk_key_encoding"]["configuration"]["separator"].get<string>() != "/")
+				{
+					reason = "This zarr implementation supports only default chunk_key_encoding with separator \"/\".";
+					return false;
+				}
+			}
+
+			if (!j.contains("fill_value"))
+			{
+				reason = "fill_value is missing in zarr metadata.";
+				return false;
+			}
+			else
+			{
+				try
+				{
+					fillValue = j["fill_value"].get<int>();
+				}
+				catch (nlohmann::json::exception ex)
+				{
+					reason =
+						string("Unable to parse fill_value in zarr metadata (this implementation only supports integers): ") +
+							ex.what();
+					return false;
+				}
+			}
+
+			if (!j.contains("codecs"))
+			{
+				reason = "codecs is missing in zarr metadata.";
+				return false;
+			}
+			else
+			{
+				int numberArrayBytesCodecs = 0;
 				for (auto& codec : j["codecs"])
-                {
-                    if(!codec.contains("name"))
-                    {
-                        reason = "codec name is missing in zarr metadata.";
-                        return false;
-                    }
-                    try
-                    {
-                        nlohmann::json codecConfig = {};
-                        if (codec.contains("configuration"))
-                        {
-                            codecConfig = codec["configuration"];
-                        }
-                        zarr::ZarrCodec zarrCodec = fromString<zarr::ZarrCodec>(codec["name"].get<string>());
-                        zarrCodec.readConfig(codecConfig);
-                        codecs.push_back(zarrCodec);
-                        switch(zarrCodec.type)
-                        {
-                            case ZarrCodecType::ArrayArrayCodec:
-                                if (numberArrayBytesCodecs > 0)
-                                {
-                                    reason = "ArrayArrayCodec cannot be used after ArrayBytesCodec.";
-                                    return false;
-                                }
-                                break;
-                            case ZarrCodecType::ArrayBytesCodec:
-                                numberArrayBytesCodecs++;
-                                break;
-                            case ZarrCodecType::BytesBytesCodec:
-                                if (numberArrayBytesCodecs < 1)
-                                {
-                                    reason = "ArrayBytesCodec must be used before BytesBytesCodec.";
-                                    return false;
-                                }
-                                break;
-                            default:
-                                reason = "Unknown codec type.";
-                                return false;
-                        }
-                    }
-                    catch (ITLException& e)
-                    {
-                        reason = e.message();
-                        return false;
-                    }
-                }
-                if (numberArrayBytesCodecs != 1)
-                {
-                    reason = "Exactly one ArrayBytesCodec was expected in the codecs list, got " + to_string(numberArrayBytesCodecs) + ".";
-                    return false;
-                }
-            }
-            return true;
+				{
+					if (!codec.contains("name"))
+					{
+						reason = "codec name is missing in zarr metadata.";
+						return false;
+					}
+					try
+					{
+						nlohmann::json codecConfig = {};
+						if (codec.contains("configuration"))
+						{
+							codecConfig = codec["configuration"];
+						}
+						zarr::ZarrCodec zarrCodec = fromString<zarr::ZarrCodec>(codec["name"].get<string>());
+						zarrCodec.readConfig(codecConfig);
+						codecs.push_back(zarrCodec);
+						switch (zarrCodec.type)
+						{
+						case ZarrCodecType::ArrayArrayCodec:
+							if (numberArrayBytesCodecs > 0)
+							{
+								reason = "ArrayArrayCodec cannot be used after ArrayBytesCodec.";
+								return false;
+							}
+							break;
+						case ZarrCodecType::ArrayBytesCodec:
+							numberArrayBytesCodecs++;
+							break;
+						case ZarrCodecType::BytesBytesCodec:
+							if (numberArrayBytesCodecs < 1)
+							{
+								reason = "ArrayBytesCodec must be used before BytesBytesCodec.";
+								return false;
+							}
+							break;
+						default:
+							reason = "Unknown codec type.";
+							return false;
+						}
+					}
+					catch (ITLException& e)
+					{
+						reason = e.message();
+						return false;
+					}
+				}
+				if (numberArrayBytesCodecs != 1)
+				{
+					reason = "Exactly one ArrayBytesCodec was expected in the codecs list, got " + to_string(numberArrayBytesCodecs) + ".";
+					return false;
+				}
+			}
+			return true;
 		}
 
 		namespace internals
 		{
-		    //zarr updated
-            //TODO: write codecs
+			//zarr updated
+			//TODO: write codecs
 			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				nlohmann::json j =
-                        {
-                            {"zarr_format", 3},//zarr updated
-                            {"node_type", "array"},//zarr updated
-                            {"shape", {dimensions[0], dimensions[1], dimensions[2]}},//zarr updated
-                            {"data_type", toString(dataType)},//zarr updated
-                            {"chunk_grid", {{"name", "regular"}, {"configuration", {{"chunk_shape", {chunkSize[0], chunkSize[1], chunkSize[2]}}}}}},
-                            {"chunk_key_encoding", {{"name", "default"}, {"configuration", {{"separator", "/"}}}}},
-                            {"fill_value", fillValue},
-                            {"codecs", {}}
-                        };
-                for (auto& codec : codecs)
-                {
-                    j["codecs"].push_back({codec.toJSON()});
-                }
-                // TODO: allow other chunk_key_encoding
-                // TODO: optional parameters
+					{
+						{ "zarr_format", 3 },//zarr updated
+						{ "node_type", "array" },//zarr updated
+						{ "shape", { dimensions[0], dimensions[1], dimensions[2] }},//zarr updated
+						{ "data_type", toString(dataType) },//zarr updated
+						{ "chunk_grid", {{ "name", "regular" }, { "configuration", {{ "chunk_shape", { chunkSize[0], chunkSize[1], chunkSize[2] }}}}}},
+						{ "chunk_key_encoding", {{ "name", "default" }, { "configuration", {{ "separator", "/" }}}}},
+						{ "fill_value", fillValue },
+						{ "codecs", {}}
+					};
+				for (auto& codec : codecs)
+				{
+					j["codecs"].push_back({ codec.toJSON() });
+				}
+				// TODO: allow other chunk_key_encoding
+				// TODO: optional parameters
 
 				string metadataFilename = zarr::internals::zarrMetadataFilename(path);
 				ofstream of(metadataFilename, ios_base::trunc | ios_base::out);
 				of << std::setw(4) << j << endl;
 			}
 
-			vector<string> getFileList(const string& dir)
+			vector <string> getFileList(const string& dir)
 			{
 				vector<string> filenames;
 
@@ -306,7 +308,7 @@ namespace itl2
 					Vec3c oldDimensions;
 					ImageDataType oldDataType;
 					Vec3c oldChunkSize;
-                    std::list<ZarrCodec> oldCodecs;
+					std::list<ZarrCodec> oldCodecs;
 					string dummyReason;
 					int oldFillValue;
 					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCodecs, oldFillValue, dummyReason))
@@ -314,7 +316,8 @@ namespace itl2
 						// The path does not contain a Zarr dataset.
 						// If it is no known image, do not delete it.
 						if (!io::getInfo(path, oldDimensions, oldDataType, dummyReason))
-							throw ITLException(string("Unable to write a Zarr as the output folder already exists but cannot be verified to be an image: ") + path + " Consider removing the existing dataset manually.");
+							throw ITLException(string("Unable to write a Zarr as the output folder already exists but cannot be verified to be an image: ") + path
+								+ " Consider removing the existing dataset manually.");
 
 						// Here the path does not contain Zarr but contains an image of known type.
 						// Delete the old image.
@@ -324,8 +327,8 @@ namespace itl2
 						oldIsNativeByteOrder == true &&
 						oldDataType == imageDataType &&
 						oldChunkSize == chunkSize &&
-                        oldCodecs == codecs &&
-                        oldFillValue == fillValue)
+						oldCodecs == codecs &&
+						oldFillValue == fillValue)
 					{
 						// The path contains a compatible Zarr dataset.
 						// Delete it if we are not continuing a concurrent write.
@@ -403,7 +406,7 @@ namespace itl2
 				else
 				{
 					// One reader, one writer.
-					
+
 					if (readerIndices[0] == writerIndices[0])
 					{
 						// Reader and writer are the same process.
@@ -519,7 +522,8 @@ namespace itl2
 				return Vec3c(x, y, z);
 			}
 
-			template<typename pixel_t> void readAndAdd(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
+			template<typename pixel_t>
+			void readAndAdd(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				Vec3c blockPos = parsePosition(filename);
 
@@ -529,15 +533,16 @@ namespace itl2
 				copyValues(img, block, blockPos);
 			}
 
-			template<typename pixel_t> struct CombineChunkWrites
+			template<typename pixel_t>
+			struct CombineChunkWrites
 			{
-			public:
+			 public:
 				static void run(const string& path, const Vec3c& datasetSize, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
 				{
 					string chunkFile = internals::chunkFile(path, getDimensionality(datasetSize), chunkIndex);
 					string writesFolder = internals::writesFolder(chunkFile);
 
-                    //TODO handle writesFolder
+					//TODO handle writesFolder
 					if (fs::exists(writesFolder))
 					{
 						// Find all files in the writes folder
@@ -551,7 +556,7 @@ namespace itl2
 							// Read old data if it exists.
 							// TODO: No need to read if the written blocks overwrite the chunk completely.
 
-                            readChunkFile(img, chunkFile, fillValue, codecs);
+							readChunkFile(img, chunkFile, fillValue, codecs);
 
 
 							// Modify data with the new writes.
@@ -561,16 +566,16 @@ namespace itl2
 							}
 
 							// Write back to disk.
-                            if(codecs.size()==1)
-                            {
-                                //only bytes codec
-                                raw::write(img, chunkFile);
-                            }
-                            else
-                            {
-                                //TODO other codecs
-                                throw ITLException("multiple codecs not yet supported");
-                            }
+							if (codecs.size() == 1)
+							{
+								//only bytes codec
+								raw::write(img, chunkFile);
+							}
+							else
+							{
+								//TODO other codecs
+								throw ITLException("multiple codecs not yet supported");
+							}
 						}
 
 						// Remove the writes folder in order to mark this chunk processed.
@@ -585,7 +590,7 @@ namespace itl2
 //			}
 		}
 
-		
+
 
 //		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
 //		{
