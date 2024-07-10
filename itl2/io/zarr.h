@@ -495,7 +495,7 @@ namespace itl2
 
 
 		/**
-		Reads an nn5 dataset file to the given image.
+		Reads a zarr dataset file to the given image.
 		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
 		@param path Path to the root of the nn5 dataset.
 		*/

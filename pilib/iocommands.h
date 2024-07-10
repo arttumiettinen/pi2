@@ -390,7 +390,7 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
 				CommandArgument<std::string>(ParameterDirection::In, "path", "Name (and path) of the dataset to write. If the dataset exists, its current contents are erased."),
-				//CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size for the NN5 dataset to be written.", nn5::DEFAULT_CHUNK_SIZE)
+				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size for the Zarr dataset to be written.", zarr::DEFAULT_CHUNK_SIZE)
 			})
 		{
 		}
@@ -400,9 +400,9 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 		{
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
-			//Vec3c chunkSize = pop<Vec3c>(args);
+			Vec3c chunkSize = pop<Vec3c>(args);
 
-			itl2::zarr::write(in, fname);
+			itl2::zarr::write(in, fname, chunkSize);
 		}
 
 		using Distributable::runDistributed;
