@@ -6,112 +6,137 @@
 #include "json.h"
 #include "utilities.h"
 
-namespace itl2 {
-    namespace zarr {
+namespace itl2
+{
+	namespace zarr
+	{
 
-        enum class ZarrCodecType {
-            None,
-            ArrayArrayCodec,
-            ArrayBytesCodec,
-            BytesBytesCodec,
-        };
+		enum class ZarrCodecType
+		{
+			None,
+			ArrayArrayCodec,
+			ArrayBytesCodec,
+			BytesBytesCodec,
+		};
 
-        enum class ZarrCodecName {
-            None,
-            Bytes
-        };
-    }
+		enum class ZarrCodecName
+		{
+			None,
+			Bytes
+		};
+	}
 
-    template<>
-    inline std::string toString(const zarr::ZarrCodecName &x) {
-        switch (x) {
-            case zarr::ZarrCodecName::Bytes:
-                return "bytes";
-        }
-        throw ITLException("Invalid ZarrCodecName.");
-    }
+	template<>
+	inline std::string toString(const zarr::ZarrCodecName& x)
+	{
+		switch (x)
+		{
+		case zarr::ZarrCodecName::Bytes:
+			return "bytes";
+		}
+		throw ITLException("Invalid ZarrCodecName.");
+	}
 
-    template<>
-    inline zarr::ZarrCodecName fromString(const std::string &str0) {
-        std::string str = str0;
-        toLower(str);
-        if (str == "bytes")
-            return zarr::ZarrCodecName::Bytes;
+	template<>
+	inline zarr::ZarrCodecName fromString(const std::string& str0)
+	{
+		std::string str = str0;
+		toLower(str);
+		if (str == "bytes")
+			return zarr::ZarrCodecName::Bytes;
 
-        throw ITLException(std::string("Invalid zarr codec name: ") + str);
-    }
+		throw ITLException(std::string("Invalid zarr codec name: ") + str);
+	}
 
-    namespace zarr {
+	namespace zarr
+	{
 
-        class ZarrCodec {
-        public:
-            ZarrCodecType type;
-            ZarrCodecName name;
-            nlohmann::json configuration;
+		class ZarrCodec
+		{
+		 public:
 
-            ZarrCodec(const ZarrCodecName name, const nlohmann::json configuration) {
-                this->name = name;
-                this->configuration = configuration;
-                switch (name) {
-                    case ZarrCodecName::Bytes:
-                        this->type = ZarrCodecType::ArrayBytesCodec;
+			ZarrCodecType type;
+			ZarrCodecName name;
+			nlohmann::json configuration;
 
-                        break;
-                    default:
-                        throw ITLException(std::string("Invalid zarr codec"));
+			ZarrCodec(const ZarrCodecName name)
+			{
+				this->name = name;
+				switch (name)
+				{
+				case ZarrCodecName::Bytes:
+					this->type = ZarrCodecType::ArrayBytesCodec;
+					break;
+				default:
+					throw ITLException(std::string("Invalid zarr codec"));
 
-                }
-            }
+				}
+			}
 
-            void readConfig(nlohmann::json config) {
-                switch (this->name) {
-                    case ZarrCodecName::Bytes:
-                        readBytesCodecConfig(config);
-                        break;
-                    default:
-                        throw ITLException(std::string("Invalid zarr codec"));
-                }
-            }
-            void readBytesCodecConfig(nlohmann::json config) {
-                std::string endian = "little";
-                for (auto it = config.begin(); it != config.end(); ++it) {
-                    if (it.key() == "endian") {
-                        endian = it.value();
-                        if (endian != "little" && endian != "big") {
-                            throw ITLException("Invalid endian in bytes codec config: " + endian);
-                        }
-                    } else {
-                        throw ITLException("Invalid key in bytes codec config: " + it.key());
-                    }
-                }
-                //TODO
-            }
+			void readConfig(nlohmann::json config)
+			{
+				switch (this->name)
+				{
+				case ZarrCodecName::Bytes:
+					readBytesCodecConfig(config);
+					break;
+				default:
+					throw ITLException(std::string("Invalid zarr codec"));
+				}
+			}
 
-            nlohmann::json toJSON() const {
-                nlohmann::json j;
-                j["name"] = toString(this->name);
-                j["configuration"] = configuration; //this does not return the reference to the configuration just a copy, right?
-                return j;
-            }
+			void readBytesCodecConfig(nlohmann::json config)
+			{
+				std::string endian = "little";
+				for (auto it = config.begin(); it != config.end(); ++it)
+				{
+					if (it.key() == "endian")
+					{
+						endian = it.value();
+						if (endian != "little" && endian != "big")
+						{
+							throw ITLException("Invalid endian in bytes codec config: " + endian);
+						}
+					}
+					else
+					{
+						throw ITLException("Invalid key in bytes codec config: " + it.key());
+					}
+				}
+				this->configuration = {
+					{ "endian", endian }
+				};
+			}
 
-            bool operator==(const ZarrCodec &t) const {
-                return toJSON() == t.toJSON();
-            }
-        };
-    }
+			nlohmann::json toJSON() const
+			{
+				nlohmann::json j;
+				j["name"] = toString(this->name);
+				j["configuration"] = configuration; //this does not return by reference to the configuration just a copy, right?
+				return j;
+			}
 
-    template<>
-    inline std::string toString(const zarr::ZarrCodec &x) {
-        return toString(x.name);
-    }
+			bool operator==(const ZarrCodec& t) const
+			{
+				return toJSON() == t.toJSON();
+			}
+		};
+	}
 
-    template<>
-    inline zarr::ZarrCodec fromString(const std::string &str0) {
-        std::string str = str0;
-        toLower(str);
-        if (str == "bytes")
-            return *new zarr::ZarrCodec(zarr::ZarrCodecName::Bytes, "");
+	template<>
+	inline std::string toString(const zarr::ZarrCodec& x)
+	{
+		return toString(x.name);
+	}
 
-        throw ITLException(std::string("Invalid zarr codec: ") + str);
-    }
+	template<>
+	inline zarr::ZarrCodec fromString(const std::string& str0)
+	{
+		std::string str = str0;
+		toLower(str);
+		if (str == "bytes")
+			return *new zarr::ZarrCodec(zarr::ZarrCodecName::Bytes);
+
+		throw ITLException(std::string("Invalid zarr codec: ") + str);
+	}
 }
