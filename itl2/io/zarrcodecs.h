@@ -66,10 +66,10 @@ namespace itl2
 				{
 				case ZarrCodecName::Bytes:
 					this->type = ZarrCodecType::ArrayBytesCodec;
+					readBytesCodecConfig();
 					break;
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
-
 				}
 			}
 
@@ -85,7 +85,7 @@ namespace itl2
 				}
 			}
 
-			void readBytesCodecConfig(nlohmann::json config)
+			void readBytesCodecConfig(nlohmann::json config = nlohmann::json())
 			{
 				std::string endian = "little";
 				for (auto it = config.begin(); it != config.end(); ++it)
@@ -134,9 +134,8 @@ namespace itl2
 	{
 		std::string str = str0;
 		toLower(str);
-		if (str == "bytes")
-			return *new zarr::ZarrCodec(zarr::ZarrCodecName::Bytes);
+		zarr::ZarrCodecName name = fromString<zarr::ZarrCodecName>(str);
+		return *new zarr::ZarrCodec(name);
 
-		throw ITLException(std::string("Invalid zarr codec: ") + str);
 	}
 }

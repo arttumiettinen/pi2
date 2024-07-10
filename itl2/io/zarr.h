@@ -343,8 +343,8 @@ namespace itl2
 
 				if (files.size() <= 0)
 				{
-					// No file => all pixels in the block are zeroes.
-					draw<pixel_t>(target, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)0);
+					// No file => all pixels in the block are fillValue.
+					draw<pixel_t>(target, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
 				}
 				else if (files.size() == 1)
 				{
@@ -445,7 +445,7 @@ namespace itl2
 		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, bool showProgressInfo = false)
 		{
             std::list<ZarrCodec> defaultCodecs;
-            defaultCodecs.push_back(ZarrCodec(ZarrCodecName::Bytes, ""));
+            defaultCodecs.push_back(ZarrCodec(ZarrCodecName::Bytes));
 			zarr::write(img, path, chunkSize, 0, defaultCodecs, showProgressInfo);
 		}
 
@@ -509,10 +509,10 @@ namespace itl2
             std::list<ZarrCodec> codecs;
 			string reason;
 			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
-				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 
 			if (dataType != img.dataType())
-				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the nn5 dataset contains data of type " + toString(dataType) + ".");
+				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the zarr dataset contains data of type " + toString(dataType) + ".");
 
 			img.ensureSize(dimensions);
 

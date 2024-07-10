@@ -263,7 +263,7 @@ namespace itl2
 					};
 				for (auto& codec : codecs)
 				{
-					j["codecs"].push_back({ codec.toJSON() });
+					j["codecs"].push_back(codec.toJSON());
 				}
 				// TODO: allow other chunk_key_encoding
 				// TODO: optional parameters
