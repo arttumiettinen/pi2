@@ -22,7 +22,8 @@ namespace itl2
 		enum class ZarrCodecName
 		{
 			None,
-			Bytes
+			Bytes,
+			Transpose,
 		};
 	}
 
@@ -33,6 +34,8 @@ namespace itl2
 		{
 		case zarr::ZarrCodecName::Bytes:
 			return "bytes";
+		case zarr::ZarrCodecName::Transpose:
+			return "transpose";
 		}
 		throw ITLException("Invalid ZarrCodecName.");
 	}
@@ -44,6 +47,8 @@ namespace itl2
 		toLower(str);
 		if (str == "bytes")
 			return zarr::ZarrCodecName::Bytes;
+		if (str == "transpose")
+			return zarr::ZarrCodecName::Transpose;
 
 		throw ITLException(std::string("Invalid zarr codec name: ") + str);
 	}
@@ -69,6 +74,10 @@ namespace itl2
 					this->type = ZarrCodecType::ArrayBytesCodec;
 					readBytesCodecConfig();
 					break;
+				case ZarrCodecName::Transpose:
+					this->type = ZarrCodecType::ArrayArrayCodec;
+					readTransposeCodecConfig();
+					break;
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
@@ -81,11 +90,18 @@ namespace itl2
 				case ZarrCodecName::Bytes:
 					readBytesCodecConfig(config);
 					break;
+				case ZarrCodecName::Transpose:
+					readTransposeCodecConfig(config);
+					break;
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
 			}
 
+			void readTransposeCodecConfig(nlohmann::json config = nlohmann::json())
+			{
+				this->configuration = config;
+			}
 			void readBytesCodecConfig(nlohmann::json config = nlohmann::json())
 			{
 				std::string endian = "little";

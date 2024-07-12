@@ -24,7 +24,7 @@ h = 3
 d = 4
 arr = arr[:w, :h, :d]
 chunk_shape = [w,h,d]
-chunk_shape = [1,1,2]
+#chunk_shape = [1,1,2]
 def pi2_write():
     name = "test.zarr"
     shutil.rmtree(output_file(name), ignore_errors=True)
@@ -96,11 +96,11 @@ def test_pi2_to_zarrita():
 
 def test_zarrita_to_pi2():
     zarrita_write()
-    read_arr = pi2_read("zarrita.zarr")
+    read_arr = pi2_read("zarrita.zarr").transpose(1, 0, 2)
     # write_img = pi2.newimage(pi2py2.ImageDataType.FLOAT32, w, h, d)
     # write_img.set_data(read_arr)
     # pi2.writezarr(write_img, output_file("test.zarr"), chunk_shape)
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
     print("passed")
 
-test_pi2_to_zarrita()
+test_zarrita_to_pi2()
