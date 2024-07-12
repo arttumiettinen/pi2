@@ -20,7 +20,7 @@ namespace itl2
 			isNativeByteOrder = true;
 			dataType = ImageDataType::Unknown;
 			chunkSize = Vec3c();
-			fillValue = 0;
+			fillValue = 43;
 
 			// Check that metadata file exists.
 			string metadataFilename = zarr::internals::zarrMetadataFilename(path);
@@ -85,12 +85,15 @@ namespace itl2
 				return false;
 			}
 
+			//transpose xyz -> yxz
 			dimensions = Vec3c(1, 1, 1);
 			dimensions[0] = dims[0].get<size_t>();
 			if (dims.size() >= 2)
 				dimensions[1] = dims[1].get<size_t>();
 			if (dims.size() >= 3)
 				dimensions[2] = dims[2].get<size_t>();
+
+			cout << "getInfo dimensions: " << dimensions << endl;
 
 			if (!j.contains("data_type"))
 			{
@@ -132,6 +135,8 @@ namespace itl2
 					chunkSize[1] = chunkDims[1].get<size_t>();
 				if (chunkDims.size() >= 3)
 					chunkSize[2] = chunkDims[2].get<size_t>();
+
+				cout << "getInfo chunkSize: " << chunkSize << endl;
 			}
 
 			if (!j.contains("chunk_key_encoding"))
@@ -267,7 +272,7 @@ namespace itl2
 				}
 				// TODO: allow other chunk_key_encoding
 				// TODO: optional parameters
-
+				cout << "writeMetadata: " << j.dump(4) << endl;
 				string metadataFilename = zarr::internals::zarrMetadataFilename(path);
 				ofstream of(metadataFilename, ios_base::trunc | ios_base::out);
 				of << std::setw(4) << j << endl;
@@ -291,16 +296,9 @@ namespace itl2
 				return filenames;
 			}
 
-			void check(const Vec3c& chunkSize)
-			{
-				if (chunkSize.min() <= 0)
-					throw ITLException(string("NN5 chunk size must be positive, but it is ") + toString(chunkSize));
-			}
 
 			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool deleteOldData)
 			{
-				check(chunkSize);
-
 				// Delete old dataset if it exists.
 				if (fs::exists(path))
 				{

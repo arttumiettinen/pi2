@@ -61,6 +61,7 @@ namespace itl2
 
 			ZarrCodec(const ZarrCodecName name)
 			{
+				std::cout << "creating new zarrCodec" << std::endl;
 				this->name = name;
 				switch (name)
 				{
