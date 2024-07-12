@@ -646,7 +646,7 @@ namespace itl2
 			string reason;
 			std::cout << "readBlock" << std::endl;
 			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
-				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
+				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 
 			if (dataType != img.dataType())
 				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the nn5 dataset contains data of type " + toString(dataType) + ".");

@@ -122,6 +122,31 @@ namespace itl2
 				return toJSON() == t.toJSON();
 			}
 		};
+
+		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
+		void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+		{
+			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
+
+			if (!in)
+			{
+				throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+			}
+			in.seekg(bytesToSkip, std::ios::beg);
+
+			for (coord_t x = 0; x < img.width(); x++)
+			{
+				for (coord_t y = 0; y < img.height(); y++)
+				{
+					for (coord_t z = 0; z < img.depth(); z++)
+					{
+						readPixel(in, img(x,y,z));
+					}
+				}
+			}
+
+		}
+
 		/**
 			 * copy from raw::read
 			Reads a .raw file to the given image, initializes the image to correct size read from file name.
@@ -131,9 +156,10 @@ namespace itl2
 			@param bytesToSkip Skip this many bytes from the beginning of the file.
 			@param readPixel Function that reads one pixel. Relevant only for non-trivially copyable pixel data types.
 			*/
-		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void readBytesCodec(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
+		void readBytesCodec(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 		{
-			raw::readNoParse<pixel_t, ReadPixel>(img, filename, bytesToSkip, readPixel);
+			readNoParse<pixel_t, ReadPixel>(img, filename, bytesToSkip, readPixel);
 		}
 	}
 
