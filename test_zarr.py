@@ -19,16 +19,16 @@ def output_file(name):
 #shutil.rmtree("testoutput", ignore_errors=True)
 
 arr = np.arange(10*10*10, dtype=np.float32).reshape(10,10,10)
-w = 3
+w = 2
 h = 3
-d = 3
+d = 4
 arr = arr[:w, :h, :d]
 chunk_shape = [w,h,d]
-#chunk_shape = [1,1,1]
+chunk_shape = [1,1,2]
 def pi2_write():
     name = "test.zarr"
     shutil.rmtree(output_file(name), ignore_errors=True)
-    write_img = pi2.newimage(pi2py2.ImageDataType.FLOAT32, [h, w, d])
+    write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, [h, w, d])
     write_img.set_data(arr.transpose(1, 0, 2))
     pi2.writezarr(write_img, output_file(name), chunk_shape)
 

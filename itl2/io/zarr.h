@@ -107,26 +107,24 @@ namespace itl2
 				{
 					ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
 
-					// Determine the total number of pixels in the block
-					size_t totalPixels = (fileEndPos.x - fileStartPos.x) * (fileEndPos.y - fileStartPos.y) * (fileEndPos.z - fileStartPos.z);
-
-					for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
+					for (coord_t x = fileStartPos.x; x < fileEndPos.x; x++)
 					{
 						for (coord_t y = fileStartPos.y; y < fileEndPos.y; y++)
 						{
-							for (coord_t x = fileStartPos.x; x < fileEndPos.x; x++)
+							for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
 							{
-								size_t linearIndex = ((x - fileStartPos.x) * blockDimensions.y * blockDimensions.x) +
-									((y - fileStartPos.y) * blockDimensions.z) +
-									(z - fileStartPos.z);
-								//size_t reverseIndex = totalPixels - 1 - linearIndex;
+								Vec3c imgPos = Vec3c(x, y, z) - fileStartPos + imagePosition;
+								std::cout << "writeBlock imgPos=" << imgPos << " x=" << x << " y=" << y << " z=" << z << std::endl;
+								size_t linearIndex = img.getLinearIndex(imgPos);
+
 								std::cout << "writeBlock linearIndex=" << linearIndex << " x=" << x << " y=" << y << " z=" << z << std::endl;
-								size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
-								out.seekp(filePos);
+								//size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
+								//out.seekp(filePos);
 
 								if (!out)
 									throw ITLException(std::string("Seek failed for file ") + filename + std::string(", ") + getStreamErrorMessage());
 
+								//todo: might be faster to read pBuffer sequentially
 								out.write((char*)&pBuffer[linearIndex], sizeof(pixel_t));
 
 								if (!out)
@@ -137,7 +135,6 @@ namespace itl2
 					}
 				}
 			}
-
 
 			/**
 			Writes single NN5 chunk file.
@@ -182,7 +179,7 @@ namespace itl2
 						filename = writesFolder + toString(startInChunkCoords.x) + string("-") +
 							toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
 						//print all writeblock parameters in one line
-						std::cout << "writeBlock filename=" << filename << " Vec3c(0, 0, 0)=" << Vec3c(0, 0, 0) << " realWriteSize=" << realWriteSize << " startInImageCoords=" << startInImageCoords
+						std::cout << "writeBlock filename=" << filename << " realWriteSize=" << realWriteSize << " startInImageCoords=" << startInImageCoords
 								  << " realWriteSize=" << realWriteSize << std::endl;
 						writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize,
 							false);
@@ -190,7 +187,7 @@ namespace itl2
 					else
 					{
 						// Safe chunk: write directly to the chunk file.
-						std::cout << "writeBlock filename=" << filename << " Vec3c(0, 0, 0)=" << Vec3c(0, 0, 0) << " realWriteSize=" << realWriteSize << " startInImageCoords=" << startInImageCoords
+						std::cout << "writeBlock filename=" << filename << " realWriteSize=" << realWriteSize << " startInImageCoords=" << startInImageCoords
 								  << " realWriteSize=" << realWriteSize << std::endl;
 
 						writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
