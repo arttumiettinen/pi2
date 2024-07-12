@@ -19,9 +19,9 @@ def output_file(name):
 #shutil.rmtree("testoutput", ignore_errors=True)
 
 arr = np.arange(10*10*10, dtype=np.float32).reshape(10,10,10)
-w = 2
+w = 3
 h = 3
-d = 4
+d = 3
 arr = arr[:w, :h, :d]
 chunk_shape = [w,h,d]
 #chunk_shape = [1,1,1]

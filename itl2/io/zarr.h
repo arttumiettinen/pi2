@@ -103,53 +103,41 @@ namespace itl2
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 
 				const pixel_t* pBuffer = img.getData();
+
 				{
 					ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
 
-					for (coord_t z = fileEndPos.z - 1; z >= fileStartPos.z; z--)
+					// Determine the total number of pixels in the block
+					size_t totalPixels = (fileEndPos.x - fileStartPos.x) * (fileEndPos.y - fileStartPos.y) * (fileEndPos.z - fileStartPos.z);
+
+					for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
 					{
-						if (fileStartPos.x == 0 && fileEndPos.x == fileDimensions.x &&
-							fileDimensions.x == blockDimensions.x &&
-							img.width() == fileDimensions.x)
+						for (coord_t y = fileStartPos.y; y < fileEndPos.y; y++)
 						{
-							// Writing whole scanlines.
-							size_t filePos = (z * fileDimensions.x * fileDimensions.y + fileStartPos.y * fileDimensions.x + fileStartPos.x) * sizeof(pixel_t);
-							out.seekp(filePos);
-
-							if (!out)
-								throw ITLException(std::string("Seek failed (fast write) for file ") + filename + std::string(", ") + getStreamErrorMessage());
-
-							std::cout << "z=" << z << "imagePosition=" << imagePosition << std::endl;
-							size_t imgPos = img.getLinearIndex(imagePosition.x, imagePosition.y, z - fileStartPos.z + imagePosition.z);
-							std::cout << "img.getLinearIndex=" << imgPos << std::endl;
-							out.write((char*)&pBuffer[imgPos], (fileEndPos.x - fileStartPos.x) * (fileEndPos.y - fileStartPos.y) * sizeof(pixel_t));
-
-							if (!out)
-								throw ITLException(std::string("Unable to write (fast) to ") + filename + std::string(", ") + getStreamErrorMessage());
-						}
-						else
-						{
-							// Writing partial scanlines.
-							for (coord_t y = fileEndPos.y - 1; y >= fileStartPos.y; y--)
+							for (coord_t x = fileStartPos.x; x < fileEndPos.x; x++)
 							{
-								size_t filePos = (z * fileDimensions.x * fileDimensions.y + y * fileDimensions.x + fileStartPos.x) * sizeof(pixel_t);
+								size_t linearIndex = ((x - fileStartPos.x) * blockDimensions.y * blockDimensions.x) +
+									((y - fileStartPos.y) * blockDimensions.z) +
+									(z - fileStartPos.z);
+								//size_t reverseIndex = totalPixels - 1 - linearIndex;
+								std::cout << "writeBlock linearIndex=" << linearIndex << " x=" << x << " y=" << y << " z=" << z << std::endl;
+								size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
 								out.seekp(filePos);
 
 								if (!out)
 									throw ITLException(std::string("Seek failed for file ") + filename + std::string(", ") + getStreamErrorMessage());
 
-								size_t imgPos = img.getLinearIndex(imagePosition.x, y - fileStartPos.y + imagePosition.y, z - fileStartPos.z + imagePosition.z);
-								out.write((char*)&pBuffer[imgPos], (fileEndPos.x - fileStartPos.x) * sizeof(pixel_t));
+								out.write((char*)&pBuffer[linearIndex], sizeof(pixel_t));
 
 								if (!out)
 									throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
 							}
 						}
-
 						prog.step();
 					}
 				}
 			}
+
 
 			/**
 			Writes single NN5 chunk file.
