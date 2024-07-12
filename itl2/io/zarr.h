@@ -106,14 +106,13 @@ namespace itl2
 				{
 					ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
 
-					for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
+					for (coord_t z = fileEndPos.z - 1; z >= fileStartPos.z; z--)
 					{
 						if (fileStartPos.x == 0 && fileEndPos.x == fileDimensions.x &&
 							fileDimensions.x == blockDimensions.x &&
 							img.width() == fileDimensions.x)
 						{
 							// Writing whole scanlines.
-							// Write all scanlines in region [fileStartPos.y, fileEndPos.y[ at once in order to increase write speed.
 							size_t filePos = (z * fileDimensions.x * fileDimensions.y + fileStartPos.y * fileDimensions.x + fileStartPos.x) * sizeof(pixel_t);
 							out.seekp(filePos);
 
@@ -131,8 +130,7 @@ namespace itl2
 						else
 						{
 							// Writing partial scanlines.
-
-							for (coord_t y = fileStartPos.y; y < fileEndPos.y; y++)
+							for (coord_t y = fileEndPos.y - 1; y >= fileStartPos.y; y--)
 							{
 								size_t filePos = (z * fileDimensions.x * fileDimensions.y + y * fileDimensions.x + fileStartPos.x) * sizeof(pixel_t);
 								out.seekp(filePos);
