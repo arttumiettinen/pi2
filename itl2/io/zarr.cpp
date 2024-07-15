@@ -399,7 +399,7 @@ namespace itl2
 							else
 							{
 								//TODO other codecs
-								throw ITLException("multiple codecs not yet supported");
+								throw ITLException("multiple codecs not yet supported (in run)");
 							}
 						}
 

@@ -13,7 +13,6 @@ namespace itl2
 
 		enum class ZarrCodecType
 		{
-			None,
 			ArrayArrayCodec,
 			ArrayBytesCodec,
 			BytesBytesCodec,
@@ -21,7 +20,6 @@ namespace itl2
 
 		enum class ZarrCodecName
 		{
-			None,
 			Bytes,
 			Transpose,
 		};
@@ -126,8 +124,62 @@ namespace itl2
 
 		namespace internals
 		{
+			template<typename pixel_t>
+			class ImageDataWrapper
+			{
+				Image<pixel_t>& img;
+				Vec3c transposeOrder;
+
+				Vec3c transposedCoords(Vec3c p) const
+				{
+					Vec3c tp(0, 0, 0);
+					tp.x = p[transposeOrder.x];
+					tp.y = p[transposeOrder.y];
+					tp.z = p[transposeOrder.z];
+					return tp;
+				}
+
+			 public:
+				// Initialize img using the initializer list
+				ImageDataWrapper(Image<pixel_t>& img)
+					: img(img), transposeOrder(0, 1, 2)
+				{
+				}
+
+				void transpose(const Vec3c& order)
+				{
+					this->transposeOrder = order;
+				}
+
+				Vec3c dims() const
+				{
+					return transposedCoords(img.dimensions());
+				}
+
+				/**
+				   Get a reference to a pixel at the specified location.
+				   No bounds checking is performed.
+			   */
+				pixel_t& operator()(const Vec3c& p)
+				{
+					Vec3c tp = transposedCoords(p);
+					return img(tp); // Assuming img provides operator() to access pixel data
+				}
+
+				/**
+				Get a reference to a pixel at the specified location.
+				No bounds checking is performed.
+				*/
+				pixel_t& operator()(coord_t x, coord_t y, coord_t z)
+				{
+					return operator()(Vec3c(x, y, z));
+				}
+			};
+
+
+
 			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-			void readBytesCodec(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+			void readBytesCodec(ImageDataWrapper<pixel_t>& imageWrapper, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 			{
 				std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
@@ -136,14 +188,14 @@ namespace itl2
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
 				in.seekg(bytesToSkip, std::ios::beg);
-
-				for (coord_t x = 0; x < img.width(); x++)
+				Vec3c dims = imageWrapper.dims();
+				for (coord_t x = 0; x < dims.x; x++)
 				{
-					for (coord_t y = 0; y < img.height(); y++)
+					for (coord_t y = 0; y < dims.y; y++)
 					{
-						for (coord_t z = 0; z < img.depth(); z++)
+						for (coord_t z = 0; z < dims.z; z++)
 						{
-							readPixel(in, img(x, y, z));
+							readPixel(in, imageWrapper(x, y, z));
 						}
 					}
 				}

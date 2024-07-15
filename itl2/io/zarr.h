@@ -103,6 +103,11 @@ namespace itl2
 				bool unsafe = fs::exists(writesFolder);
 
 				std::cout << "writeSingleChunk unsafe=" << unsafe << std::endl;
+				for (auto codec : codecs)
+				{
+					std::cout << "writeSingleChunk codec=" << toString(codec.name) << std::endl;
+
+				}
 				if (codecs.size() == 1)
 				{
 					//only bytes codec
@@ -125,7 +130,7 @@ namespace itl2
 				}
 				else
 				{
-					throw ITLException("multiple codecs not yet supported");
+					throw ITLException("multiple codecs not yet supported (writeSingleChunk)");
 				}
 			}
 
@@ -276,15 +281,18 @@ namespace itl2
 			template<typename pixel_t>
 			void readChunkFile(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
-				if (codecs.size() == 1)
+				ImageDataWrapper<pixel_t> imgWrapper(img);
+				for (auto codec : codecs)
 				{
-					//only bytes codec
-					readBytesCodec(img, filename);
-				}
-				else
-				{
-					//TODO other codecs
-					throw ITLException("multiple codecs not yet supported");
+					switch (codec.name)
+					{
+					case ZarrCodecName::Transpose:
+						imgWrapper.transpose(codec.configuration["order"]);
+						break;
+					case ZarrCodecName::Bytes:
+						readBytesCodec(imgWrapper, filename);
+						break;
+					}
 				}
 			}
 
