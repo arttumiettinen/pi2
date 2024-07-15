@@ -13,6 +13,7 @@
 
 namespace itl2
 {
+	using std::cout, std::endl;
 	namespace io
 	{
 		// Forward declaration of io::getInfo to avoid header loop.
@@ -287,8 +288,20 @@ namespace itl2
 					switch (codec.name)
 					{
 					case ZarrCodecName::Transpose:
-						imgWrapper.transpose(codec.configuration["order"]);
+					{
+						auto orderJSON = codec.configuration["order"];
+						//TODO check if valid order
+						Vec3c order = Vec3c(1, 1, 1);
+						order[0] = orderJSON[0].get<size_t>();
+						if (orderJSON.size() >= 2)
+							order[1] = orderJSON[1].get<size_t>();
+						if (orderJSON.size() >= 3)
+							order[2] = orderJSON[2].get<size_t>();
+						cout << "readChunkFile Transpose order=" << order << endl;
+						imgWrapper.transpose(order);
+					}
 						break;
+
 					case ZarrCodecName::Bytes:
 						readBytesCodec(imgWrapper, filename);
 						break;

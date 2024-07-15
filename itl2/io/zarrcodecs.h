@@ -8,6 +8,7 @@
 
 namespace itl2
 {
+	using std::cout, std::endl;
 	namespace zarr
 	{
 
@@ -23,6 +24,7 @@ namespace itl2
 			Bytes,
 			Transpose,
 		};
+		//TODO save codec in struct instead of json
 	}
 
 	template<>
@@ -189,6 +191,7 @@ namespace itl2
 				}
 				in.seekg(bytesToSkip, std::ios::beg);
 				Vec3c dims = imageWrapper.dims();
+				cout << "Reading " << dims << " pixels from " << filename << endl;
 				for (coord_t x = 0; x < dims.x; x++)
 				{
 					for (coord_t y = 0; y < dims.y; y++)
