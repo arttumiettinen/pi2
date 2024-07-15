@@ -3,8 +3,6 @@
 
 #include "zarr.h"
 #include "json.h"
-#include "byteorder.h"
-#include "generation.h"
 #include "nn5.h"
 
 using namespace std;
@@ -251,7 +249,7 @@ namespace itl2
 
 		namespace internals
 		{
-			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs)
+			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<ZarrCodec>& codecs)
 			{
 				nlohmann::json j =
 					{
@@ -270,32 +268,18 @@ namespace itl2
 				}
 				// TODO: allow other chunk_key_encoding
 				// TODO: optional parameters
-				cout << "writeMetadata: " << j.dump(4) << endl;
 				string metadataFilename = zarr::internals::zarrMetadataFilename(path);
 				ofstream of(metadataFilename, ios_base::trunc | ios_base::out);
 				of << std::setw(4) << j << endl;
 			}
 
-			vector <string> getFileList(const string& dir)
-			{
-				vector<string> filenames;
-
-				if (fs::is_directory(dir)) // Note: This is required in Linux, or otherwise we get an exception for non-existing directories.
-				{
-					for (auto& p : fs::directory_iterator(dir))
-					{
-						if (p.is_regular_file())
-						{
-							filenames.push_back(p.path().filename().string());
-						}
-					}
-				}
-
-				return filenames;
-			}
-
-
-			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool deleteOldData)
+			void handleExisting(const Vec3c& imageDimensions,
+				ImageDataType imageDataType,
+				const std::string& path,
+				const Vec3c& chunkSize,
+				int fillValue,
+				const std::list<ZarrCodec>& codecs,
+				bool deleteOldData)
 			{
 				// Delete old dataset if it exists.
 				if (fs::exists(path))
@@ -320,7 +304,7 @@ namespace itl2
 						fs::remove_all(path);
 					}
 					else if (oldDimensions == imageDimensions &&
-						oldIsNativeByteOrder == true &&
+						oldIsNativeByteOrder &&
 						oldDataType == imageDataType &&
 						oldChunkSize == chunkSize &&
 						oldCodecs == codecs &&
@@ -340,163 +324,8 @@ namespace itl2
 						fs::remove_all(path);
 					}
 				}
-
-				fs::create_directories(path);
-
-				// Write metadata
-				internals::writeMetadata(path, imageDimensions, imageDataType, chunkSize, fillValue, codecs);
-			}
-		}
-
-		//size_t countWritersAt(const AABoxc& box, const std::vector<NN5Process>& processes)
-		//{
-		//	size_t count = 0;
-		//	for (const NN5Process& process : processes)
-		//	{
-		//		if (process.writeBlock.overlaps(box))
-		//			count++;
-		//	}
-		//	return count;
-		//}
-
-		/**
-		Finds out if a chunk (given its bounding box) is 'safe' or not.
-		Safe chunks can be written to without any synchronization or post-processing of the results.
-		*/
-		bool isChunkSafe(const AABoxc& box, const std::vector<ZarrProcess>& processes)
-		{
-			vector<size_t> readerIndices;
-			vector<size_t> writerIndices;
-			for (size_t n = 0; n < processes.size(); n++)
-			{
-				const auto& process = processes[n];
-				if (process.readBlock.overlapsExclusive(box))
-					readerIndices.push_back(n);
-				if (process.writeBlock.overlapsExclusive(box))
-					writerIndices.push_back(n);
 			}
 
-			if (writerIndices.size() <= 0)
-			{
-				// No writers, the chunk is never written to, so it is safe.
-				return true;
-			}
-			if (writerIndices.size() > 1)
-			{
-				// Multiple writers, the chunk is unsafe as the writers can write simultaneously.
-				return false;
-			}
-			else
-			{
-				// One writer.
-				if (readerIndices.size() <= 0)
-				{
-					// No readers, one writer, the chunk is safe.
-					return true;
-				}
-				else if (readerIndices.size() > 1)
-				{
-					// Multiple readers, one writer, the chunk is not safe as it can be read from and written to simultaneously.
-					return false;
-				}
-				else
-				{
-					// One reader, one writer.
-
-					if (readerIndices[0] == writerIndices[0])
-					{
-						// Reader and writer are the same process.
-						// The chunk is safe as the reader/writer process should control its possibly overlapping reads and writes internally.
-						return true;
-					}
-					else
-					{
-						// Reader and writer are different processes.
-						// The chunk is not safe as the reader and the writer might access the chunk simultaneously.
-						return false;
-					}
-				}
-			}
-		}
-
-//		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const std::vector<ZarrProcess>& processes)
-//		{
-//			// Find chunks that are
-//			// * written to by separate processes, or
-//			// * read from and written to by at least two separate processes,
-//			// and tag those unsafe by creating writes folder into the chunk folder.
-//
-//			zarr::internals::beginWrite(imageDimensions, imageDataType, path, chunkSize,  fillValue, codecs, false);
-//
-//			// Tag the image as concurrently processed
-//			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
-//
-//			size_t unsafeChunkCount = 0;
-//			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-//				{
-//					string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex);
-//					fs::create_directories(chunkFile);
-//
-//					string writesFolder = internals::writesFolder(chunkFile);
-//
-//					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
-//
-//					if (!isChunkSafe(chunkBox, processes))
-//					{
-//						// Mark the chunk as unsafe by creating writes folder.
-//						fs::create_directories(writesFolder);
-//						unsafeChunkCount++;
-//					}
-//				});
-//			return unsafeChunkCount;
-//		}
-//
-//		bool needsEndConcurrentWrite(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
-//		{
-//			string chunkFile = internals::chunkFile(path, dimensionality, chunkIndex);
-//			string writesFolder = internals::writesFolder(chunkFile);
-//			return fs::exists(writesFolder);
-//		}
-//
-//		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
-//		{
-//			bool isNativeByteOrder;
-//			Vec3c imageDimensions;
-//			ImageDataType dataType;
-//			Vec3c chunkSize;
-//			int fillValue;
-//            std::list<ZarrCodec> codecs;
-//			string reason;
-//			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
-//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-//
-//			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex);
-//		}
-//
-//		vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path)
-//		{
-//			bool isNativeByteOrder;
-//			Vec3c imageDimensions;
-//			ImageDataType dataType;
-//			Vec3c chunkSize;
-//            int fillValue;
-//            std::list<ZarrCodec> codecs;
-//			string reason;
-//			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, compression, reason))
-//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-//
-//			size_t dimensionality = getDimensionality(imageDimensions);
-//			vector<Vec3c> result;
-//			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-//				{
-//					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
-//						result.push_back(chunkIndex);
-//				});
-//			return result;
-//		}
-
-		namespace internals
-		{
 			/**
 			Reads block position [X, Y, Z] from a filename in format 'chunk_X-Y-Z_something' or 'chunk_X-Y-Z.something'.
 			*/
@@ -579,52 +408,6 @@ namespace itl2
 					}
 				}
 			};
-
-//			void endConcurrentWrite(const std::string& path, const Vec3c& imageDimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, const Vec3c& chunkIndex)
-//			{
-//				pick<zarr::internals::CombineChunkWrites>(dataType, path, imageDimensions, chunkSize, fillValue, codecs, chunkIndex);
-//			}
 		}
-
-
-
-//		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex)
-//		{
-//			bool isNativeByteOrder;
-//			Vec3c imageDimensions;
-//			ImageDataType dataType;
-//			Vec3c chunkSize;
-//            int fillValue;
-//            std::list<ZarrCodec> codecs;
-//			string reason;
-//			if (!zarr::getInfo(path, imageDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
-//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-//
-//			zarr::internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
-//		}
-//
-//		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
-//		{
-//			bool isNativeByteOrder;
-//			Vec3c fileDimensions;
-//			ImageDataType dataType;
-//			Vec3c chunkSize;
-//            int fillValue;
-//            std::list<ZarrCodec> codecs;
-//			string reason;
-//			if (!zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, fillValue, codecs, reason))
-//				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
-//			size_t dimensionality = getDimensionality(fileDimensions);
-//
-//			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-//				{
-//					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
-//						zarr::internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, fillValue, codecs, chunkIndex);
-//				});
-//
-//			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
-//			// the endConcurrentWrite can continue simply by re-running it.
-//			fs::remove_all(internals::concurrentTagFile(path));
-//		}
 	}
 }

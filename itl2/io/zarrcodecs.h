@@ -55,7 +55,6 @@ namespace itl2
 
 	namespace zarr
 	{
-
 		class ZarrCodec
 		{
 		 public:
@@ -124,6 +123,7 @@ namespace itl2
 				};
 			}
 		};
+
 		namespace internals
 		{
 			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
@@ -159,7 +159,6 @@ namespace itl2
 				clamp(fileStartPos, Vec3c(0, 0, 0), fileDimensions);
 				Vec3c fileEndPos = filePosition + blockDimensions;
 				clamp(fileEndPos, Vec3c(0, 0, 0), fileDimensions);
-				std::cout << "writeBlock fileStartPos=" << fileStartPos << " fileEndPos=" << fileEndPos << std::endl;
 				if (!img.isInImage(imagePosition))
 					throw ITLException("Block start position must be inside the image.");
 				if (!img.isInImage(imagePosition + blockDimensions - Vec3c(1, 1, 1)))
@@ -187,10 +186,8 @@ namespace itl2
 							for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
 							{
 								Vec3c imgPos = Vec3c(x, y, z) - fileStartPos + imagePosition;
-								std::cout << "writeBlock imgPos=" << imgPos << " x=" << x << " y=" << y << " z=" << z << std::endl;
 								size_t linearIndex = img.getLinearIndex(imgPos);
 
-								std::cout << "writeBlock linearIndex=" << linearIndex << " x=" << x << " y=" << y << " z=" << z << std::endl;
 								//size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
 								//out.seekp(filePos);
 
@@ -209,7 +206,6 @@ namespace itl2
 				}
 			}
 		}
-
 
 	}
 }
