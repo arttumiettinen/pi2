@@ -64,45 +64,44 @@ namespace itl2
 			ZarrCodecName name;
 			nlohmann::json configuration;
 
-			ZarrCodec(const ZarrCodecName name)
+			ZarrCodec(const ZarrCodecName name, nlohmann::json config = nlohmann::json())
 			{
-				std::cout << "creating new zarrCodec" << std::endl;
 				this->name = name;
 				switch (name)
 				{
 				case ZarrCodecName::Bytes:
 					this->type = ZarrCodecType::ArrayBytesCodec;
-					readBytesCodecConfig();
+					parseBytesCodecConfig(config);
 					break;
 				case ZarrCodecName::Transpose:
 					this->type = ZarrCodecType::ArrayArrayCodec;
-					readTransposeCodecConfig();
+					parseTransposeCodecConfig(config);
 					break;
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
 			}
 
-			void readConfig(nlohmann::json config)
-			{
-				switch (this->name)
-				{
-				case ZarrCodecName::Bytes:
-					readBytesCodecConfig(config);
-					break;
-				case ZarrCodecName::Transpose:
-					readTransposeCodecConfig(config);
-					break;
-				default:
-					throw ITLException(std::string("Invalid zarr codec"));
-				}
-			}
-
-			void readTransposeCodecConfig(nlohmann::json config = nlohmann::json())
+			void parseTransposeCodecConfig(nlohmann::json config = nlohmann::json())
 			{
 				this->configuration = config;
 			}
-			void readBytesCodecConfig(nlohmann::json config = nlohmann::json())
+
+			nlohmann::json toJSON() const
+			{
+				nlohmann::json j;
+				j["name"] = toString(this->name);
+				j["configuration"] = configuration; //this does not return by reference to the configuration just a copy, right?
+				return j;
+			}
+
+			bool operator==(const ZarrCodec& t) const
+			{
+				return toJSON() == t.toJSON();
+			}
+
+			// BytesCodec
+			void parseBytesCodecConfig(nlohmann::json config = nlohmann::json())
 			{
 				std::string endian = "little";
 				for (auto it = config.begin(); it != config.end(); ++it)
@@ -124,74 +123,93 @@ namespace itl2
 					{ "endian", endian }
 				};
 			}
-
-			nlohmann::json toJSON() const
-			{
-				nlohmann::json j;
-				j["name"] = toString(this->name);
-				j["configuration"] = configuration; //this does not return by reference to the configuration just a copy, right?
-				return j;
-			}
-
-			bool operator==(const ZarrCodec& t) const
-			{
-				return toJSON() == t.toJSON();
-			}
 		};
-
-		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-		void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+		namespace internals
 		{
-			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
-
-			if (!in)
+			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
+			void readBytesCodec(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 			{
-				throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
-			}
-			in.seekg(bytesToSkip, std::ios::beg);
+				std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
-			for (coord_t x = 0; x < img.width(); x++)
-			{
-				for (coord_t y = 0; y < img.height(); y++)
+				if (!in)
 				{
-					for (coord_t z = 0; z < img.depth(); z++)
+					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+				}
+				in.seekg(bytesToSkip, std::ios::beg);
+
+				for (coord_t x = 0; x < img.width(); x++)
+				{
+					for (coord_t y = 0; y < img.height(); y++)
 					{
-						readPixel(in, img(x,y,z));
+						for (coord_t z = 0; z < img.depth(); z++)
+						{
+							readPixel(in, img(x, y, z));
+						}
 					}
 				}
 			}
+			template<typename pixel_t>
+			void writeBytesCodecBlock(const Image<pixel_t>& img, const std::string& filename,
+				const Vec3c& filePosition, const Vec3c& fileDimensions,
+				const Vec3c& imagePosition,
+				const Vec3c& blockDimensions,
+				bool showProgressInfo = false)
+			{
+				Vec3c fileStartPos = filePosition;
+				clamp(fileStartPos, Vec3c(0, 0, 0), fileDimensions);
+				Vec3c fileEndPos = filePosition + blockDimensions;
+				clamp(fileEndPos, Vec3c(0, 0, 0), fileDimensions);
+				std::cout << "writeBlock fileStartPos=" << fileStartPos << " fileEndPos=" << fileEndPos << std::endl;
+				if (!img.isInImage(imagePosition))
+					throw ITLException("Block start position must be inside the image.");
+				if (!img.isInImage(imagePosition + blockDimensions - Vec3c(1, 1, 1)))
+					throw ITLException("Block end position must be inside the image.");
 
+				createFoldersFor(filename);
+
+				// Create file if it does not exist, otherwise set file size to the correct value.
+				setFileSize(filename, fileDimensions.x * fileDimensions.y * fileDimensions.z * sizeof(pixel_t));
+
+				std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
+
+				if (!out)
+					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+
+				const pixel_t* pBuffer = img.getData();
+
+				{
+					ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
+
+					for (coord_t x = fileStartPos.x; x < fileEndPos.x; x++)
+					{
+						for (coord_t y = fileStartPos.y; y < fileEndPos.y; y++)
+						{
+							for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
+							{
+								Vec3c imgPos = Vec3c(x, y, z) - fileStartPos + imagePosition;
+								std::cout << "writeBlock imgPos=" << imgPos << " x=" << x << " y=" << y << " z=" << z << std::endl;
+								size_t linearIndex = img.getLinearIndex(imgPos);
+
+								std::cout << "writeBlock linearIndex=" << linearIndex << " x=" << x << " y=" << y << " z=" << z << std::endl;
+								//size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
+								//out.seekp(filePos);
+
+								if (!out)
+									throw ITLException(std::string("Seek failed for file ") + filename + std::string(", ") + getStreamErrorMessage());
+
+								//todo: might be faster to read pBuffer sequentially
+								out.write((char*)&pBuffer[linearIndex], sizeof(pixel_t));
+
+								if (!out)
+									throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
+							}
+						}
+						prog.step();
+					}
+				}
+			}
 		}
 
-		/**
-			 * copy from raw::read
-			Reads a .raw file to the given image, initializes the image to correct size read from file name.
-			The file name must be in format image_name_100x200x300.raw or image_name_100x200.raw.
-			@param img Image where the data is placed. The size of the image will be set based on the .raw file name.
-			@param filename The name of the file to read.
-			@param bytesToSkip Skip this many bytes from the beginning of the file.
-			@param readPixel Function that reads one pixel. Relevant only for non-trivially copyable pixel data types.
-			*/
-		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-		void readBytesCodec(Image<pixel_t>& img, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
-		{
-			readNoParse<pixel_t, ReadPixel>(img, filename, bytesToSkip, readPixel);
-		}
-	}
-
-	template<>
-	inline std::string toString(const zarr::ZarrCodec& x)
-	{
-		return toString(x.name);
-	}
-
-	template<>
-	inline zarr::ZarrCodec fromString(const std::string& str0)
-	{
-		std::string str = str0;
-		toLower(str);
-		zarr::ZarrCodecName name = fromString<zarr::ZarrCodecName>(str);
-		return *new zarr::ZarrCodec(name);
 
 	}
 }

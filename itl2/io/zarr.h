@@ -21,9 +21,7 @@ namespace itl2
 	{
 		namespace internals
 		{
-			/**
-			Constructs NN5 dataset metadata filename.
-			*/
+
 			inline string zarrMetadataFilename(const string& path)
 			{
 				return path + "/zarr.json";
@@ -35,7 +33,7 @@ namespace itl2
 			}
 
 			/**
-			Writes NN5 metadata file.
+			Writes Zarr metadata file.
 			*/
 			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs);
 
@@ -73,67 +71,6 @@ namespace itl2
 				Vec3c realChunkSize = datasetChunkEnd - datasetChunkStart;
 
 				return realChunkSize;
-			}
-
-			template<typename pixel_t>
-			void writeBlock(const Image<pixel_t>& img, const std::string& filename,
-				const Vec3c& filePosition, const Vec3c& fileDimensions,
-				const Vec3c& imagePosition,
-				const Vec3c& blockDimensions,
-				bool showProgressInfo = false)
-			{
-				Vec3c fileStartPos = filePosition;
-				clamp(fileStartPos, Vec3c(0, 0, 0), fileDimensions);
-				Vec3c fileEndPos = filePosition + blockDimensions;
-				clamp(fileEndPos, Vec3c(0, 0, 0), fileDimensions);
-				std::cout << "writeBlock fileStartPos=" << fileStartPos << " fileEndPos=" << fileEndPos << std::endl;
-				if (!img.isInImage(imagePosition))
-					throw ITLException("Block start position must be inside the image.");
-				if (!img.isInImage(imagePosition + blockDimensions - Vec3c(1, 1, 1)))
-					throw ITLException("Block end position must be inside the image.");
-
-				createFoldersFor(filename);
-
-				// Create file if it does not exist, otherwise set file size to the correct value.
-				setFileSize(filename, fileDimensions.x * fileDimensions.y * fileDimensions.z * sizeof(pixel_t));
-
-				std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
-
-				if (!out)
-					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
-
-				const pixel_t* pBuffer = img.getData();
-
-				{
-					ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
-
-					for (coord_t x = fileStartPos.x; x < fileEndPos.x; x++)
-					{
-						for (coord_t y = fileStartPos.y; y < fileEndPos.y; y++)
-						{
-							for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
-							{
-								Vec3c imgPos = Vec3c(x, y, z) - fileStartPos + imagePosition;
-								std::cout << "writeBlock imgPos=" << imgPos << " x=" << x << " y=" << y << " z=" << z << std::endl;
-								size_t linearIndex = img.getLinearIndex(imgPos);
-
-								std::cout << "writeBlock linearIndex=" << linearIndex << " x=" << x << " y=" << y << " z=" << z << std::endl;
-								//size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
-								//out.seekp(filePos);
-
-								if (!out)
-									throw ITLException(std::string("Seek failed for file ") + filename + std::string(", ") + getStreamErrorMessage());
-
-								//todo: might be faster to read pBuffer sequentially
-								out.write((char*)&pBuffer[linearIndex], sizeof(pixel_t));
-
-								if (!out)
-									throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
-							}
-						}
-						prog.step();
-					}
-				}
 			}
 
 			/**
@@ -181,7 +118,7 @@ namespace itl2
 						//print all writeblock parameters in one line
 						std::cout << "writeBlock filename=" << filename << " realWriteSize=" << realWriteSize << " startInImageCoords=" << startInImageCoords
 								  << " realWriteSize=" << realWriteSize << std::endl;
-						writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize,
+						writeBytesCodecBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize,
 							false);
 					}
 					else
@@ -190,19 +127,14 @@ namespace itl2
 						std::cout << "writeBlock filename=" << filename << " realWriteSize=" << realWriteSize << " startInImageCoords=" << startInImageCoords
 								  << " realWriteSize=" << realWriteSize << std::endl;
 
-						writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
+						writeBytesCodecBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
 							realWriteSize, false);
 					}
 
 				}
 				else
 				{
-					//TODO other codecs
 					throw ITLException("multiple codecs not yet supported");
-					//iterate over codecs
-					for (auto& codec : codecs)
-					{
-					}
 				}
 			}
 
@@ -352,41 +284,6 @@ namespace itl2
 					  if (chunkUpdateRegion.size().min() > 0)
 						  writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, chunkUpdateRegion.position(), imageUpdateRegion.position(), chunkUpdateRegion.size(), fillValue, codecs);
 				  }
-
-				  //// We need to write the chunk only if the current output chunk overlaps with the region to be written = imageBlock
-				  //AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
-				  //if (fileTargetBlock.overlaps(currentChunk))
-				  //{
-				  //	if (fileTargetBlock.contains(chunkStart) && fileTargetBlock.contains(chunkStart + chunkSize - Vec3c(1, 1, 1)))
-				  //	{
-				  //		// Chunk start is inside file target block, so write start in chunk coords is 0.
-				  //		// Write start in image coordinates is different from imagePosition.
-				  //		// Chunk end is in file target block, so we write the entire chunk.
-				  //		Vec3c startInChunkCoords = Vec3c(0, 0, 0);
-				  //		Vec3c startInImageCoords = chunkStart - filePosition + imagePosition;
-				  //		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, Vec3c(0, 0, 0), startInImageCoords, chunkSize, fillValue, codecs);
-				  //	}
-				  //	else if (fileTargetBlock.contains(chunkStart))
-				  //	{
-				  //		// Chunk start is inside file target block, so write start in chunk coords is 0.
-				  //		// Write start in image coordinates is different from imagePosition.
-				  //		Vec3c startInChunkCoords = Vec3c(0, 0, 0);
-				  //		Vec3c startInImageCoords = chunkStart - filePosition + imagePosition;
-				  //		Vec3c endInImageCoords = imagePosition + blockDimensions;
-				  //		Vec3c writeSize = endInImageCoords - startInImageCoords;
-				  //		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, fillValue, codecs);
-				  //	}
-				  //	else
-				  //	{
-				  //		// Chunk start is outside of file target block, so write start in chunk coords is not 0.
-				  //		// Write start in image coordinates is imagePosition.
-				  //		Vec3c startInChunkCoords = filePosition - chunkStart;
-				  //		Vec3c endInChunkCoords = chunkSize;
-				  //		Vec3c startInImageCoords = imagePosition;
-				  //		Vec3c writeSize = endInChunkCoords - startInChunkCoords;
-				  //		writeSingleChunk(targetImg, path, chunkIndex, chunkSize, fileDimensions, startInChunkCoords, startInImageCoords, writeSize, fillValue, codecs);
-				  //	}
-				  //}
 				});
 			}
 

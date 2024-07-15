@@ -207,8 +207,8 @@ namespace itl2
 						{
 							codecConfig = codec["configuration"];
 						}
-						zarr::ZarrCodec zarrCodec = fromString<zarr::ZarrCodec>(codec["name"].get<string>());
-						zarrCodec.readConfig(codecConfig);
+						zarr::ZarrCodecName zarrCodecName = fromString<zarr::ZarrCodecName>(codec["name"].get<string>());
+						zarr::ZarrCodec zarrCodec = zarr::ZarrCodec(zarrCodecName, codecConfig);
 						codecs.push_back(zarrCodec);
 						switch (zarrCodec.type)
 						{
@@ -251,8 +251,6 @@ namespace itl2
 
 		namespace internals
 		{
-			//zarr updated
-			//TODO: write codecs
 			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
 				nlohmann::json j =
