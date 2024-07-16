@@ -129,7 +129,6 @@ namespace itl2
 			template<typename pixel_t>
 			class ImageDataWrapper
 			{
-				Image<pixel_t>& img;
 				Vec3c transposeOrder;
 
 				Vec3c unTransposedCoords(Vec3c p) const
@@ -151,6 +150,8 @@ namespace itl2
 				}
 
 			 public:
+				Image<pixel_t>& img;
+
 				// Initialize img using the initializer list
 				ImageDataWrapper(Image<pixel_t>& img)
 					: img(img), transposeOrder(0, 1, 2)

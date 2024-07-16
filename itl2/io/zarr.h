@@ -279,6 +279,7 @@ namespace itl2
 				});
 			}
 
+			//mark 1
 			template<typename pixel_t>
 			void readChunkFile(ImageDataWrapper<pixel_t>& imgWrapper, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
@@ -286,42 +287,21 @@ namespace itl2
 				{
 					switch (codec.name)
 					{
-					case ZarrCodecName::Transpose:
-					{
-						auto orderJSON = codec.configuration["order"];
-						//TODO check if valid order
-						Vec3c order = Vec3c(1, 1, 1);
-						order[0] = orderJSON[0].get<size_t>();
-						if (orderJSON.size() >= 2)
-							order[1] = orderJSON[1].get<size_t>();
-						if (orderJSON.size() >= 3)
-							order[2] = orderJSON[2].get<size_t>();
-						cout << "readChunkFile Transpose order=" << order << endl;
-						imgWrapper.transpose(order);
-					}
-						break;
-
 					case ZarrCodecName::Bytes:
 						readBytesCodec(imgWrapper, filename);
 						break;
+					case ZarrCodecName::Transpose:
+					default:
+						throw ITLException("Unsupported codec in readChunkFile: " + toString(codec.name));
 					}
 				}
-			}
-
-			template<typename pixel_t>
-			void readFileIntoImageBlock(Image<pixel_t>& img, const string& filename, const Vec3c& imagePosition, int fillValue, std::list<ZarrCodec>& codecs, Image<pixel_t>& temp)
-			{
-				// TODO: This is not very efficient due to the copying of the block, and memory allocation, improve?
-				//			Note that this could be easily improved using an image view to the desired block in the targetImg.
-				ImageDataWrapper<pixel_t> imgWrapper(temp);
-
-				readChunkFile(imgWrapper, filename, fillValue, codecs);
-				copyValues(img, temp, imagePosition);
 			}
 
 			/**
 			Reads single zarr chunk file.
 			*/
+
+			//mark 3
 			template<typename pixel_t>
 			void readSingleChunk(Image<pixel_t>& target,
 				const std::string& path,
@@ -331,7 +311,7 @@ namespace itl2
 				const Vec3c& readSize,
 				int fillValue,
 				std::list<ZarrCodec>& codecs,
-				Image<pixel_t>& temp)
+				ImageDataWrapper<pixel_t> tempImgWrapper)
 			{
 				string filename = chunkFile(path, getDimensionality(datasetDimensions), chunkIndex);
 
@@ -341,7 +321,8 @@ namespace itl2
 				}
 				if (fs::is_regular_file(filename))
 				{
-					readFileIntoImageBlock(target, filename, chunkStartInTarget, fillValue, codecs, temp);
+					readChunkFile(tempImgWrapper, filename, fillValue, codecs);
+					copyValues(target, tempImgWrapper.img, chunkStartInTarget);
 				}
 				else
 				{
@@ -353,19 +334,7 @@ namespace itl2
 			/**
 			Reads zarr chunk files.
 			*/
-			template<typename pixel_t>
-			void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool showProgressInfo)
-			{
-				Image<pixel_t> temp(img.dimensions(), fillValue);
-				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-				  readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, fillValue, codecs, temp);
-				});
-			}
-
-			/**
-			Reads zarr chunk files.
-			*/
+			//mark 4
 			template<typename pixel_t>
 			void readChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
 				const Vec3c& datasetDimensions,
@@ -373,15 +342,41 @@ namespace itl2
 				bool showProgressInfo)
 			{
 				Image<pixel_t> temp(img.dimensions(), fillValue);
+				ImageDataWrapper<pixel_t> tempImgWrapper(temp);
 
-				AABoxc imageBox = AABoxc::fromMinMax(start, end);
+				const AABoxc imageBox = AABoxc::fromMinMax(start, end);
+				std::list<ZarrCodec> chunkCodecs;
 
-				// This is a check-all-chunks algoritm. Alternatively, we could calculate the required chunk range.
+				for (auto codec : codecs)
+				{
+					if (codec.type == ZarrCodecType::ArrayArrayCodec)
+					{
+						if (codec.name == ZarrCodecName::Transpose)
+						{
+							auto orderJSON = codec.configuration["order"];
+							//TODO check if valid order
+							Vec3c order = Vec3c(1, 1, 1);
+							order[0] = orderJSON[0].get<size_t>();
+							if (orderJSON.size() >= 2)
+								order[1] = orderJSON[1].get<size_t>();
+							if (orderJSON.size() >= 3)
+								order[2] = orderJSON[2].get<size_t>();
+							cout << "readChunkFile Transpose order=" << order << endl;
+							tempImgWrapper.transpose(order);
+						}
+					}
+					else
+					{
+						chunkCodecs.push_back(codec);
+					}
+				}
+
 				forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
-				  if (currentChunk.overlapsExclusive(imageBox))
-					  readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), fillValue, codecs, temp);
+				  if (currentChunk.overlapsExclusive(imageBox)){
+					  readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), fillValue, chunkCodecs, tempImgWrapper);
+				  }
 				});
 			}
 
@@ -462,35 +457,7 @@ namespace itl2
 			internals::writeChunksInRange(img, path, chunkSize, fillValue, codecs, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
 
-		/**
-		Reads a zarr dataset file to the given image.
-		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
-		@param path Path to the root of the nn5 dataset.
-		*/
-		template<typename pixel_t>
-		void read(Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
-		{
-			bool isNativeByteOrder;
-			Vec3c dimensions;
-			ImageDataType dataType;
-			Vec3c chunkSize;
-			int fillValue;
-			std::list<ZarrCodec> codecs;
-			string reason;
-			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
-				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 
-			if (dataType != img.dataType())
-				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the zarr dataset contains data of type " + toString(dataType) + ".");
-
-			std::cout << "img.ensureSize(dimensions=" << dimensions << ");" << std::endl;
-			img.ensureSize(dimensions);
-
-			internals::readChunks(img, path, chunkSize, fillValue, codecs, showProgressInfo);
-
-			if (!isNativeByteOrder)
-				swapByteOrder(img);
-		}
 
 		/**
 		Reads a part of a .zarr dataset to the given image.
@@ -499,6 +466,7 @@ namespace itl2
 		@param filename The name of the dataset to read.
 		@param fileStart Start location of the read in the file. The size of the image defines the size of the block that is read.
 		*/
+		//mark 5,6
 		template<typename pixel_t>
 		void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
 		{
@@ -514,7 +482,7 @@ namespace itl2
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 
 			if (dataType != img.dataType())
-				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the nn5 dataset contains data of type " + toString(dataType) + ".");
+				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the zarr dataset contains data of type " + toString(dataType) + ".");
 
 			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= fileDimensions.x || fileStart.y >= fileDimensions.y || fileStart.z >= fileDimensions.z)
 				throw ITLException("Out of bounds start position in readBlock.");
@@ -524,17 +492,32 @@ namespace itl2
 			Vec3c cEnd = fileStart + img.dimensions();
 			clamp(cEnd, Vec3c(0, 0, 0), fileDimensions);
 
-			if (cStart == Vec3c(0, 0, 0) && cEnd == fileDimensions && fileDimensions == img.dimensions())
-			{
-				// Reading whole dataset, use the whole dataset reading function.
-				read(img, path);
-				return;
-			}
-
 			internals::readChunksInRange(img, path, chunkSize, fillValue, codecs, fileDimensions, cStart, cEnd, showProgressInfo);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
+		}
+		/**
+		Reads a zarr dataset file to the given image.
+		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
+		@param path Path to the root of the nn5 dataset.
+		*/
+		//mark 5
+		template<typename pixel_t>
+		void read(Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
+		{
+			bool isNativeByteOrder;
+			Vec3c dimensions;
+			ImageDataType dataType;
+			Vec3c chunkSize;
+			int fillValue;
+			std::list<ZarrCodec> codecs;
+			string reason;
+			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
+				throw ITLException(string("Unable to read zarr dataset: ") + reason);
+			img.ensureSize(dimensions);
+
+			readBlock(img, path, Vec3c(0, 0, 0), showProgressInfo);
 		}
 	}
 }
