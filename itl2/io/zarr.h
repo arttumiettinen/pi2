@@ -279,28 +279,10 @@ namespace itl2
 				});
 			}
 
-			//mark 1
-			template<typename pixel_t>
-			void readChunkFile(ImageDataWrapper<pixel_t>& imgWrapper, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
-			{
-				for (auto codec : codecs)
-				{
-					switch (codec.name)
-					{
-					case ZarrCodecName::Bytes:
-						readBytesCodec(imgWrapper, filename);
-						break;
-					case ZarrCodecName::Transpose:
-					default:
-						throw ITLException("Unsupported codec in readChunkFile: " + toString(codec.name));
-					}
-				}
-			}
 
 			/**
 			Reads single zarr chunk file.
 			*/
-
 			//mark 3
 			template<typename pixel_t>
 			void readSingleChunk(Image<pixel_t>& target,
@@ -321,7 +303,18 @@ namespace itl2
 				}
 				if (fs::is_regular_file(filename))
 				{
-					readChunkFile(tempImgWrapper, filename, fillValue, codecs);
+					for (auto codec : codecs)
+					{
+						switch (codec.name)
+						{
+						case ZarrCodecName::Bytes:
+							readBytesCodec(tempImgWrapper, filename);
+							break;
+						case ZarrCodecName::Transpose:
+						default:
+							throw ITLException("Unsupported codec in readChunkFile: " + toString(codec.name));
+						}
+					}
 					copyValues(target, tempImgWrapper.img, chunkStartInTarget);
 				}
 				else
