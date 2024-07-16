@@ -353,7 +353,9 @@ namespace itl2
 				Vec3c blockPos = parsePosition(filename);
 
 				Image<pixel_t> block;
-				readChunkFile(block, filename, fillValue, codecs);
+				ImageDataWrapper<pixel_t> imgWrapper(block);
+
+				readChunkFile(imgWrapper, filename, fillValue, codecs);
 
 				copyValues(img, block, blockPos);
 			}
@@ -377,11 +379,12 @@ namespace itl2
 						{
 							Vec3c realChunkSize = internals::clampedChunkSize(chunkIndex, chunkSize, datasetSize);
 							Image<pixel_t> img(realChunkSize);
+							ImageDataWrapper<pixel_t> imgWrapper(img);
 
 							// Read old data if it exists.
 							// TODO: No need to read if the written blocks overwrite the chunk completely.
 
-							readChunkFile(img, chunkFile, fillValue, codecs);
+							readChunkFile(imgWrapper, chunkFile, fillValue, codecs);
 
 
 							// Modify data with the new writes.

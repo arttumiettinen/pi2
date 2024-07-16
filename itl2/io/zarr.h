@@ -280,9 +280,8 @@ namespace itl2
 			}
 
 			template<typename pixel_t>
-			void readChunkFile(Image<pixel_t>& img, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
+			void readChunkFile(ImageDataWrapper<pixel_t>& imgWrapper, const string& filename, int fillValue, std::list<ZarrCodec>& codecs)
 			{
-				ImageDataWrapper<pixel_t> imgWrapper(img);
 				for (auto codec : codecs)
 				{
 					switch (codec.name)
@@ -314,7 +313,9 @@ namespace itl2
 			{
 				// TODO: This is not very efficient due to the copying of the block, and memory allocation, improve?
 				//			Note that this could be easily improved using an image view to the desired block in the targetImg.
-				readChunkFile(temp, filename, fillValue, codecs);
+				ImageDataWrapper<pixel_t> imgWrapper(temp);
+
+				readChunkFile(imgWrapper, filename, fillValue, codecs);
 				copyValues(img, temp, imagePosition);
 			}
 

@@ -132,6 +132,15 @@ namespace itl2
 				Image<pixel_t>& img;
 				Vec3c transposeOrder;
 
+				Vec3c unTransposedCoords(Vec3c p) const
+				{
+					Vec3c tp(0, 0, 0);
+					tp[transposeOrder.x] = p.x;
+					tp[transposeOrder.y] = p.y;
+					tp[transposeOrder.z] = p.z;
+					return tp;
+				}
+
 				Vec3c transposedCoords(Vec3c p) const
 				{
 					Vec3c tp(0, 0, 0);
@@ -164,7 +173,8 @@ namespace itl2
 			   */
 				pixel_t& operator()(const Vec3c& p)
 				{
-					Vec3c tp = transposedCoords(p);
+					Vec3c tp = unTransposedCoords(p);
+					cout << "Accessing pixel at " << p << " transposed to " << tp << " value: " << img(tp) << endl;
 					return img(tp); // Assuming img provides operator() to access pixel data
 				}
 

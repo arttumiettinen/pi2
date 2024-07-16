@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="all - remote" type="CLionNativeAppRunConfigurationType" PROGRAM_PARAMS="/tmp/tmp.Kgem84xkdS/test_zarr.py" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="pi2" TARGET_NAME="all" CONFIG_NAME="all" version="1" RUN_PATH="/usr/bin/python3">
+  <configuration default="false" name="all - remote" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="pi2" TARGET_NAME="all" CONFIG_NAME="all" version="1" RUN_PATH="$PROJECT_DIR$/run_pytest.sh">
     <method v="2">
       <option name="CLION.COMPOUND.BUILD" enabled="true" />
     </method>
