@@ -9,11 +9,13 @@
 namespace itl2
 {
 	using std::cout, std::endl;
-	namespace zarr::internals{
+	namespace zarr::internals
+	{
 		template<typename pixel_t>
 		class ImageDataWrapper
 		{
 			Vec3c transposeOrder;
+			Vec3c datasetShape;
 
 			Vec3c unTransposedCoords(Vec3c p) const
 			{
@@ -24,22 +26,50 @@ namespace itl2
 				return tp;
 			}
 
-			Vec3c transposedCoords(Vec3c p) const
-			{
-				Vec3c tp(0, 0, 0);
-				tp.x = p[transposeOrder.x];
-				tp.y = p[transposeOrder.y];
-				tp.z = p[transposeOrder.z];
-				return tp;
+			//TODO move this to Vec3c
+			void _validateOrder(const Vec3c order){
+				if(order.max()>2 || order.min()<0)
+					throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
+				Vec3c counter(0,0,0);
+				counter[order.x]++;
+				counter[order.y]++;
+				counter[order.z]++;
+				if(counter!=Vec3c(1,1,1)){
+					throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
+				}
 			}
-
+			const Vec3c _transpose(const Vec3c p, const Vec3c order) const
+			{
+				_validateOrder(order);
+				Vec3c transposed(0, 0, 0);
+				transposed.x = p[order.x];
+				transposed.y = p[order.y];
+				transposed.z = p[order.z];
+				return transposed;
+			}
+			const Vec3c _inverseOrder(const Vec3c order)const{
+				_validateOrder(order);
+				Vec3c inverse(0,0,0);
+				inverse[order.x] = 0;
+				inverse[order.y] = 1;
+				inverse[order.z] = 2;
+			}
 		 public:
 			Image<pixel_t>& img;
 
-			// Initialize img using the initializer list
-			ImageDataWrapper(Image<pixel_t>& img)
-				: img(img), transposeOrder(0, 1, 2)
+			//img is virtual and its shape is corresponding to the shape in pi2
+			//physical coords are the transposed data written on disk by zarr
+			ImageDataWrapper(Image<pixel_t>& img, Vec3c& datasetShape)
+				: img(img), transposeOrder(0, 1, 2), datasetShape(datasetShape)
 			{
+			}
+
+			Vec3c virtualToPhysicalCoords(const Vec3c& p) const{
+				return _transpose(p, transposeOrder);
+			}
+
+			Vec3c physicalToVirtualCoords(const Vec3c& p) const{
+				return _transpose(p, _inverseOrder(transposeOrder));
 			}
 
 			void transpose(const Vec3c& order)
@@ -49,7 +79,12 @@ namespace itl2
 
 			Vec3c dims() const
 			{
-				return transposedCoords(img.dimensions());
+				return virtualToPhysicalCoords(img.dimensions());
+			}
+
+			Vec3c virtualDatasetShape() const
+			{
+				return physicalToVirtualCoords(datasetShape);
 			}
 
 			/**
@@ -58,7 +93,7 @@ namespace itl2
 		   */
 			pixel_t& operator()(const Vec3c& p)
 			{
-				Vec3c tp = unTransposedCoords(p);
+				Vec3c tp = physicalToVirtualCoords(p);
 				cout << "Accessing pixel at " << p << " transposed to " << tp << " value: " << img(tp) << endl;
 				return img(tp); // Assuming img provides operator() to access pixel data
 			}
@@ -72,4 +107,5 @@ namespace itl2
 				return operator()(Vec3c(x, y, z));
 			}
 		};
-	}}
+	}
+}

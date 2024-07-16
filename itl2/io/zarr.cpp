@@ -12,9 +12,9 @@ namespace itl2
 	namespace zarr
 	{
 		//TODO: remove isNativeByteOrder
-		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
+		bool getInfo(const std::string& path, Vec3c& shape, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
 		{
-			dimensions = Vec3c();
+			shape = Vec3c();
 			isNativeByteOrder = true;
 			dataType = ImageDataType::Unknown;
 			chunkSize = Vec3c();
@@ -28,7 +28,7 @@ namespace itl2
 				return false;
 			}
 
-			// Read metadata and populate dimensions and pixel data type.
+			// Read metadata and populate shape and pixel data type.
 			ifstream in(metadataFilename);
 			nlohmann::json j;
 
@@ -84,14 +84,14 @@ namespace itl2
 			}
 
 			//transpose xyz -> yxz
-			dimensions = Vec3c(1, 1, 1);
-			dimensions[0] = dims[0].get<size_t>();
+			shape = Vec3c(1, 1, 1);
+			shape[0] = dims[0].get<size_t>();
 			if (dims.size() >= 2)
-				dimensions[1] = dims[1].get<size_t>();
+				shape[1] = dims[1].get<size_t>();
 			if (dims.size() >= 3)
-				dimensions[2] = dims[2].get<size_t>();
+				shape[2] = dims[2].get<size_t>();
 
-			cout << "getInfo dimensions: " << dimensions << endl;
+			cout << "getInfo shape: " << shape << endl;
 
 			if (!j.contains("data_type"))
 			{
@@ -123,7 +123,7 @@ namespace itl2
 				auto chunkDims = j["chunk_grid"]["configuration"]["chunk_shape"];
 				if (chunkDims.size() != dims.size())
 				{
-					reason = "Chunk dimensions and dataset dimensions contain different number of elements.";
+					reason = "Chunk shape and dataset shape contain different number of elements.";
 					return false;
 				}
 
@@ -249,13 +249,13 @@ namespace itl2
 
 		namespace internals
 		{
-			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<ZarrCodec>& codecs)
+			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<ZarrCodec>& codecs)
 			{
 				nlohmann::json j =
 					{
 						{ "zarr_format", 3 },//zarr updated
 						{ "node_type", "array" },//zarr updated
-						{ "shape", { dimensions[0], dimensions[1], dimensions[2] }},//zarr updated
+						{ "shape", { shape[0], shape[1], shape[2] }},//zarr updated
 						{ "data_type", toString(dataType) },//zarr updated
 						{ "chunk_grid", {{ "name", "regular" }, { "configuration", {{ "chunk_shape", { chunkSize[0], chunkSize[1], chunkSize[2] }}}}}},
 						{ "chunk_key_encoding", {{ "name", "default" }, { "configuration", {{ "separator", "/" }}}}},

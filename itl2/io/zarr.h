@@ -303,18 +303,7 @@ namespace itl2
 				}
 				if (fs::is_regular_file(filename))
 				{
-					for (auto codec : codecs)
-					{
-						switch (codec.name)
-						{
-						case ZarrCodecName::Bytes:
-							readBytesCodec(tempImgWrapper, filename);
-							break;
-						case ZarrCodecName::Transpose:
-						default:
-							throw ITLException("Unsupported codec in readChunkFile: " + toString(codec.name));
-						}
-					}
+					readBytesCodec(tempImgWrapper, filename);
 					copyValues(target, tempImgWrapper.img, chunkStartInTarget);
 				}
 				else
@@ -329,48 +318,69 @@ namespace itl2
 			*/
 			//mark 4
 			template<typename pixel_t>
-			void readChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
-				const Vec3c& datasetDimensions,
+			void readChunksInRange(Image<pixel_t>& img, const std::string& path,
+				const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
+				const Vec3c& datasetShape,
 				const Vec3c& start, const Vec3c& end,
 				bool showProgressInfo)
 			{
-				Image<pixel_t> temp(img.dimensions(), fillValue);
-				ImageDataWrapper<pixel_t> tempImgWrapper(temp);
+				Image<pixel_t> imgCopy(img.dimensions(), fillValue);
+				ImageDataWrapper<pixel_t> imgCopyWrapper(imgCopy, datasetShape);
 
-				const AABoxc imageBox = AABoxc::fromMinMax(start, end);
-				std::list<ZarrCodec> chunkCodecs;
-
-				for (auto codec : codecs)
+				std::list<ZarrCodec>::iterator codec = codecs.begin();
+				while (codec != codecs.end() && codec->type == ZarrCodecType::ArrayArrayCodec)
 				{
-					if (codec.type == ZarrCodecType::ArrayArrayCodec)
+					if (codec->name == ZarrCodecName::Transpose)
 					{
-						if (codec.name == ZarrCodecName::Transpose)
-						{
-							auto orderJSON = codec.configuration["order"];
-							//TODO check if valid order
-							Vec3c order = Vec3c(1, 1, 1);
-							order[0] = orderJSON[0].get<size_t>();
-							if (orderJSON.size() >= 2)
-								order[1] = orderJSON[1].get<size_t>();
-							if (orderJSON.size() >= 3)
-								order[2] = orderJSON[2].get<size_t>();
-							cout << "readChunkFile Transpose order=" << order << endl;
-							tempImgWrapper.transpose(order);
-						}
+						auto orderJSON = codec->configuration["order"];
+						//TODO check if valid order
+						Vec3c order = Vec3c(1, 1, 1);
+						order[0] = orderJSON[0].get<size_t>();
+						if (orderJSON.size() >= 2)
+							order[1] = orderJSON[1].get<size_t>();
+						if (orderJSON.size() >= 3)
+							order[2] = orderJSON[2].get<size_t>();
+						cout << "readChunkFile Transpose order=" << order << endl;
+						imgCopyWrapper.transpose(order);
 					}
-					else
+					++codec;
+				}
+				assert(codec != codecs.end() && codec->type == ZarrCodecType::ArrayBytesCodec);
+				if (codec->name == ZarrCodecName::Bytes)
+				{
+					const AABoxc imageBox = AABoxc::fromMinMax(start, end);
+					forAllChunks(datasetShape, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
-						chunkCodecs.push_back(codec);
-					}
+					  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
+					  if (currentChunk.overlapsExclusive(imageBox))
+					  {
+						  //codec iterator for this chunk
+						  std::list<ZarrCodec>::iterator codecIteratorCopy = codecs.begin();
+						  std::advance(codecIteratorCopy, std::distance(codecs.begin(), codec));
+
+						  const Vec3c& chunkStartInTarget = chunkStart - start;
+						  const Vec3c& readSize = currentChunk.intersection(imageBox).size();
+
+						  string filename = chunkFile(path, getDimensionality(datasetShape), imgCopyWrapper.virtualToPhysicalCoords(chunkIndex));
+						  if (fs::is_directory(filename))
+						  {
+							  throw ITLException(filename + string(" is a directory, but it should be a file."));
+						  }
+						  if (fs::is_regular_file(filename))
+						  {
+							  readBytesCodec(imgCopyWrapper, filename);
+							  copyValues(img, imgCopyWrapper.img, chunkStartInTarget);
+						  }
+						  else
+						  {
+							  // No file => all pixels in the block are fillValue.
+							  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
+						  }
+
+					  }
+					});
 				}
 
-				forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
-				  if (currentChunk.overlapsExclusive(imageBox)){
-					  readSingleChunk(img, path, datasetDimensions, chunkIndex, chunkStart - start, currentChunk.intersection(imageBox).size(), fillValue, chunkCodecs, tempImgWrapper);
-				  }
-				});
 			}
 
 			/**
@@ -396,15 +406,15 @@ namespace itl2
 			}
 		}
 
-		bool getInfo(const std::string& path, Vec3c& dimensions, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason);
+		bool getInfo(const std::string& path, Vec3c& shape, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason);
 
-		inline bool getInfo(const std::string& path, Vec3c& dimensions, ImageDataType& dataType, std::string& reason)
+		inline bool getInfo(const std::string& path, Vec3c& shape, ImageDataType& dataType, std::string& reason)
 		{
 			bool dummyIsNative;
 			Vec3c dummyChunkSize;
 			int fillValue;
 			std::list<ZarrCodec> codecs;
-			return getInfo(path, dimensions, dummyIsNative, dataType, dummyChunkSize, codecs, fillValue, reason);
+			return getInfo(path, shape, dummyIsNative, dataType, dummyChunkSize, codecs, fillValue, reason);
 		}
 
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
@@ -464,28 +474,28 @@ namespace itl2
 		void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
 		{
 			bool isNativeByteOrder;
-			Vec3c fileDimensions;
+			Vec3c datasetShape;
 			ImageDataType dataType;
 			Vec3c chunkSize;
 			int fillValue;
 			std::list<ZarrCodec> codecs;
 			string reason;
 			std::cout << "readBlock" << std::endl;
-			if (!itl2::zarr::getInfo(path, fileDimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
+			if (!itl2::zarr::getInfo(path, datasetShape, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 
 			if (dataType != img.dataType())
 				throw ITLException(string("Expected data type is ") + toString(img.dataType()) + " but the zarr dataset contains data of type " + toString(dataType) + ".");
 
-			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= fileDimensions.x || fileStart.y >= fileDimensions.y || fileStart.z >= fileDimensions.z)
+			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= datasetShape.x || fileStart.y >= datasetShape.y || fileStart.z >= datasetShape.z)
 				throw ITLException("Out of bounds start position in readBlock.");
 
 			Vec3c cStart = fileStart;
-			clamp(cStart, Vec3c(0, 0, 0), fileDimensions);
+			clamp(cStart, Vec3c(0, 0, 0), datasetShape);
 			Vec3c cEnd = fileStart + img.dimensions();
-			clamp(cEnd, Vec3c(0, 0, 0), fileDimensions);
+			clamp(cEnd, Vec3c(0, 0, 0), datasetShape);
 
-			internals::readChunksInRange(img, path, chunkSize, fillValue, codecs, fileDimensions, cStart, cEnd, showProgressInfo);
+			internals::readChunksInRange(img, path, chunkSize, fillValue, codecs, datasetShape, cStart, cEnd, showProgressInfo);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
