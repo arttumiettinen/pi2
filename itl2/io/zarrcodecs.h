@@ -137,13 +137,13 @@ namespace itl2
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
 				in.seekg(bytesToSkip, std::ios::beg);
-				Vec3c dims = imageWrapper.dims();
-				cout << "Reading " << dims << " pixels from " << filename << endl;
-				for (coord_t x = 0; x < dims.x; x++)
+				Vec3c shape = imageWrapper.physicalChunkShape();
+				cout << "Reading " << shape << " pixels from " << filename << endl;
+				for (coord_t x = 0; x < shape.x; x++)
 				{
-					for (coord_t y = 0; y < dims.y; y++)
+					for (coord_t y = 0; y < shape.y; y++)
 					{
-						for (coord_t z = 0; z < dims.z; z++)
+						for (coord_t z = 0; z < shape.z; z++)
 						{
 							readPixel(in, imageWrapper(x, y, z));
 						}

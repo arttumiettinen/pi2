@@ -15,19 +15,12 @@ namespace itl2
 		class ImageDataWrapper
 		{
 			Vec3c transposeOrder;
-			Vec3c datasetShape;
+			const Vec3c datasetShape;
+			const Vec3c datasetChunkShape;
 
-			Vec3c unTransposedCoords(Vec3c p) const
-			{
-				Vec3c tp(0, 0, 0);
-				tp[transposeOrder.x] = p.x;
-				tp[transposeOrder.y] = p.y;
-				tp[transposeOrder.z] = p.z;
-				return tp;
-			}
 
 			//TODO move this to Vec3c
-			void _validateOrder(const Vec3c order){
+			const void _validateOrder(const Vec3c order)const{
 				if(order.max()>2 || order.min()<0)
 					throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
 				Vec3c counter(0,0,0);
@@ -53,14 +46,16 @@ namespace itl2
 				inverse[order.x] = 0;
 				inverse[order.y] = 1;
 				inverse[order.z] = 2;
+				return inverse;
 			}
 		 public:
 			Image<pixel_t>& img;
 
 			//img is virtual and its shape is corresponding to the shape in pi2
 			//physical coords are the transposed data written on disk by zarr
-			ImageDataWrapper(Image<pixel_t>& img, Vec3c& datasetShape)
-				: img(img), transposeOrder(0, 1, 2), datasetShape(datasetShape)
+			//datasetShape and datasetChunkShape are equal to zarr.json file (virtual)
+			ImageDataWrapper(Image<pixel_t>& img, const Vec3c& datasetShape, const Vec3c& datasetChunkShape)
+				: img(img), transposeOrder(0, 1, 2), datasetShape(datasetShape), datasetChunkShape(datasetChunkShape)
 			{
 			}
 
@@ -82,9 +77,9 @@ namespace itl2
 				return virtualToPhysicalCoords(img.dimensions());
 			}
 
-			Vec3c virtualDatasetShape() const
+			Vec3c physicalChunkShape() const
 			{
-				return physicalToVirtualCoords(datasetShape);
+				return virtualToPhysicalCoords(datasetChunkShape);
 			}
 
 			/**

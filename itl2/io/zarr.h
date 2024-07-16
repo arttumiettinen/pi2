@@ -279,40 +279,6 @@ namespace itl2
 				});
 			}
 
-
-			/**
-			Reads single zarr chunk file.
-			*/
-			//mark 3
-			template<typename pixel_t>
-			void readSingleChunk(Image<pixel_t>& target,
-				const std::string& path,
-				const Vec3c& datasetDimensions,
-				const Vec3c& chunkIndex,
-				const Vec3c& chunkStartInTarget,
-				const Vec3c& readSize,
-				int fillValue,
-				std::list<ZarrCodec>& codecs,
-				ImageDataWrapper<pixel_t> tempImgWrapper)
-			{
-				string filename = chunkFile(path, getDimensionality(datasetDimensions), chunkIndex);
-
-				if (fs::is_directory(filename))
-				{
-					throw ITLException(filename + string(" is a directory, but it should be a file."));
-				}
-				if (fs::is_regular_file(filename))
-				{
-					readBytesCodec(tempImgWrapper, filename);
-					copyValues(target, tempImgWrapper.img, chunkStartInTarget);
-				}
-				else
-				{
-					// No file => all pixels in the block are fillValue.
-					draw<pixel_t>(target, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
-				}
-			}
-
 			/**
 			Reads zarr chunk files.
 			*/
@@ -325,7 +291,7 @@ namespace itl2
 				bool showProgressInfo)
 			{
 				Image<pixel_t> imgCopy(img.dimensions(), fillValue);
-				ImageDataWrapper<pixel_t> imgCopyWrapper(imgCopy, datasetShape);
+				ImageDataWrapper<pixel_t> imgCopyWrapper(imgCopy, datasetShape, chunkSize);
 
 				std::list<ZarrCodec>::iterator codec = codecs.begin();
 				while (codec != codecs.end() && codec->type == ZarrCodecType::ArrayArrayCodec)
@@ -358,8 +324,8 @@ namespace itl2
 						  std::list<ZarrCodec>::iterator codecIteratorCopy = codecs.begin();
 						  std::advance(codecIteratorCopy, std::distance(codecs.begin(), codec));
 
-						  const Vec3c& chunkStartInTarget = chunkStart - start;
-						  const Vec3c& readSize = currentChunk.intersection(imageBox).size();
+						  const Vec3c chunkStartInTarget = chunkStart - start;
+						  const Vec3c readSize = currentChunk.intersection(imageBox).size();
 
 						  string filename = chunkFile(path, getDimensionality(datasetShape), imgCopyWrapper.virtualToPhysicalCoords(chunkIndex));
 						  if (fs::is_directory(filename))
@@ -368,11 +334,12 @@ namespace itl2
 						  }
 						  if (fs::is_regular_file(filename))
 						  {
-							  readBytesCodec(imgCopyWrapper, filename);
+							  readBytesCodec(imgCopyWrapper, filename );
 							  copyValues(img, imgCopyWrapper.img, chunkStartInTarget);
 						  }
 						  else
 						  {
+							  cout << "no file: " << filename << endl;
 							  // No file => all pixels in the block are fillValue.
 							  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
 						  }
