@@ -7,7 +7,7 @@
 
 CFLAGS := -O3
 CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
-LDFLAGS := -fopenmp
+LDFLAGS := -fopenmp -lblosc
 
 OPENCL_LIB := -lOpenCL
 CONFIG := release

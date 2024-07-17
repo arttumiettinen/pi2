@@ -49,6 +49,7 @@ The overall build process is as follows:
 Typically in an Ubuntu-like system you would run something like this:
 ```
 sudo apt install build-essential libfftw3-dev libpng-dev libtiff-dev libjpeg-dev 
+git clone https://github.com/Blosc/c-blosc.git && cd c-blosc && mkdir build && cd build && cmake . .. && sudo cmake --build . --target install 
 git clone https://github.com/arttumiettinen/pi2.git
 cd pi2
 make NO_OPENCL=1
