@@ -110,3 +110,13 @@ def test_read_transpose(order, chunk_shape):
                   chunk_shape=chunk_shape)
     read_arr = pi2_read("zarrita.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+
+@pytest.mark.parametrize("cname", ["lz4"])#, "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
+@pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
+@pytest.mark.parametrize("typesize", [1])#, 2, 10])
+# todo: handle clevel, shuffle, typesize, blocksize
+def test_read_blosc(cname, chunk_shape, typesize):
+    zarrita_write(codecs=[zarrita.codecs.bytes_codec("little"), zarrita.codecs.blosc_codec(typesize)],
+                  chunk_shape=chunk_shape)
+    read_arr = pi2_read("zarrita.zarr")
+    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)

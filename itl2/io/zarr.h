@@ -10,6 +10,7 @@
 #include "io/zarrcodecs.h"
 #include "generation.h"
 #include "math/vec3.h"
+#include <blosc.h>
 
 namespace itl2
 {
@@ -298,47 +299,72 @@ namespace itl2
 				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
 				  if (currentChunk.overlapsExclusive(imageBox))
 				  {
-					  std::list<ZarrCodec>::iterator codec = codecs.begin();
-					  for (; codec != codecs.end() && codec->type == ZarrCodecType::ArrayArrayCodec; ++codec)
 					  {
-						  if (codec->name == ZarrCodecName::Transpose)
+						  std::list<ZarrCodec>::iterator codec = codecs.begin();
+						  for (; codec->type == ZarrCodecType::ArrayArrayCodec; ++codec)
 						  {
-							  auto orderJSON = codec->configuration["order"];
-							  //TODO check if valid order
-							  Vec3c order = Vec3c(1, 1, 1);
-							  order[0] = orderJSON[0].get<size_t>();
-							  if (orderJSON.size() >= 2)
-								  order[1] = orderJSON[1].get<size_t>();
-							  if (orderJSON.size() >= 3)
-								  order[2] = orderJSON[2].get<size_t>();
-							  cout << "readChunkFile Transpose order=" << order << endl;
-							  imgCopyWrapper.transpose(order);
+							  cout << "readChunksInRange arrayarray codec=" << toString(codec->name) << " " << (int)codec->type << endl;
+
+							  if (codec == codecs.end()) throw ITLException("no ArrayBytesCodec found after ArrayArrayCodecs");
+							  if (codec->name == ZarrCodecName::Transpose)
+							  {
+								  auto orderJSON = codec->configuration["order"];
+								  //TODO check if valid order
+								  Vec3c order = Vec3c(1, 1, 1);
+								  order[0] = orderJSON[0].get<size_t>();
+								  if (orderJSON.size() >= 2)
+									  order[1] = orderJSON[1].get<size_t>();
+								  if (orderJSON.size() >= 3)
+									  order[2] = orderJSON[2].get<size_t>();
+								  cout << "readChunkFile Transpose order=" << order << endl;
+								  imgCopyWrapper.transpose(order);
+							  }
+							  else throw ITLException("ArrayArrayCodec not yet implemented: " + toString(codec->name));
 						  }
-						  else throw ITLException("codec not implemented: " + toString(codec->name));
+						  assert(codec != codecs.end() && codec->type == ZarrCodecType::ArrayBytesCodec);
+						  if (codec->name == ZarrCodecName::Bytes)
+						  {
+							  cout << "readChunksInRange arraybyte codec=" << toString(codec->name) << " " << (int)codec->type << endl;
+
+							  const Vec3c chunkStartInTarget = chunkStart - start;
+							  const Vec3c readSize = currentChunk.intersection(imageBox).size();
+							  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
+							  if (fs::is_directory(filename))
+							  {
+								  throw ITLException(filename + string(" is a directory, but it should be a file."));
+							  }
+							  if (fs::is_regular_file(filename))
+							  {
+								  readBytesCodec(imgCopyWrapper, filename, chunkStart);
+								  copyValues(img, imgCopyWrapper.img, chunkStartInTarget);
+							  }
+							  else
+							  {
+								  cout << "no file: " << filename << endl;
+								  // No file => all pixels in the block are fillValue.
+								  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
+							  }
+						  }
+						  else throw ITLException("ArrayBytesCodec not yet implemented: " + toString(codec->name));
 					  }
-					  assert(codec != codecs.end() && codec->type == ZarrCodecType::ArrayBytesCodec);
-					  if (codec->name == ZarrCodecName::Bytes)
+					  //iterate over bytebyte codecs in reverse order
+					  //Buffer<pixel_t>* buffer = new MemoryBuffer<pixel_t>(pixelCount());
+					  for (auto codec = codecs.rbegin(); codec != codecs.rend(); ++codec)
 					  {
-						  const Vec3c chunkStartInTarget = chunkStart - start;
-						  const Vec3c readSize = currentChunk.intersection(imageBox).size();
-						  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
-						  if (fs::is_directory(filename))
-						  {
-							  throw ITLException(filename + string(" is a directory, but it should be a file."));
-						  }
-						  if (fs::is_regular_file(filename))
-						  {
-							  readBytesCodec(imgCopyWrapper, filename, chunkStart);
-							  copyValues(img, imgCopyWrapper.img, chunkStartInTarget);
-						  }
-						  else
-						  {
-							  cout << "no file: " << filename << endl;
-							  // No file => all pixels in the block are fillValue.
-							  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
-						  }
+						  cout << "readChunksInRange alle codec=" << toString(codec->name) << " " << (int)codec->type << endl;
 					  }
-					  else throw ITLException("codec not implemented: " + toString(codec->name));
+					  for (auto codec = codecs.rbegin(); codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
+					  {
+						  cout << "readChunksInRange bytebyte codec=" << toString(codec->name) << " " << (int)codec->type << endl;
+
+						  if (codec == codecs.rend()) throw ITLException("no ArrayBytesCodec found before BytesBytesCodec");
+						  if (codec->name == ZarrCodecName::Blosc)
+						  {
+							  blosc_init();
+						  }
+						  else throw ITLException("BytesBytesCodec not yet implemented: " + toString(codec->name));
+
+					  }
 				  }
 				});
 			}

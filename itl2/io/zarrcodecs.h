@@ -24,6 +24,7 @@ namespace itl2
 		{
 			Bytes,
 			Transpose,
+			Blosc,
 		};
 		//TODO save codec in struct instead of json
 	}
@@ -37,6 +38,8 @@ namespace itl2
 			return "bytes";
 		case zarr::ZarrCodecName::Transpose:
 			return "transpose";
+		case zarr::ZarrCodecName::Blosc:
+			return "blosc";
 		}
 		throw ITLException("Invalid ZarrCodecName.");
 	}
@@ -50,6 +53,8 @@ namespace itl2
 			return zarr::ZarrCodecName::Bytes;
 		if (str == "transpose")
 			return zarr::ZarrCodecName::Transpose;
+		if(str == "blosc")
+			return zarr::ZarrCodecName::Blosc;
 
 		throw ITLException(std::string("Invalid zarr codec name: ") + str);
 	}
@@ -77,10 +82,21 @@ namespace itl2
 					this->type = ZarrCodecType::ArrayArrayCodec;
 					parseTransposeCodecConfig(config);
 					break;
+				case ZarrCodecName::Blosc:
+					this->type = ZarrCodecType::BytesBytesCodec;
+					parseBloscCodecConfig(config);
+					break;
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
+				cout << "created codec: " << toString(this->name) << " " << (int)this->type << endl;
 			}
+
+			void parseBloscCodecConfig(nlohmann::json config = nlohmann::json())
+			{
+				this->configuration = config;
+			}
+
 
 			void parseTransposeCodecConfig(nlohmann::json config = nlohmann::json())
 			{
@@ -128,7 +144,7 @@ namespace itl2
 		namespace internals
 		{
 			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-			void readBytesCodec(ImageDataWrapper<pixel_t>& imageWrapper, std::string filename, Vec3c chunkStart, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+			void readBytesCodec(ImageDataWrapper<pixel_t>& imageWrapper, std::string filename, Vec3c chunkStart, ReadPixel readPixel = raw::readPixel<pixel_t>)
 			{
 				std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
@@ -136,7 +152,7 @@ namespace itl2
 				{
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
-				in.seekg(bytesToSkip, std::ios::beg);
+				in.seekg(0, std::ios::beg);
 				Vec3c shape = imageWrapper.physicalChunkShape();
 				cout << "Reading " << shape << " pixels from " << filename <<" chunkstart=" << chunkStart << endl;
 				for (coord_t x = 0; x < shape.x; x++)
