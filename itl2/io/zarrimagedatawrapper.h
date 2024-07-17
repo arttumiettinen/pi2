@@ -15,7 +15,6 @@ namespace itl2
 		class ImageDataWrapper
 		{
 			Vec3c transposeOrder;
-			const Vec3c datasetShape;
 			const Vec3c datasetChunkShape;
 
 
@@ -54,8 +53,8 @@ namespace itl2
 			//img is virtual and its shape is corresponding to the shape in pi2
 			//physical coords are the transposed data written on disk by zarr
 			//datasetShape and datasetChunkShape are equal to zarr.json file (virtual)
-			ImageDataWrapper(Image<pixel_t>& img, const Vec3c& datasetShape, const Vec3c& datasetChunkShape)
-				: img(img), transposeOrder(0, 1, 2), datasetShape(datasetShape), datasetChunkShape(datasetChunkShape)
+			ImageDataWrapper(Image<pixel_t>& img, const Vec3c& datasetChunkShape)
+				: img(img), transposeOrder(0, 1, 2),  datasetChunkShape(datasetChunkShape)
 			{
 			}
 

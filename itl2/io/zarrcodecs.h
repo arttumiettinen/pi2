@@ -128,7 +128,7 @@ namespace itl2
 		namespace internals
 		{
 			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-			void readBytesCodec(ImageDataWrapper<pixel_t>& imageWrapper, std::string filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
+			void readBytesCodec(ImageDataWrapper<pixel_t>& imageWrapper, std::string filename, Vec3c chunkStart, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 			{
 				std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
@@ -138,14 +138,15 @@ namespace itl2
 				}
 				in.seekg(bytesToSkip, std::ios::beg);
 				Vec3c shape = imageWrapper.physicalChunkShape();
-				cout << "Reading " << shape << " pixels from " << filename << endl;
+				cout << "Reading " << shape << " pixels from " << filename <<" chunkstart=" << chunkStart << endl;
 				for (coord_t x = 0; x < shape.x; x++)
 				{
 					for (coord_t y = 0; y < shape.y; y++)
 					{
 						for (coord_t z = 0; z < shape.z; z++)
 						{
-							readPixel(in, imageWrapper(x, y, z));
+							cout << "reading pixel" << toString(Vec3c(x, y, z)+chunkStart) << " Vec3c(x, y, z)=" <<Vec3c(x, y, z)<<endl;
+							readPixel(in, imageWrapper(Vec3c(x, y, z)));
 						}
 					}
 				}

@@ -291,50 +291,44 @@ namespace itl2
 				bool showProgressInfo)
 			{
 				Image<pixel_t> imgCopy(img.dimensions(), fillValue);
-				ImageDataWrapper<pixel_t> imgCopyWrapper(imgCopy, datasetShape, chunkSize);
-
-				std::list<ZarrCodec>::iterator codec = codecs.begin();
-				while (codec != codecs.end() && codec->type == ZarrCodecType::ArrayArrayCodec)
+				ImageDataWrapper<pixel_t> imgCopyWrapper(imgCopy, chunkSize);
+				const AABoxc imageBox = AABoxc::fromMinMax(start, end);
+				forAllChunks(datasetShape, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
-					if (codec->name == ZarrCodecName::Transpose)
-					{
-						auto orderJSON = codec->configuration["order"];
-						//TODO check if valid order
-						Vec3c order = Vec3c(1, 1, 1);
-						order[0] = orderJSON[0].get<size_t>();
-						if (orderJSON.size() >= 2)
-							order[1] = orderJSON[1].get<size_t>();
-						if (orderJSON.size() >= 3)
-							order[2] = orderJSON[2].get<size_t>();
-						cout << "readChunkFile Transpose order=" << order << endl;
-						imgCopyWrapper.transpose(order);
-					}
-					++codec;
-				}
-				assert(codec != codecs.end() && codec->type == ZarrCodecType::ArrayBytesCodec);
-				if (codec->name == ZarrCodecName::Bytes)
-				{
-					const AABoxc imageBox = AABoxc::fromMinMax(start, end);
-					forAllChunks(datasetShape, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-					{
-					  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
-					  if (currentChunk.overlapsExclusive(imageBox))
+				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
+				  if (currentChunk.overlapsExclusive(imageBox))
+				  {
+					  std::list<ZarrCodec>::iterator codec = codecs.begin();
+					  for (; codec != codecs.end() && codec->type == ZarrCodecType::ArrayArrayCodec; ++codec)
 					  {
-						  //codec iterator for this chunk
-						  std::list<ZarrCodec>::iterator codecIteratorCopy = codecs.begin();
-						  std::advance(codecIteratorCopy, std::distance(codecs.begin(), codec));
-
+						  if (codec->name == ZarrCodecName::Transpose)
+						  {
+							  auto orderJSON = codec->configuration["order"];
+							  //TODO check if valid order
+							  Vec3c order = Vec3c(1, 1, 1);
+							  order[0] = orderJSON[0].get<size_t>();
+							  if (orderJSON.size() >= 2)
+								  order[1] = orderJSON[1].get<size_t>();
+							  if (orderJSON.size() >= 3)
+								  order[2] = orderJSON[2].get<size_t>();
+							  cout << "readChunkFile Transpose order=" << order << endl;
+							  imgCopyWrapper.transpose(order);
+						  }
+						  else throw ITLException("codec not implemented: " + toString(codec->name));
+					  }
+					  assert(codec != codecs.end() && codec->type == ZarrCodecType::ArrayBytesCodec);
+					  if (codec->name == ZarrCodecName::Bytes)
+					  {
 						  const Vec3c chunkStartInTarget = chunkStart - start;
 						  const Vec3c readSize = currentChunk.intersection(imageBox).size();
-
-						  string filename = chunkFile(path, getDimensionality(datasetShape), imgCopyWrapper.virtualToPhysicalCoords(chunkIndex));
+						  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
 						  if (fs::is_directory(filename))
 						  {
 							  throw ITLException(filename + string(" is a directory, but it should be a file."));
 						  }
 						  if (fs::is_regular_file(filename))
 						  {
-							  readBytesCodec(imgCopyWrapper, filename );
+							  readBytesCodec(imgCopyWrapper, filename, chunkStart);
 							  copyValues(img, imgCopyWrapper.img, chunkStartInTarget);
 						  }
 						  else
@@ -343,11 +337,10 @@ namespace itl2
 							  // No file => all pixels in the block are fillValue.
 							  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
 						  }
-
 					  }
-					});
-				}
-
+					  else throw ITLException("codec not implemented: " + toString(codec->name));
+				  }
+				});
 			}
 
 			/**
