@@ -24,6 +24,14 @@ namespace itl2
 				}
 
 				dataType = (ImageDataType)internals::readSafe<int32_t>(in);
+				// without this check, zarr arrays that will be rejected in zarr::getInfo
+				// will be detected as lz4 (Rejection of zarr arrays can happen due to limitations
+				// in this zarr implementation)
+				if (dataType <= ImageDataType::Unknown)
+				{
+					reason = "Unknown data type";
+					return false;
+				}
 				return true;
 			}
 
