@@ -162,6 +162,14 @@ namespace itl2
 		}
 	}
 
+	/**
+	 * converting int to value in enum ImageDataType an invalid int outside the range of ImageDataType will be ImageDataType::Unknown
+	 */
+	template<typename T> ImageDataType imageDataTypeFromInt(T dt){
+		ImageDataType dataType = static_cast<ImageDataType>(dt);
+		return fromString<ImageDataType>(toString(dataType));
+	}
+
 	inline size_t pixelSize(ImageDataType dt)
 	{
 		switch (dt)
