@@ -44,8 +44,7 @@ namespace itl2
 			}
 			if (!j.contains("zarr_format"))
 			{
-				reason = "zarr_format is missing in zarr metadata.";
-				return false;
+				throw ITLException("zarr_format is missing in zarr metadata.");
 			}
 			else
 			{
@@ -58,22 +57,19 @@ namespace itl2
 			}
 			if (!j.contains("node_type"))
 			{
-				reason = "node_type is missing in zarr metadata.";
-				return false;
+				throw ITLException("node_type is missing in zarr metadata.");
 			}
 			else
 			{
 				string node_type = j["node_type"].get<string>();
 				if (node_type != "array")
 				{
-					reason = "This zarr implementation supports only node_type array.";
-					return false;
+					throw ITLException("This zarr implementation supports only node_type array.");
 				}
 			}
 			if (!j.contains("shape"))
 			{
-				reason = "shape is missing in zarr metadata.";
-				return false;
+				throw ITLException("shape is missing in zarr metadata.");
 			}
 
 			auto dims = j["shape"];
@@ -95,12 +91,19 @@ namespace itl2
 
 			if (!j.contains("data_type"))
 			{
-				reason = "data_type is missing in zarr metadata.";
-				return false;
+				throw ITLException("data_type is missing in zarr metadata.");
 			}
 			try
 			{
-				dataType = fromString<ImageDataType>(j["data_type"].get<string>());
+				std::cout << "1" << std::endl;
+
+				string dataTypeString = j["data_type"].get<string>();
+				dataType = fromString<ImageDataType>(dataTypeString);
+				cout << "dataType: " << toString(dataType) << endl;
+				if (dataType == ImageDataType::Unknown)
+				{
+					throw ITLException("Could not identify datatype: " + dataTypeString);
+				}
 			}
 			catch (ITLException& e)
 			{
@@ -115,16 +118,14 @@ namespace itl2
 				|| j["chunk_grid"]["name"].get<string>() != "regular"
 				)
 			{
-				reason = "chunk_grid is missing or malformed in zarr metadata.";
-				return false;
+				throw ITLException("chunk_grid is missing or malformed in zarr metadata.");
 			}
 			else
 			{
 				auto chunkDims = j["chunk_grid"]["configuration"]["chunk_shape"];
 				if (chunkDims.size() != dims.size())
 				{
-					reason = "Chunk shape and dataset shape contain different number of elements.";
-					return false;
+					throw ITLException("Chunk shape and dataset shape contain different number of elements.");
 				}
 
 				chunkSize = Vec3c(1, 1, 1);
@@ -139,14 +140,13 @@ namespace itl2
 
 			if (!j.contains("chunk_key_encoding"))
 			{
-				reason = "chunk_key_encoding is missing in zarr metadata.";
-				return false;
+				throw ITLException("chunk_key_encoding is missing in zarr metadata.");
 			}
 			else
 			{
 				if (!j["chunk_key_encoding"].contains("name"))
 				{
-					reason = "chunk_key_encoding name is missing in zarr metadata.";
+					throw ITLException("chunk_key_encoding name is missing in zarr metadata.");
 					return false;
 				}
 				if (j["chunk_key_encoding"]["name"].get<string>() != "default")
@@ -165,8 +165,7 @@ namespace itl2
 
 			if (!j.contains("fill_value"))
 			{
-				reason = "fill_value is missing in zarr metadata.";
-				return false;
+				throw ITLException("fill_value is missing in zarr metadata.");
 			}
 			else
 			{
@@ -185,8 +184,7 @@ namespace itl2
 
 			if (!j.contains("codecs"))
 			{
-				reason = "codecs is missing in zarr metadata.";
-				return false;
+				throw ITLException("codecs is missing in zarr metadata.");
 			}
 			else
 			{
@@ -195,8 +193,7 @@ namespace itl2
 				{
 					if (!codec.contains("name"))
 					{
-						reason = "codec name is missing in zarr metadata.";
-						return false;
+						throw ITLException("codec name is missing in zarr metadata.");
 					}
 					try
 					{
@@ -213,8 +210,7 @@ namespace itl2
 						case ZarrCodecType::ArrayArrayCodec:
 							if (numberArrayBytesCodecs > 0)
 							{
-								reason = "ArrayArrayCodec cannot be used after ArrayBytesCodec.";
-								return false;
+								throw ITLException("ArrayArrayCodec cannot be used after ArrayBytesCodec.");
 							}
 							break;
 						case ZarrCodecType::ArrayBytesCodec:
@@ -223,8 +219,7 @@ namespace itl2
 						case ZarrCodecType::BytesBytesCodec:
 							if (numberArrayBytesCodecs < 1)
 							{
-								reason = "ArrayBytesCodec must be used before BytesBytesCodec.";
-								return false;
+								throw ITLException("ArrayBytesCodec must be used before BytesBytesCodec.");
 							}
 							break;
 						default:
@@ -240,8 +235,7 @@ namespace itl2
 				}
 				if (numberArrayBytesCodecs != 1)
 				{
-					reason = "Exactly one ArrayBytesCodec was expected in the codecs list, got " + to_string(numberArrayBytesCodecs) + ".";
-					return false;
+					throw ITLException("Exactly one ArrayBytesCodec was expected in the codecs list, got " + to_string(numberArrayBytesCodecs) + ".");
 				}
 			}
 			return true;
