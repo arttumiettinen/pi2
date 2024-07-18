@@ -18,35 +18,6 @@ namespace itl2
 			const Vec3c datasetChunkShape;
 
 
-			//TODO move this to Vec3c
-			const void _validateOrder(const Vec3c order)const{
-				if(order.max()>2 || order.min()<0)
-					throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
-				Vec3c counter(0,0,0);
-				counter[order.x]++;
-				counter[order.y]++;
-				counter[order.z]++;
-				if(counter!=Vec3c(1,1,1)){
-					throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
-				}
-			}
-			const Vec3c _transpose(const Vec3c p, const Vec3c order) const
-			{
-				_validateOrder(order);
-				Vec3c transposed(0, 0, 0);
-				transposed.x = p[order.x];
-				transposed.y = p[order.y];
-				transposed.z = p[order.z];
-				return transposed;
-			}
-			const Vec3c _inverseOrder(const Vec3c order)const{
-				_validateOrder(order);
-				Vec3c inverse(0,0,0);
-				inverse[order.x] = 0;
-				inverse[order.y] = 1;
-				inverse[order.z] = 2;
-				return inverse;
-			}
 		 public:
 			Image<pixel_t>& img;
 

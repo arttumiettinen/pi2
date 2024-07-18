@@ -1,5 +1,6 @@
 #pragma once
 #include <list>
+#include <blosc.h>
 
 #include "filesystem.h"
 #include "image.h"
@@ -10,7 +11,6 @@
 #include "io/zarrcodecs.h"
 #include "generation.h"
 #include "math/vec3.h"
-#include <blosc.h>
 
 namespace itl2
 {
@@ -286,84 +286,84 @@ namespace itl2
 			//mark 4
 			template<typename pixel_t>
 			void readChunksInRange(Image<pixel_t>& img, const std::string& path,
-				const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
+				const Vec3c& chunkShape, int fillValue, std::list<ZarrCodec>& codecs,
 				const Vec3c& datasetShape,
 				const Vec3c& start, const Vec3c& end,
 				bool showProgressInfo)
 			{
-				Image<pixel_t> imgCopy(img.dimensions(), fillValue);
-				ImageDataWrapper<pixel_t> imgCopyWrapper(imgCopy, chunkSize);
-				const AABoxc imageBox = AABoxc::fromMinMax(start, end);
-				forAllChunks(datasetShape, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				Vec3c transposedChunkShape = chunkShape;
+				bool is_blosc_init = false;
+				for (auto codec : codecs)
 				{
-				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
+					if (codec.name == ZarrCodecName::Blosc && is_blosc_init)
+					{
+						blosc_init();
+					}
+					if (codec.name == ZarrCodecName::Transpose)
+					{
+						transposedChunkShape = transposedChunkShape.transposed(codec.transposeOrder());
+					}
+				}
+				const AABoxc imageBox = AABoxc::fromMinMax(start, end);
+				forAllChunks(datasetShape, chunkShape, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				{
+				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkShape);
+				  const Vec3c chunkStartInTarget = chunkStart - start;
+				  const Vec3c readSize = currentChunk.intersection(imageBox).size();
+
 				  if (currentChunk.overlapsExclusive(imageBox))
 				  {
+					  Image<pixel_t> imgChunk(transposedChunkShape, fillValue);
+					  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
+					  if (fs::is_directory(filename))
 					  {
-						  std::list<ZarrCodec>::iterator codec = codecs.begin();
-						  for (; codec->type == ZarrCodecType::ArrayArrayCodec; ++codec)
+						  throw ITLException(filename + string(" is a directory, but it should be a file."));
+					  }
+					  if (fs::is_regular_file(filename))
+					  {
+						  readBytes(imgChunk, filename);
+						  // iterate over codecs
+						  std::list<ZarrCodec>::reverse_iterator codec = codecs.rbegin();
+						  for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
 						  {
-							  cout << "readChunksInRange arrayarray codec=" << toString(codec->name) << " " << (int)codec->type << endl;
-
-							  if (codec == codecs.end()) throw ITLException("no ArrayBytesCodec found after ArrayArrayCodecs");
-							  if (codec->name == ZarrCodecName::Transpose)
+							  assert(codec != codecs.rend());
+							  if (codec->name == ZarrCodecName::Blosc)
 							  {
-								  auto orderJSON = codec->configuration["order"];
-								  //TODO check if valid order
-								  Vec3c order = Vec3c(1, 1, 1);
-								  order[0] = orderJSON[0].get<size_t>();
-								  if (orderJSON.size() >= 2)
-									  order[1] = orderJSON[1].get<size_t>();
-								  if (orderJSON.size() >= 3)
-									  order[2] = orderJSON[2].get<size_t>();
-								  cout << "readChunkFile Transpose order=" << order << endl;
-								  imgCopyWrapper.transpose(order);
+								  int dsize = chunkShape.product() * sizeof(pixel_t);
+								  Image<pixel_t> temp(transposedChunkShape, fillValue);
+								  dsize = blosc_decompress(imgChunk, temp, dsize);
+								  copyValues(imgChunk, temp, Vec3c(0, 0, 0));
 							  }
-							  else throw ITLException("ArrayArrayCodec not yet implemented: " + toString(codec->name));
+							  else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
+
 						  }
-						  assert(codec != codecs.end() && codec->type == ZarrCodecType::ArrayBytesCodec);
+						  assert(codec != codecs.rend() && codec->type == ZarrCodecType::ArrayBytesCodec);
 						  if (codec->name == ZarrCodecName::Bytes)
 						  {
 							  cout << "readChunksInRange arraybyte codec=" << toString(codec->name) << " " << (int)codec->type << endl;
-
-							  const Vec3c chunkStartInTarget = chunkStart - start;
-							  const Vec3c readSize = currentChunk.intersection(imageBox).size();
-							  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
-							  if (fs::is_directory(filename))
-							  {
-								  throw ITLException(filename + string(" is a directory, but it should be a file."));
-							  }
-							  if (fs::is_regular_file(filename))
-							  {
-								  readBytesCodec(imgCopyWrapper, filename, chunkStart);
-								  copyValues(img, imgCopyWrapper.img, chunkStartInTarget);
-							  }
-							  else
-							  {
-								  cout << "no file: " << filename << endl;
-								  // No file => all pixels in the block are fillValue.
-								  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
-							  }
 						  }
-						  else throw ITLException("ArrayBytesCodec not yet implemented: " + toString(codec->name));
-					  }
-					  //iterate over bytebyte codecs in reverse order
-					  //Buffer<pixel_t>* buffer = new MemoryBuffer<pixel_t>(pixelCount());
-					  for (auto codec = codecs.rbegin(); codec != codecs.rend(); ++codec)
-					  {
-						  cout << "readChunksInRange alle codec=" << toString(codec->name) << " " << (int)codec->type << endl;
-					  }
-					  for (auto codec = codecs.rbegin(); codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
-					  {
-						  cout << "readChunksInRange bytebyte codec=" << toString(codec->name) << " " << (int)codec->type << endl;
-
-						  if (codec == codecs.rend()) throw ITLException("no ArrayBytesCodec found before BytesBytesCodec");
-						  if (codec->name == ZarrCodecName::Blosc)
+						  else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
+						  ++codec;
+						  for (; codec != codecs.rend(); ++codec)
 						  {
-							  blosc_init();
+							  assert(codec->type == ZarrCodecType::ArrayArrayCodec);
+							  if (codec->name == ZarrCodecName::Transpose)
+							  {
+								  Vec3c order = codec->transposeOrder();
+								  transposedChunkShape = transposedChunkShape.transposed(order.inverseOrder());
+								  Image<pixel_t> temp(transposedChunkShape, fillValue);
+								  transpose(imgChunk, temp, order);
+								  copyValues(imgChunk, temp, Vec3c(0, 0, 0));
+							  }
+							  else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 						  }
-						  else throw ITLException("BytesBytesCodec not yet implemented: " + toString(codec->name));
-
+						  copyValues(img, imgChunk, chunkStartInTarget);
+					  }
+					  else
+					  {
+						  cout << "no file: " << filename << endl;
+						  // No file => all pixels in the block are fillValue.
+						  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)fillValue);
 					  }
 				  }
 				});

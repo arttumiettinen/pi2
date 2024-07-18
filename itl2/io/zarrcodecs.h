@@ -139,12 +139,26 @@ namespace itl2
 					{ "endian", endian }
 				};
 			}
+
+			Vec3c transposeOrder(){
+				if (this->name!=ZarrCodecName::Transpose) throw ITLException("only transpose codec has transpose order");
+				auto orderJSON = this->configuration["order"];
+				//TODO check if valid order
+				Vec3c order = Vec3c(0, 1, 2);
+				order[0] = orderJSON[0].get<size_t>();
+				if (orderJSON.size() >= 2)
+					order[1] = orderJSON[1].get<size_t>();
+				if (orderJSON.size() >= 3)
+					order[2] = orderJSON[2].get<size_t>();
+				cout << "transposeOrder=" << order << endl;
+				return order;
+			}
 		};
 
 		namespace internals
 		{
 			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-			void readBytesCodec(ImageDataWrapper<pixel_t>& imageWrapper, std::string filename, Vec3c chunkStart, ReadPixel readPixel = raw::readPixel<pixel_t>)
+			void readBytes(Image<pixel_t>& image, std::string filename, ReadPixel readPixel = raw::readPixel<pixel_t>)
 			{
 				std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
@@ -153,16 +167,15 @@ namespace itl2
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
 				in.seekg(0, std::ios::beg);
-				Vec3c shape = imageWrapper.physicalChunkShape();
-				cout << "Reading " << shape << " pixels from " << filename <<" chunkstart=" << chunkStart << endl;
+				Vec3c shape = image.dimensions();
 				for (coord_t x = 0; x < shape.x; x++)
 				{
 					for (coord_t y = 0; y < shape.y; y++)
 					{
 						for (coord_t z = 0; z < shape.z; z++)
 						{
-							cout << "reading pixel" << toString(Vec3c(x, y, z)+chunkStart) << " Vec3c(x, y, z)=" <<Vec3c(x, y, z)<<endl;
-							readPixel(in, imageWrapper(Vec3c(x, y, z)));
+							cout << "reading pixel" << toString(Vec3c(x, y, z)) << " Vec3c(x, y, z)=" <<Vec3c(x, y, z)<<endl;
+							readPixel(in, image(x, y, z));
 						}
 					}
 				}

@@ -290,6 +290,27 @@ namespace itl2
 			out(x, y, z) = interpolate(in, xs, ys, zs);
 		});
 	}
+	/**
+	Transposes the input image and stores the result in the output image.
+	@param in Image to be transposed.
+	@param out Output image.
+	@param order Permutation indicating the order for transposing.
+	*/
+	template<typename pixel_t, typename out_t>
+	void transpose(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& order)
+	{
+		out.mustNotBe(in);
+		if (out.dimensions().max() <= 1)
+			out.ensureSize(in);
+
+		forAllPixels(out, [&](coord_t x, coord_t y, coord_t z)
+		{
+		  Vec3c cords(x, y, z);
+		  Vec3c transposedCords = cords.transposed(order);
+		  //todo: is "out(transposedCords) = in(cords)" or "out(cords) = in(transposedCords)" correct?
+		  out(transposedCords) = in(cords);
+		});
+	}
 
 	/**
 	Crops the input image to the size of the output image and places the result to the output image.

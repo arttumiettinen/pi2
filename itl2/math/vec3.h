@@ -413,6 +413,40 @@ namespace itl2
 				return Vec3<T>(x / r.x, y / r.y, z / r.z);
 			}
 
+			/**
+			Returns if is a permutation of [0, 1, 2] and therefore a valid order for transposing
+			*/
+			const bool isPermutation() const
+			{
+				if(max()>2 || min()<0)
+					return false;
+				Vec3<T> counter(0,0,0);
+				counter[x]++;
+				counter[y]++;
+				counter[z]++;
+				return counter==Vec3<T>(1,1,1);
+			}
+
+			const Vec3<T> transposed(const Vec3<T> order) const
+			{
+				if(!order.isPermutation()) throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
+				Vec3<T> transposed(0, 0, 0);
+				transposed.x = operator[](order.x);
+				transposed.y = operator[](order.y);
+				transposed.z = operator[](order.z);
+				return transposed;
+			}
+
+			const Vec3<T> inverseOrder() const
+			{
+				if(!isPermutation()) throw ITLException("invalid order: "+ toString(this) + "expected a permutation of [0, 1, 2]");
+				Vec3<T> inverse(0,0,0);
+				inverse[x] = 0;
+				inverse[y] = 1;
+				inverse[z] = 2;
+				return inverse;
+			}
+
             /**
             Converts this object to string.
             */
