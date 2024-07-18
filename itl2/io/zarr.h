@@ -80,10 +80,11 @@ namespace itl2
 			@param writeSize Size of block to be written.
 			*/
 			template<typename pixel_t>
-			void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize,
-				const Vec3c& startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, const std::list<ZarrCodec>& codecs)
+			void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkShape, const Vec3c& datasetSize,
+				Vec3c startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
-				// Build path to chunk folder.
+				Vec3c transposedChunkShape = chunkShape;
+				Image<pixel_t> imgChunk(chunkShape);
 				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex);
 
 				// Clamp write size to the size of the image.
@@ -94,46 +95,53 @@ namespace itl2
 						imageChunkEnd[n] = img.dimension(n);
 				}
 				Vec3c realWriteSize = imageChunkEnd - startInImageCoords;
-
-				Vec3c realChunkSize = clampedChunkSize(chunkIndex, chunkSize, datasetSize);
-
+				Vec3c realChunkSize = clampedChunkSize(chunkIndex, chunkShape, datasetSize);
 				realWriteSize = min(realWriteSize, realChunkSize);
 
 				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
 				// Chunk is unsafe if its folder contains writes folder.
+				//todo: when will writesFolder be created?
 				string writesFolder = internals::writesFolder(filename);
-				bool unsafe = fs::exists(writesFolder);
-
-				std::cout << "writeSingleChunk unsafe=" << unsafe << std::endl;
-				for (auto codec : codecs)
+				if (fs::exists(writesFolder))
 				{
-					std::cout << "writeSingleChunk codec=" << toString(codec.name) << std::endl;
-
+					std::cout << "writeSingleChunk unsafe, writesFolder exist" << std::endl;
+					// Unsafe chunk: write to separate writes folder.
+					filename = writesFolder + toString(startInChunkCoords.x) + string("-") +
+						toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
+					//print all writeblock parameters in one line
+					startInChunkCoords = Vec3c(0, 0, 0);
+					realChunkSize = realWriteSize;
 				}
-				if (codecs.size() == 1)
-				{
-					//only bytes codec
-					if (unsafe)
+
+				std::list<ZarrCodec>::iterator codec = codecs.begin();
+				for (; codec->type == ZarrCodecType::ArrayArrayCodec; ++codec){
+					if (codec->name == ZarrCodecName::Transpose)
 					{
-						// Unsafe chunk: write to separate writes folder.
-						filename = writesFolder + toString(startInChunkCoords.x) + string("-") +
-							toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
-						//print all writeblock parameters in one line
-						writeBytesCodecBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize,
-							false);
+						Vec3c order = codec->transposeOrder();
+						transposedChunkShape = transposedChunkShape.transposed(order);
+						Image<pixel_t> temp(transposedChunkShape, fillValue);
+						transpose(imgChunk, temp, order);
+						//todo: reshape image
+						copyValues(imgChunk, temp, Vec3c(0, 0, 0));
 					}
-					else
-					{
-						// Safe chunk: write directly to the chunk file.
-						writeBytesCodecBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
-							realWriteSize, false);
-					}
-
+					else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
-				else
+				assert(codec->type == ZarrCodecType::ArrayBytesCodec);
+				if (codec->name == ZarrCodecName::Bytes)
 				{
-					throw ITLException("multiple codecs not yet supported (writeSingleChunk)");
+					writeBytesCodecBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
+						realWriteSize, false);
 				}
+				else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
+				++codec;
+				for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec){
+					if (codec->name == ZarrCodecName::Blosc)
+					{
+						//TODO
+					}
+					else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
+				}
+
 			}
 
 			inline size_t countChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize)
@@ -200,26 +208,8 @@ namespace itl2
 				}
 			}
 
-			/**
-			Writes zarr chunk files.
-			*/
 			template<typename pixel_t>
-			void writeChunks(const Image<pixel_t>& img,
-				const std::string& path,
-				const Vec3c& chunkSize,
-				int fillValue,
-				const std::list<ZarrCodec>& codecs,
-				const Vec3c& datasetSize,
-				bool showProgressInfo)
-			{
-				forAllChunks(datasetSize, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-				  writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, fillValue, codecs);
-				});
-			}
-
-			template<typename pixel_t>
-			void writeChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
+			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkShape, int fillValue, std::list<ZarrCodec>& codecs,
 				const Vec3c& filePosition, const Vec3c& fileDimensions,
 				const Vec3c& imagePosition,
 				const Vec3c& blockDimensions,
@@ -228,16 +218,27 @@ namespace itl2
 				// Writes block of image defined by (imagePosition, blockDimensions) to file (defined by path),
 				// to location defined by filePosition.
 
+				bool is_blosc_init = false;
+				for (auto codec : codecs)
+				{
+					if (codec.name == ZarrCodecName::Blosc && !is_blosc_init)
+					{
+						printf("Blosc version info: %s (%s)\n", BLOSC_VERSION_STRING, BLOSC_VERSION_DATE);
+						blosc_init();
+						is_blosc_init = true;
+					}
+				}
+
 				AABoxc imageBlock = AABoxc::fromPosSize(imagePosition, blockDimensions);
 
 				AABoxc fileTargetBlock = AABoxc::fromPosSize(filePosition, blockDimensions);
 
-				forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(fileDimensions, chunkShape, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 				  // This is done for all chunks in the output file.
 				  // We will need to update the chunk if the file block to be written (fileTargetBlock)
 				  // overlaps the current chunk.
-				  AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, chunkSize);
+				  AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, chunkShape);
 				  if (fileTargetBlock.overlapsExclusive(currentChunk))
 				  {
 					  // The region of the current chunk that will be updated is the intersection of the current chunk and the
@@ -252,32 +253,15 @@ namespace itl2
 					  // Convert chunkUpdateRegion to chunk coordinates by subtracting chunk start position.
 					  chunkUpdateRegion = chunkUpdateRegion.translate(-chunkStart);
 
-					  // Bug check:
-					  if (chunkUpdateRegion.minc.x < 0 ||
-						  chunkUpdateRegion.minc.y < 0 ||
-						  chunkUpdateRegion.minc.z < 0 ||
-						  chunkUpdateRegion.maxc.x > chunkSize.x ||
-						  chunkUpdateRegion.maxc.y > chunkSize.y ||
-						  chunkUpdateRegion.maxc.z > chunkSize.z)
-						  throw ITLException(
-							  string("Sanity check failed: Chunk update region ") + toString(chunkUpdateRegion) + string(" is inconsistent with chunk size ") + toString(chunkSize) + string("."));
-
-					  if (imageUpdateRegion.minc.x < imagePosition.x ||
-						  imageUpdateRegion.minc.y < imagePosition.y ||
-						  imageUpdateRegion.minc.z < imagePosition.z ||
-						  imageUpdateRegion.maxc.x > imagePosition.x + blockDimensions.x ||
-						  imageUpdateRegion.maxc.y > imagePosition.y + blockDimensions.y ||
-						  imageUpdateRegion.maxc.z > imagePosition.z + blockDimensions.z
-						  )
-						  throw ITLException(
-							  string("Sanity check failed: Image update region ") + toString(imageUpdateRegion) + string(" is inconsistent with image position ") + toString(imagePosition)
-								  + string(" and update block dimensions") + toString(blockDimensions) + string("."));
-
 					  // Write chunk data only if the update region is non-empty.
 					  if (chunkUpdateRegion.size().min() > 0)
-						  writeSingleChunk(img, path, chunkIndex, chunkSize, fileDimensions, chunkUpdateRegion.position(), imageUpdateRegion.position(), chunkUpdateRegion.size(), fillValue, codecs);
+						  writeSingleChunk(img, path, chunkIndex, chunkShape, fileDimensions, chunkUpdateRegion.position(), imageUpdateRegion.position(), chunkUpdateRegion.size(), fillValue, codecs);
 				  }
 				});
+				if (is_blosc_init)
+				{
+					blosc_destroy();
+				}
 			}
 
 			/**
@@ -295,15 +279,18 @@ namespace itl2
 				bool is_blosc_init = false;
 				for (auto codec : codecs)
 				{
-					if (codec.name == ZarrCodecName::Blosc && is_blosc_init)
+					if (codec.name == ZarrCodecName::Blosc && !is_blosc_init)
 					{
+						printf("Blosc version info: %s (%s)\n", BLOSC_VERSION_STRING, BLOSC_VERSION_DATE);
 						blosc_init();
+						is_blosc_init = true;
 					}
 					if (codec.name == ZarrCodecName::Transpose)
 					{
 						transposedChunkShape = transposedChunkShape.transposed(codec.transposeOrder());
 					}
 				}
+				cout << "transposedChunkShape= " << transposedChunkShape << endl;
 				const AABoxc imageBox = AABoxc::fromMinMax(start, end);
 				forAllChunks(datasetShape, chunkShape, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
@@ -313,7 +300,7 @@ namespace itl2
 
 				  if (currentChunk.overlapsExclusive(imageBox))
 				  {
-					  Image<pixel_t> imgChunk(transposedChunkShape, fillValue);
+					  Image<pixel_t> imgChunk(transposedChunkShape);
 					  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
 					  if (fs::is_directory(filename))
 					  {
@@ -326,18 +313,26 @@ namespace itl2
 						  std::list<ZarrCodec>::reverse_iterator codec = codecs.rbegin();
 						  for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
 						  {
-							  assert(codec != codecs.rend());
 							  if (codec->name == ZarrCodecName::Blosc)
 							  {
 								  int dsize = chunkShape.product() * sizeof(pixel_t);
-								  Image<pixel_t> temp(transposedChunkShape, fillValue);
-								  dsize = blosc_decompress(imgChunk, temp, dsize);
-								  copyValues(imgChunk, temp, Vec3c(0, 0, 0));
+								  pixel_t temp[dsize];
+								  dsize = blosc_decompress(imgChunk.getData(), temp, dsize);
+								  if (dsize < 0)
+								  {
+									  cout << "blosc_decompress error.  Error code: " << dsize << endl;
+								  }
+								  cout << "blosc decode " << imgChunk.getData() << "->" << temp[0] << endl;
+								  Image<pixel_t> tempImg(transposedChunkShape.x, transposedChunkShape.y, transposedChunkShape.z, *temp);
+								  cout << "imgChunk(0,0,0)= " << imgChunk(0, 0, 0) << "-> tempImg(0,0,0)= " << tempImg(0, 0, 0) << endl;
+								  copyValues(imgChunk, tempImg);
+								  cout << "updated imgChunk(0,0,0)= " << imgChunk(0, 0, 0) << endl;
+
 							  }
 							  else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 
 						  }
-						  assert(codec != codecs.rend() && codec->type == ZarrCodecType::ArrayBytesCodec);
+						  assert(codec->type == ZarrCodecType::ArrayBytesCodec);
 						  if (codec->name == ZarrCodecName::Bytes)
 						  {
 							  cout << "readChunksInRange arraybyte codec=" << toString(codec->name) << " " << (int)codec->type << endl;
@@ -353,6 +348,7 @@ namespace itl2
 								  transposedChunkShape = transposedChunkShape.transposed(order.inverseOrder());
 								  Image<pixel_t> temp(transposedChunkShape, fillValue);
 								  transpose(imgChunk, temp, order);
+								  //todo: reshape image
 								  copyValues(imgChunk, temp, Vec3c(0, 0, 0));
 							  }
 							  else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
@@ -367,6 +363,10 @@ namespace itl2
 					  }
 				  }
 				});
+				if (is_blosc_init)
+				{
+					blosc_destroy();
+				}
 			}
 
 			/**
@@ -382,13 +382,11 @@ namespace itl2
 				bool deleteOldData);
 
 			template<typename pixel_t>
-			void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, const std::list<ZarrCodec>& codecs, bool deleteOldData, bool showProgressInfo)
+			void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool deleteOldData, bool showProgressInfo)
 			{
 				Vec3c dimensions = img.dimensions();
 				internals::handleExisting(dimensions, img.dataType(), path, chunkSize, fillValue, codecs, deleteOldData);
-				fs::create_directories(path);
-				internals::writeMetadata(path, dimensions, img.dataType(), chunkSize, fillValue, codecs);
-				internals::writeChunks(img, path, chunkSize, fillValue, codecs, dimensions, showProgressInfo);
+				writeBlock(img, path, chunkSize, fillValue, codecs, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, showProgressInfo);
 			}
 		}
 
@@ -415,7 +413,7 @@ namespace itl2
 			const std::string& path,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			int fillValue = 0,
-			const std::list<ZarrCodec>& codecs = DEFAULT_CODECS,
+			std::list<ZarrCodec> codecs = DEFAULT_CODECS,
 			bool showProgressInfo = false)
 		{
 			Vec3c clampedChunkSize = chunkSize;
@@ -435,7 +433,7 @@ namespace itl2
 		@param blockDimensions Dimensions of the block of the source image to write.
 		*/
 		template<typename pixel_t>
-		void writeBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
+		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
 			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions,

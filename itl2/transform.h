@@ -345,7 +345,7 @@ namespace itl2
 	@param block Source image where the pixels are copied from.
 	@param pos Position of source image data in the target image.
 	*/
-	template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& pos)
+	template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& pos = Vec3c(0,0,0))
 	{
 		target.mustNotBe(block);
 

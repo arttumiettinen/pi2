@@ -95,12 +95,8 @@ namespace itl2
 			}
 			try
 			{
-				std::cout << "1" << std::endl;
-
 				string dataTypeString = j["data_type"].get<string>();
-				dataType = fromString<ImageDataType>(dataTypeString);
-				cout << "dataType: " << toString(dataType) << endl;
-				if (dataType == ImageDataType::Unknown)
+				dataType = fromString<ImageDataType>(dataTypeString);if (dataType == ImageDataType::Unknown)
 				{
 					throw ITLException("Could not identify datatype: " + dataTypeString);
 				}
