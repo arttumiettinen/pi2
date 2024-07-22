@@ -114,15 +114,13 @@ namespace itl2
 				}
 
 				std::list<ZarrCodec>::iterator codec = codecs.begin();
-				for (; codec->type == ZarrCodecType::ArrayArrayCodec; ++codec){
+				for (; codec->type == ZarrCodecType::ArrayArrayCodec; ++codec)
+				{
 					if (codec->name == ZarrCodecName::Transpose)
 					{
 						Vec3c order = codec->transposeOrder();
 						transposedChunkShape = transposedChunkShape.transposed(order);
-						Image<pixel_t> temp(transposedChunkShape, fillValue);
-						transpose(imgChunk, temp, order);
-						//todo: reshape image
-						copyValues(imgChunk, temp, Vec3c(0, 0, 0));
+						transpose(imgChunk,  order, fillValue);
 					}
 					else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
@@ -134,7 +132,8 @@ namespace itl2
 				}
 				else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				++codec;
-				for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec){
+				for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
+				{
 					if (codec->name == ZarrCodecName::Blosc)
 					{
 						//TODO
@@ -335,7 +334,7 @@ namespace itl2
 						  assert(codec->type == ZarrCodecType::ArrayBytesCodec);
 						  if (codec->name == ZarrCodecName::Bytes)
 						  {
-							  cout << "readChunksInRange arraybyte codec=" << toString(codec->name) << " " << (int)codec->type << endl;
+							  cout << "BytesCodec"<< endl;
 						  }
 						  else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 						  ++codec;
@@ -345,15 +344,19 @@ namespace itl2
 							  if (codec->name == ZarrCodecName::Transpose)
 							  {
 								  Vec3c order = codec->transposeOrder();
+								  //todo: transposedChunkShape not needed because equal to imgChunk.dims() ?
 								  transposedChunkShape = transposedChunkShape.transposed(order.inverseOrder());
-								  Image<pixel_t> temp(transposedChunkShape, fillValue);
-								  transpose(imgChunk, temp, order);
-								  //todo: reshape image
-								  copyValues(imgChunk, temp, Vec3c(0, 0, 0));
+								  transpose(imgChunk, order.inverseOrder(), fillValue);
 							  }
 							  else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 						  }
-						  copyValues(img, imgChunk, chunkStartInTarget);
+						  //write all pixels of chunk back to img
+						  forAllPixels(imgChunk, [&](coord_t x, coord_t y, coord_t z)
+						  {
+							Vec3c pos = Vec3c(x, y, z) + chunkStartInTarget;
+							cout << "set img("<<pos<<") = imgChunk("<<Vec3c(x,y,z)<<")="<<imgChunk(x, y, z)<<endl;
+							img(pos) = imgChunk(x, y, z);
+						  });
 					  }
 					  else
 					  {

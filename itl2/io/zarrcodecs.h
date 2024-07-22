@@ -174,8 +174,8 @@ namespace itl2
 					{
 						for (coord_t z = 0; z < shape.z; z++)
 						{
-							cout << "reading pixel" << toString(Vec3c(x, y, z)) << " Vec3c(x, y, z)=" <<Vec3c(x, y, z)<<endl;
 							readPixel(in, image(x, y, z));
+							cout << "read image(" << toString(Vec3c(x, y, z)) << ")=" <<image(x, y, z)<<endl;
 						}
 					}
 				}

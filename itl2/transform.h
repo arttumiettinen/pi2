@@ -296,19 +296,26 @@ namespace itl2
 	@param out Output image.
 	@param order Permutation indicating the order for transposing.
 	*/
-	template<typename pixel_t, typename out_t>
-	void transpose(const Image<pixel_t>& in, Image<out_t>& out, const Vec3c& order)
+	template<typename pixel_t>
+	void transpose(Image<pixel_t>& in, const Vec3c& order, int fillValue)
 	{
-		out.mustNotBe(in);
-		if (out.dimensions().max() <= 1)
-			out.ensureSize(in);
+		Vec3c transposedShape = in.dimensions().transposed(order);
+		Image<pixel_t> temp(transposedShape, fillValue);
+		temp.mustNotBe(in);
 
-		forAllPixels(out, [&](coord_t x, coord_t y, coord_t z)
+		forAllPixels(temp, [&](coord_t x, coord_t y, coord_t z)
 		{
 		  Vec3c cords(x, y, z);
 		  Vec3c transposedCords = cords.transposed(order);
-		  //todo: is "out(transposedCords) = in(cords)" or "out(cords) = in(transposedCords)" correct?
-		  out(transposedCords) = in(cords);
+		  std::cout << "temp("<<transposedCords<<")=in("<<cords<<")="<<in(cords)<<std::endl;
+		  temp(transposedCords) = in(cords);
+		});
+
+		in.ensureSize(transposedShape);
+		forAllPixels(temp, [&](coord_t x, coord_t y, coord_t z)
+		{
+		  Vec3c cords(x, y, z);
+		  in(cords) = temp(cords);
 		});
 	}
 
@@ -348,7 +355,7 @@ namespace itl2
 	template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& pos = Vec3c(0,0,0))
 	{
 		target.mustNotBe(block);
-
+		std::cout << "copyValues pos: " << pos << std::endl;
 		AABox<coord_t> sourceBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), block.dimensions());
 		AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
 		AABox<coord_t> clippedBox = sourceBox.translate(pos).intersection(targetBox).translate(-pos);
@@ -373,7 +380,9 @@ namespace itl2
 			forAllInBox(clippedBox, [&](coord_t x, coord_t y, coord_t z)
 			{
 				Vec3c xi = Vec3c(x, y, z) + pos;
-				target(xi) = pixelRound<pixel_t>(block(x, y, z));
+				pixel_t result = pixelRound<pixel_t>(block(x, y, z));
+				std::cout << "setting target(= "<<xi << ") to block("<<x<<", "<<y<<", "<<z<<")=?"<<std::endl;
+				target(xi) = result;
 			});
 		//}
 	}

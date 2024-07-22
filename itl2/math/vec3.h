@@ -437,7 +437,7 @@ namespace itl2
 				return transposed;
 			}
 
-			Vec3<T> inverseOrder()
+			const Vec3<T> inverseOrder()const
 			{
 				if(!isPermutation()) throw ITLException("invalid order: "+ toString(this) + "expected a permutation of [0, 1, 2]");
 				Vec3<T> inverse(0,0,0);
