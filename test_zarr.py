@@ -104,7 +104,7 @@ def test_zarrita_to_pi2(chunk_shape):
 
 
 @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-@pytest.mark.parametrize("order", [[0, 1, 2], ])#[1, 0, 2], [0, 2, 1], [1, 2, 0], [2, 0, 1], [2, 1, 0], ])
+@pytest.mark.parametrize("order", [[0, 1, 2], [1, 0, 2], [0, 2, 1], [1, 2, 0], [2, 0, 1], [2, 1, 0], ])
 def test_read_transpose(order, chunk_shape):
     zarrita_write(codecs=[zarrita.codecs.transpose_codec(order), zarrita.codecs.bytes_codec("little")],
                   chunk_shape=chunk_shape)
@@ -114,7 +114,6 @@ def test_read_transpose(order, chunk_shape):
 @pytest.mark.parametrize("cname", ["lz4"])#, "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
 @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
 @pytest.mark.parametrize("typesize", [1])#, 2, 10])
-@pytest.mark.xfail()
 # todo: handle clevel, shuffle, typesize, blocksize
 def test_read_blosc(cname, chunk_shape, typesize):
     zarrita_write(codecs=[zarrita.codecs.bytes_codec("little"), zarrita.codecs.blosc_codec(typesize)],

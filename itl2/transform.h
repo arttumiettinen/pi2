@@ -301,13 +301,10 @@ namespace itl2
 	{
 		Vec3c transposedShape = in.dimensions().transposed(order);
 		Image<pixel_t> temp(transposedShape, fillValue);
-		temp.mustNotBe(in);
-
-		forAllPixels(temp, [&](coord_t x, coord_t y, coord_t z)
+		forAllPixels(in, [&](coord_t x, coord_t y, coord_t z)
 		{
 		  Vec3c cords(x, y, z);
 		  Vec3c transposedCords = cords.transposed(order);
-		  std::cout << "temp("<<transposedCords<<")=in("<<cords<<")="<<in(cords)<<std::endl;
 		  temp(transposedCords) = in(cords);
 		});
 

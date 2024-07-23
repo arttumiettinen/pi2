@@ -157,25 +157,41 @@ namespace itl2
 
 		namespace internals
 		{
-			template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)>
-			void readBytes(Image<pixel_t>& image, std::string filename, ReadPixel readPixel = raw::readPixel<pixel_t>)
+			template<typename pixel_t>
+			std::vector<pixel_t> readAllBytes(std::string filename)
 			{
-				std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
-
-				if (!in)
+				std::ifstream ifs(filename, std::ios_base::binary|std::ios::ate);
+				if (!ifs)
 				{
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
-				in.seekg(0, std::ios::beg);
+				std::ifstream::pos_type pos = ifs.tellg();
+
+				std::vector<pixel_t>  result(pos);
+
+				ifs.seekg(0, std::ios::beg);
+				ifs.read((char*)&result[0], pos);
+
+				return result;
+			}
+
+			template<typename pixel_t>
+			void readBytesCodec(Image<pixel_t>& image, std::vector<pixel_t>& buffer)
+			{
 				Vec3c shape = image.dimensions();
+				pixel_t data[buffer.size()];
+				std::copy(buffer.begin(), buffer.end(), data);
+
+				size_t n = 0;
 				for (coord_t x = 0; x < shape.x; x++)
 				{
 					for (coord_t y = 0; y < shape.y; y++)
 					{
 						for (coord_t z = 0; z < shape.z; z++)
 						{
-							readPixel(in, image(x, y, z));
-							cout << "read image(" << toString(Vec3c(x, y, z)) << ")=" <<image(x, y, z)<<endl;
+						  	//todo: might be faster to read data sequentially
+							image(x, y, z) = data[n++];
+							cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" <<image(x, y, z)<<endl;
 						}
 					}
 				}
