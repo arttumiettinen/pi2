@@ -30,17 +30,22 @@ d = 4
 arr = arr[:w, :h, :d]
 
 
-def pi2_write(chunk_shape):
+def pi2_write(chunk_shape=None, codecs=None):
+    if chunk_shape is None:
+        chunk_shape = [w, h, d]
+    args = []
+    if codecs is not None:
+        args.append(codecs)
     name = "test.zarr"
     shutil.rmtree(output_file(name), ignore_errors=True)
     write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, [h, w, d])
     write_img.set_data(arr.transpose(1, 0, 2))
-    pi2.writezarr(write_img, output_file(name), chunk_shape)
+    pi2.writezarr(write_img, output_file(name), chunk_shape, *args)
 
 
 def zarrita_write(chunk_shape=None, codecs=None):
     if chunk_shape is None:
-        chunk_shape = [w, h, 1]
+        chunk_shape = [w, h, d]
     if codecs is None:
         codecs = [
             zarrita.codecs.bytes_codec("little"),
@@ -111,12 +116,21 @@ def test_read_transpose(order, chunk_shape):
     read_arr = pi2_read("zarrita.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
 
-@pytest.mark.parametrize("cname", ["lz4"])#, "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
+
+@pytest.mark.parametrize("cname", ["lz4"])  # , "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
 @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-@pytest.mark.parametrize("typesize", [1])#, 2, 10])
+@pytest.mark.parametrize("typesize", [1])  # , 2, 10])
 # todo: handle clevel, shuffle, typesize, blocksize
 def test_read_blosc(cname, chunk_shape, typesize):
     zarrita_write(codecs=[zarrita.codecs.bytes_codec("little"), zarrita.codecs.blosc_codec(typesize)],
                   chunk_shape=chunk_shape)
     read_arr = pi2_read("zarrita.zarr")
+    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+
+
+@pytest.mark.parametrize("codecs", [None, "[{\"configuration\": {\"endian\": \"little\"},\"name\": \"bytes\"}]",
+                                    '[{"configuration": {"endian": "little"},"name": "bytes"}]'])
+def test_api_parse_codecs(codecs):
+    pi2_write(codecs=codecs, )
+    read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)

@@ -154,6 +154,58 @@ namespace itl2
 				return order;
 			}
 		};
+		inline bool codecsFromJSON(std::list<ZarrCodec>& codecs, nlohmann::json codecsJSON, string& reason){
+			int numberArrayBytesCodecs = 0;
+			for (auto& codec : codecsJSON)
+			{
+				if (!codec.contains("name"))
+				{
+					throw ITLException("codec name is missing in zarr metadata.");
+				}
+				try
+				{
+					nlohmann::json codecConfig = {};
+					if (codec.contains("configuration"))
+					{
+						codecConfig = codec["configuration"];
+					}
+					zarr::ZarrCodecName zarrCodecName = fromString<zarr::ZarrCodecName>(codec["name"].get<string>());
+					zarr::ZarrCodec zarrCodec = zarr::ZarrCodec(zarrCodecName, codecConfig);
+					codecs.push_back(zarrCodec);
+					switch (zarrCodec.type)
+					{
+					case ZarrCodecType::ArrayArrayCodec:
+						if (numberArrayBytesCodecs > 0)
+						{
+							throw ITLException("ArrayArrayCodec cannot be used after ArrayBytesCodec.");
+						}
+						break;
+					case ZarrCodecType::ArrayBytesCodec:
+						numberArrayBytesCodecs++;
+						break;
+					case ZarrCodecType::BytesBytesCodec:
+						if (numberArrayBytesCodecs < 1)
+						{
+							throw ITLException("ArrayBytesCodec must be used before BytesBytesCodec.");
+						}
+						break;
+					default:
+						reason = "Unknown codec type.";
+						return false;
+					}
+				}
+				catch (ITLException& e)
+				{
+					reason = e.message();
+					return false;
+				}
+			}
+			if (numberArrayBytesCodecs != 1)
+			{
+				throw ITLException("Exactly one ArrayBytesCodec was expected in the codecs list, got " + std::to_string(numberArrayBytesCodecs) + ".");
+			}
+			return true;
+		}
 
 		namespace internals
 		{

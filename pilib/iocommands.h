@@ -390,7 +390,8 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 			{
 				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
 				CommandArgument<std::string>(ParameterDirection::In, "path", "Name (and path) of the dataset to write. If the dataset exists, its current contents are erased."),
-				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size for the Zarr dataset to be written.", zarr::DEFAULT_CHUNK_SIZE)
+				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size for the Zarr dataset to be written.", zarr::DEFAULT_CHUNK_SIZE),
+				CommandArgument<nlohmann::json>(ParameterDirection::In, "codecs", "zarr codecs as string using doubleqoutes (\") in json format", zarr::DEFAULT_CODECS_JSON),
 			})
 		{
 		}
@@ -401,8 +402,12 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			Vec3c chunkSize = pop<Vec3c>(args);
-
-			itl2::zarr::write(in, fname, chunkSize);
+			std::list<itl2::zarr::ZarrCodec> codecs;
+			std::string reason;
+			if (!codecsFromJSON(codecs, pop<nlohmann::json>(args), reason)){
+				throw ITLException("could not parse zarr codecs: " + reason);
+			}
+			itl2::zarr::write(in, fname, chunkSize, codecs);
 		}
 
 		using Distributable::runDistributed;

@@ -107,7 +107,7 @@ namespace pilib
 						args.push_back(arg);
 						trim(argSection);
 						if (argSection.length() > 0 && argSection[0] != ',')
-							throw ParseException("Trailing characters after string value.");
+							throw ParseException("Trailing characters ("+argSection+") after arg: "+ arg);
 						if (argSection.length() > 0)
     						argSection.erase(argSection.begin());
 					}
@@ -119,7 +119,7 @@ namespace pilib
 						args.push_back(arg);
 						trim(argSection);
 						if (argSection.length() > 0 && argSection[0] != ',')
-							throw ParseException("Trailing characters after string value.");
+							throw ParseException("Trailing characters ("+argSection+") after arg: "+ arg);
 						if (argSection.length() > 0)
     						argSection.erase(argSection.begin());
 					}
@@ -417,6 +417,19 @@ namespace pilib
 					if (doConversion)
 						result = v;
 					return 1;
+				}
+			}
+			if (dt == ArgumentDataType::JSON)
+			{
+				try
+				{
+					result = nlohmann::json::parse(value);
+					return 1;
+				}
+				catch (const nlohmann::json::parse_error& e)
+				{
+					reason = e.what();
+					return 0;
 				}
 			}
 			if (trySimpleConversion<Vec3c>(dt, value, doConversion, result, reason))

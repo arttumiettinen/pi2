@@ -872,6 +872,7 @@ namespace pilib
 		case ArgumentDataType::Bool: return itl2::toString(get<bool>(value));
 		case ArgumentDataType::Vect3d: return itl2::toString(get<Vec3d>(value));
 		case ArgumentDataType::Vect3c: return itl2::toString(get<Vec3c>(value));
+		case ArgumentDataType::JSON: return nlohmann::to_string(get<nlohmann::json>(value));
 		case ArgumentDataType::ImageUInt8:
 		case ArgumentDataType::ImageUInt16:
 		case ArgumentDataType::ImageUInt32:

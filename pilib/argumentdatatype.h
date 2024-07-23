@@ -59,6 +59,7 @@ namespace pilib
 		ImageComplex32,
 		Vect3d,
 		Vect3c,
+		JSON,
 	};
 
 	template<typename T> ArgumentDataType parameterType()
@@ -172,6 +173,11 @@ namespace pilib
 		return ArgumentDataType::Vect3c;
 	}
 
+	template<> inline ArgumentDataType parameterType<nlohmann::json>()
+	{
+		return ArgumentDataType::JSON;
+	}
+
 	/*
 	Convert parameter data type to string.
 	*/
@@ -219,6 +225,8 @@ namespace pilib
 			return "3-component real vector";
 		if (t == ArgumentDataType::Vect3c)
 			return "3-component integer vector";
+		if (t == ArgumentDataType::JSON)
+			return "json format";
 		throw std::runtime_error("Not implemented");
 	}
 
@@ -307,7 +315,8 @@ namespace pilib
 		DistributedImage<uint8_t>*, DistributedImage<uint16_t>*, DistributedImage<uint32_t>*, DistributedImage<uint64_t>*,
 		DistributedImage<int8_t>*, DistributedImage<int16_t>*, DistributedImage<int32_t>*, DistributedImage<int64_t>*,
 		DistributedImage<float32_t>*,
-		DistributedImage<complex32_t>*>
+		DistributedImage<complex32_t>*,
+		nlohmann::json>
 		ParamVariant;
 
 	/**

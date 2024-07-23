@@ -266,7 +266,6 @@ namespace itl2
 			/**
 			Reads zarr chunk files.
 			*/
-			//mark 4
 			template<typename pixel_t>
 			void readChunksInRange(Image<pixel_t>& img, const std::string& path,
 				const Vec3c& chunkShape, int fillValue, std::list<ZarrCodec>& codecs,
@@ -410,6 +409,7 @@ namespace itl2
 
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 		inline const std::list<ZarrCodec> DEFAULT_CODECS = { ZarrCodec(ZarrCodecName::Bytes) };
+		inline const nlohmann::json DEFAULT_CODECS_JSON = { ZarrCodec(ZarrCodecName::Bytes).toJSON() };
 		/**
 		Write an image to a zarr dataset.
 		@param targetImg Image to write.
@@ -419,8 +419,8 @@ namespace itl2
 		void write(const Image<pixel_t>& img,
 			const std::string& path,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
-			int fillValue = 0,
 			std::list<ZarrCodec> codecs = DEFAULT_CODECS,
+			int fillValue = 0,
 			bool showProgressInfo = false)
 		{
 			Vec3c clampedChunkSize = chunkSize;
