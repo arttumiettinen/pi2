@@ -26,6 +26,12 @@ ifdef NO_OPENCL
     OPENCL_LIB=
 endif
 
+ifdef DDEBUG
+    CXXFLAGS += -DDEBUG -g
+    CCFLAGS += -DDEBUG -g
+endif
+
+
 ifdef BOUNDS_CHECK
 	CXXFLAGS += -DBOUNDS_CHECK
 endif

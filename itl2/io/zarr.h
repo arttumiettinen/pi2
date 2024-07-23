@@ -509,5 +509,9 @@ namespace itl2
 
 			readBlock(img, path, Vec3c(0, 0, 0), showProgressInfo);
 		}
+		namespace tests
+		{
+			void read();
+		}
 	}
 }

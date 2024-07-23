@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <tiff.h>
 
 #include "zarr.h"
 #include "json.h"
@@ -335,6 +336,13 @@ namespace itl2
 				coord_t y = fromString<coord_t>(parts[1]);
 				coord_t z = fromString<coord_t>(parts[2]);
 				return Vec3c(x, y, z);
+			}
+		}
+		namespace tests{
+			void read()
+			{
+				Image<int32> fromDisk;
+				zarr::read(fromDisk, "./testoutput/zarrita.zarr");
 			}
 		}
 	}
