@@ -43,25 +43,28 @@ def pi2_write(chunk_shape=None, codecs=None):
     pi2.writezarr(write_img, output_file(name), chunk_shape, *args)
 
 
-def zarrita_write(chunk_shape=None, codecs=None):
+def zarrita_write(chunk_shape=None, codecs=None, data=None):
+    if data is None:
+        data = arr
     if chunk_shape is None:
-        chunk_shape = [w, h, d]
+        chunk_shape = data.shape
     if codecs is None:
         codecs = [
             zarrita.codecs.bytes_codec("little"),
         ]
+
     name = "zarrita.zarr"
     shutil.rmtree(output_file(name), ignore_errors=True)
     store = zarrita.LocalStore(output_file(name))
     a = zarrita.Array.create(
         store,
-        shape=arr.shape,
+        shape=data.shape,
         dtype='int32',
         chunk_shape=tuple(chunk_shape),
         fill_value=42,
         codecs=codecs,
     )
-    a[:] = arr
+    a[:] = data
 
 
 def pi2_read(name):
@@ -117,15 +120,16 @@ def test_read_transpose(order, chunk_shape):
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
 
 
-@pytest.mark.parametrize("cname", ["lz4"])  # , "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
+@pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
 @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-@pytest.mark.parametrize("typesize", [1])  # , 2, 10])
-# todo: handle clevel, shuffle, typesize, blocksize
-def test_read_blosc(cname, chunk_shape, typesize):
+@pytest.mark.parametrize("typesize", [1 , 2, 10])
+@pytest.mark.parametrize("data", [arr, np.zeros_like(arr)])
+# todo: blocksize
+def test_read_blosc(cname, chunk_shape, typesize, data):
     zarrita_write(codecs=[zarrita.codecs.bytes_codec("little"), zarrita.codecs.blosc_codec(typesize)],
-                  chunk_shape=chunk_shape)
+                  chunk_shape=chunk_shape, data=data)
     read_arr = pi2_read("zarrita.zarr")
-    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+    assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)
 
 
 @pytest.mark.parametrize("codecs", [None, "[{\"configuration\": {\"endian\": \"little\"},\"name\": \"bytes\"}]",
