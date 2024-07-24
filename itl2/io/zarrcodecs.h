@@ -218,7 +218,7 @@ namespace itl2
 		namespace internals
 		{
 			template<typename pixel_t>
-			std::vector<pixel_t> readAllBytes(std::string filename)
+			std::vector<pixel_t> readBytesOfFile(std::string filename)
 			{
 				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
 				if (!ifs)
@@ -227,6 +227,7 @@ namespace itl2
 				}
 				std::ifstream::pos_type pos = ifs.tellg();
 
+				//TODO does this work with sizeof(pixel_t)!=1 ?
 				std::vector<pixel_t> result(pos);
 
 				ifs.seekg(0, std::ios::beg);
@@ -236,12 +237,22 @@ namespace itl2
 			}
 
 			template<typename pixel_t>
+			void writeBytesToFile(std::vector<pixel_t>& buffer, const std::string& filename, size_t startInFilePos = 0){
+				createFoldersFor(filename);
+				size_t fileSize = buffer.size() * sizeof(pixel_t);
+				setFileSize(filename, fileSize);
+				std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
+				if (!out)
+					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+				out.write((char*)&buffer[startInFilePos], fileSize - startInFilePos);
+				if (!out)
+					throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
+			}
+
+			template<typename pixel_t>
 			void readBytesCodec(Image<pixel_t>& image, std::vector<pixel_t>& buffer)
 			{
 				Vec3c shape = image.dimensions();
-				pixel_t data[buffer.size()];
-				std::copy(buffer.begin(), buffer.end(), data);
-
 				size_t n = 0;
 				for (coord_t x = 0; x < shape.x; x++)
 				{
@@ -250,66 +261,25 @@ namespace itl2
 						for (coord_t z = 0; z < shape.z; z++)
 						{
 							//todo: might be faster to read data sequentially
-							image(x, y, z) = data[n++];
+							image(x, y, z) = buffer[n++];
 							cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" << image(x, y, z) << endl;
 						}
 					}
 				}
 			}
 			template<typename pixel_t>
-			void writeBytesCodecBlock(const Image<pixel_t>& img, const std::string& filename,
-				const Vec3c& filePosition, const Vec3c& fileDimensions,
-				const Vec3c& imagePosition,
-				const Vec3c& blockDimensions,
-				bool showProgressInfo = false)
-			{
-				Vec3c fileStartPos = filePosition;
-				clamp(fileStartPos, Vec3c(0, 0, 0), fileDimensions);
-				Vec3c fileEndPos = filePosition + blockDimensions;
-				clamp(fileEndPos, Vec3c(0, 0, 0), fileDimensions);
-				if (!img.isInImage(imagePosition))
-					throw ITLException("Block start position must be inside the image.");
-				if (!img.isInImage(imagePosition + blockDimensions - Vec3c(1, 1, 1)))
-					throw ITLException("Block end position must be inside the image.");
-
-				createFoldersFor(filename);
-
-				// Create file if it does not exist, otherwise set file size to the correct value.
-				setFileSize(filename, fileDimensions.x * fileDimensions.y * fileDimensions.z * sizeof(pixel_t));
-
-				std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
-
-				if (!out)
-					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
-
-				const pixel_t* pBuffer = img.getData();
-
+			void writeBytesCodec(const Image<pixel_t>& image, std::vector<pixel_t>& buffer){
+				Vec3c shape = image.dimensions();
+				buffer = std::vector<pixel_t>(shape.product());
+				size_t n = 0;
+				for (coord_t x = 0; x < shape.x; x++)
 				{
-					ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
-
-					for (coord_t x = fileStartPos.x; x < fileEndPos.x; x++)
+					for (coord_t y = 0; y < shape.y; y++)
 					{
-						for (coord_t y = fileStartPos.y; y < fileEndPos.y; y++)
+						for (coord_t z = 0; z < shape.z; z++)
 						{
-							for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
-							{
-								Vec3c imgPos = Vec3c(x, y, z) - fileStartPos + imagePosition;
-								size_t linearIndex = img.getLinearIndex(imgPos);
-
-								//size_t filePos = ((z * fileDimensions.x * fileDimensions.y) + (y * fileDimensions.x) + x) * sizeof(pixel_t);
-								//out.seekp(filePos);
-
-								if (!out)
-									throw ITLException(std::string("Seek failed for file ") + filename + std::string(", ") + getStreamErrorMessage());
-
-								//todo: might be faster to read pBuffer sequentially
-								out.write((char*)&pBuffer[linearIndex], sizeof(pixel_t));
-
-								if (!out)
-									throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
-							}
+							buffer[n++] = image(x, y, z);
 						}
-						prog.step();
 					}
 				}
 			}

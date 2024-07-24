@@ -83,8 +83,17 @@ namespace itl2
 			void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkShape, const Vec3c& datasetSize,
 				Vec3c startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs)
 			{
+				//todo: read this chunk and only update the requested region by const startInImageCoords,startInChunkCoords, writeSize
 				Vec3c transposedChunkShape = chunkShape;
 				Image<pixel_t> imgChunk(chunkShape);
+				const Vec3c chunkStartPos = chunkIndex.componentwiseMultiply(chunkShape);
+				//write all pixels of chunk in img to imgChunk
+				forAllPixels(imgChunk, [&](coord_t x, coord_t y, coord_t z)
+				{
+				  Vec3c pos = Vec3c(x, y, z) + chunkStartPos;
+				  imgChunk(x, y, z) = img(pos);
+				});
+
 				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex);
 
 				// Clamp write size to the size of the image.
@@ -125,10 +134,10 @@ namespace itl2
 					else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
 				assert(codec->type == ZarrCodecType::ArrayBytesCodec);
+				std::vector<pixel_t> buffer;
 				if (codec->name == ZarrCodecName::Bytes)
 				{
-					writeBytesCodecBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords,
-						realWriteSize, false);
+					writeBytesCodec(imgChunk, buffer);
 				}
 				else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				++codec;
@@ -141,7 +150,7 @@ namespace itl2
 					}
 					else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
-
+				writeBytesToFile(buffer, filename);
 			}
 
 			inline size_t countChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize)
@@ -308,7 +317,7 @@ namespace itl2
 					  }
 					  if (fs::is_regular_file(filename))
 					  {
-						  std::vector<pixel_t> buffer = readAllBytes<pixel_t>(filename);
+						  std::vector<pixel_t> buffer = readBytesOfFile<pixel_t>(filename);
 						  // iterate over codecs
 						  std::list<ZarrCodec>::reverse_iterator codec = codecs.rbegin();
 						  for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
@@ -517,6 +526,7 @@ namespace itl2
 		namespace tests
 		{
 			void read();
+			void write();
 			void writeTranspose();
 		}
 	}
