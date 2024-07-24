@@ -301,6 +301,24 @@ namespace itl2
 				Image<int32> fromDisk;
 				zarr::read(fromDisk, "./testoutput/zarrita.zarr");
 			}
+			void writeTranspose()
+			{
+				string path = "./testoutput/test_writeTranspose.zarr";
+
+				Image<uint16_t> img(Vec3c(2, 3, 4));
+				ramp3(img);
+				add(img, 10);
+				string transposeCodecConfig = R"({"order": [1, 2, 0]})";
+				zarr::write(img,
+					path,
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ ZarrCodec(ZarrCodecName::Transpose, nlohmann::json::parse(transposeCodecConfig)), ZarrCodec(ZarrCodecName::Bytes), });
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
+			}
 		}
 	}
 }

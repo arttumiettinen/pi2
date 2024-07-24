@@ -53,7 +53,7 @@ namespace itl2
 			return zarr::ZarrCodecName::Bytes;
 		if (str == "transpose")
 			return zarr::ZarrCodecName::Transpose;
-		if(str == "blosc")
+		if (str == "blosc")
 			return zarr::ZarrCodecName::Blosc;
 
 		throw ITLException(std::string("Invalid zarr codec name: ") + str);
@@ -97,7 +97,6 @@ namespace itl2
 				this->configuration = config;
 			}
 
-
 			void parseTransposeCodecConfig(nlohmann::json config = nlohmann::json())
 			{
 				this->configuration = config;
@@ -140,21 +139,30 @@ namespace itl2
 				};
 			}
 
-			Vec3c transposeOrder(){
-				if (this->name!=ZarrCodecName::Transpose) throw ITLException("only transpose codec has transpose order");
-				auto orderJSON = this->configuration["order"];
-				//TODO check if valid order
-				Vec3c order = Vec3c(0, 1, 2);
-				order[0] = orderJSON[0].get<size_t>();
-				if (orderJSON.size() >= 2)
-					order[1] = orderJSON[1].get<size_t>();
-				if (orderJSON.size() >= 3)
-					order[2] = orderJSON[2].get<size_t>();
-				cout << "transposeOrder=" << order << endl;
-				return order;
+			Vec3c transposeOrder()
+			{
+				try
+				{
+					if (this->name != ZarrCodecName::Transpose) throw ITLException("only transpose codec has transpose order");
+					auto orderJSON = this->configuration["order"];
+					//TODO check if valid order
+					Vec3c order = Vec3c(0, 1, 2);
+					order[0] = orderJSON[0].get<size_t>();
+					if (orderJSON.size() >= 2)
+						order[1] = orderJSON[1].get<size_t>();
+					if (orderJSON.size() >= 3)
+						order[2] = orderJSON[2].get<size_t>();
+					cout << "transposeOrder=" << order << endl;
+					return order;
+				}
+				catch (nlohmann::json::exception ex)
+				{
+					throw ITLException("error in reading transposeOrder of configuration: " + nlohmann::to_string(this->configuration) + " got exception: " + ex.what());
+				}
 			}
 		};
-		inline bool codecsFromJSON(std::list<ZarrCodec>& codecs, nlohmann::json codecsJSON, string& reason){
+		inline bool codecsFromJSON(std::list<ZarrCodec>& codecs, nlohmann::json codecsJSON, string& reason)
+		{
 			int numberArrayBytesCodecs = 0;
 			for (auto& codec : codecsJSON)
 			{
@@ -212,14 +220,14 @@ namespace itl2
 			template<typename pixel_t>
 			std::vector<pixel_t> readAllBytes(std::string filename)
 			{
-				std::ifstream ifs(filename, std::ios_base::binary|std::ios::ate);
+				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
 				if (!ifs)
 				{
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
 				std::ifstream::pos_type pos = ifs.tellg();
 
-				std::vector<pixel_t>  result(pos);
+				std::vector<pixel_t> result(pos);
 
 				ifs.seekg(0, std::ios::beg);
 				ifs.read((char*)&result[0], pos);
@@ -241,9 +249,9 @@ namespace itl2
 					{
 						for (coord_t z = 0; z < shape.z; z++)
 						{
-						  	//todo: might be faster to read data sequentially
+							//todo: might be faster to read data sequentially
 							image(x, y, z) = data[n++];
-							cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" <<image(x, y, z)<<endl;
+							cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" << image(x, y, z) << endl;
 						}
 					}
 				}

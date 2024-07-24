@@ -72,7 +72,7 @@ namespace itl2
 			}
 
 			/**
-			Writes single NN5 chunk file.
+			Writes single Zarr chunk file.
 			@param chunkIndex Index of the chunk to write. This is used to determine the correct output folder.
 			@param chunkSize Chunk size of the dataset.
 			@param startInChunkCoords Start position of the block to be written in the coordinates of the chunk.
@@ -132,8 +132,9 @@ namespace itl2
 				}
 				else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				++codec;
-				for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
+				for (; codec!=codecs.end(); ++codec)
 				{
+					assert(codec->type == ZarrCodecType::ArrayBytesCodec);
 					if (codec->name == ZarrCodecName::Blosc)
 					{
 						//TODO
@@ -516,6 +517,7 @@ namespace itl2
 		namespace tests
 		{
 			void read();
+			void writeTranspose();
 		}
 	}
 }

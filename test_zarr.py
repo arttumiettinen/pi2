@@ -138,3 +138,11 @@ def test_api_parse_codecs(codecs):
     pi2_write(codecs=codecs, )
     read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+
+@pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
+@pytest.mark.parametrize("order", [[0, 1, 2], [1, 0, 2], [0, 2, 1], [1, 2, 0], [2, 0, 1], [2, 1, 0], ])
+def test_write_transpose(order, chunk_shape):
+    codecs = '[{"configuration": {"order": '+str(order)+'},"name": "transpose"}, {"configuration": {"endian": "little"},"name": "bytes"}]'
+    pi2_write(codecs=codecs, chunk_shape=chunk_shape)
+    read_arr = zarrita_read("test.zarr")
+    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
