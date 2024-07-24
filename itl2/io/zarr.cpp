@@ -334,6 +334,25 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
+
+			void writeBlosc()
+			{
+				string path = "./testoutput/test_writeBlosc.zarr";
+
+				Image<uint16_t> img(Vec3c(2, 3, 4));
+				ramp(img, 0);
+				add(img, 10);
+				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
+				zarr::write(img,
+					path,
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ ZarrCodec(ZarrCodecName::Bytes), ZarrCodec(ZarrCodecName::Blosc, nlohmann::json::parse(bloscCodecConfig))});
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
+			}
 		}
 	}
 }

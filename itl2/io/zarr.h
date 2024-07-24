@@ -129,7 +129,7 @@ namespace itl2
 					{
 						Vec3c order = codec->transposeOrder();
 						transposedChunkShape = transposedChunkShape.transposed(order);
-						transpose(imgChunk,  order, fillValue);
+						transpose(imgChunk, order, fillValue);
 					}
 					else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
@@ -141,12 +141,40 @@ namespace itl2
 				}
 				else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				++codec;
-				for (; codec!=codecs.end(); ++codec)
+				for (; codec != codecs.end(); ++codec)
 				{
-					assert(codec->type == ZarrCodecType::ArrayBytesCodec);
+					assert(codec->type == ZarrCodecType::BytesBytesCodec);
 					if (codec->name == ZarrCodecName::Blosc)
 					{
-						//TODO
+						if (!codec->configuration.contains("typesize"))
+							codec->configuration["typesize"] = sizeof(pixel_t);
+						size_t osize = buffer.size() * sizeof(pixel_t);
+						size_t isize = buffer.size() * sizeof(pixel_t);
+						std::vector<pixel_t> temp(buffer.size());
+						string cname;
+						int clevel;
+						blosc::shuffle shuffle;
+						size_t typesize;
+						size_t blocksize;
+						codec->getBloscConfiguration(cname, clevel, shuffle, typesize, blocksize);
+						int rcode = blosc_set_compressor(cname.c_str());
+						if (rcode < 0) {
+						  throw ITLException("Blosc Error setting "+ cname + " compressor.  It really exists?");
+						}
+						cout << "Using blosc compressor" << cname << endl;
+						blosc_set_blocksize(blocksize);
+
+						int csize = blosc_compress(clevel, (int)shuffle, typesize, isize, buffer.data(), temp.data(), osize);
+						if (csize == 0)
+						{
+							cout << "Buffer is incompressible.  Giving up." << endl;
+						}
+						else if (csize < 0)
+						{
+							throw ITLException("Compression error.  Error code: " + toString(csize));
+						}
+						cout << "Compression: " << isize << " -> " << csize << " (" << static_cast<double>(isize) / csize << "x)" << endl;
+						buffer = std::move(temp);
 					}
 					else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
@@ -329,7 +357,7 @@ namespace itl2
 								  dsize = blosc_decompress(buffer.data(), temp.data(), dsize);
 								  if (dsize < 0)
 								  {
-									  cout << "blosc_decompress error.  Error code: " << dsize << endl;
+									  throw ITLException("blosc_decompress error.  Error code: " + toString(dsize));
 								  }
 								  cout << "buffer[0]= " << buffer[0] << "-> temp[0]= " << temp[0] << endl;
 								  buffer = std::move(temp);
@@ -340,7 +368,7 @@ namespace itl2
 						  assert(codec->type == ZarrCodecType::ArrayBytesCodec);
 						  if (codec->name == ZarrCodecName::Bytes)
 						  {
-							  cout << "BytesCodec"<< endl;
+							  cout << "BytesCodec" << endl;
 							  readBytesCodec(imgChunk, buffer);
 						  }
 						  else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
@@ -350,15 +378,17 @@ namespace itl2
 							  assert(codec->type == ZarrCodecType::ArrayArrayCodec);
 							  if (codec->name == ZarrCodecName::Transpose)
 							  {
-								  if(!imgChunk.isInImage(currentChunkShape-Vec3c(1,1,1))){
-									  throw ITLException("!imgChunk.isInImage " + toString(currentChunkShape-Vec3c(1,1,1)));
+								  if (!imgChunk.isInImage(currentChunkShape - Vec3c(1, 1, 1)))
+								  {
+									  throw ITLException("!imgChunk.isInImage " + toString(currentChunkShape - Vec3c(1, 1, 1)));
 								  }
 								  Vec3c order = codec->transposeOrder();
 								  //todo: currentChunkShape not needed because equal to imgChunk.dims() ?
 								  currentChunkShape = currentChunkShape.transposed(order.inverseOrder());
 								  transpose(imgChunk, order.inverseOrder(), fillValue);
-								  if(!imgChunk.sizeEquals(currentChunkShape)){
-									  throw ITLException("!imgChunk.sizeEquals"+ toString(currentChunkShape));
+								  if (!imgChunk.sizeEquals(currentChunkShape))
+								  {
+									  throw ITLException("!imgChunk.sizeEquals" + toString(currentChunkShape));
 								  }
 							  }
 							  else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
@@ -367,7 +397,7 @@ namespace itl2
 						  forAllPixels(imgChunk, [&](coord_t x, coord_t y, coord_t z)
 						  {
 							Vec3c pos = Vec3c(x, y, z) + chunkStartInTarget;
-							cout << "set img("<<pos<<") = imgChunk("<<Vec3c(x,y,z)<<")="<<imgChunk(x, y, z)<<endl;
+							cout << "set img(" << pos << ") = imgChunk(" << Vec3c(x, y, z) << ")=" << imgChunk(x, y, z) << endl;
 							img(pos) = imgChunk(x, y, z);
 						  });
 					  }
@@ -528,6 +558,8 @@ namespace itl2
 			void read();
 			void write();
 			void writeTranspose();
+			void writeBlosc();
+			void blosc();
 		}
 	}
 }

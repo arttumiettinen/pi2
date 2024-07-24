@@ -122,7 +122,7 @@ def test_read_transpose(order, chunk_shape):
 
 @pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
 @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-@pytest.mark.parametrize("typesize", [1 , 2, 10])
+@pytest.mark.parametrize("typesize", [1, 2, 10])
 @pytest.mark.parametrize("data", [arr, np.zeros_like(arr)])
 # todo: blocksize
 def test_read_blosc(cname, chunk_shape, typesize, data):
@@ -139,10 +139,35 @@ def test_api_parse_codecs(codecs):
     read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
 
+
 @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
 @pytest.mark.parametrize("order", [[0, 1, 2], [1, 0, 2], [0, 2, 1], [1, 2, 0], [2, 0, 1], [2, 1, 0], ])
 def test_write_transpose(order, chunk_shape):
-    codecs = '[{"configuration": {"order": '+str(order)+'},"name": "transpose"}, {"configuration": {"endian": "little"},"name": "bytes"}]'
+    codecs = '[{"configuration": {"order": ' + str(
+        order) + '},"name": "transpose"}, {"configuration": {"endian": "little"},"name": "bytes"}]'
+    pi2_write(codecs=codecs, chunk_shape=chunk_shape)
+    read_arr = zarrita_read("test.zarr")
+    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+
+
+@pytest.mark.parametrize("chunk_shape", [[w, h, d]])
+@pytest.mark.parametrize("cname", ["lz4"])
+@pytest.mark.parametrize("clevel", [1, 2, 4])
+@pytest.mark.parametrize("shuffle", ["shuffle"])
+@pytest.mark.parametrize("typesize", [4])
+@pytest.mark.parametrize("blocksize", [0])
+@pytest.mark.parametrize("data", [np.zeros_like(arr)])
+#@pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
+#@pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
+#@pytest.mark.parametrize("clevel", [1, 2, 10])
+#@pytest.mark.parametrize("shuffle", ["shuffle"])
+#@pytest.mark.parametrize("typesize", [4])
+#@pytest.mark.parametrize("blocksize", [0])
+#@pytest.mark.parametrize("data", [arr, np.zeros_like(arr)])
+def test_write_blosc(chunk_shape, cname, clevel,shuffle, typesize,blocksize, data):
+    codecs = '[{"configuration": {"endian": "little"},"name": "bytes"}, {"configuration": {"cname": "' + cname + '", "clevel": ' + str(clevel) + ', "shuffle": "' + shuffle + '", "typesize": ' + str(
+        typesize) + ', "blocksize": ' + str(blocksize) + '},"name": "blosc"}]'
+    print(codecs)
     pi2_write(codecs=codecs, chunk_shape=chunk_shape)
     read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)

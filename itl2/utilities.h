@@ -41,6 +41,8 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <list>
+#include <algorithm>
 #include "math/mathutils.h"
 #include "math/vec3.h"
 #include "math/vec2.h"
@@ -656,5 +658,10 @@ namespace itl2
 			return itl2::toString(sizeGigas) + " GiB";
 
 		return itl2::toString(sizeTeras) + " TiB";
+	}
+
+	template<typename T>
+	bool listContains(const std::list<T>& l, const T& elem){
+		return std::find(l.begin(), l.end(), elem) != l.end();
 	}
 }

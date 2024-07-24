@@ -27,6 +27,15 @@ namespace itl2
 			Blosc,
 		};
 		//TODO save codec in struct instead of json
+		namespace blosc
+		{
+			enum class shuffle
+			{
+				noshuffle = 0,
+				shuffle = 1,
+				bitshuffle = 2
+			};
+		}
 	}
 
 	template<>
@@ -139,6 +148,35 @@ namespace itl2
 				};
 			}
 
+			void getBloscConfiguration(string& cname, int& clevel, zarr::blosc::shuffle& shuffle, size_t& typesize, size_t& blocksize)
+			{
+				if (this->name != ZarrCodecName::Blosc) throw ITLException("only blosc codec has blosc config");
+				try
+				{
+					cname = this->configuration["cname"];
+					std::list<string> allowedCnames = { "blosclz", "lz4", "lz4hc", "snappy", "zlib", "zstd" };
+					if (!listContains<string>(allowedCnames, cname)) throw ITLException("invalid blosc cname: " + cname);
+					clevel = this->configuration["clevel"];
+					string shuffleName = this->configuration["shuffle"];
+					if (shuffleName == "noshuffle") shuffle = blosc::shuffle::noshuffle;
+					else if (shuffleName == "shuffle") shuffle = blosc::shuffle::shuffle;
+					else if (shuffleName == "bitshuffle") shuffle = blosc::shuffle::bitshuffle;
+					else throw ITLException("invalid blosc shuffle parameter: " + shuffleName);
+					if (shuffle != blosc::shuffle::noshuffle)
+					{
+						if (this->configuration.contains("typesize"))
+							typesize = this->configuration["typesize"];
+						else if (typesize != 0)
+							this->configuration["typesize"] = typesize;
+						else throw ITLException("blosc error: no typesize set while shuffle!=noshuffle");
+					}
+					blocksize = this->configuration["blocksize"];
+				}
+				catch (nlohmann::json::exception ex)
+				{
+					throw ITLException("error in reading blosc config: " + nlohmann::to_string(this->configuration) + " got exception: " + ex.what());
+				}
+			}
 			Vec3c transposeOrder()
 			{
 				try
@@ -237,7 +275,8 @@ namespace itl2
 			}
 
 			template<typename pixel_t>
-			void writeBytesToFile(std::vector<pixel_t>& buffer, const std::string& filename, size_t startInFilePos = 0){
+			void writeBytesToFile(std::vector<pixel_t>& buffer, const std::string& filename, size_t startInFilePos = 0)
+			{
 				createFoldersFor(filename);
 				size_t fileSize = buffer.size() * sizeof(pixel_t);
 				setFileSize(filename, fileSize);
@@ -268,7 +307,8 @@ namespace itl2
 				}
 			}
 			template<typename pixel_t>
-			void writeBytesCodec(const Image<pixel_t>& image, std::vector<pixel_t>& buffer){
+			void writeBytesCodec(const Image<pixel_t>& image, std::vector<pixel_t>& buffer)
+			{
 				Vec3c shape = image.dimensions();
 				buffer = std::vector<pixel_t>(shape.product());
 				size_t n = 0;
