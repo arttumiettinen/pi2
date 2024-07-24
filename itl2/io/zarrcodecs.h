@@ -154,7 +154,8 @@ namespace itl2
 				try
 				{
 					cname = this->configuration["cname"];
-					std::list<string> allowedCnames = { "blosclz", "lz4", "lz4hc", "snappy", "zlib", "zstd" };
+					//todo: snappy?
+					std::list<string> allowedCnames = { "blosclz", "lz4", "lz4hc", "zlib", "zstd" };
 					if (!listContains<string>(allowedCnames, cname)) throw ITLException("invalid blosc cname: " + cname);
 					clevel = this->configuration["clevel"];
 					string shuffleName = this->configuration["shuffle"];
@@ -255,8 +256,7 @@ namespace itl2
 
 		namespace internals
 		{
-			template<typename pixel_t>
-			std::vector<pixel_t> readBytesOfFile(std::string filename)
+			std::vector<char> readBytesOfFile(std::string filename)
 			{
 				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
 				if (!ifs)
@@ -264,34 +264,35 @@ namespace itl2
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
 				}
 				std::ifstream::pos_type pos = ifs.tellg();
-
-				//TODO does this work with sizeof(pixel_t)!=1 ?
-				std::vector<pixel_t> result(pos);
+				std::vector<char> result(pos);
 
 				ifs.seekg(0, std::ios::beg);
-				ifs.read((char*)&result[0], pos);
+				ifs.read(&result[0], pos);
 
 				return result;
 			}
 
-			template<typename pixel_t>
-			void writeBytesToFile(std::vector<pixel_t>& buffer, const std::string& filename, size_t startInFilePos = 0)
+			void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos = 0)
 			{
 				createFoldersFor(filename);
-				size_t fileSize = buffer.size() * sizeof(pixel_t);
+				size_t fileSize = buffer.size();
 				setFileSize(filename, fileSize);
 				std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
 				if (!out)
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
-				out.write((char*)&buffer[startInFilePos], fileSize - startInFilePos);
+				out.write(&buffer[startInFilePos], fileSize - startInFilePos);
 				if (!out)
 					throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
 			}
 
 			template<typename pixel_t>
-			void readBytesCodec(Image<pixel_t>& image, std::vector<pixel_t>& buffer)
+			void readBytesCodec(Image<pixel_t>& image, std::vector<char>& buffer)
 			{
 				Vec3c shape = image.dimensions();
+				std::vector<pixel_t> temp(shape.product());
+				std::memcpy(temp.data(), buffer.data(), buffer.size());
+
+				assert(shape.product() * sizeof(pixel_t) == buffer.size());
 				size_t n = 0;
 				for (coord_t x = 0; x < shape.x; x++)
 				{
@@ -300,17 +301,18 @@ namespace itl2
 						for (coord_t z = 0; z < shape.z; z++)
 						{
 							//todo: might be faster to read data sequentially
-							image(x, y, z) = buffer[n++];
-							cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" << image(x, y, z) << endl;
+							image(x, y, z) = temp[n++];
+							//cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" << image(x, y, z) << endl;
 						}
 					}
 				}
 			}
 			template<typename pixel_t>
-			void writeBytesCodec(const Image<pixel_t>& image, std::vector<pixel_t>& buffer)
+			void writeBytesCodec(const Image<pixel_t>& image, std::vector<char>& buffer)
 			{
 				Vec3c shape = image.dimensions();
-				buffer = std::vector<pixel_t>(shape.product());
+				std::vector<pixel_t> temp(shape.product());
+
 				size_t n = 0;
 				for (coord_t x = 0; x < shape.x; x++)
 				{
@@ -318,10 +320,14 @@ namespace itl2
 					{
 						for (coord_t z = 0; z < shape.z; z++)
 						{
-							buffer[n++] = image(x, y, z);
+							temp[n++] = image(x, y, z);
 						}
 					}
 				}
+
+				size_t bufferSize = shape.product()*sizeof(pixel_t);
+				buffer = std::vector<char>(bufferSize);
+				std::memcpy(buffer.data(), temp.data(), buffer.size());
 			}
 		}
 

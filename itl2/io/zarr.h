@@ -134,7 +134,7 @@ namespace itl2
 					else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
 				assert(codec->type == ZarrCodecType::ArrayBytesCodec);
-				std::vector<pixel_t> buffer;
+				std::vector<char> buffer;
 				if (codec->name == ZarrCodecName::Bytes)
 				{
 					writeBytesCodec(imgChunk, buffer);
@@ -148,9 +148,11 @@ namespace itl2
 					{
 						if (!codec->configuration.contains("typesize"))
 							codec->configuration["typesize"] = sizeof(pixel_t);
-						size_t osize = buffer.size() * sizeof(pixel_t);
-						size_t isize = buffer.size() * sizeof(pixel_t);
-						std::vector<pixel_t> temp(buffer.size());
+
+						size_t destSize = buffer.size()+BLOSC_MIN_HEADER_LENGTH;
+						size_t srcSize = buffer.size();
+						cout << "compressing buffer.size()="<<buffer.size()<<" sizeof(pixel_t)= "<<sizeof(pixel_t)<<endl;
+						std::vector<char> temp(destSize);
 						string cname;
 						int clevel;
 						blosc::shuffle shuffle;
@@ -163,18 +165,15 @@ namespace itl2
 						}
 						cout << "Using blosc compressor" << cname << endl;
 						blosc_set_blocksize(blocksize);
+						//todo: use blosc_compress_ctx and no blosc_init for multithreaded
+						size_t realDestSize = blosc_compress(clevel, (int)shuffle, typesize, srcSize, buffer.data(), temp.data(), destSize);
 
-						int csize = blosc_compress(clevel, (int)shuffle, typesize, isize, buffer.data(), temp.data(), osize);
-						if (csize == 0)
-						{
-							cout << "Buffer is incompressible.  Giving up." << endl;
-						}
-						else if (csize < 0)
-						{
-							throw ITLException("Compression error.  Error code: " + toString(csize));
-						}
-						cout << "Compression: " << isize << " -> " << csize << " (" << static_cast<double>(isize) / csize << "x)" << endl;
-						buffer = std::move(temp);
+						if (realDestSize == 0) cout << "Buffer is incompressible.  Giving up." << endl;
+						else if (realDestSize < 0) throw ITLException("Compression error.  Error code: " + toString(realDestSize));
+						else cout << "Compression: " << srcSize << " -> " << realDestSize << " (" << static_cast<double>(srcSize) / realDestSize << "x)" << endl;
+
+						std::memcpy(buffer.data(), temp.data(), realDestSize);
+						buffer.resize(realDestSize);
 					}
 					else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
@@ -345,15 +344,15 @@ namespace itl2
 					  }
 					  if (fs::is_regular_file(filename))
 					  {
-						  std::vector<pixel_t> buffer = readBytesOfFile<pixel_t>(filename);
+						  std::vector<char> buffer = readBytesOfFile(filename);
 						  // iterate over codecs
 						  std::list<ZarrCodec>::reverse_iterator codec = codecs.rbegin();
 						  for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
 						  {
 							  if (codec->name == ZarrCodecName::Blosc)
 							  {
-								  int dsize = buffer.size() * sizeof(pixel_t);
-								  std::vector<pixel_t> temp(buffer.size());
+								  int dsize = buffer.size();
+								  std::vector<char> temp(buffer.size());
 								  dsize = blosc_decompress(buffer.data(), temp.data(), dsize);
 								  if (dsize < 0)
 								  {
@@ -397,7 +396,7 @@ namespace itl2
 						  forAllPixels(imgChunk, [&](coord_t x, coord_t y, coord_t z)
 						  {
 							Vec3c pos = Vec3c(x, y, z) + chunkStartInTarget;
-							cout << "set img(" << pos << ") = imgChunk(" << Vec3c(x, y, z) << ")=" << imgChunk(x, y, z) << endl;
+							//cout << "set img(" << pos << ") = imgChunk(" << Vec3c(x, y, z) << ")=" << imgChunk(x, y, z) << endl;
 							img(pos) = imgChunk(x, y, z);
 						  });
 					  }
