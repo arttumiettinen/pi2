@@ -38,7 +38,7 @@ namespace itl2
 			/**
 			Writes Zarr metadata file.
 			*/
-			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<ZarrCodec>& codecs);
+			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<codecs::ZarrCodec>& codecs);
 
 			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
 			{
@@ -71,6 +71,9 @@ namespace itl2
 				return realChunkSize;
 			}
 
+			std::vector<char> readBytesOfFile(std::string& filename);
+			void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos = 0);
+
 			/**
 			Writes single Zarr chunk file.
 			@param chunkIndex Index of the chunk to write. This is used to determine the correct output folder.
@@ -81,7 +84,7 @@ namespace itl2
 			*/
 			template<typename pixel_t>
 			void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& chunkShape, const Vec3c& datasetSize,
-				Vec3c startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<ZarrCodec>& codecs)
+				Vec3c startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, int fillValue, std::list<codecs::ZarrCodec>& codecs)
 			{
 				//todo: read this chunk and only update the requested region by const startInImageCoords,startInChunkCoords, writeSize
 				Vec3c transposedChunkShape = chunkShape;
@@ -122,10 +125,10 @@ namespace itl2
 					realChunkSize = realWriteSize;
 				}
 
-				std::list<ZarrCodec>::iterator codec = codecs.begin();
-				for (; codec->type == ZarrCodecType::ArrayArrayCodec; ++codec)
+				std::list<codecs::ZarrCodec>::iterator codec = codecs.begin();
+				for (; codec->type == codecs::Type::ArrayArrayCodec; ++codec)
 				{
-					if (codec->name == ZarrCodecName::Transpose)
+					if (codec->name == codecs::Name::Transpose)
 					{
 						Vec3c order = codec->transposeOrder();
 						transposedChunkShape = transposedChunkShape.transposed(order);
@@ -133,18 +136,18 @@ namespace itl2
 					}
 					else throw ITLException("ArrayArrayCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
-				assert(codec->type == ZarrCodecType::ArrayBytesCodec);
+				assert(codec->type == codecs::Type::ArrayBytesCodec);
 				std::vector<char> buffer;
-				if (codec->name == ZarrCodecName::Bytes)
+				if (codec->name == codecs::Name::Bytes)
 				{
-					writeBytesCodec(imgChunk, buffer);
+					codecs::encodeBytesCodec(imgChunk, buffer);
 				}
 				else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				++codec;
 				for (; codec != codecs.end(); ++codec)
 				{
-					assert(codec->type == ZarrCodecType::BytesBytesCodec);
-					if (codec->name == ZarrCodecName::Blosc)
+					assert(codec->type == codecs::Type::BytesBytesCodec);
+					if (codec->name == codecs::Name::Blosc)
 					{
 						if (!codec->configuration.contains("typesize"))
 							codec->configuration["typesize"] = sizeof(pixel_t);
@@ -155,13 +158,13 @@ namespace itl2
 						std::vector<char> temp(destSize);
 						string cname;
 						int clevel;
-						blosc::shuffle shuffle;
+						codecs::blosc::shuffle shuffle;
 						size_t typesize;
 						size_t blocksize;
 						codec->getBloscConfiguration(cname, clevel, shuffle, typesize, blocksize);
 						int rcode = blosc_set_compressor(cname.c_str());
 						if (rcode < 0) {
-						  throw ITLException("Blosc Error setting "+ cname + " compressor.  It really exists?");
+							throw ITLException("Blosc Error setting "+ cname + " compressor.  It really exists?");
 						}
 						cout << "Using blosc compressor" << cname << endl;
 						blosc_set_blocksize(blocksize);
@@ -245,7 +248,7 @@ namespace itl2
 			}
 
 			template<typename pixel_t>
-			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkShape, int fillValue, std::list<ZarrCodec>& codecs,
+			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkShape, int fillValue, std::list<codecs::ZarrCodec>& codecs,
 				const Vec3c& filePosition, const Vec3c& fileDimensions,
 				const Vec3c& imagePosition,
 				const Vec3c& blockDimensions,
@@ -257,7 +260,7 @@ namespace itl2
 				bool is_blosc_init = false;
 				for (auto codec : codecs)
 				{
-					if (codec.name == ZarrCodecName::Blosc && !is_blosc_init)
+					if (codec.name == codecs::Name::Blosc && !is_blosc_init)
 					{
 						printf("Blosc version info: %s (%s)\n", BLOSC_VERSION_STRING, BLOSC_VERSION_DATE);
 						blosc_init();
@@ -300,12 +303,13 @@ namespace itl2
 				}
 			}
 
+
 			/**
 			Reads zarr chunk files.
 			*/
 			template<typename pixel_t>
 			void readChunksInRange(Image<pixel_t>& img, const std::string& path,
-				const Vec3c& chunkShape, int fillValue, std::list<ZarrCodec>& codecs,
+				const Vec3c& chunkShape, int fillValue, std::list<codecs::ZarrCodec>& codecs,
 				const Vec3c& datasetShape,
 				const Vec3c& start, const Vec3c& end,
 				bool showProgressInfo)
@@ -314,13 +318,13 @@ namespace itl2
 				bool is_blosc_init = false;
 				for (auto codec : codecs)
 				{
-					if (codec.name == ZarrCodecName::Blosc && !is_blosc_init)
+					if (codec.name == codecs::Name::Blosc && !is_blosc_init)
 					{
 						printf("Blosc version info: %s (%s)\n", BLOSC_VERSION_STRING, BLOSC_VERSION_DATE);
 						blosc_init();
 						is_blosc_init = true;
 					}
-					if (codec.name == ZarrCodecName::Transpose)
+					if (codec.name == codecs::Name::Transpose)
 					{
 						transposedChunkShape = transposedChunkShape.transposed(codec.transposeOrder());
 					}
@@ -346,14 +350,15 @@ namespace itl2
 					  {
 						  std::vector<char> buffer = readBytesOfFile(filename);
 						  // iterate over codecs
-						  std::list<ZarrCodec>::reverse_iterator codec = codecs.rbegin();
-						  for (; codec->type == ZarrCodecType::BytesBytesCodec; ++codec)
+						  std::list<codecs::ZarrCodec>::reverse_iterator codec = codecs.rbegin();
+						  for (; codec->type == codecs::Type::BytesBytesCodec; ++codec)
 						  {
-							  if (codec->name == ZarrCodecName::Blosc)
+							  if (codec->name == codecs::Name::Blosc)
 							  {
 								  size_t srcSize = buffer.size();
 								  size_t destSize;
-								  if (blosc_cbuffer_validate(buffer.data(), srcSize, &destSize) < 0){
+								  if (blosc_cbuffer_validate(buffer.data(), srcSize, &destSize) < 0)
+								  {
 									  throw ITLException("blosc_decompress error: \"Buffer does not contain valid blosc-encoded contents\"");
 								  }
 								  std::vector<char> temp(destSize);
@@ -369,18 +374,18 @@ namespace itl2
 							  else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 
 						  }
-						  assert(codec->type == ZarrCodecType::ArrayBytesCodec);
-						  if (codec->name == ZarrCodecName::Bytes)
+						  assert(codec->type == codecs::Type::ArrayBytesCodec);
+						  if (codec->name == codecs::Name::Bytes)
 						  {
 							  cout << "BytesCodec" << endl;
-							  readBytesCodec(imgChunk, buffer);
+							  codecs::decodeBytesCodec(imgChunk, buffer);
 						  }
 						  else throw ITLException("ArrayBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 						  ++codec;
 						  for (; codec != codecs.rend(); ++codec)
 						  {
-							  assert(codec->type == ZarrCodecType::ArrayArrayCodec);
-							  if (codec->name == ZarrCodecName::Transpose)
+							  assert(codec->type == codecs::Type::ArrayArrayCodec);
+							  if (codec->name == codecs::Name::Transpose)
 							  {
 								  if (!imgChunk.isInImage(currentChunkShape - Vec3c(1, 1, 1)))
 								  {
@@ -428,49 +433,27 @@ namespace itl2
 				const std::string& path,
 				const Vec3c& chunkSize,
 				int fillValue,
-				const std::list<ZarrCodec>& codecs,
+				const std::list<codecs::ZarrCodec>& codecs,
 				bool deleteOldData);
 
-			template<typename pixel_t>
-			void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs, bool deleteOldData, bool showProgressInfo)
-			{
-				Vec3c dimensions = img.dimensions();
-				internals::handleExisting(dimensions, img.dataType(), path, chunkSize, fillValue, codecs, deleteOldData);
-				writeBlock(img, path, chunkSize, fillValue, codecs, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, showProgressInfo);
-			}
+
 		}
 
-		bool getInfo(const std::string& path, Vec3c& shape, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason);
+		bool getInfo(const std::string& path, Vec3c& shape, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<codecs::ZarrCodec>& codecs, int& fillValue, std::string& reason);
 
 		inline bool getInfo(const std::string& path, Vec3c& shape, ImageDataType& dataType, std::string& reason)
 		{
 			bool dummyIsNative;
 			Vec3c dummyChunkSize;
 			int fillValue;
-			std::list<ZarrCodec> codecs;
+			std::list<codecs::ZarrCodec> codecs;
 			return getInfo(path, shape, dummyIsNative, dataType, dummyChunkSize, codecs, fillValue, reason);
 		}
 
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
-		inline const std::list<ZarrCodec> DEFAULT_CODECS = { ZarrCodec(ZarrCodecName::Bytes) };
-		inline const nlohmann::json DEFAULT_CODECS_JSON = { ZarrCodec(ZarrCodecName::Bytes).toJSON() };
-		/**
-		Write an image to a zarr dataset.
-		@param targetImg Image to write.
-		@param path Name of the top directory of the nn5 dataset.
-		*/
-		template<typename pixel_t>
-		void write(const Image<pixel_t>& img,
-			const std::string& path,
-			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
-			std::list<ZarrCodec> codecs = DEFAULT_CODECS,
-			int fillValue = 0,
-			bool showProgressInfo = false)
-		{
-			Vec3c clampedChunkSize = chunkSize;
-			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
-			internals::write(img, path, clampedChunkSize, fillValue, codecs, false, showProgressInfo);
-		}
+		inline const std::list<codecs::ZarrCodec> DEFAULT_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
+		inline const nlohmann::json DEFAULT_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
+
 
 		/**
 		Writes a block of an image to the specified location in an .zarr dataset.
@@ -484,7 +467,7 @@ namespace itl2
 		@param blockDimensions Dimensions of the block of the source image to write.
 		*/
 		template<typename pixel_t>
-		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<ZarrCodec>& codecs,
+		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<codecs::ZarrCodec>& codecs,
 			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions,
@@ -495,7 +478,26 @@ namespace itl2
 			internals::writeChunksInRange(img, path, chunkSize, fillValue, codecs, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
 
-
+		/**
+		Write an image to a zarr dataset.
+		@param targetImg Image to write.
+		@param path Name of the top directory of the nn5 dataset.
+		*/
+		template<typename pixel_t>
+		void write(const Image<pixel_t>& img,
+			const std::string& path,
+			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
+			std::list<codecs::ZarrCodec> codecs = DEFAULT_CODECS,
+			int fillValue = 0,
+			bool showProgressInfo = false)
+		{
+			bool deleteOldData = false;
+			Vec3c clampedChunkSize = chunkSize;
+			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
+			Vec3c dimensions = img.dimensions();
+			internals::handleExisting(dimensions, img.dataType(), path, clampedChunkSize, fillValue, codecs, deleteOldData);
+			writeBlock(img, path, clampedChunkSize, fillValue, codecs, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, showProgressInfo);
+		}
 
 		/**
 		Reads a part of a .zarr dataset to the given image.
@@ -504,7 +506,6 @@ namespace itl2
 		@param filename The name of the dataset to read.
 		@param fileStart Start location of the read in the file. The size of the image defines the size of the block that is read.
 		*/
-		//mark 5,6
 		template<typename pixel_t>
 		void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
 		{
@@ -513,7 +514,7 @@ namespace itl2
 			ImageDataType dataType;
 			Vec3c chunkSize;
 			int fillValue;
-			std::list<ZarrCodec> codecs;
+			std::list<codecs::ZarrCodec> codecs;
 			string reason;
 			std::cout << "readBlock" << std::endl;
 			if (!itl2::zarr::getInfo(path, datasetShape, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
@@ -540,7 +541,6 @@ namespace itl2
 		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
 		@param path Path to the root of the nn5 dataset.
 		*/
-		//mark 5
 		template<typename pixel_t>
 		void read(Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
 		{
@@ -549,7 +549,7 @@ namespace itl2
 			ImageDataType dataType;
 			Vec3c chunkSize;
 			int fillValue;
-			std::list<ZarrCodec> codecs;
+			std::list<codecs::ZarrCodec> codecs;
 			string reason;
 			if (!itl2::zarr::getInfo(path, dimensions, isNativeByteOrder, dataType, chunkSize, codecs, fillValue, reason))
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);

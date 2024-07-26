@@ -402,9 +402,9 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 			Image<pixel_t>& in = *pop<Image<pixel_t>* >(args);
 			std::string fname = pop<std::string>(args);
 			Vec3c chunkSize = pop<Vec3c>(args);
-			std::list<itl2::zarr::ZarrCodec> codecs;
+			std::list<itl2::zarr::codecs::ZarrCodec> codecs;
 			std::string reason;
-			if (!codecsFromJSON(codecs, pop<nlohmann::json>(args), reason)){
+			if (!itl2::zarr::codecs::fromJSON(codecs, pop<nlohmann::json>(args), reason)){
 				throw ITLException("could not parse zarr codecs: " + reason);
 			}
 			itl2::zarr::write(in, fname, chunkSize, codecs);

@@ -2,9 +2,9 @@
 #include <iostream>
 #include <tiff.h>
 
+#include "filesystem.h"
 #include "zarr.h"
 #include "json.h"
-#include "nn5.h"
 
 using namespace std;
 
@@ -13,7 +13,14 @@ namespace itl2
 	namespace zarr
 	{
 		//TODO: remove isNativeByteOrder
-		bool getInfo(const std::string& path, Vec3c& shape, bool& isNativeByteOrder, ImageDataType& dataType, Vec3c& chunkSize, std::list<ZarrCodec>& codecs, int& fillValue, std::string& reason)
+		bool getInfo(const std::string& path,
+			Vec3c& shape,
+			bool& isNativeByteOrder,
+			ImageDataType& dataType,
+			Vec3c& chunkSize,
+			std::list<codecs::ZarrCodec>& codecs,
+			int& fillValue,
+			std::string& reason)
 		{
 			shape = Vec3c();
 			isNativeByteOrder = true;
@@ -186,7 +193,7 @@ namespace itl2
 			}
 			else
 			{
-				if (!codecsFromJSON(codecs, j["codecs"], reason))
+				if (!codecs::fromJSON(codecs, j["codecs"], reason))
 				{
 					return false;
 				}
@@ -196,7 +203,7 @@ namespace itl2
 
 		namespace internals
 		{
-			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<ZarrCodec>& codecs)
+			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<codecs::ZarrCodec>& codecs)
 			{
 				nlohmann::json j =
 					{
@@ -225,7 +232,7 @@ namespace itl2
 				const std::string& path,
 				const Vec3c& chunkSize,
 				int fillValue,
-				const std::list<ZarrCodec>& codecs,
+				const std::list<codecs::ZarrCodec>& codecs,
 				bool deleteOldData)
 			{
 				// Delete old dataset if it exists.
@@ -235,7 +242,7 @@ namespace itl2
 					Vec3c oldDimensions;
 					ImageDataType oldDataType;
 					Vec3c oldChunkSize;
-					std::list<ZarrCodec> oldCodecs;
+					std::list<codecs::ZarrCodec> oldCodecs;
 					string dummyReason;
 					int oldFillValue;
 					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCodecs, oldFillValue, dummyReason))
@@ -273,27 +280,36 @@ namespace itl2
 				}
 			}
 
-			/**
-			Reads block position [X, Y, Z] from a filename in format 'chunk_X-Y-Z_something' or 'chunk_X-Y-Z.something'.
-			*/
-			Vec3c parsePosition(const string& filename)
+			std::vector<char> readBytesOfFile(std::string& filename)
 			{
-				string name = fs::path(filename).filename().string();
-				vector<string> parts = split(name, false, '_');
-				if (parts.size() < 2)
-					throw ITLException(string("Invalid chunk writes name: ") + filename);
-				if (parts[0] != "chunk")
-					throw ITLException(string("Chunk filename does not begin with 'chunk_': ") + filename);
-				string part = parts[1];
-				parts = split(part, true, '-');
-				if (parts.size() < 3)
-					throw ITLException(string("Block coordinates do not contain three elements: ") + filename);
-				coord_t x = fromString<coord_t>(parts[0]);
-				coord_t y = fromString<coord_t>(parts[1]);
-				coord_t z = fromString<coord_t>(parts[2]);
-				return Vec3c(x, y, z);
+				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
+				if (!ifs)
+				{
+					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+				}
+				std::ifstream::pos_type pos = ifs.tellg();
+				std::vector<char> result(pos);
+
+				ifs.seekg(0, std::ios::beg);
+				ifs.read(&result[0], pos);
+
+				return result;
+			}
+
+			void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos)
+			{
+				createFoldersFor(filename);
+				size_t fileSize = buffer.size();
+				setFileSize(filename, fileSize);
+				std::ofstream out(filename.c_str(), std::ios_base::in | std::ios_base::out | std::ios_base::binary);
+				if (!out)
+					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
+				out.write(&buffer[startInFilePos], fileSize - startInFilePos);
+				if (!out)
+					throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
 			}
 		}
+
 		namespace tests
 		{
 			void read()
@@ -327,7 +343,7 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,
-					{ ZarrCodec(ZarrCodecName::Transpose, nlohmann::json::parse(transposeCodecConfig)), ZarrCodec(ZarrCodecName::Bytes), });
+					{ codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(transposeCodecConfig)), codecs::ZarrCodec(codecs::Name::Bytes), });
 
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
@@ -346,7 +362,7 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,
-					{ ZarrCodec(ZarrCodecName::Bytes), ZarrCodec(ZarrCodecName::Blosc, nlohmann::json::parse(bloscCodecConfig))});
+					{ codecs::ZarrCodec(codecs::Name::Bytes), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)) });
 
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
