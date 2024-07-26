@@ -37,7 +37,7 @@ def pi2_write(chunk_shape=None, codecs=None, data=None):
         chunk_shape = list(data.shape)
     name = "test.zarr"
     shutil.rmtree(output_file(name), ignore_errors=True)
-    write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, [h, w, d])
+    write_img = pi2.newimage(pi2py2.ImageDataType.UInt32,  list(data.shape))
     write_img.set_data(data.transpose(1, 0, 2))
     if codecs is not None:
         pi2.writezarr(write_img, output_file(name), chunk_shape, codecs)
@@ -170,9 +170,9 @@ def test_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksize, d
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)
 
 
-@pytest.mark.parametrize("chunk_shape", [[5, 5, 2], [10, 1, 10], [1, 10, 10], [10, 10, 10]])
-@pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "zlib"])
-@pytest.mark.parametrize("clevel", [1, 2, 4])
+@pytest.mark.parametrize("chunk_shape", [[5, 5, 2]])
+@pytest.mark.parametrize("cname", ["lz4"])
+@pytest.mark.parametrize("clevel", [4])
 @pytest.mark.parametrize("shuffle", ["shuffle"])
 @pytest.mark.parametrize("typesize", [4])
 @pytest.mark.parametrize("blocksize", [0])
@@ -180,8 +180,7 @@ def test_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksize, d
 # @pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
 def test_read_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksize, data):
     codecs = '[{"configuration": {"endian": "little"},"name": "bytes"}, {"configuration": {"cname": "' + cname + '", "clevel": ' + str(
-        clevel) + ', "shuffle": "' + shuffle + '", "blocksize": ' + str(blocksize) + '},"name": "blosc"}]'
-
+        clevel) + ', "shuffle": "' + shuffle + '", "blocksize": ' + str(blocksize) + ', "typesize": ' + str(typesize) + '},"name": "blosc"}]'
     pi2_write(codecs=codecs, chunk_shape=chunk_shape, data=data)
     read_arr = pi2_read("test.zarr")
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)

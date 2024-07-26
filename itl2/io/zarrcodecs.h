@@ -2,10 +2,10 @@
 
 #include <string>
 #include <sstream> // Ensure you include this for stringstream
+#include <blosc.h>
 
 #include "json.h"
 #include "utilities.h"
-#include "zarrimagedatawrapper.h"
 
 namespace itl2
 {
@@ -149,7 +149,7 @@ namespace itl2
 				};
 			}
 
-			void getBloscConfiguration(string& cname, int& clevel, zarr::codecs::blosc::shuffle& shuffle, size_t& typesize, size_t& blocksize)
+			void getBloscConfiguration(string& cname, int& clevel, zarr::codecs::blosc::shuffle& shuffle, size_t& typesize, size_t& blocksize) const
 			{
 				if (this->name != Name::Blosc) throw ITLException("only blosc codec has blosc config");
 				try
@@ -164,13 +164,7 @@ namespace itl2
 					else if (shuffleName == "bitshuffle") shuffle = blosc::shuffle::bitshuffle;
 					else throw ITLException("invalid blosc shuffle parameter: " + shuffleName);
 					if (shuffle != blosc::shuffle::noshuffle)
-					{
-						if (this->configuration.contains("typesize"))
-							typesize = this->configuration["typesize"];
-						else if (typesize != 0)
-							this->configuration["typesize"] = typesize;
-						else throw ITLException("blosc error: no typesize set while shuffle!=noshuffle");
-					}
+						typesize = this->configuration["typesize"];
 					blocksize = this->configuration["blocksize"];
 				}
 				catch (nlohmann::json::exception ex)
@@ -179,21 +173,20 @@ namespace itl2
 				}
 			}
 
-			Vec3c transposeOrder()
+			void getTransposeConfiguration(Vec3c& order) const
 			{
 				try
 				{
 					if (this->name != Name::Transpose) throw ITLException("only transpose codec has transpose order");
 					auto orderJSON = this->configuration["order"];
-					//TODO check if valid order
-					Vec3c order = Vec3c(0, 1, 2);
+					order = Vec3c(0, 1, 2);
 					order[0] = orderJSON[0].get<size_t>();
 					if (orderJSON.size() >= 2)
 						order[1] = orderJSON[1].get<size_t>();
 					if (orderJSON.size() >= 3)
 						order[2] = orderJSON[2].get<size_t>();
 					cout << "transposeOrder=" << order << endl;
-					return order;
+					if (!order.isPermutation()) throw ITLException("TransposeConfiguration error: invalid order: " + toString(order) + "expected a permutation of [0, 1, 2]");
 				}
 				catch (nlohmann::json::exception ex)
 				{
@@ -257,7 +250,66 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeBytesCodec(Image<pixel_t>& image, std::vector<char>& buffer)
+		void encodeTransposeCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		{
+			Vec3c order;
+			codec.getTransposeConfiguration(order);
+			transpose(image, order, fillValue);
+		}
+
+		template<typename pixel_t>
+		void decodeTransposeCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		{
+			Vec3c order;
+			codec.getTransposeConfiguration(order);
+			transpose(image, order.inverseOrder(), fillValue);
+		}
+
+		inline void encodeBloscCodec(const ZarrCodec& codec, std::vector<char>& buffer)
+		{
+			size_t destSize = buffer.size() + BLOSC_MIN_HEADER_LENGTH;
+			size_t srcSize = buffer.size();
+			std::vector<char> temp(destSize);
+			string cname;
+			int clevel;
+			codecs::blosc::shuffle shuffle;
+			size_t typesize;
+			size_t blocksize;
+			codec.getBloscConfiguration(cname, clevel, shuffle, typesize, blocksize);
+			cout << "Using blosc compressor" << cname << endl;
+			int numinternalthreads = 1;
+
+			size_t realDestSize = blosc_compress_ctx(clevel, (int)shuffle, typesize, srcSize, buffer.data(), temp.data(), destSize, cname.c_str(), blocksize, numinternalthreads);
+
+			if (realDestSize == 0) cout << "Buffer is incompressible.  Giving up." << endl;
+			else if (realDestSize < 0) throw ITLException("Compression error.  Error code: " + toString(realDestSize));
+			else cout << "Compression: " << srcSize << " -> " << realDestSize << " (" << static_cast<double>(srcSize) / realDestSize << "x)" << endl;
+
+			buffer.resize(realDestSize);
+			std::memcpy(buffer.data(), temp.data(), realDestSize);
+		}
+
+		inline void decodeBloscCodec(const ZarrCodec& codec, std::vector<char>& buffer)
+		{
+			size_t srcSize = buffer.size();
+			size_t destSize;
+			if (blosc_cbuffer_validate(buffer.data(), srcSize, &destSize) < 0)
+			{
+				throw ITLException("blosc_decompress error: \"Buffer does not contain valid blosc-encoded contents\"");
+			}
+			std::vector<char> temp(destSize);
+			int numinternalthreads = 1;
+			size_t realDestSize = blosc_decompress_ctx(buffer.data(), temp.data(), destSize, numinternalthreads);
+			if (realDestSize < 0)
+			{
+				throw ITLException("blosc_decompress error.  Error code: " + toString(realDestSize));
+			}
+			buffer.resize(realDestSize);
+			std::memcpy(buffer.data(), temp.data(), realDestSize);
+		}
+
+		template<typename pixel_t>
+		void decodeBytesCodec(Image < pixel_t > &image, std::vector<char> & buffer)
 		{
 			Vec3c shape = image.dimensions();
 			std::vector<pixel_t> temp(shape.product());
@@ -279,7 +331,7 @@ namespace itl2
 			}
 		}
 		template<typename pixel_t>
-		void encodeBytesCodec(const Image<pixel_t>& image, std::vector<char>& buffer)
+		void encodeBytesCodec(const Image <pixel_t>& image, std::vector<char>& buffer)
 		{
 			Vec3c shape = image.dimensions();
 			std::vector<pixel_t> temp(shape.product());
@@ -299,6 +351,71 @@ namespace itl2
 			size_t bufferSize = shape.product() * sizeof(pixel_t);
 			buffer = std::vector<char>(bufferSize);
 			std::memcpy(buffer.data(), temp.data(), buffer.size());
+		}
+
+		inline void decodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer)
+		{
+			assert(codec.type == codecs::Type::BytesBytesCodec);
+			if (codec.name == codecs::Name::Blosc)
+			{
+				decodeBloscCodec(codec, buffer);
+			}
+			else throw ITLException("BytesBytesCodec: " + toString(codec.name) + " not yet implemented");
+		}
+
+		template<typename pixel_t>
+		void decodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer)
+		{
+			assert(codec.type == codecs::Type::ArrayBytesCodec);
+			if (codec.name == codecs::Name::Bytes)
+			{
+				decodeBytesCodec(image, buffer);
+			}
+			else throw ITLException("ArrayBytesCodec: " + toString(codec.name) + " not yet implemented");
+		}
+
+		template<typename pixel_t>
+		void decodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		{
+			assert(codec.type == codecs::Type::ArrayArrayCodec);
+			if (codec.name == codecs::Name::Transpose)
+			{
+				decodeTransposeCodec(codec, image, fillValue);
+			}
+			else throw ITLException("ArrayArrayCodec: " + toString(codec.name) + " not yet implemented");
+
+		}
+
+		inline void encodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer)
+		{
+			assert(codec.type == codecs::Type::BytesBytesCodec);
+			if (codec.name == codecs::Name::Blosc)
+			{
+				encodeBloscCodec(codec, buffer);
+			}
+			else throw ITLException("BytesBytesCodec: " + toString(codec.name) + " not yet implemented");
+		}
+
+		template<typename pixel_t>
+		void encodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer)
+		{
+			assert(codec.type == codecs::Type::ArrayBytesCodec);
+			if (codec.name == codecs::Name::Bytes)
+			{
+				encodeBytesCodec(image, buffer);
+			}
+			else throw ITLException("ArrayBytesCodec: " + toString(codec.name) + " not yet implemented");
+		}
+
+		template<typename pixel_t>
+		void encodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		{
+			assert(codec.type == codecs::Type::ArrayArrayCodec);
+			if (codec.name == codecs::Name::Transpose)
+			{
+				encodeTransposeCodec(codec, image, fillValue);
+			}
+			else throw ITLException("ArrayArrayCodec: " + toString(codec.name) + " not yet implemented");
 		}
 
 	}
