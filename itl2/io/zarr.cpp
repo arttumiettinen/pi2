@@ -332,9 +332,59 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test read and write"));
 			}
+
+			void writeBlock()
+			{
+				string path = "./testoutput/writeBlock.zarr";
+				Vec3c size = Vec3c(10, 10, 10);
+				Vec3c startBlock(2, 2, 2);
+				Vec3c endBlock(3, 4, 5);
+
+				Image<uint16_t> img(size, 42);
+				add(img, 10);
+				zarr::writeBlock(img, path, Vec3c(0, 0, 0), size, startBlock, endBlock);
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				Image<uint16_t> expected(size, 42);
+				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startBlock), Vec3<int>(endBlock)), (uint16_t)52);
+
+				testAssert(equals(img, fromDisk), string("zarr test writeBlock"));
+			}
+
+			void readBlockTest(Vec3c chunkSize){
+				cout << "readBlockTest chunkSize=" << chunkSize << endl;
+				string path = "./testoutput/readBlock.zarr";
+				Vec3c size = Vec3c(10, 10, 10);
+				Vec3c startOnes(3, 4, 5);
+
+				Vec3c startBlock(2, 2, 2);
+				Vec3c blockSize(2, 4, 6);
+
+				Image<uint16_t> img(size, 0);
+				draw(img, AABoxsc::fromMinMax(Vec3<int>(startOnes), Vec3<int>(size)), (uint16_t)1);
+				zarr::write(img, path, chunkSize);
+
+				Image<uint16_t> fromDisk(blockSize, 0);
+				zarr::readBlock(fromDisk, path, startBlock);
+
+				Image<uint16_t> expected(blockSize, 0);
+				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startOnes-startBlock), Vec3<int>(blockSize)), (uint16_t)1);
+
+				testAssert(equals(img, fromDisk), string("zarr test readBlock chunkSize="+toString(chunkSize)));
+			}
+
+			void readBlock()
+			{
+				readBlockTest(Vec3c(1,1,1));
+				readBlockTest(Vec3c(2,2,2));
+				readBlockTest(DEFAULT_CHUNK_SIZE);
+			}
+
 			void transpose()
 			{
-				string path = "./testoutput/test_writeTranspose.zarr";
+				string path = "./testoutput/test_transpose.zarr";
 
 				Image<uint16_t> img(Vec3c(2, 3, 4));
 				ramp3(img);
@@ -353,7 +403,7 @@ namespace itl2
 
 			void blosc()
 			{
-				string path = "./testoutput/test_writeBlosc.zarr";
+				string path = "./testoutput/test_blosc.zarr";
 
 				Image<uint16_t> img(Vec3c(2, 5, 10));
 				ramp(img, 0);
