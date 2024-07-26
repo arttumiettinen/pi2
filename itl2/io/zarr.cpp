@@ -316,7 +316,7 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test read and write"));
 			}
-			void writeTranspose()
+			void transpose()
 			{
 				string path = "./testoutput/test_writeTranspose.zarr";
 
@@ -335,11 +335,11 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
 
-			void writeBlosc()
+			void blosc()
 			{
 				string path = "./testoutput/test_writeBlosc.zarr";
 
-				Image<uint16_t> img(Vec3c(2, 3, 4));
+				Image<uint16_t> img(Vec3c(2, 5, 10));
 				ramp(img, 0);
 				add(img, 10);
 				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
@@ -353,6 +353,7 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
+
 		}
 	}
 }

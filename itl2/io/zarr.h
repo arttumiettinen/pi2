@@ -172,8 +172,8 @@ namespace itl2
 						else if (realDestSize < 0) throw ITLException("Compression error.  Error code: " + toString(realDestSize));
 						else cout << "Compression: " << srcSize << " -> " << realDestSize << " (" << static_cast<double>(srcSize) / realDestSize << "x)" << endl;
 
-						std::memcpy(buffer.data(), temp.data(), realDestSize);
 						buffer.resize(realDestSize);
+						std::memcpy(buffer.data(), temp.data(), realDestSize);
 					}
 					else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 				}
@@ -351,15 +351,20 @@ namespace itl2
 						  {
 							  if (codec->name == ZarrCodecName::Blosc)
 							  {
-								  int dsize = buffer.size();
-								  std::vector<char> temp(buffer.size());
-								  dsize = blosc_decompress(buffer.data(), temp.data(), dsize);
-								  if (dsize < 0)
+								  size_t srcSize = buffer.size();
+								  size_t destSize;
+								  if (blosc_cbuffer_validate(buffer.data(), srcSize, &destSize) < 0){
+									  throw ITLException("blosc_decompress error: \"Buffer does not contain valid blosc-encoded contents\"");
+								  }
+								  std::vector<char> temp(destSize);
+								  size_t realDestSize = blosc_decompress(buffer.data(), temp.data(), destSize);
+								  if (realDestSize < 0)
 								  {
-									  throw ITLException("blosc_decompress error.  Error code: " + toString(dsize));
+									  throw ITLException("blosc_decompress error.  Error code: " + toString(realDestSize));
 								  }
 								  cout << "buffer[0]= " << buffer[0] << "-> temp[0]= " << temp[0] << endl;
-								  buffer = std::move(temp);
+								  buffer.resize(realDestSize);
+								  std::memcpy(buffer.data(), temp.data(), realDestSize);
 							  }
 							  else throw ITLException("BytesBytesCodec: " + toString(codec->name) + " not yet implemented: ");
 
@@ -556,8 +561,7 @@ namespace itl2
 		{
 			void read();
 			void write();
-			void writeTranspose();
-			void writeBlosc();
+			void transpose();
 			void blosc();
 		}
 	}

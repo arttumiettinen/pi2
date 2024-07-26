@@ -256,7 +256,7 @@ namespace itl2
 
 		namespace internals
 		{
-			std::vector<char> readBytesOfFile(std::string filename)
+			inline std::vector<char> readBytesOfFile(std::string filename)
 			{
 				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
 				if (!ifs)
@@ -272,7 +272,7 @@ namespace itl2
 				return result;
 			}
 
-			void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos = 0)
+			inline void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos = 0)
 			{
 				createFoldersFor(filename);
 				size_t fileSize = buffer.size();
