@@ -162,14 +162,10 @@ namespace itl2
 						size_t typesize;
 						size_t blocksize;
 						codec->getBloscConfiguration(cname, clevel, shuffle, typesize, blocksize);
-						int rcode = blosc_set_compressor(cname.c_str());
-						if (rcode < 0) {
-							throw ITLException("Blosc Error setting "+ cname + " compressor.  It really exists?");
-						}
 						cout << "Using blosc compressor" << cname << endl;
-						blosc_set_blocksize(blocksize);
-						//todo: use blosc_compress_ctx and no blosc_init for multithreaded
-						size_t realDestSize = blosc_compress(clevel, (int)shuffle, typesize, srcSize, buffer.data(), temp.data(), destSize);
+						int numinternalthreads = 1;
+
+						size_t realDestSize = blosc_compress_ctx(clevel, (int)shuffle, typesize, srcSize, buffer.data(), temp.data(), destSize, cname.c_str(), blocksize, numinternalthreads);
 
 						if (realDestSize == 0) cout << "Buffer is incompressible.  Giving up." << endl;
 						else if (realDestSize < 0) throw ITLException("Compression error.  Error code: " + toString(realDestSize));
@@ -257,17 +253,6 @@ namespace itl2
 				// Writes block of image defined by (imagePosition, blockDimensions) to file (defined by path),
 				// to location defined by filePosition.
 
-				bool is_blosc_init = false;
-				for (auto codec : codecs)
-				{
-					if (codec.name == codecs::Name::Blosc && !is_blosc_init)
-					{
-						printf("Blosc version info: %s (%s)\n", BLOSC_VERSION_STRING, BLOSC_VERSION_DATE);
-						blosc_init();
-						is_blosc_init = true;
-					}
-				}
-
 				AABoxc imageBlock = AABoxc::fromPosSize(imagePosition, blockDimensions);
 
 				AABoxc fileTargetBlock = AABoxc::fromPosSize(filePosition, blockDimensions);
@@ -297,10 +282,6 @@ namespace itl2
 						  writeSingleChunk(img, path, chunkIndex, chunkShape, fileDimensions, chunkUpdateRegion.position(), imageUpdateRegion.position(), chunkUpdateRegion.size(), fillValue, codecs);
 				  }
 				});
-				if (is_blosc_init)
-				{
-					blosc_destroy();
-				}
 			}
 
 
@@ -315,15 +296,8 @@ namespace itl2
 				bool showProgressInfo)
 			{
 				Vec3c transposedChunkShape = chunkShape;
-				bool is_blosc_init = false;
 				for (auto codec : codecs)
 				{
-					if (codec.name == codecs::Name::Blosc && !is_blosc_init)
-					{
-						printf("Blosc version info: %s (%s)\n", BLOSC_VERSION_STRING, BLOSC_VERSION_DATE);
-						blosc_init();
-						is_blosc_init = true;
-					}
 					if (codec.name == codecs::Name::Transpose)
 					{
 						transposedChunkShape = transposedChunkShape.transposed(codec.transposeOrder());
@@ -362,7 +336,8 @@ namespace itl2
 									  throw ITLException("blosc_decompress error: \"Buffer does not contain valid blosc-encoded contents\"");
 								  }
 								  std::vector<char> temp(destSize);
-								  size_t realDestSize = blosc_decompress(buffer.data(), temp.data(), destSize);
+								  int numinternalthreads = 1;
+								  size_t realDestSize = blosc_decompress_ctx(buffer.data(), temp.data(), destSize, numinternalthreads);
 								  if (realDestSize < 0)
 								  {
 									  throw ITLException("blosc_decompress error.  Error code: " + toString(realDestSize));
@@ -418,10 +393,6 @@ namespace itl2
 					  }
 				  }
 				});
-				if (is_blosc_init)
-				{
-					blosc_destroy();
-				}
 			}
 
 			/**
