@@ -342,10 +342,12 @@ namespace itl2
 		@param blockDimensions Dimensions of the block of the source image to write.
 		*/
 		template<typename pixel_t>
-		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, int fillValue, std::list<codecs::ZarrCodec>& codecs,
-			const Vec3c& filePosition, const Vec3c& fileDimensions,
+		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions,
+			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
+			std::list<codecs::ZarrCodec> codecs = DEFAULT_CODECS,
+			int fillValue = 0,
 			bool showProgressInfo = false)
 		{
 			fs::create_directories(path);
@@ -371,7 +373,7 @@ namespace itl2
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
 			Vec3c dimensions = img.dimensions();
 			internals::handleExisting(dimensions, img.dataType(), path, clampedChunkSize, fillValue, codecs, deleteOldData);
-			writeBlock(img, path, clampedChunkSize, fillValue, codecs, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, showProgressInfo);
+			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize,  codecs,fillValue, showProgressInfo);
 		}
 
 		/**
@@ -438,6 +440,7 @@ namespace itl2
 			void write();
 			void transpose();
 			void blosc();
+			void writeBlock();
 		}
 	}
 }

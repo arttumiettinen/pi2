@@ -247,10 +247,11 @@ int main()
 	//test(itl2::lz4::tests::lz4io, "LZ4");
 	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
 	//
-	//test(itl2::zarr::tests::read, "Zarr read");
-	//test(itl2::zarr::tests::write, "Zarr write");
-	//test(itl2::zarr::tests::transpose, "zarr test transpose codec");
+	test(itl2::zarr::tests::read, "Zarr read");
+	test(itl2::zarr::tests::write, "Zarr write");
+	test(itl2::zarr::tests::transpose, "zarr test transpose codec");
 	test(itl2::zarr::tests::blosc, "zarr test blosc codec");
+	test(itl2::zarr::tests::writeBlock, "zarr test blosc codec");
 
 	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
 	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");

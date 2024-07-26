@@ -332,9 +332,29 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test read and write"));
 			}
+			void writeBlock()
+			{
+				string path = "./testoutput/writeBlock.zarr";
+				Vec3c size = Vec3c(10, 10, 10);
+				Vec3c startBlock(2, 2, 2);
+				Vec3c endBlock(3, 4, 5);
+
+				Image<uint16_t> img(size, 0);
+				zarr::write(img,path,zarr::DEFAULT_CHUNK_SIZE);
+				add(img, 10);
+				zarr::writeBlock(img, path,Vec3c(0,0,0),  size, startBlock, endBlock);
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				Image<uint16_t> expected(size, 0);
+				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startBlock), Vec3<int>(endBlock)), (uint16_t)10);
+
+				testAssert(equals(img, fromDisk), string("zarr test read and write"));
+			}
 			void transpose()
 			{
-				string path = "./testoutput/test_writeTranspose.zarr";
+				string path = "./testoutput/test_transpose.zarr";
 
 				Image<uint16_t> img(Vec3c(2, 3, 4));
 				ramp3(img);
@@ -353,7 +373,7 @@ namespace itl2
 
 			void blosc()
 			{
-				string path = "./testoutput/test_writeBlosc.zarr";
+				string path = "./testoutput/test_blosc.zarr";
 
 				Image<uint16_t> img(Vec3c(2, 5, 10));
 				ramp(img, 0);
