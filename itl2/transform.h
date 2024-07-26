@@ -352,7 +352,6 @@ namespace itl2
 	template<typename pixel_t, typename out_t> void copyValues(Image<pixel_t>& target, const Image<out_t>& block, const Vec3c& pos = Vec3c(0,0,0))
 	{
 		target.mustNotBe(block);
-		std::cout << "copyValues pos: " << pos << std::endl;
 		AABox<coord_t> sourceBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), block.dimensions());
 		AABox<coord_t> targetBox = AABox<coord_t>::fromPosSize(Vec3c(0, 0, 0), target.dimensions());
 		AABox<coord_t> clippedBox = sourceBox.translate(pos).intersection(targetBox).translate(-pos);
@@ -378,7 +377,6 @@ namespace itl2
 			{
 				Vec3c xi = Vec3c(x, y, z) + pos;
 				pixel_t result = pixelRound<pixel_t>(block(x, y, z));
-				std::cout << "setting target(= "<<xi << ") to block("<<x<<", "<<y<<", "<<z<<")=?"<<std::endl;
 				target(xi) = result;
 			});
 		//}
