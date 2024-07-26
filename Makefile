@@ -6,7 +6,7 @@
 #			bounds checking is not necessary unless tracking bugs etc.
 
 CFLAGS := -O3
-CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
+CXXFLAGS := -fopenmp -O0 -std=c++17 -fvisibility=hidden
 LDFLAGS := -fopenmp -lblosc
 
 OPENCL_LIB := -lOpenCL
