@@ -181,7 +181,6 @@ namespace itl2
 					{
 						while (chunkStart.x < imageDimensions.x)
 						{
-							std::cout << "forAllChunks chunkIndex=" << chunkIndex << " chunkStart=" << chunkStart << std::endl;
 							lambda(chunkIndex, chunkStart);
 							progress.step();
 
@@ -350,9 +349,11 @@ namespace itl2
 			int fillValue = 0,
 			bool showProgressInfo = false)
 		{
+			Vec3c clampedChunkSize = chunkSize;
+			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
 			fs::create_directories(path);
-			internals::writeMetadata(path, fileDimensions, img.dataType(), chunkSize, fillValue, codecs);
-			internals::writeChunksInRange(img, path, chunkSize, fillValue, codecs, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
+			internals::writeMetadata(path, fileDimensions, img.dataType(), clampedChunkSize, fillValue, codecs);
+			internals::writeChunksInRange(img, path, clampedChunkSize, fillValue, codecs, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
 
 		/**
@@ -369,9 +370,9 @@ namespace itl2
 			bool showProgressInfo = false)
 		{
 			bool deleteOldData = false;
-			Vec3c clampedChunkSize = chunkSize;
-			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
 			Vec3c dimensions = img.dimensions();
+			Vec3c clampedChunkSize = chunkSize;
+			clamp(clampedChunkSize, Vec3c(1, 1, 1), dimensions);
 			internals::handleExisting(dimensions, img.dataType(), path, clampedChunkSize, fillValue, codecs, deleteOldData);
 			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize,  codecs,fillValue, showProgressInfo);
 		}
@@ -441,6 +442,7 @@ namespace itl2
 			void transpose();
 			void blosc();
 			void writeBlock();
+			void readBlock();
 		}
 	}
 }
