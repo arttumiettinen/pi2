@@ -184,3 +184,13 @@ def test_read_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksi
     pi2_write(codecs=codecs, chunk_shape=chunk_shape, data=data)
     read_arr = pi2_read("test.zarr")
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)
+
+@pytest.mark.parametrize("separator", [".", "/", "-"])
+def test_separator(separator):
+    zarrita_write()
+    read_arr = pi2_read("zarrita.zarr")
+    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+    pi2_write()
+    read_arr = zarrita_read("test.zarr")
+    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
+
