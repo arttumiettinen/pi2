@@ -12,7 +12,6 @@ namespace itl2
 {
 	namespace zarr
 	{
-		//TODO: remove isNativeByteOrder
 		/*
 		 * getInfo will return false if the provided data is either no zarr data or has a configuration not supported by this implementation
 		 * getInfo will throw ITLException if zarr data is provided but does not match zarr specifications

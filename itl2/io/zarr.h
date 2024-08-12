@@ -56,10 +56,8 @@ namespace itl2
 			*/
 			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const ZarrMetadata& metadata);
 
-			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex)
+			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex, const string& separator)
 			{
-				//TODO: use separator from zarr metadata
-				string separator = string("/");
 				string filename = path + string("/c");
 				for (size_t n = 0; n < dimensionality; n++)
 					filename += separator + toString(chunkIndex[n]);
@@ -112,7 +110,7 @@ namespace itl2
 				  imgChunk(x, y, z) = img(pos);
 				});
 
-				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex);
+				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
 
 				// Clamp write size to the size of the image.
 				Vec3c imageChunkEnd = startInImageCoords + writeSize;
@@ -271,7 +269,7 @@ namespace itl2
 
 				  if (currentChunk.overlapsExclusive(imageBox))
 				  {
-					  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex);
+					  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex, metadata.separator);
 					  if (fs::is_directory(filename))
 					  {
 						  throw ITLException(filename + string(" is a directory, but it should be a file."));
@@ -363,7 +361,7 @@ namespace itl2
 			Vec3c clampedChunkSize = chunkSize;
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
 			fs::create_directories(path);
-			ZarrMetadata metadata = {clampedChunkSize, codecs, fillValue, separator};
+			ZarrMetadata metadata = { clampedChunkSize, codecs, fillValue, separator };
 			internals::writeMetadata(path, fileDimensions, img.dataType(), metadata);
 			internals::writeChunksInRange(img, path, metadata, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
@@ -386,7 +384,7 @@ namespace itl2
 			Vec3c dimensions = img.dimensions();
 			Vec3c clampedChunkSize = chunkSize;
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), dimensions);
-			ZarrMetadata metadata = {clampedChunkSize, codecs,fillValue, separator};
+			ZarrMetadata metadata = { clampedChunkSize, codecs, fillValue, separator };
 			internals::handleExisting(dimensions, img.dataType(), path, metadata, deleteOldData);
 			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize, codecs, fillValue, separator, showProgressInfo);
 		}
