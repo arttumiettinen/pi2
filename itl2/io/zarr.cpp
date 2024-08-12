@@ -13,20 +13,18 @@ namespace itl2
 	namespace zarr
 	{
 		//TODO: remove isNativeByteOrder
+		/*
+		 * getInfo will return false if the provided data is either no zarr data or has a configuration not supported by this implementation
+		 * getInfo will throw ITLException if zarr data is provided but does not match zarr specifications
+		 */
 		bool getInfo(const std::string& path,
 			Vec3c& shape,
-			bool& isNativeByteOrder,
 			ImageDataType& dataType,
-			Vec3c& chunkSize,
-			std::list<codecs::ZarrCodec>& codecs,
-			int& fillValue,
+			ZarrMetadata& metadata,
 			std::string& reason)
 		{
 			shape = Vec3c();
-			isNativeByteOrder = true;
 			dataType = ImageDataType::Unknown;
-			chunkSize = Vec3c();
-			fillValue = 43;
 
 			// Check that metadata file exists.
 			string metadataFilename = zarr::internals::zarrMetadataFilename(path);
@@ -133,14 +131,14 @@ namespace itl2
 					throw ITLException("Chunk shape and dataset shape contain different number of elements.");
 				}
 
-				chunkSize = Vec3c(1, 1, 1);
-				chunkSize[0] = chunkDims[0].get<size_t>();
+				metadata.chunkSize = Vec3c(1, 1, 1);
+				metadata.chunkSize[0] = chunkDims[0].get<size_t>();
 				if (chunkDims.size() >= 2)
-					chunkSize[1] = chunkDims[1].get<size_t>();
+					metadata.chunkSize[1] = chunkDims[1].get<size_t>();
 				if (chunkDims.size() >= 3)
-					chunkSize[2] = chunkDims[2].get<size_t>();
+					metadata.chunkSize[2] = chunkDims[2].get<size_t>();
 
-				cout << "getInfo chunkSize: " << chunkSize << endl;
+				cout << "getInfo metadata.chunkSize: " << metadata.chunkSize << endl;
 			}
 
 			if (!j.contains("chunk_key_encoding"))
@@ -152,7 +150,6 @@ namespace itl2
 				if (!j["chunk_key_encoding"].contains("name"))
 				{
 					throw ITLException("chunk_key_encoding name is missing in zarr metadata.");
-					return false;
 				}
 				if (j["chunk_key_encoding"]["name"].get<string>() != "default")
 				{
@@ -160,11 +157,13 @@ namespace itl2
 					return false;
 				}
 				if (j["chunk_key_encoding"].contains("configuration")
-					&& !j["chunk_key_encoding"]["configuration"].contains("separator")
-					&& j["chunk_key_encoding"]["configuration"]["separator"].get<string>() != "/")
+					&& !j["chunk_key_encoding"]["configuration"].contains("separator"))
 				{
-					reason = "This zarr implementation supports only default chunk_key_encoding with separator \"/\".";
-					return false;
+					throw ITLException("chunk_key_encoding configuration separator is missing in zarr metadata");
+				}
+				else
+				{
+					metadata.separator = j["chunk_key_encoding"]["configuration"]["separator"].get<string>();
 				}
 			}
 
@@ -176,7 +175,7 @@ namespace itl2
 			{
 				try
 				{
-					fillValue = j["fill_value"].get<int>();
+					metadata.fillValue = j["fill_value"].get<int>();
 				}
 				catch (nlohmann::json::exception ex)
 				{
@@ -193,7 +192,7 @@ namespace itl2
 			}
 			else
 			{
-				if (!codecs::fromJSON(codecs, j["codecs"], reason))
+				if (!codecs::fromJSON(metadata.codecs, j["codecs"], reason))
 				{
 					return false;
 				}
@@ -203,7 +202,7 @@ namespace itl2
 
 		namespace internals
 		{
-			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<codecs::ZarrCodec>& codecs)
+			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const ZarrMetadata& metadata)
 			{
 				nlohmann::json j =
 					{
@@ -211,12 +210,12 @@ namespace itl2
 						{ "node_type", "array" },//zarr updated
 						{ "shape", { shape[0], shape[1], shape[2] }},//zarr updated
 						{ "data_type", toString(dataType) },//zarr updated
-						{ "chunk_grid", {{ "name", "regular" }, { "configuration", {{ "chunk_shape", { chunkSize[0], chunkSize[1], chunkSize[2] }}}}}},
-						{ "chunk_key_encoding", {{ "name", "default" }, { "configuration", {{ "separator", "/" }}}}},
-						{ "fill_value", fillValue },
+						{ "chunk_grid", {{ "name", "regular" }, { "configuration", {{ "chunk_shape", { metadata.chunkSize[0], metadata.chunkSize[1], metadata.chunkSize[2] }}}}}},
+						{ "chunk_key_encoding", {{ "name", "default" }, { "configuration", {{ "separator", metadata.separator }}}}},
+						{ "fill_value", metadata.fillValue },
 						{ "codecs", {}}
 					};
-				for (auto& codec : codecs)
+				for (auto& codec : metadata.codecs)
 				{
 					j["codecs"].push_back(codec.toJSON());
 				}
@@ -230,22 +229,17 @@ namespace itl2
 			void handleExisting(const Vec3c& imageDimensions,
 				ImageDataType imageDataType,
 				const std::string& path,
-				const Vec3c& chunkSize,
-				int fillValue,
-				const std::list<codecs::ZarrCodec>& codecs,
+				const ZarrMetadata& metadata,
 				bool deleteOldData)
 			{
 				// Delete old dataset if it exists.
 				if (fs::exists(path))
 				{
-					bool oldIsNativeByteOrder;
 					Vec3c oldDimensions;
 					ImageDataType oldDataType;
-					Vec3c oldChunkSize;
-					std::list<codecs::ZarrCodec> oldCodecs;
+					ZarrMetadata oldMetadata;
 					string dummyReason;
-					int oldFillValue;
-					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCodecs, oldFillValue, dummyReason))
+					if (!zarr::getInfo(path, oldDimensions, oldDataType, oldMetadata, dummyReason))
 					{
 						// The path does not contain a Zarr dataset.
 						// If it is no known image, do not delete it.
@@ -258,11 +252,8 @@ namespace itl2
 						fs::remove_all(path);
 					}
 					else if (oldDimensions == imageDimensions &&
-						oldIsNativeByteOrder &&
 						oldDataType == imageDataType &&
-						oldChunkSize == chunkSize &&
-						oldCodecs == codecs &&
-						oldFillValue == fillValue)
+						oldMetadata == metadata)
 					{
 						// The path contains a compatible Zarr dataset.
 						// Delete it if we are not continuing a concurrent write.
@@ -353,7 +344,8 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test writeBlock"));
 			}
 
-			void readBlockTest(Vec3c chunkSize){
+			void readBlockTest(Vec3c chunkSize)
+			{
 				cout << "readBlockTest chunkSize=" << chunkSize << endl;
 				string path = "./testoutput/readBlock.zarr";
 				Vec3c size = Vec3c(10, 10, 10);
@@ -370,15 +362,15 @@ namespace itl2
 				zarr::readBlock(fromDisk, path, startBlock);
 
 				Image<uint16_t> expected(blockSize, 0);
-				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startOnes-startBlock), Vec3<int>(blockSize)), (uint16_t)1);
+				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startOnes - startBlock), Vec3<int>(blockSize)), (uint16_t)1);
 
-				testAssert(equals(img, fromDisk), string("zarr test readBlock chunkSize="+toString(chunkSize)));
+				testAssert(equals(img, fromDisk), string("zarr test readBlock chunkSize=" + toString(chunkSize)));
 			}
 
 			void readBlock()
 			{
-				readBlockTest(Vec3c(1,1,1));
-				readBlockTest(Vec3c(2,2,2));
+				readBlockTest(Vec3c(1, 1, 1));
+				readBlockTest(Vec3c(2, 2, 2));
 				readBlockTest(DEFAULT_CHUNK_SIZE);
 			}
 
@@ -393,6 +385,7 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,
+					zarr::DEFAULT_SEPARATOR,
 					{ codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(transposeCodecConfig)), codecs::ZarrCodec(codecs::Name::Bytes), });
 
 				Image<uint16_t> fromDisk;
@@ -412,6 +405,7 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,
+					zarr::DEFAULT_SEPARATOR,
 					{ codecs::ZarrCodec(codecs::Name::Bytes), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)) });
 
 				Image<uint16_t> fromDisk;
