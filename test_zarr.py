@@ -45,11 +45,13 @@ def pi2_write(chunk_shape=None, codecs=None, data=None):
         pi2.writezarr(write_img, output_file(name), chunk_shape)
 
 
-def zarrita_write(chunk_shape=None, codecs=None, data=None):
+def zarrita_write(chunk_shape=None, codecs=None, data=None, separator=None):
     if data is None:
         data = arr
     if chunk_shape is None:
         chunk_shape = data.shape
+    if separator is None:
+        separator = "/"
     if codecs is None:
         codecs = [
             zarrita.codecs.bytes_codec("little"),
@@ -64,6 +66,7 @@ def zarrita_write(chunk_shape=None, codecs=None, data=None):
         dtype='int32',
         chunk_shape=tuple(chunk_shape),
         fill_value=42,
+        chunk_key_encoding = ("default", separator),
         codecs=codecs,
     )
     a[:] = data
@@ -186,11 +189,8 @@ def test_read_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksi
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)
 
 @pytest.mark.parametrize("separator", [".", "/", "-"])
-def test_separator(separator):
-    zarrita_write()
+def test_read_separator(separator):
+    zarrita_write(separator=separator)
     read_arr = pi2_read("zarrita.zarr")
-    assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
-    pi2_write()
-    read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
 

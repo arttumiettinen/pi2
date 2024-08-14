@@ -384,7 +384,6 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,
-					zarr::DEFAULT_SEPARATOR,
 					{ codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(transposeCodecConfig)), codecs::ZarrCodec(codecs::Name::Bytes), });
 
 				Image<uint16_t> fromDisk;
@@ -404,7 +403,6 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,
-					zarr::DEFAULT_SEPARATOR,
 					{ codecs::ZarrCodec(codecs::Name::Bytes), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)) });
 
 				Image<uint16_t> fromDisk;
@@ -412,7 +410,40 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
+			void zarrMetadataEquals(){
+				ZarrMetadata metadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata equalMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata differentMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
+				testAssert(metadata == equalMetadata, string("zarr test equal metadata equals"));
+				testAssert(!(metadata == differentMetadata), string("zarr test different metadata doesnt equal"));
+			}
 
+			void separatorTest(std::string separator, std::string label)
+			{
+				string path = "./testoutput/test_separator_" + label + ".zarr";
+
+				Image<uint16_t> img(Vec3c(2, 3, 4));
+				ramp3(img);
+				add(img, 10);
+				zarr::write(img,
+					path,
+					Vec3c(1, 1, 1),
+					zarr::DEFAULT_CODECS,
+					separator
+				);
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				std::string filename = path + "/c" + separator + "1" + separator + "2" + separator + "3";
+				testAssert(fs::exists(filename), string("zarr test read and write with separator " + separator + " file does not exist: " + filename));
+
+				testAssert(equals(img, fromDisk), string("zarr test read and write with separator " + separator + " read failed"));
+			}
+			void separator(){
+				separatorTest(".", "dot");
+				separatorTest("/", "slash");
+				separatorTest("-", "minus");
+			}
 		}
 	}
 }
