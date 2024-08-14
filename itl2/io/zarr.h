@@ -24,7 +24,7 @@ namespace itl2
 		typedef struct
 		{
 			Vec3c chunkSize;
-			std::list<codecs::ZarrCodec> codecs;
+			codecs::Pipeline codecs;
 			int fillValue;
 			std::string separator;
 		} ZarrMetadata;
@@ -136,18 +136,8 @@ namespace itl2
 					startInChunkCoords = Vec3c(0, 0, 0);
 					realChunkSize = realWriteSize;
 				}
-				std::list<codecs::ZarrCodec>::const_iterator codec = metadata.codecs.begin();
-				for (; codec->type == codecs::Type::ArrayArrayCodec; ++codec)
-				{
-					codecs::encodeArrayArrayCodec(*codec, imgChunk, metadata.fillValue);
-				}
 				std::vector<char> buffer;
-				codecs::encodeArrayBytesCodec(*codec, imgChunk, buffer);
-				++codec;
-				for (; codec != metadata.codecs.end(); ++codec)
-				{
-					codecs::encodeBytesBytesCodec(*codec, buffer);
-				}
+				encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
 				writeBytesToFile(buffer, filename);
 			}
 
@@ -276,19 +266,8 @@ namespace itl2
 					  if (fs::is_regular_file(filename))
 					  {
 						  std::vector<char> buffer = readBytesOfFile(filename);
-						  //todo: does this work with const codecs
-						  std::list<codecs::ZarrCodec>::const_reverse_iterator codec = metadata.codecs.rbegin();
-						  for (; codec->type == codecs::Type::BytesBytesCodec; ++codec)
-						  {
-							  codecs::decodeBytesBytesCodec(*codec, buffer);
-						  }
 						  Image<pixel_t> imgChunk(transposedChunkShape);
-						  codecs::decodeArrayBytesCodec(*codec, imgChunk, buffer);
-						  ++codec;
-						  for (; codec != metadata.codecs.rend(); ++codec)
-						  {
-							  codecs::decodeArrayArrayCodec(*codec, imgChunk, metadata.fillValue);
-						  }
+						  decodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
 
 						  //write all pixels of chunk back to img
 						  forAllPixels(imgChunk, [&](coord_t x, coord_t y, coord_t z)
@@ -333,7 +312,7 @@ namespace itl2
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 		inline const string DEFAULT_SEPARATOR = "/";
 		inline const int DEFAULT_FILLVALUE = 42;
-		inline const std::list<codecs::ZarrCodec> DEFAULT_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
+		inline const codecs::Pipeline DEFAULT_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
 		inline const nlohmann::json DEFAULT_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
 
 		/**
@@ -352,7 +331,7 @@ namespace itl2
 			const Vec3c& imagePosition,
 			const Vec3c& blockDimensions,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
-			std::list<codecs::ZarrCodec> codecs = DEFAULT_CODECS,
+			codecs::Pipeline codecs = DEFAULT_CODECS,
 			int fillValue = DEFAULT_FILLVALUE,
 			const string& separator = DEFAULT_SEPARATOR,
 			bool showProgressInfo = false)
@@ -374,7 +353,7 @@ namespace itl2
 		void write(const Image<pixel_t>& img,
 			const std::string& path,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
-			std::list<codecs::ZarrCodec> codecs = DEFAULT_CODECS,
+			codecs::Pipeline codecs = DEFAULT_CODECS,
 			const std::string& separator = DEFAULT_SEPARATOR,
 			int fillValue = DEFAULT_FILLVALUE,
 			bool showProgressInfo = false)
