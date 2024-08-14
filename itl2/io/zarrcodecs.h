@@ -289,6 +289,7 @@ namespace itl2
 			std::memcpy(buffer.data(), temp.data(), realDestSize);
 		}
 
+		//todo: use swapByteOrder(img); depending on endian
 		inline void decodeBloscCodec(const ZarrCodec& codec, std::vector<char>& buffer)
 		{
 			size_t srcSize = buffer.size();

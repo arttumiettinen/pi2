@@ -29,8 +29,7 @@ namespace itl2
 			std::string separator;
 		} ZarrMetadata;
 
-		//todo: check if this is correctly checking for equality (not only identity)
-		bool operator==(const ZarrMetadata& lhs, const ZarrMetadata& rhs)
+		inline bool operator==(const ZarrMetadata& lhs, const ZarrMetadata& rhs)
 		{
 			return lhs.chunkSize == rhs.chunkSize &&
 				lhs.codecs == rhs.codecs &&
@@ -58,8 +57,8 @@ namespace itl2
 
 			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex, const string& separator)
 			{
-				string filename = path + string("/c");
-				for (size_t n = 0; n < dimensionality; n++)
+				string filename = path + string("/c/") + toString(chunkIndex[0]);
+				for (size_t n = 1; n < dimensionality; n++)
 					filename += separator + toString(chunkIndex[n]);
 				return filename;
 			}
@@ -375,8 +374,8 @@ namespace itl2
 		void write(const Image<pixel_t>& img,
 			const std::string& path,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
-			const std::string& separator = DEFAULT_SEPARATOR,
 			std::list<codecs::ZarrCodec> codecs = DEFAULT_CODECS,
+			const std::string& separator = DEFAULT_SEPARATOR,
 			int fillValue = DEFAULT_FILLVALUE,
 			bool showProgressInfo = false)
 		{
@@ -399,7 +398,6 @@ namespace itl2
 		template<typename pixel_t>
 		void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
 		{
-			bool isNativeByteOrder;
 			Vec3c datasetShape;
 			ImageDataType dataType;
 			ZarrMetadata metadata;
@@ -420,9 +418,6 @@ namespace itl2
 			clamp(cEnd, Vec3c(0, 0, 0), datasetShape);
 
 			internals::readChunksInRange(img, path, metadata, datasetShape, cStart, cEnd, showProgressInfo);
-
-			if (!isNativeByteOrder)
-				swapByteOrder(img);
 		}
 		/**
 		Reads a zarr dataset file to the given image.
@@ -450,6 +445,9 @@ namespace itl2
 			void blosc();
 			void writeBlock();
 			void readBlock();
+			void zarrMetadataEquals();
+			void separator();
+
 		}
 	}
 }

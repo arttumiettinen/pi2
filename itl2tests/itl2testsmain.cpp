@@ -252,7 +252,9 @@ int main()
 	//test(itl2::zarr::tests::transpose, "zarr test transpose codec");
 	//test(itl2::zarr::tests::blosc, "zarr test blosc codec");
 	//test(itl2::zarr::tests::writeBlock, "zarr test writeBlock");
-	test(itl2::zarr::tests::readBlock, "zarr test readBlock");
+	//test(itl2::zarr::tests::readBlock, "zarr test readBlock");
+	test(itl2::zarr::tests::zarrMetadataEquals, "zarr test zarrMetadataEquals");
+	test(itl2::zarr::tests::separator, "zarr test separator");
 
 	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
 	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
