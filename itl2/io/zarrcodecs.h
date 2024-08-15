@@ -358,7 +358,7 @@ namespace itl2
 			}
 		}
 		template<typename pixel_t>
-		void encodeBytesCodec(const Image <pixel_t>& image, std::vector<char>& buffer)
+		void encodeBytesCodec(const Image <pixel_t>& image, std::vector<char>& buffer, size_t pixelSize = sizeof(pixel_t))
 		{
 			Vec3c shape = image.dimensions();
 			std::vector<pixel_t> temp(shape.product());
@@ -375,7 +375,7 @@ namespace itl2
 				}
 			}
 
-			size_t bufferSize = shape.product() * sizeof(pixel_t);
+			size_t bufferSize = shape.product() * pixelSize;
 			buffer = std::vector<char>(bufferSize);
 			std::memcpy(buffer.data(), temp.data(), buffer.size());
 		}
@@ -391,18 +391,94 @@ namespace itl2
 
 		}
 
+		//forward declaration
+		inline void encodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer);
+
 		template<typename pixel_t>
 		void encodeShardingCodec(const ZarrCodec& codec, const Image <pixel_t>& shard, std::vector<char>& buffer, int fillValue)
 		{
-			Vec3c chunkShape;
+			typedef u_int64_t index_t;
+
+			Vec3c innerChunkShape;
 			Pipeline codecs;
 			Pipeline indexCodecs;
 			sharding::indexLocation indexLocation;
-			codec.getShardingConfiguration(chunkShape, codecs, indexCodecs, indexLocation);
-			Vec3c chunksPerShard = shard.dimensions() / chunkShape;
+			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
+
+			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
 			int chunkCount = chunksPerShard.product();
-			std::vector<coord_t> shardIndexArray = {chunksPerShard.x, chunksPerShard.y, chunksPerShard.z, 2};
-			std::vector<coord_t> chunkBytesList(chunkCount);
+			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
+			Image<index_t> shardIndexArrayNBytes(chunksPerShard);
+			int indexSize = 2 * sizeof(index_t) * chunkCount;
+			Image<std::vector<char>> chunkBytes(chunksPerShard);
+
+			//TODO: concurrency needed? then working with fixed nbytes would be necessary
+			//TODO: empty innerChunks? setting both values offset and nbytes to 2^64 - 1
+			std::vector<char> shardBuffer;
+			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			{
+				AABoxc currentInnerChunk = AABoxc::fromPosSize(chunkStart, innerChunkShape);
+				Image<pixel_t> innerChunk(innerChunkShape);
+				//write pixels from shard to innerChunk
+				forAllPixels(innerChunk, [&](coord_t x, coord_t y, coord_t z)
+				{
+				  Vec3c pos = Vec3c(x, y, z) + chunkStart;
+				  innerChunk(x, y, z) = shard(pos);
+				});
+
+				std::vector<char> chunkBuffer;
+				encodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
+
+				shardIndexArrayOffsets(chunkIndex) = shardBuffer.size(); //position of shardBuffer.end() where we will write the data of chunkBuffer
+				shardIndexArrayNBytes(chunkIndex) = chunkBuffer.size();
+				shardBuffer.insert(shardBuffer.end(), chunkBuffer.begin(), chunkBuffer.end());
+			});
+
+			//apply encodePipeline for shardIndexArray, but we do not support 4d arrays
+			if(std::find_if(indexCodecs.begin(), indexCodecs.end(), [](ZarrCodec codec){return codec.type == Type::ArrayArrayCodec;}) == indexCodecs.end())
+				throw ITLException("This zarr implementation does not support ArrayArrayCodecs within the sharding index_codecs");
+			auto indexCodec = indexCodecs.begin();
+			if(indexCodec->name!=Name::Bytes)
+				throw ITLException("This zarr implementation only supports the Bytes Codec at the first position of the sharding index_codecs");
+
+			//apply encodeBytesCodec for shardIndexArrayOffsets and shardIndexArrayNBytes combined
+			std::vector<char> indexBuffer;
+			std::vector<index_t> temp(chunkCount*2);
+			size_t n = 0;
+			for (coord_t x = 0; x < chunksPerShard.x; x++)
+			{
+				for (coord_t y = 0; y < chunksPerShard.y; y++)
+				{
+					for (coord_t z = 0; z < chunksPerShard.z; z++)
+					{
+						temp[n++] = shardIndexArrayOffsets(x, y, z);
+						temp[n++] = shardIndexArrayNBytes(x, y, z);
+					}
+				}
+			}
+			size_t bufferSize = chunkCount * sizeof(index_t) * 2;
+			indexBuffer = std::vector<char>(bufferSize);
+			std::memcpy(indexBuffer.data(), temp.data(), indexBuffer.size());
+
+			//encode BytesBytesCodecs
+			++indexCodec;
+			for (; indexCodec != indexCodecs.end(); ++indexCodec)
+			{
+				encodeBytesBytesCodec(*indexCodec, indexBuffer);
+			}
+
+			switch (indexLocation)
+			{
+			case sharding::indexLocation::start:
+				buffer.insert(buffer.end(), indexBuffer.begin(), indexBuffer.end());
+				buffer.insert(buffer.end(), shardBuffer.begin(), shardBuffer.end());
+				break;
+			case sharding::indexLocation::end:
+				buffer.insert(buffer.end(), shardBuffer.begin(), shardBuffer.end());
+				buffer.insert(buffer.end(), indexBuffer.begin(), indexBuffer.end());
+			}
+
+
 		}
 
 		inline void decodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer)

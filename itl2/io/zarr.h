@@ -109,8 +109,6 @@ namespace itl2
 				  imgChunk(x, y, z) = img(pos);
 				});
 
-				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
-
 				// Clamp write size to the size of the image.
 				Vec3c imageChunkEnd = startInImageCoords + writeSize;
 				for (size_t n = 0; n < imageChunkEnd.size(); n++)
@@ -122,6 +120,7 @@ namespace itl2
 				Vec3c realChunkSize = clampedChunkSize(chunkIndex, metadata.chunkSize, datasetSize);
 				realWriteSize = min(realWriteSize, realChunkSize);
 
+				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
 				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
 				// Chunk is unsafe if its folder contains writes folder.
 				//todo: when will writesFolder be created?
