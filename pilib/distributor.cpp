@@ -222,7 +222,7 @@ namespace pilib
 					//if (refStart.x >= refDims.x || refStart.y >= refDims.y || refStart.z >= refDims.z)
 					//	break;
 
-		nn5::internals::forAllChunks(refDims, blockSize, false, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
+		forAllChunks(refDims, blockSize, false, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
 			{
 
 				// Add margins to the reference block

@@ -332,7 +332,7 @@ namespace itl2
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
 
 			size_t unsafeChunkCount = 0;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
 					fs::create_directories(chunkFolder);
@@ -385,7 +385,7 @@ namespace itl2
 
 			size_t dimensionality = getDimensionality(imageDimensions);
 			vector<Vec3c> result;
-			internals::forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						result.push_back(chunkIndex);
@@ -530,7 +530,7 @@ namespace itl2
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 			size_t dimensionality = getDimensionality(fileDimensions);
 
-			internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
@@ -810,7 +810,7 @@ namespace itl2
 					vector<nn5::NN5Process> processes;
 
 					Vec3c processBlockSize(30, 30, 30);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
@@ -851,13 +851,13 @@ namespace itl2
 					vector<nn5::NN5Process> processes;
 
 					Vec3c processBlockSize(30, 31, 32);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					nn5::internals::forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							nn5::writeBlock(img, entireImageFile, chunkSize, compression, processBlockStart, dimensions, processBlockStart, processBlockSize);
 						});

@@ -6,6 +6,7 @@
 
 #include "json.h"
 #include "utilities.h"
+#include "iteration.h"
 
 namespace itl2
 {

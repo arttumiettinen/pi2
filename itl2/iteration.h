@@ -84,6 +84,71 @@ namespace itl2
 		}
 	}
 
+	inline size_t countChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize)
+	{
+		Vec3c chunkStart(0, 0, 0);
+		size_t chunkCount = 0;
+		while (chunkStart.z < imageDimensions.z)
+		{
+			while (chunkStart.y < imageDimensions.y)
+			{
+				while (chunkStart.x < imageDimensions.x)
+				{
+					chunkCount++;
+					chunkStart.x += chunkSize.x;
+				}
+				chunkStart.x = 0;
+				chunkStart.y += chunkSize.y;
+			}
+			chunkStart.x = 0;
+			chunkStart.y = 0;
+			chunkStart.z += chunkSize.z;
+		}
+		return chunkCount;
+	}
+
+
+	/**
+	Call lambda(chunkIndex, chunkStart) for all chunks in an image of given dimensions and chunk size.
+	*/
+	template<typename F>
+	void forAllChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize, bool showProgressInfo, F&& lambda)
+	{
+
+		size_t maxSteps = 0;
+		if (showProgressInfo)
+			maxSteps = countChunks(imageDimensions, chunkSize);
+		ProgressIndicator progress(maxSteps, showProgressInfo);
+
+		Vec3c chunkStart(0, 0, 0);
+		Vec3c chunkIndex(0, 0, 0);
+		while (chunkStart.z < imageDimensions.z)
+		{
+			while (chunkStart.y < imageDimensions.y)
+			{
+				while (chunkStart.x < imageDimensions.x)
+				{
+					lambda(chunkIndex, chunkStart);
+					progress.step();
+
+					chunkIndex.x++;
+					chunkStart.x += chunkSize.x;
+				}
+
+				chunkIndex.x = 0;
+				chunkIndex.y++;
+				chunkStart.x = 0;
+				chunkStart.y += chunkSize.y;
+			}
+			chunkIndex.x = 0;
+			chunkIndex.y = 0;
+			chunkIndex.z++;
+			chunkStart.x = 0;
+			chunkStart.y = 0;
+			chunkStart.z += chunkSize.z;
+		}
+	}
+
 	/**
 	Call lambda(coord_t x, coord_t y, coord_t z) for all pixels in the image.
 	*/

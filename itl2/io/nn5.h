@@ -173,76 +173,12 @@ namespace itl2
 					}
 				}
 			}
-
-			inline size_t countChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize)
-			{
-				Vec3c chunkStart(0, 0, 0);
-				size_t chunkCount = 0;
-				while (chunkStart.z < imageDimensions.z)
-				{
-					while (chunkStart.y < imageDimensions.y)
-					{
-						while (chunkStart.x < imageDimensions.x)
-						{
-							chunkCount++;
-							chunkStart.x += chunkSize.x;
-						}
-						chunkStart.x = 0;
-						chunkStart.y += chunkSize.y;
-					}
-					chunkStart.x = 0;
-					chunkStart.y = 0;
-					chunkStart.z += chunkSize.z;
-				}
-				return chunkCount;
-			}
-
-			/**
-			Call lambda(chunkIndex, chunkStart) for all chunks in an image of given dimensions and chunk size.
-			*/
-			template<typename F>
-			void forAllChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize, bool showProgressInfo, F&& lambda)
-			{
-				size_t maxSteps = 0;
-				if(showProgressInfo)
-					maxSteps = countChunks(imageDimensions, chunkSize);
-				ProgressIndicator progress(maxSteps, showProgressInfo);
-
-				Vec3c chunkStart(0, 0, 0);
-				Vec3c chunkIndex(0, 0, 0);
-				while (chunkStart.z < imageDimensions.z)
-				{
-					while (chunkStart.y < imageDimensions.y)
-					{
-						while (chunkStart.x < imageDimensions.x)
-						{
-							lambda(chunkIndex, chunkStart);
-							progress.step();
-
-							chunkIndex.x++;
-							chunkStart.x += chunkSize.x;
-						}
-
-						chunkIndex.x = 0;
-						chunkIndex.y++;
-						chunkStart.x = 0;
-						chunkStart.y += chunkSize.y;
-					}
-					chunkIndex.x = 0;
-					chunkIndex.y = 0;
-					chunkIndex.z++;
-					chunkStart.x = 0;
-					chunkStart.y = 0;
-					chunkStart.z += chunkSize.z;
-				}
-			}
-
 			/**
 			Writes NN5 chunk files.
 			*/
 			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize, bool showProgressInfo)
 			{
-				internals::forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, compression);
 				});
@@ -261,7 +197,7 @@ namespace itl2
 
 				AABoxc fileTargetBlock = AABoxc::fromPosSize(filePosition, blockDimensions);
 
-				internals::forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						// This is done for all chunks in the output file.
 						// We will need to update the chunk if the file block to be written (fileTargetBlock)
@@ -416,7 +352,7 @@ namespace itl2
 			{
 				Image<pixel_t> temp;
 
-				internals::forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, compression, temp);
 					});
@@ -436,7 +372,7 @@ namespace itl2
 				AABoxc imageBox = AABoxc::fromMinMax(start, end);
 
 				// This is a check-all-chunks algoritm. Alternatively, we could calculate the required chunk range.
-				internals::forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
 						if (currentChunk.overlapsExclusive(imageBox))
