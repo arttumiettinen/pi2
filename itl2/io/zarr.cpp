@@ -463,12 +463,15 @@ namespace itl2
 				Image<uint16_t> img(Vec3c(2, 5, 10));
 				ramp(img, 0);
 				add(img, 10);
+				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
+
 				nlohmann::json shardingCodecConfigJSON = {
-					{ "chunk_shape", { 2, 5, 1 }},
-					{ "codecs",  {codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
-					{"index_codecs", {codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
+					{"chunk_shape", { 2, 5, 1 }},
+					{"codecs",  { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
+					{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
 					{"index_location", "end"}
 				};
+
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE,

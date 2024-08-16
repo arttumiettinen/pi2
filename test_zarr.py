@@ -37,7 +37,7 @@ def pi2_write(chunk_shape=None, codecs=None, data=None):
         chunk_shape = list(data.shape)
     name = "test.zarr"
     shutil.rmtree(output_file(name), ignore_errors=True)
-    write_img = pi2.newimage(pi2py2.ImageDataType.UInt32,  list(data.shape))
+    write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, list(data.shape))
     write_img.set_data(data.transpose(1, 0, 2))
     if codecs is not None:
         pi2.writezarr(write_img, output_file(name), chunk_shape, codecs)
@@ -66,7 +66,7 @@ def zarrita_write(chunk_shape=None, codecs=None, data=None, separator=None):
         dtype='int32',
         chunk_shape=tuple(chunk_shape),
         fill_value=42,
-        chunk_key_encoding = ("default", separator),
+        chunk_key_encoding=("default", separator),
         codecs=codecs,
     )
     a[:] = data
@@ -180,13 +180,17 @@ def test_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksize, d
 @pytest.mark.parametrize("typesize", [4])
 @pytest.mark.parametrize("blocksize", [0])
 @pytest.mark.parametrize("data", [full_arr, np.zeros_like(full_arr)])
-# @pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
+#@pytest.mark.blosc
+# TODO @pytest.mark.parametrize("cname", ["lz4", "lz4hc", "blosclz", "zstd", "snappy", "zlib"])
 def test_read_write_blosc(chunk_shape, cname, clevel, shuffle, typesize, blocksize, data):
     codecs = '[{"configuration": {"endian": "little"},"name": "bytes"}, {"configuration": {"cname": "' + cname + '", "clevel": ' + str(
-        clevel) + ', "shuffle": "' + shuffle + '", "blocksize": ' + str(blocksize) + ', "typesize": ' + str(typesize) + '},"name": "blosc"}]'
+        clevel) + ', "shuffle": "' + shuffle + '", "blocksize": ' + str(blocksize) + ', "typesize": ' + str(
+        typesize) + '},"name": "blosc"}]'
+    print(codecs)
     pi2_write(codecs=codecs, chunk_shape=chunk_shape, data=data)
     read_arr = pi2_read("test.zarr")
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)
+
 
 @pytest.mark.parametrize("separator", [".", "/", "-"])
 def test_read_separator(separator):
@@ -194,11 +198,16 @@ def test_read_separator(separator):
     read_arr = pi2_read("zarrita.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)
 
-#todo: test more variation
-def test_write_sharding():
-    config = '{"chunk_shape":[1,1,1],"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"end"}'
+
+blosc_codec = ',{"configuration": {"cname": "lz4", "clevel": 4, "shuffle": "shuffle", "blocksize": 0, "typesize": 4},"name": "blosc"}'
+@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1], [w, 1, 1], [1, 1, 1]])
+@pytest.mark.parametrize("shard_shape", [[w, h, d], [w, h, 1]])
+@pytest.mark.parametrize("bytes_bytes_codecs", ["", blosc_codec])
+@pytest.mark.parametrize("index_location", ["start", "end"])
+def test_write_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location):
+    config = '{"chunk_shape":'+str(inner_chunk_shape)+',"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}'+bytes_bytes_codecs+'],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"'+index_location+'"}'
     codecs = '[{"name": "sharding_indexed", "configuration":' + config + '}]'
     print(codecs)
-    pi2_write(codecs=codecs)
+    pi2_write(codecs=codecs, chunk_shape=shard_shape)
     read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)

@@ -167,16 +167,17 @@ namespace itl2
 			}
 
 			void getShardingConfiguration(Vec3c& chunkShape, Pipeline& codecs, Pipeline& indexCodecs, sharding::indexLocation& indexLocation) const;
+
 			void parseShardingCodecConfig(nlohmann::json config = nlohmann::json())
 			{
-				//TODO: validate
+				//TODO: validate inner chunk size lies within shard size
 				this->configuration = config;
 
-				Vec3c chunkShape;
-				Pipeline codecs;
-				Pipeline indexCodecs;
-				sharding::indexLocation indexLocation;
-				this->getShardingConfiguration(chunkShape, codecs, indexCodecs, indexLocation);
+				Vec3c dummyChunkShape;
+				Pipeline dummyCodecs;
+				Pipeline dummyIndexCodecs;
+				sharding::indexLocation dummyIndexLocation;
+				this->getShardingConfiguration(dummyChunkShape, dummyCodecs, dummyIndexCodecs, dummyIndexLocation);
 			}
 
 			void getBloscConfiguration(string& cname, int& clevel, blosc::shuffle& shuffle, size_t& typesize, size_t& blocksize) const
@@ -394,6 +395,7 @@ namespace itl2
 			Pipeline indexCodecs;
 			sharding::indexLocation indexLocation;
 			codec.getShardingConfiguration(chunkShape, codecs, indexCodecs, indexLocation);
+
 
 		}
 
