@@ -322,7 +322,6 @@ namespace itl2
 			std::memcpy(buffer.data(), temp.data(), realDestSize);
 		}
 
-		//todo: use swapByteOrder(img); depending on endian
 		inline void decodeBloscCodec(const ZarrCodec& codec, std::vector<char>& buffer)
 		{
 			size_t srcSize = buffer.size();
@@ -342,6 +341,7 @@ namespace itl2
 			std::memcpy(buffer.data(), temp.data(), realDestSize);
 		}
 
+		//todo: use swapByteOrder(img); depending on endian
 		template<typename pixel_t>
 		void decodeBytesCodec(Image < pixel_t > &image, std::vector<char> & buffer)
 		{
@@ -390,12 +390,23 @@ namespace itl2
 		template<typename pixel_t>
 		void decodeShardingCodec(const ZarrCodec& codec, Image < pixel_t > &shard, std::vector<char> & buffer, int fillValue)
 		{
-			Vec3c chunkShape;
+			typedef u_int64_t index_t;
+
+			Vec3c innerChunkShape;
 			Pipeline codecs;
 			Pipeline indexCodecs;
 			sharding::indexLocation indexLocation;
-			codec.getShardingConfiguration(chunkShape, codecs, indexCodecs, indexLocation);
+			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
 
+			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
+			int chunkCount = chunksPerShard.product();
+			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
+			if(indexCodecs != allowedIndexCodecPipeline)
+			{
+				//TODO implement decode other index_codecs
+				throw ITLException("This zarr implementation only supports this sharding index_codec: " + toString(allowedIndexCodecPipeline.front().toJSON()));
+			}
+			int indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for bytes coded as index_codec
 
 		}
 
