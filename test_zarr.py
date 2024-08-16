@@ -196,8 +196,9 @@ def test_read_separator(separator):
 
 #todo: test more variation
 def test_write_sharding():
-    codecs = '[{"name": "sharding_indexed", "configuration": { "chunk_shape": [2, 3, 1],"codecs": [ { "name": "bytes", "configuration": { "endian": "little" }}]}}]'
+    config = '{"chunk_shape":[1,1,1],"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"end"}'
+    codecs = '[{"name": "sharding_indexed", "configuration":' + config + '}]'
     print(codecs)
-    pi2_write(codecs=codecs, chunk_shape=list([1,1,1]))
+    pi2_write(codecs=codecs)
     read_arr = zarrita_read("test.zarr")
     assert np.array_equal(arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(arr)

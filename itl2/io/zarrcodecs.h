@@ -166,10 +166,17 @@ namespace itl2
 				};
 			}
 
+			void getShardingConfiguration(Vec3c& chunkShape, Pipeline& codecs, Pipeline& indexCodecs, sharding::indexLocation& indexLocation) const;
 			void parseShardingCodecConfig(nlohmann::json config = nlohmann::json())
 			{
 				//TODO: validate
 				this->configuration = config;
+
+				Vec3c chunkShape;
+				Pipeline codecs;
+				Pipeline indexCodecs;
+				sharding::indexLocation indexLocation;
+				this->getShardingConfiguration(chunkShape, codecs, indexCodecs, indexLocation);
 			}
 
 			void getBloscConfiguration(string& cname, int& clevel, blosc::shuffle& shuffle, size_t& typesize, size_t& blocksize) const
@@ -217,7 +224,6 @@ namespace itl2
 				}
 			}
 
-			void getShardingConfiguration(Vec3c& chunkShape, Pipeline& codecs, Pipeline& indexCodecs, sharding::indexLocation& indexLocation) const;
 		};
 
 		typedef ZarrCodec::Pipeline Pipeline;
@@ -435,7 +441,7 @@ namespace itl2
 			});
 
 			//apply encodePipeline for shardIndexArray, but we do not support 4d arrays
-			if(std::find_if(indexCodecs.begin(), indexCodecs.end(), [](ZarrCodec codec){return codec.type == Type::ArrayArrayCodec;}) == indexCodecs.end())
+			if(std::find_if(indexCodecs.begin(), indexCodecs.end(), [](ZarrCodec codec){return codec.type == Type::ArrayArrayCodec;}) != indexCodecs.end())
 				throw ITLException("This zarr implementation does not support ArrayArrayCodecs within the sharding index_codecs");
 			auto indexCodec = indexCodecs.begin();
 			if(indexCodec->name!=Name::Bytes)
@@ -499,7 +505,7 @@ namespace itl2
 			{
 				decodeBytesCodec(image, buffer);
 			}
-			else if (codec.name == codecs::Name::Bytes)
+			else if (codec.name == codecs::Name::Sharding)
 			{
 				decodeShardingCodec(codec, image, buffer, fillValue);
 			}
@@ -593,6 +599,7 @@ inline void itl2::zarr::codecs::ZarrCodec::getShardingConfiguration(Vec3c& chunk
 	try
 	{
 		if (this->name != Name::Sharding) throw ITLException("only sharding codec has sharding config");
+		cout << this->configuration << endl;
 		auto chunkShapeJSON = this->configuration["chunk_shape"];
 		chunkShape = Vec3c(1, 1, 1);
 		chunkShape[0] = chunkShapeJSON[0].get<size_t>();
@@ -625,6 +632,6 @@ inline void itl2::zarr::codecs::ZarrCodec::getShardingConfiguration(Vec3c& chunk
 	}
 	catch (nlohmann::json::exception ex)
 	{
-		throw ITLException("error in reading transposeOrder of configuration: " + nlohmann::to_string(this->configuration) + " got exception: " + ex.what());
+		throw ITLException("error in reading sharding configuration: " + nlohmann::to_string(this->configuration) + " got exception: " + ex.what());
 	}
 }

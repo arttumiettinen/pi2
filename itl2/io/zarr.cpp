@@ -238,13 +238,26 @@ namespace itl2
 					ImageDataType oldDataType;
 					ZarrMetadata oldMetadata;
 					string dummyReason;
-					if (!zarr::getInfo(path, oldDimensions, oldDataType, oldMetadata, dummyReason))
+					string zarrReason;
+
+					bool isZarrImage = false;
+					try{
+						isZarrImage = zarr::getInfo(path, oldDimensions, oldDataType, oldMetadata, zarrReason);
+					}catch (ITLException& e)
+					{
+						zarrReason = e.message();
+					}
+					if (!isZarrImage)
 					{
 						// The path does not contain a Zarr dataset.
 						// If it is no known image, do not delete it.
-						if (!io::getInfo(path, oldDimensions, oldDataType, dummyReason))
+						bool isKnownImage = false;
+						try{
+							isKnownImage = io::getInfo(path, oldDimensions, oldDataType, dummyReason);
+						}catch (ITLException& e){}
+						if (!isKnownImage)
 							throw ITLException(string("Unable to write a Zarr as the output folder already exists but cannot be verified to be an image: ") + path
-								+ " Consider removing the existing dataset manually.");
+								+ " Consider removing the existing dataset manually. Reason why could not read as zarr: " + zarrReason);
 
 						// Here the path does not contain Zarr but contains an image of known type.
 						// Delete the old image.
@@ -443,6 +456,28 @@ namespace itl2
 				separatorTest(".", "dot");
 				separatorTest("/", "slash");
 				separatorTest("-", "minus");
+			}
+			void sharding(){
+				string path = "./testoutput/test_sharding.zarr";
+
+				Image<uint16_t> img(Vec3c(2, 5, 10));
+				ramp(img, 0);
+				add(img, 10);
+				nlohmann::json shardingCodecConfigJSON = {
+					{ "chunk_shape", { 2, 5, 1 }},
+					{ "codecs",  {codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
+					{"index_codecs", {codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
+					{"index_location", "end"}
+				};
+				zarr::write(img,
+					path,
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ codecs::ZarrCodec(codecs::Name::Sharding,  shardingCodecConfigJSON)});
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				testAssert(equals(img, fromDisk), string("zarr test write sharding"));
 			}
 		}
 	}
