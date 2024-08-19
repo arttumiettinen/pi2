@@ -225,6 +225,24 @@ namespace itl2
 				}
 			}
 
+			friend std::ostream& operator<<(std::ostream& stream, const ZarrCodec& c)
+			{
+				stream << c.toJSON();
+				return stream;
+			}
+
+			friend std::ostream& operator<<(std::ostream& stream, const Pipeline& p)
+			{
+				stream << "[";
+				for (const ZarrCodec c: p){
+					stream << c;
+					if (!(c == (*p.rbegin())))
+						stream << ", ";
+				}
+				stream << "]";
+				return stream;
+			}
+
 		};
 
 		typedef ZarrCodec::Pipeline Pipeline;
@@ -404,7 +422,9 @@ namespace itl2
 			if(indexCodecs != allowedIndexCodecPipeline)
 			{
 				//TODO implement decode other index_codecs
-				throw ITLException("This zarr implementation only supports this sharding index_codec: " + toString(allowedIndexCodecPipeline.front().toJSON()));
+				std::stringstream s;
+				s << "This zarr implementation only supports this sharding index_codec: " << allowedIndexCodecPipeline << " but got: " << indexCodecs;
+				throw ITLException(s.str());
 			}
 			int indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for index_codec only containing bytesCodec
 			std::vector<char> shardBuffer;
