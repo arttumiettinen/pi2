@@ -388,7 +388,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeShardingCodec(const ZarrCodec& codec, Image < pixel_t > &shard, std::vector<char> & buffer, int fillValue)
+		void decodeShardingCodec(const ZarrCodec& codec, Image<pixel_t>& shard, std::vector<char>& buffer, int fillValue)
 		{
 			typedef u_int64_t index_t;
 
@@ -406,7 +406,57 @@ namespace itl2
 				//TODO implement decode other index_codecs
 				throw ITLException("This zarr implementation only supports this sharding index_codec: " + toString(allowedIndexCodecPipeline.front().toJSON()));
 			}
-			int indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for bytes coded as index_codec
+			int indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for index_codec only containing bytesCodec
+			std::vector<char> shardBuffer;
+			std::vector<char> indexBuffer;
+
+			switch (indexLocation)
+			{
+			case sharding::indexLocation::start:
+				indexBuffer.insert(indexBuffer.end(), buffer.begin(), buffer.begin() + indexSize);
+				shardBuffer.insert(shardBuffer.end(), buffer.begin() + indexSize, buffer.end());
+				break;
+			case sharding::indexLocation::end:
+				shardBuffer.insert(shardBuffer.end(), buffer.begin(), buffer.end() - indexSize);
+				indexBuffer.insert(indexBuffer.end(), buffer.end() - indexSize, buffer.end());
+			}
+
+			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
+			Image<index_t> shardIndexArrayNBytes(chunksPerShard);
+
+			//decode indexArray buffer into shardIndexArrayOffsets and shardIndexArrayNBytes
+			//TODO: extract to decodeBytesCodec
+			std::vector<index_t> temp(chunkCount*2);
+			std::memcpy(temp.data(), indexBuffer.data(), indexBuffer.size());
+
+			size_t n = 0;
+			for (coord_t x = 0; x < chunksPerShard.x; x++)
+			{
+				for (coord_t y = 0; y < chunksPerShard.y; y++)
+				{
+					for (coord_t z = 0; z < chunksPerShard.z; z++)
+					{
+						shardIndexArrayOffsets(x, y, z) = temp[n++];
+						shardIndexArrayNBytes(x, y, z) = temp[n++];
+					}
+				}
+			}
+			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			{
+			  std::vector<char> chunkBuffer(shardIndexArrayNBytes(chunkIndex));
+			  auto chunkBegin = shardBuffer.begin() + shardIndexArrayOffsets(chunkIndex);
+			  auto chunkEnd = chunkBegin + shardIndexArrayNBytes(chunkIndex);
+			  chunkBuffer.insert(chunkBuffer.end(), chunkBegin, chunkEnd);
+
+			  Image<pixel_t> innerChunk(innerChunkShape);
+			  decodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
+
+			  forAllPixels(innerChunk, [&](coord_t x, coord_t y, coord_t z)
+			  {
+				Vec3c pos = Vec3c(x, y, z) + chunkStart;
+				shard(pos) = innerChunk(x, y, z);
+			  });
+			});
 
 		}
 
@@ -424,6 +474,7 @@ namespace itl2
 			sharding::indexLocation indexLocation;
 			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
 
+			if(!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape" + toString(shard.dimensions()));
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
 			int chunkCount = chunksPerShard.product();
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
@@ -461,6 +512,7 @@ namespace itl2
 				throw ITLException("This zarr implementation only supports the Bytes Codec at the first position of the sharding index_codecs");
 
 			//apply encodeBytesCodec for shardIndexArrayOffsets and shardIndexArrayNBytes combined
+			//TODO: extract to encodeBytesCodec
 			std::vector<char> indexBuffer;
 			std::vector<index_t> temp(chunkCount*2);
 			size_t n = 0;
