@@ -115,7 +115,7 @@ namespace itl2
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
-				cout << "created codec: " << toString(this->name) << " " << (int)this->type << endl;
+				cout << "created codec: " << *this;
 			}
 
 			nlohmann::json toJSON() const
@@ -427,17 +427,14 @@ namespace itl2
 				throw ITLException(s.str());
 			}
 			int indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for index_codec only containing bytesCodec
-			std::vector<char> shardBuffer;
 			std::vector<char> indexBuffer;
 
 			switch (indexLocation)
 			{
 			case sharding::indexLocation::start:
 				indexBuffer.insert(indexBuffer.end(), buffer.begin(), buffer.begin() + indexSize);
-				shardBuffer.insert(shardBuffer.end(), buffer.begin() + indexSize, buffer.end());
 				break;
 			case sharding::indexLocation::end:
-				shardBuffer.insert(shardBuffer.end(), buffer.begin(), buffer.end() - indexSize);
 				indexBuffer.insert(indexBuffer.end(), buffer.end() - indexSize, buffer.end());
 			}
 
@@ -463,9 +460,13 @@ namespace itl2
 			}
 			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 			{
-			  std::vector<char> chunkBuffer(shardIndexArrayNBytes(chunkIndex));
-			  auto chunkBegin = shardBuffer.begin() + shardIndexArrayOffsets(chunkIndex);
-			  auto chunkEnd = chunkBegin + shardIndexArrayNBytes(chunkIndex);
+				int nBytes = shardIndexArrayNBytes(chunkIndex);
+				int offset = shardIndexArrayOffsets(chunkIndex);
+			  //TODO: if both offset and nbytes equal 2^64 - 1 -> chunk empty
+
+			  std::vector<char> chunkBuffer;
+			  auto chunkBegin = buffer.begin() + offset;
+			  auto chunkEnd = chunkBegin + nBytes;
 			  chunkBuffer.insert(chunkBuffer.end(), chunkBegin, chunkEnd);
 
 			  Image<pixel_t> innerChunk(innerChunkShape);
@@ -494,12 +495,21 @@ namespace itl2
 			sharding::indexLocation indexLocation;
 			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
 
+			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
+			if(indexCodecs != allowedIndexCodecPipeline)
+			{
+				//TODO implement decode other index_codecs
+				std::stringstream s;
+				s << "This zarr implementation only supports this sharding index_codec: " << allowedIndexCodecPipeline << " but got: " << indexCodecs;
+				throw ITLException(s.str());
+			}
+
 			if(!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape" + toString(shard.dimensions()));
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
 			int chunkCount = chunksPerShard.product();
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
 			Image<index_t> shardIndexArrayNBytes(chunksPerShard);
-			int indexSize = 2 * sizeof(index_t) * chunkCount;
+			int indexSize = 2 * sizeof(index_t) * chunkCount; //will change if other index codecs are allowed
 			Image<std::vector<char>> chunkBytes(chunksPerShard);
 
 			//TODO: concurrency needed? then working with fixed nbytes would be necessary
@@ -520,6 +530,9 @@ namespace itl2
 				encodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
 
 				shardIndexArrayOffsets(chunkIndex) = shardBuffer.size(); //position of shardBuffer.end() where we will write the data of chunkBuffer
+				if(indexLocation == sharding::indexLocation::start){
+					shardIndexArrayOffsets(chunkIndex)+= indexSize;
+				}
 				shardIndexArrayNBytes(chunkIndex) = chunkBuffer.size();
 				shardBuffer.insert(shardBuffer.end(), chunkBuffer.begin(), chunkBuffer.end());
 			});

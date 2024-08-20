@@ -457,19 +457,27 @@ namespace itl2
 				separatorTest("/", "slash");
 				separatorTest("-", "minus");
 			}
-			void sharding(){
-				string path = "./testoutput/test_sharding.zarr";
+
+			void shardingTest(std::string indexLocation, bool withBlosc){
+
+				string path = "./testoutput/test_sharding_" + indexLocation;
+				if(withBlosc) path+="_withBlosc";
+				path+=".zarr";
 
 				Image<uint16_t> img(Vec3c(2, 5, 10));
 				ramp(img, 0);
 				add(img, 10);
 				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
 
+				nlohmann::json codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()};
+				if (withBlosc) codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()};
+
 				nlohmann::json shardingCodecConfigJSON = {
 					{"chunk_shape", { 2, 5, 1 }},
-					{"codecs",  { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
-					{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
-					{"index_location", "end"}
+					{"codecs", codecs},
+					//{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
+					{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
+					{"index_location", indexLocation}
 				};
 
 				zarr::write(img,
@@ -480,7 +488,14 @@ namespace itl2
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
 
-				testAssert(equals(img, fromDisk), string("zarr test write sharding"));
+				testAssert(equals(img, fromDisk), string("zarr test write sharding with indexLocation=" + indexLocation + " withBlosc="+ toString(withBlosc)));
+			}
+
+			void sharding(){
+				shardingTest("end", false);
+				shardingTest("start", false);
+				shardingTest("end", true);
+				shardingTest("start", true);
 			}
 		}
 	}
