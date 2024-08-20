@@ -22,6 +22,7 @@ def output_file(name):
 
 # remove all file in testoutput
 # shutil.rmtree("testoutput", ignore_errors=True)
+fill_value = 42
 
 full_arr = np.arange(10 * 10 * 10, dtype=np.float32).reshape(10, 10, 10)
 w = 2
@@ -30,8 +31,7 @@ d = 5
 arr = full_arr[:w, :h, :d]
 arr0 = np.zeros_like(arr)
 arr42 = np.zeros_like(arr)
-arr42[:, :, 1] = 42
-
+arr42[:, :, 1] = fill_value
 def pi2_write(chunk_shape=None, codecs=None, data=None, name = "test.zarr"):
     if data is None:
         data = arr
@@ -65,7 +65,7 @@ def zarrita_write(chunk_shape=None, codecs=None, data=None, separator=None, name
         shape=data.shape,
         dtype='float32',
         chunk_shape=tuple(chunk_shape),
-        fill_value=42,
+        fill_value=fill_value,
         chunk_key_encoding=("default", separator),
         codecs=codecs,
     )
@@ -200,12 +200,9 @@ def test_read_separator(separator):
 
 
 blosc_codec = ',{"configuration": {"cname": "lz4", "clevel": 4, "shuffle": "shuffle", "blocksize": 0, "typesize": 4},"name": "blosc"}'
-#@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1], [w, 1, 1], [1, 1, 1]])
-#@pytest.mark.parametrize("shard_shape", [[w, h, d], [w, h, 1]])
-@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1]])
-@pytest.mark.parametrize("shard_shape", [[w, h, d]])
-@pytest.mark.parametrize("bytes_bytes_codecs", [""])
-#@pytest.mark.parametrize("bytes_bytes_codecs", ["", blosc_codec])
+@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1], [w, 1, 1], [1, 1, 1]])
+@pytest.mark.parametrize("shard_shape", [[w, h, d], [w, h, 1]])
+@pytest.mark.parametrize("bytes_bytes_codecs", ["", blosc_codec])
 @pytest.mark.parametrize("index_location", ["start", "end"])
 @pytest.mark.parametrize("data", [arr, arr0, arr42])
 def test_write_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data, request):
@@ -217,12 +214,9 @@ def test_write_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs, inde
     read_arr = zarrita_read(filename)
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\ndata:\n " + str(data)
 
-#@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1], [w, 1, 1], [1, 1, 1]])
-#@pytest.mark.parametrize("shard_shape", [[w, h, d], [w, h, 1]])
-@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1]])
-@pytest.mark.parametrize("shard_shape", [[w, h, d]])
-@pytest.mark.parametrize("bytes_bytes_codecs", [[]])
-#@pytest.mark.parametrize("bytes_bytes_codecs", [[], [zarrita.codecs.blosc_codec(typesize=4)]])
+@pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1], [w, 1, 1], [1, 1, 1]])
+@pytest.mark.parametrize("shard_shape", [[w, h, d], [w, h, 1]])
+@pytest.mark.parametrize("bytes_bytes_codecs", [[], [zarrita.codecs.blosc_codec(typesize=4)]])
 @pytest.mark.parametrize("index_location", ["start", "end"])
 @pytest.mark.parametrize("data", [arr, arr0, arr42])
 def test_read_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data, request):
@@ -245,11 +239,9 @@ def test_read_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs, index
 blosc_codec = ',{"configuration": {"cname": "lz4", "clevel": 4, "shuffle": "shuffle", "blocksize": 0, "typesize": 4},"name": "blosc"}'
 @pytest.mark.parametrize("inner_chunk_shape", [[w, h, 1], [w, 1, 1], [1, 1, 1]])
 @pytest.mark.parametrize("shard_shape", [[w, h, d], [w, h, 1]])
-#@pytest.mark.parametrize("bytes_bytes_codecs", ["", blosc_codec])
-@pytest.mark.parametrize("bytes_bytes_codecs", [""])
+@pytest.mark.parametrize("bytes_bytes_codecs", ["", blosc_codec])
 @pytest.mark.parametrize("index_location", ["start", "end"])
 @pytest.mark.parametrize("data", [arr, arr0, arr42])
-@pytest.mark.skip()
 def test_read_write_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data, request):
     filename = request.node.name.replace('"', '') + ".zarr"
     config = '{"chunk_shape":'+str(inner_chunk_shape)+',"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}'+bytes_bytes_codecs+'],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"'+index_location+'"}'

@@ -460,23 +460,34 @@ namespace itl2
 			}
 			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 			{
-				int nBytes = shardIndexArrayNBytes(chunkIndex);
-				int offset = shardIndexArrayOffsets(chunkIndex);
-			  //TODO: if both offset and nbytes equal 2^64 - 1 -> chunk empty
+			  index_t nBytes = shardIndexArrayNBytes(chunkIndex);
+			  index_t offset = shardIndexArrayOffsets(chunkIndex);
 
-			  std::vector<char> chunkBuffer;
-			  auto chunkBegin = buffer.begin() + offset;
-			  auto chunkEnd = chunkBegin + nBytes;
-			  chunkBuffer.insert(chunkBuffer.end(), chunkBegin, chunkEnd);
+			  //TODO: check both variables. for testing nBytes is sufficient as the library used to test against had partially wrong offset values
+			  //if(nBytes==-1 && offset==-1){
+			  if(nBytes==-1){
+				  size_t ndrawn = draw(shard, AABoxc::fromMinMax(chunkStart, chunkStart + innerChunkShape), (pixel_t) fillValue);
+#if defined(_DEBUG) || defined(BOUNDS_CHECK)
+				  assert(ndrawn==innerChunkShape.product());
+#endif
 
-			  Image<pixel_t> innerChunk(innerChunkShape);
-			  decodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
-
-			  forAllPixels(innerChunk, [&](coord_t x, coord_t y, coord_t z)
+			  }else
 			  {
-				Vec3c pos = Vec3c(x, y, z) + chunkStart;
-				shard(pos) = innerChunk(x, y, z);
-			  });
+				  std::vector<char> chunkBuffer;
+				  auto chunkBegin = buffer.begin() + offset;
+				  auto chunkEnd = chunkBegin + nBytes;
+
+				  chunkBuffer.insert(chunkBuffer.end(), chunkBegin, chunkEnd);
+
+				  Image<pixel_t> innerChunk(innerChunkShape);
+				  decodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
+
+				  forAllPixels(innerChunk, [&](coord_t x, coord_t y, coord_t z)
+				  {
+					Vec3c pos = Vec3c(x, y, z) + chunkStart;
+					shard(pos) = innerChunk(x, y, z);
+				  });
+			  }
 			});
 
 		}
