@@ -491,11 +491,43 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test write sharding with indexLocation=" + indexLocation + " withBlosc="+ toString(withBlosc)));
 			}
 
-			void sharding(){
+			void shardingEmptyInnerChunksTest(string indexLocation)
+			{
+				string path = "./testoutput/test_sharding_empty_inner_chunks_" + indexLocation;
+				Image<uint16_t> img(Vec3c(10, 10, 10));
+				add(img, DEFAULT_FILLVALUE);
+				nlohmann::json shardingCodecConfigJSON = {
+					{ "chunk_shape", { 5, 5, 5 }},
+					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
+					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
+					{ "index_location", indexLocation }
+				};
+
+				img(0, 0, 0) = 1; //to not have complete shard empty
+				zarr::write(img,
+					path + "_empty",
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
+
+				ramp(img, 0);
+				zarr::write(img,
+					path + "_full",
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
+
+				auto sizeEmptyChunks = fileSize(internals::chunkFile(path + "_empty", 3, Vec3c(0, 0, 0), DEFAULT_SEPARATOR));
+				auto sizeFullChunks = fileSize(internals::chunkFile(path + "_full", 3, Vec3c(0, 0, 0), DEFAULT_SEPARATOR));
+
+				testAssert(sizeEmptyChunks < sizeFullChunks, "shardingEmptyInnerChunksTest" + indexLocation);
+			}
+			void sharding()
+			{
 				shardingTest("end", false);
 				shardingTest("start", false);
 				shardingTest("end", true);
 				shardingTest("start", true);
+				shardingEmptyInnerChunksTest("start");
+				shardingEmptyInnerChunksTest("end");
 			}
 		}
 	}

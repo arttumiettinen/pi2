@@ -115,7 +115,6 @@ namespace itl2
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
-				cout << "created codec: " << *this;
 			}
 
 			nlohmann::json toJSON() const
@@ -528,24 +527,37 @@ namespace itl2
 			std::vector<char> shardBuffer;
 			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 			{
-				AABoxc currentInnerChunk = AABoxc::fromPosSize(chunkStart, innerChunkShape);
-				Image<pixel_t> innerChunk(innerChunkShape);
-				//write pixels from shard to innerChunk
-				forAllPixels(innerChunk, [&](coord_t x, coord_t y, coord_t z)
-				{
-				  Vec3c pos = Vec3c(x, y, z) + chunkStart;
-				  innerChunk(x, y, z) = shard(pos);
-				});
-
-				std::vector<char> chunkBuffer;
-				encodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
-
-				shardIndexArrayOffsets(chunkIndex) = shardBuffer.size(); //position of shardBuffer.end() where we will write the data of chunkBuffer
-				if(indexLocation == sharding::indexLocation::start){
-					shardIndexArrayOffsets(chunkIndex)+= indexSize;
+			  AABoxc currentInnerChunk = AABoxc::fromPosSize(chunkStart, innerChunkShape);
+			  Image<pixel_t> innerChunk(innerChunkShape);
+			  bool innerChunkEmpty = true;
+			  //write pixels from shard to innerChunk
+			  forAllPixels(innerChunk, [&](coord_t x, coord_t y, coord_t z)
+			  {
+				Vec3c pos = Vec3c(x, y, z) + chunkStart;
+				innerChunk(x, y, z) = shard(pos);
+				if (!(shard(pos) == (pixel_t)fillValue))
+				{ //TODO: change fillValue to pixel_t
+					innerChunkEmpty = false;
 				}
-				shardIndexArrayNBytes(chunkIndex) = chunkBuffer.size();
-				shardBuffer.insert(shardBuffer.end(), chunkBuffer.begin(), chunkBuffer.end());
+			  });
+			  if (innerChunkEmpty)
+			  {
+				  shardIndexArrayOffsets(chunkIndex) = -1;
+				  shardIndexArrayNBytes(chunkIndex) = -1;
+			  }
+			  else
+			  {
+				  std::vector<char> chunkBuffer;
+				  encodePipeline(codecs, innerChunk, chunkBuffer, fillValue);
+
+				  shardIndexArrayOffsets(chunkIndex) = shardBuffer.size(); //position of shardBuffer.end() where we will write the data of chunkBuffer
+				  if (indexLocation == sharding::indexLocation::start)
+				  {
+					  shardIndexArrayOffsets(chunkIndex) += indexSize;
+				  }
+				  shardIndexArrayNBytes(chunkIndex) = chunkBuffer.size();
+				  shardBuffer.insert(shardBuffer.end(), chunkBuffer.begin(), chunkBuffer.end());
+			  }
 			});
 
 			//apply encodePipeline for shardIndexArray, but we do not support 4d arrays
@@ -571,8 +583,8 @@ namespace itl2
 					}
 				}
 			}
-			size_t bufferSize = chunkCount * sizeof(index_t) * 2;
-			indexBuffer = std::vector<char>(bufferSize);
+			size_t indexBufferSize = chunkCount * sizeof(index_t) * 2;
+			indexBuffer = std::vector<char>(indexBufferSize);
 			std::memcpy(indexBuffer.data(), temp.data(), indexBuffer.size());
 
 			//encode BytesBytesCodecs
@@ -592,6 +604,7 @@ namespace itl2
 				buffer.insert(buffer.end(), shardBuffer.begin(), shardBuffer.end());
 				buffer.insert(buffer.end(), indexBuffer.begin(), indexBuffer.end());
 			}
+			cout << "sizes: " << shardBuffer.size() <<" " << indexBuffer.size() << " " << buffer.size() << endl;
 
 
 		}
