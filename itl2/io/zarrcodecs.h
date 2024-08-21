@@ -604,9 +604,6 @@ namespace itl2
 				buffer.insert(buffer.end(), shardBuffer.begin(), shardBuffer.end());
 				buffer.insert(buffer.end(), indexBuffer.begin(), indexBuffer.end());
 			}
-			cout << "sizes: " << shardBuffer.size() <<" " << indexBuffer.size() << " " << buffer.size() << endl;
-
-
 		}
 
 		inline void decodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer)

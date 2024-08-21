@@ -264,6 +264,39 @@ namespace itl2
 				shardingEmptyInnerChunksTest("start");
 				shardingEmptyInnerChunksTest("end");
 			}
+			void emptyChunks(){
+				string path = "./testoutput/test_empty_chunks";
+				Image<uint16_t> img(Vec3c(8, 8, 8));
+				add(img, uint16_t());//TODO DEFAULT_FILLVALUE);
+
+				bool expectedFiles[4][4][4] = {false};
+
+				img(0, 0, 0) = 1;
+				expectedFiles[0][0][0] = true;
+
+				img(7, 7, 7) = 3;
+				expectedFiles[3][3][3] = true;
+
+				img(1, 2, 3) = 1;
+				expectedFiles[0][1][1] = true;
+
+				zarr::write(img,
+					path,
+					Vec3c(2,2,2));
+
+				for (int i = 0; i < 4; ++i)
+				{
+					for (int j = 0; j < 4; ++j)
+					{
+						for (int k = 0; k < 4; ++k)
+						{
+							string filename = internals::chunkFile(path, 3, Vec3c(i,j,k), DEFAULT_SEPARATOR);
+							testAssert(fs::exists(filename) == expectedFiles[i][j][k], "test emptyChunks at " + toString(i) + " " + toString(j) + " " + toString(k));
+
+						}
+					}
+				}
+			}
 		}
 	}
 }

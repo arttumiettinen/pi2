@@ -256,6 +256,7 @@ int main()
 	test(itl2::zarr::tests::zarrMetadataEquals, "zarr test zarrMetadataEquals");
 	test(itl2::zarr::tests::separator, "zarr test separator");
 	test(itl2::zarr::tests::sharding, "zarr test sharding");
+	test(itl2::zarr::tests::emptyChunks, "zarr test emptyChunks");
 
 	//test(itl2::nn5::tests::nn5io, "NN5 I/O");
 	//test(itl2::nn5::tests::nn5BlockIo, "NN5 block I/O");
