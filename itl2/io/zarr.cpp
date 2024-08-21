@@ -16,10 +16,11 @@ namespace itl2
 		 * getInfo will return false if the provided data is either no zarr data or has a configuration not supported by this implementation
 		 * getInfo will throw ITLException if zarr data is provided but does not match zarr specifications
 		 */
+		template<typename pixel_t>
 		bool getInfo(const std::string& path,
 			Vec3c& shape,
 			ImageDataType& dataType,
-			ZarrMetadata& metadata,
+			ZarrMetadata<pixel_t>& metadata,
 			std::string& reason)
 		{
 			shape = Vec3c();
@@ -174,7 +175,7 @@ namespace itl2
 			{
 				try
 				{
-					metadata.fillValue = j["fill_value"].get<int>();
+					metadata.fillValue = j["fill_value"].get<pixel_t>();
 				}
 				catch (nlohmann::json::exception ex)
 				{
@@ -201,7 +202,8 @@ namespace itl2
 
 		namespace internals
 		{
-			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const ZarrMetadata& metadata)
+			template<typename pixel_t>
+			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const ZarrMetadata<pixel_t>& metadata)
 			{
 				nlohmann::json j =
 					{
@@ -225,10 +227,11 @@ namespace itl2
 				of << std::setw(4) << j << endl;
 			}
 
+			template<typename pixel_t>
 			void handleExisting(const Vec3c& imageDimensions,
 				ImageDataType imageDataType,
 				const std::string& path,
-				const ZarrMetadata& metadata,
+				const ZarrMetadata<pixel_t>& metadata,
 				bool deleteOldData)
 			{
 				// Delete old dataset if it exists.
@@ -236,7 +239,7 @@ namespace itl2
 				{
 					Vec3c oldDimensions;
 					ImageDataType oldDataType;
-					ZarrMetadata oldMetadata;
+					ZarrMetadata<pixel_t> oldMetadata;
 					string dummyReason;
 					string zarrReason;
 
@@ -424,9 +427,9 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
 			void zarrMetadataEquals(){
-				ZarrMetadata metadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
-				ZarrMetadata equalMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
-				ZarrMetadata differentMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
+				ZarrMetadata<uint16_t> metadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata<uint16_t> equalMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata<uint16_t> differentMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
 				testAssert(metadata == equalMetadata, string("zarr test equal metadata equals"));
 				testAssert(!(metadata == differentMetadata), string("zarr test different metadata doesnt equal"));
 			}
@@ -495,7 +498,7 @@ namespace itl2
 			{
 				string path = "./testoutput/test_sharding_empty_inner_chunks_" + indexLocation;
 				Image<uint16_t> img(Vec3c(10, 10, 10));
-				add(img, DEFAULT_FILLVALUE);
+				add(img, uint16_t());//TODO DEFAULT_FILLVALUE);
 				nlohmann::json shardingCodecConfigJSON = {
 					{ "chunk_shape", { 5, 5, 5 }},
 					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},

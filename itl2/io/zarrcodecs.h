@@ -294,13 +294,13 @@ namespace itl2
 			return true;
 		}
 		template<typename pixel_t>
-		void encodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, int fillValue);
+		void encodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, pixel_t fillValue);
 
 		template<typename pixel_t>
-		void decodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, int fillValue);
+		void decodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, pixel_t fillValue);
 
 		template<typename pixel_t>
-		void encodeTransposeCodec(const ZarrCodec& codec, Image<pixel_t>& image, int fillValue)
+		void encodeTransposeCodec(const ZarrCodec& codec, Image<pixel_t>& image, pixel_t fillValue)
 		{
 			Vec3c order;
 			codec.getTransposeConfiguration(order);
@@ -308,7 +308,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeTransposeCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		void decodeTransposeCodec(const ZarrCodec& codec, Image <pixel_t>& image, pixel_t fillValue)
 		{
 			Vec3c order;
 			codec.getTransposeConfiguration(order);
@@ -405,7 +405,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeShardingCodec(const ZarrCodec& codec, Image<pixel_t>& shard, std::vector<char>& buffer, int fillValue)
+		void decodeShardingCodec(const ZarrCodec& codec, Image<pixel_t>& shard, std::vector<char>& buffer, pixel_t fillValue)
 		{
 			typedef u_int64_t index_t;
 
@@ -465,7 +465,7 @@ namespace itl2
 			  //TODO: check both variables. for testing nBytes is sufficient as the library used to test against had partially wrong offset values
 			  //if(nBytes==-1 && offset==-1){
 			  if(nBytes==-1){
-				  size_t ndrawn = draw(shard, AABoxc::fromMinMax(chunkStart, chunkStart + innerChunkShape), (pixel_t) fillValue);
+				  size_t ndrawn = draw(shard, AABoxc::fromMinMax(chunkStart, chunkStart + innerChunkShape), fillValue);
 #if defined(_DEBUG) || defined(BOUNDS_CHECK)
 				  assert(ndrawn==innerChunkShape.product());
 #endif
@@ -495,7 +495,7 @@ namespace itl2
 		inline void encodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer);
 
 		template<typename pixel_t>
-		void encodeShardingCodec(const ZarrCodec& codec, const Image <pixel_t>& shard, std::vector<char>& buffer, int fillValue)
+		void encodeShardingCodec(const ZarrCodec& codec, const Image <pixel_t>& shard, std::vector<char>& buffer, pixel_t fillValue)
 		{
 			typedef u_int64_t index_t;
 
@@ -535,8 +535,8 @@ namespace itl2
 			  {
 				Vec3c pos = Vec3c(x, y, z) + chunkStart;
 				innerChunk(x, y, z) = shard(pos);
-				if (!(shard(pos) == (pixel_t)fillValue))
-				{ //TODO: change fillValue to pixel_t
+				if (!(shard(pos) == fillValue))
+				{
 					innerChunkEmpty = false;
 				}
 			  });
@@ -620,7 +620,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer, int fillValue)
+		void decodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer, pixel_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayBytesCodec);
 			if (codec.name == codecs::Name::Bytes)
@@ -635,7 +635,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		void decodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, pixel_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayArrayCodec);
 			if (codec.name == codecs::Name::Transpose)
@@ -657,7 +657,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void encodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer, int fillValue)
+		void encodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer, pixel_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayBytesCodec);
 			if (codec.name == codecs::Name::Bytes)
@@ -672,7 +672,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void encodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, int fillValue)
+		void encodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, pixel_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayArrayCodec);
 			if (codec.name == codecs::Name::Transpose)
@@ -683,7 +683,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void encodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, int fillValue){
+		void encodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, pixel_t fillValue){
 			codecs::Pipeline::const_iterator codec = codecs.begin();
 			for (; codec->type == codecs::Type::ArrayArrayCodec; ++codec)
 			{
@@ -698,7 +698,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, int fillValue)
+		void decodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, pixel_t fillValue)
 		{
 			//todo: does this work with const codecs
 			codecs::Pipeline::const_reverse_iterator codec = codecs.rbegin();

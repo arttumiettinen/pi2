@@ -21,15 +21,17 @@ namespace itl2
 	}
 	namespace zarr
 	{
-		typedef struct
+		template<typename pixel_t>
+		struct ZarrMetadata
 		{
 			Vec3c chunkSize;
 			codecs::Pipeline codecs;
-			int fillValue;
+			pixel_t fillValue;
 			std::string separator;
-		} ZarrMetadata;
+		};
 
-		inline bool operator==(const ZarrMetadata& lhs, const ZarrMetadata& rhs)
+		template<typename pixel_t>
+		inline bool operator==(const ZarrMetadata<pixel_t>& lhs, const ZarrMetadata<pixel_t>& rhs)
 		{
 			return lhs.chunkSize == rhs.chunkSize &&
 				lhs.codecs == rhs.codecs &&
@@ -53,7 +55,8 @@ namespace itl2
 			/**
 			Writes Zarr metadata file.
 			*/
-			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const ZarrMetadata& metadata);
+			template<typename pixel_t>
+			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const ZarrMetadata<pixel_t>& metadata);
 
 			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex, const string& separator)
 			{
@@ -97,7 +100,7 @@ namespace itl2
 			*/
 			template<typename pixel_t>
 			void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkIndex, const Vec3c& datasetSize,
-				Vec3c startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, const ZarrMetadata& metadata)
+				Vec3c startInChunkCoords, const Vec3c& startInImageCoords, const Vec3c& writeSize, const ZarrMetadata<pixel_t>& metadata)
 			{
 				//todo: read this chunk and only update the requested region by const startInImageCoords,startInChunkCoords, writeSize
 				Image<pixel_t> imgChunk(metadata.chunkSize);
@@ -143,7 +146,7 @@ namespace itl2
 
 
 			template<typename pixel_t>
-			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const ZarrMetadata& metadata,
+			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const ZarrMetadata<pixel_t>& metadata,
 				const Vec3c& filePosition, const Vec3c& fileDimensions,
 				const Vec3c& imagePosition,
 				const Vec3c& blockDimensions,
@@ -172,7 +175,7 @@ namespace itl2
 			*/
 			template<typename pixel_t>
 			void readChunksInRange(Image<pixel_t>& img, const std::string& path,
-				const ZarrMetadata& metadata,
+				const ZarrMetadata<pixel_t>& metadata,
 				const Vec3c& datasetShape,
 				const Vec3c& start, const Vec3c& end,
 				bool showProgressInfo)
@@ -217,7 +220,7 @@ namespace itl2
 					  else
 					  {
 						  cout << "no file: " << filename << endl;
-						  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), (pixel_t)metadata.fillValue);
+						  draw<pixel_t>(img, AABoxc::fromPosSize(chunkStartInTarget, readSize), metadata.fillValue);
 					  }
 				  }
 				});
@@ -227,29 +230,32 @@ namespace itl2
 			Checks that provided zarr information is correct and writes metadata.
 			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
+			template<typename pixel_t>
 			void handleExisting(const Vec3c& imageDimensions,
 				ImageDataType imageDataType,
 				const std::string& path,
-				const ZarrMetadata& metadata,
+				const ZarrMetadata<pixel_t>& metadata,
 				bool deleteOldData);
 
 		}
 
+		template<typename pixel_t>
 		bool getInfo(const std::string& path,
 			Vec3c& shape,
 			ImageDataType& dataType,
-			ZarrMetadata& metadata,
+			ZarrMetadata<pixel_t>& metadata,
 			std::string& reason);
 
 		inline bool getInfo(const std::string& path, Vec3c& shape, ImageDataType& dataType, std::string& reason)
 		{
-			ZarrMetadata dummyMetadata;
+			ZarrMetadata<u_int16_t> dummyMetadata;
 			return getInfo(path, shape, dataType, dummyMetadata, reason);
 		}
 
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 		inline const string DEFAULT_SEPARATOR = "/";
-		inline const int DEFAULT_FILLVALUE = 42;
+		// TODO inline const int DEFAULT_FILLVALUE = 42;
+#define DEFAULT_FILLVALUE pixel_t()
 		inline const codecs::Pipeline DEFAULT_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
 		inline const nlohmann::json DEFAULT_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
 
@@ -270,14 +276,14 @@ namespace itl2
 			const Vec3c& blockDimensions,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
-			int fillValue = DEFAULT_FILLVALUE,
+			pixel_t fillValue = DEFAULT_FILLVALUE,
 			const string& separator = DEFAULT_SEPARATOR,
 			bool showProgressInfo = false)
 		{
 			Vec3c clampedChunkSize = chunkSize;
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), img.dimensions());
 			fs::create_directories(path);
-			ZarrMetadata metadata = { clampedChunkSize, codecs, fillValue, separator };
+			ZarrMetadata<pixel_t> metadata = { clampedChunkSize, codecs, fillValue, separator };
 			internals::writeMetadata(path, fileDimensions, img.dataType(), metadata);
 			internals::writeChunksInRange(img, path, metadata, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
 		}
@@ -300,11 +306,9 @@ namespace itl2
 			Vec3c dimensions = img.dimensions();
 			Vec3c clampedChunkSize = chunkSize;
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), dimensions);
-			//TODO remove  tempFillValue workaround
-			int tempFillValue = DEFAULT_FILLVALUE;
-			ZarrMetadata metadata = { clampedChunkSize, codecs, tempFillValue, separator };
+			ZarrMetadata<pixel_t> metadata = { clampedChunkSize, codecs, fillValue, separator };
 			internals::handleExisting(dimensions, img.dataType(), path, metadata, deleteOldData);
-			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize, codecs, tempFillValue, separator, showProgressInfo);
+			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize, codecs, fillValue, separator, showProgressInfo);
 		}
 
 		/**
@@ -319,7 +323,7 @@ namespace itl2
 		{
 			Vec3c datasetShape;
 			ImageDataType dataType;
-			ZarrMetadata metadata;
+			ZarrMetadata<pixel_t> metadata;
 			string reason;
 			std::cout << "readBlock" << std::endl;
 			if (!itl2::zarr::getInfo(path, datasetShape, dataType, metadata, reason))
@@ -348,7 +352,7 @@ namespace itl2
 		{
 			Vec3c dimensions;
 			ImageDataType dataType;
-			ZarrMetadata metadata;
+			ZarrMetadata<pixel_t> metadata;
 			string reason;
 			if (!itl2::zarr::getInfo(path, dimensions, dataType, metadata, reason))
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);

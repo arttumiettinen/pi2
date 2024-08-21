@@ -297,7 +297,7 @@ namespace itl2
 	@param order Permutation indicating the order for transposing.
 	*/
 	template<typename pixel_t>
-	void transpose(Image<pixel_t>& in, const Vec3c& order, int fillValue)
+	void transpose(Image<pixel_t>& in, const Vec3c& order, pixel_t fillValue)
 	{
 		Vec3c transposedShape = in.dimensions().transposed(order);
 		Image<pixel_t> temp(transposedShape, fillValue);
