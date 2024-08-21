@@ -127,42 +127,56 @@ namespace itl2
 				//todo: read this chunk and only update the requested region by const startInImageCoords,startInChunkCoords, writeSize
 				Image<pixel_t> imgChunk(metadata.chunkSize);
 				const Vec3c chunkStartPos = chunkIndex.componentwiseMultiply(metadata.chunkSize);
+				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
+				bool chunkEmpty = true;
 				//write all pixels of chunk in img to imgChunk
 				forAllPixels(imgChunk, [&](coord_t x, coord_t y, coord_t z)
 				{
 				  Vec3c pos = Vec3c(x, y, z) + chunkStartPos;
 				  imgChunk(x, y, z) = img(pos);
+				  if (img(pos) != metadata.fillValue)
+				  {
+					  chunkEmpty = false;
+				  }
 				});
 
-				// Clamp write size to the size of the image.
-				Vec3c imageChunkEnd = startInImageCoords + writeSize;
-				for (size_t n = 0; n < imageChunkEnd.size(); n++)
-				{
-					if (imageChunkEnd[n] > img.dimension(n))
-						imageChunkEnd[n] = img.dimension(n);
+				if(chunkEmpty){
+					//TODO: what if writesFolder exists?
+					if (fs::exists(filename)){
+						fs::remove(filename);
+					}
 				}
-				Vec3c realWriteSize = imageChunkEnd - startInImageCoords;
-				Vec3c realChunkSize = clampedChunkSize(chunkIndex, metadata.chunkSize, datasetSize);
-				realWriteSize = min(realWriteSize, realChunkSize);
+				else
+				{
+					// Clamp write size to the size of the image.
+					Vec3c imageChunkEnd = startInImageCoords + writeSize;
+					for (size_t n = 0; n < imageChunkEnd.size(); n++)
+					{
+						if (imageChunkEnd[n] > img.dimension(n))
+							imageChunkEnd[n] = img.dimension(n);
+					}
+					Vec3c realWriteSize = imageChunkEnd - startInImageCoords;
+					Vec3c realChunkSize = clampedChunkSize(chunkIndex, metadata.chunkSize, datasetSize);
+					realWriteSize = min(realWriteSize, realChunkSize);
 
-				string filename = chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
-				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
-				// Chunk is unsafe if its folder contains writes folder.
-				//todo: when will writesFolder be created?
-				string writesFolder = internals::writesFolder(filename);
-				if (fs::exists(writesFolder))
-				{
-					std::cout << "writeSingleChunk unsafe, writesFolder exist" << std::endl;
-					// Unsafe chunk: write to separate writes folder.
-					filename = writesFolder + toString(startInChunkCoords.x) + string("-") +
-						toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
-					//print all writeblock parameters in one line
-					startInChunkCoords = Vec3c(0, 0, 0);
-					realChunkSize = realWriteSize;
+					// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
+					// Chunk is unsafe if its folder contains writes folder.
+					//todo: when will writesFolder be created?
+					string writesFolder = internals::writesFolder(filename);
+					if (fs::exists(writesFolder))
+					{
+						std::cout << "writeSingleChunk unsafe, writesFolder exist" << std::endl;
+						// Unsafe chunk: write to separate writes folder.
+						filename = writesFolder + toString(startInChunkCoords.x) + string("-") +
+							toString(startInChunkCoords.y) + string("-") + toString(startInChunkCoords.z);
+						//print all writeblock parameters in one line
+						startInChunkCoords = Vec3c(0, 0, 0);
+						realChunkSize = realWriteSize;
+					}
+					std::vector<char> buffer;
+					encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
+					writeBytesToFile(buffer, filename);
 				}
-				std::vector<char> buffer;
-				encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
-				writeBytesToFile(buffer, filename);
 			}
 
 
