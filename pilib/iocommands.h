@@ -392,6 +392,8 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 				CommandArgument<std::string>(ParameterDirection::In, "path", "Name (and path) of the dataset to write. If the dataset exists, its current contents are erased."),
 				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size for the Zarr dataset to be written.", zarr::DEFAULT_CHUNK_SIZE),
 				CommandArgument<nlohmann::json>(ParameterDirection::In, "codecs", "zarr codecs as string using doubleqoutes (\") in json format", zarr::DEFAULT_CODECS_JSON),
+				CommandArgument<pixel_t>(ParameterDirection::In, "fillValue", "Value filling empty pixels",pixel_t()),// zarr::DEFAULT_FILLVALUE),
+				CommandArgument<std::string>(ParameterDirection::In, "separator", "Character separating dimensions in the chunkfile names", zarr::DEFAULT_SEPARATOR),
 			})
 		{
 		}
@@ -407,7 +409,9 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 			if (!itl2::zarr::codecs::fromJSON(codecs, pop<nlohmann::json>(args), reason)){
 				throw ITLException("could not parse zarr codecs: " + reason);
 			}
-			itl2::zarr::write(in, fname, chunkSize, codecs);
+			pixel_t fillValue = pop<pixel_t>(args);
+			std::string separator = pop<std::string>(args);
+			itl2::zarr::write(in, fname, chunkSize, codecs, separator, fillValue);
 		}
 
 		using Distributable::runDistributed;

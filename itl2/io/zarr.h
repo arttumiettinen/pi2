@@ -293,16 +293,18 @@ namespace itl2
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
 			const std::string& separator = DEFAULT_SEPARATOR,
-			int fillValue = DEFAULT_FILLVALUE,
+			pixel_t fillValue = pixel_t(),//TODO DEFAULT_FILLVALUE,
 			bool showProgressInfo = false)
 		{
 			bool deleteOldData = false;
 			Vec3c dimensions = img.dimensions();
 			Vec3c clampedChunkSize = chunkSize;
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), dimensions);
-			ZarrMetadata metadata = { clampedChunkSize, codecs, fillValue, separator };
+			//TODO remove  tempFillValue workaround
+			int tempFillValue = DEFAULT_FILLVALUE;
+			ZarrMetadata metadata = { clampedChunkSize, codecs, tempFillValue, separator };
 			internals::handleExisting(dimensions, img.dataType(), path, metadata, deleteOldData);
-			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize, codecs, fillValue, separator, showProgressInfo);
+			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize, codecs, tempFillValue, separator, showProgressInfo);
 		}
 
 		/**

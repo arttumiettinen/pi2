@@ -250,3 +250,16 @@ def test_read_write_sharding(inner_chunk_shape, shard_shape, bytes_bytes_codecs,
     pi2_write(codecs=codecs, chunk_shape=shard_shape, data=data, name=filename)
     read_arr = pi2_read(filename)
     assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\ndata:\n " + str(data)
+
+def test_fill_value_in_api():
+    name = "test_fill_value_in_api"
+    data = np.zeros((2, 2, 2), dtype=np.float32)
+    fill_value = 4
+    shutil.rmtree(output_file(name), ignore_errors=True)
+    write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, list(data.shape))
+    write_img.set_data(data.transpose(1, 0, 2))
+    pi2.writezarr(write_img, output_file(name), list(data.shape), '[{"configuration": {"endian": "little"},"name": "bytes"}]', fill_value, "/")
+    store = zarrita.LocalStore(output_file(name))
+    a = zarrita.Array.open(store)
+    a = a.resize((3,3,3))
+    assert a[:][2,2,2]==fill_value
