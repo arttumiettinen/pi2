@@ -873,11 +873,13 @@ def particle_segmentation():
     """
 
     # Generate particle image
-    generate_particles(1000, 0)
+    #generate_particles(1000, 0)
 
     
     # Read generated data file
     img = pi.read(output_file('particles'))
+    # Invert to make a slower calculation
+    #pi.linmap(img, 0, 1, 1, 0)
 
     # Convert to wider data type so that we can label each particle
     pi.convert(img, ImageDataType.UINT16)
@@ -902,6 +904,9 @@ def particle_segmentation():
     # First set all pixels to zero, then label maxima.
     pi.set(img, 0)
     pi.labelmaxima(img, maxima)
+
+    #pi.writeraw(img, output_file('particles_labeled'))
+    #pi.writeraw(dmap, output_file('particles_priority'))
 
     # Grow labels back to original geometry, using distance map value
     # as filling priority.
@@ -1634,7 +1639,7 @@ def autothresholdvalue():
 #fill_particles()
 #histogram()
 #bivariate_histogram()
-#particle_segmentation()
+particle_segmentation()
 #levelset_fill_cavity()
 #find_surface()
 #orientation_analysis()

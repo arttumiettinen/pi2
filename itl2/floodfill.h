@@ -5,11 +5,13 @@
 #include <queue>
 #include <tuple>
 #include <iostream>
+#include <limits>
 
 #include "image.h"
 #include "math/vec3.h"
 #include "connectivity.h"
 #include "progress.h"
+#include "heaps.h"
 
 namespace itl2
 {
@@ -803,13 +805,466 @@ namespace itl2
 
 
 	/**
+Region grow segmentation.
+The argument images must be of the same size.
+Uses Meyer's flooding algorithm, implementation inspired by OpenCV - see below.
+This function is a single-threaded implementation, and will give different results than the multi-threaded version,
+as this function is not invariant to image rotations and therefore not invariant to order of seeds.
+@param labels Image containing the labels of distinct areas. At input, the image must contain the seed points as nonzero pixels and background as zero pixels; after the algorithm finishes, the image will contain the segmented regions corresponding to the seed points. Multiple seeds may have the same value.
+@param weights Image containing the filling priority of each pixel. This image is not modified. If priority is zero or negative, the pixel is never filled.
+
+
+
+This function is inspired by OpenCV implementation of watershed, found in file \opencv\modules\imgproc\src\segmentation.cpp.
+This was chosen as it is quite fast according to Kornilov - An Overview of Watershed Algorithm Implementations in Open Source Libraries.
+OpenCV implementation is licensed with the following text:
+
+							   License Agreement
+				For Open Source Computer Vision Library
+
+ Copyright (C) 2000, Intel Corporation, all rights reserved.
+ Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+ Third party copyrights are property of their respective owners.
+
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+   * Redistribution's of source code must retain the above copyright notice,
+	 this list of conditions and the following disclaimer.
+
+   * Redistribution's in binary form must reproduce the above copyright notice,
+	 this list of conditions and the following disclaimer in the documentation
+	 and/or other materials provided with the distribution.
+
+   * The name of the copyright holders may not be used to endorse or promote products
+	 derived from this software without specific prior written permission.
+
+ This software is provided by the copyright holders and contributors "as is" and
+ any express or implied warranties, including, but not limited to, the implied
+ warranties of merchantability and fitness for a particular purpose are disclaimed.
+ In no event shall the Intel Corporation or contributors be liable for any direct,
+ indirect, incidental, special, exemplary, or consequential damages
+ (including, but not limited to, procurement of substitute goods or services;
+ loss of use, data, or profits; or business interruption) however caused
+ and on any theory of liability, whether in contract, strict liability,
+ or tort (including negligence or otherwise) arising in any way out of
+ the use of this software, even if advised of the possibility of such damage.
+*/
+	template<typename label_t, typename weight_t> void growSingleThreaded(Image<label_t>& labels, const Image<weight_t>& weights, label_t inQueue = numeric_limits<label_t>::max())
+	{
+		// NOTE: The result depends on the order of the seed points_shared, i.e., on the orientation of the image!
+
+		weights.checkSize(labels);
+		weights.mustNotBe(labels);
+
+		// Note: This function works with HHeap and GHeap, too, but BucketMap seems to be the fastest choice.
+		//HHeap<Vec3c, weight_t> points_shared(min(weights), max(weights), 100);
+		//GHeap<Vec3c, weight_t> points_shared;
+		BucketMap<Vec3c, weight_t> points;
+
+		// Add all neighbours of seed points_shared to the priority queue
+		for (coord_t z = 0; z < labels.depth(); z++)
+			//for(coord_t z = labels.depth() - 1; z >= 0; z--)
+		{
+			for (coord_t y = 0; y < labels.height(); y++)
+			{
+				for (coord_t x = 0; x < labels.width(); x++)
+				{
+					Vec3 p(x, y, z);
+
+					if (labels(p) == inQueue)
+						throw ITLException(string("Value ") + toString(inQueue) + " must not be used in the labels image, it is needed as a temporary value.");
+
+					if (labels(p) == 0) // Only background points_shared can be neighbours of seeds
+					{
+						bool hasSeedNeighbour = false;
+
+						for (size_t n = 0; n < labels.dimensionality(); n++)
+						{
+							for (int delta = -1; delta <= 1; delta += 2)
+							{
+								Vec3c np = p;
+								np[n] += delta;
+
+								if (np[n] >= 0 && np[n] < labels.dimension(n))
+								{
+									label_t lbl = labels(np);
+									weight_t w = weights(np);
+									if (w > 0 && lbl != 0 && lbl != inQueue)
+									{
+										hasSeedNeighbour = true;
+									}
+								}
+							}
+						}
+
+						if (hasSeedNeighbour)
+						{
+							points.push(weights(p), p);
+							labels(p) = inQueue;
+						}
+					}
+				}
+			}
+		}
+
+		size_t round = 0;
+
+		// Grow from the point p to all directions if they are not filled yet.
+		while (!points.empty())
+		{
+			Vec3c p = points.topItem();
+			points.pop();
+
+			// Find label for this pixel from the surrounding pixels.
+			// Add adjacent unlabeled pixels to the queue.
+			label_t currPixelLabel = 0;
+			weight_t currPixelLabelWeight = 0;
+			for (size_t n = 0; n < labels.dimensionality(); n++)
+			{
+				for (int delta = -1; delta <= 1; delta += 2)
+				{
+					Vec3c np = p;
+					np[n] += delta;
+
+					if (np[n] >= 0 && np[n] < labels.dimension(n))
+					{
+						label_t& lbl = labels(np);
+
+						if (lbl == 0)
+						{
+							// This is a non-labeled neighbour. It goes to the queue.
+							weight_t w = weights(np);
+							if (w > 0)
+							{
+								points.push(w, np);
+
+								// Mark the pixel to avoid re-entering it into the queue.
+								lbl = inQueue;
+							}
+						}
+						else
+						{
+							// This is a labeled neighbour, find if the label of this point should be the label of the neighbour.
+							if (lbl != inQueue)
+							{
+								weight_t w = weights(np);
+								if (currPixelLabelWeight == 0 || w > currPixelLabelWeight) // If there are multiple possibilities, choose the one with the highest weight.
+								{
+									currPixelLabel = lbl;
+									currPixelLabelWeight = w;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Fill current pixel
+			labels(p) = currPixelLabel;
+
+			round++;
+		}
+	}
+
+	/**
+	Region grow segmentation.
+	The argument images must be of the same size.
+	Uses Meyer's flooding algorithm, implementation inspired by OpenCV - see below.
+	@param labels Image containing the labels of distinct areas. At input, the image must contain the seed points as nonzero pixels and background as zero pixels; after the algorithm finishes, the image will contain the segmented regions corresponding to the seed points. Multiple seeds may have the same value.
+	@param weights Image containing the filling priority of each pixel. This image is not modified. If priority is zero or negative, the pixel is never filled.
+
+
+
+	This function is inspired by OpenCV implementation of watershed, found in file \opencv\modules\imgproc\src\segmentation.cpp.
+	This was chosen as it is quite fast according to Kornilov - An Overview of Watershed Algorithm Implementations in Open Source Libraries.
+	OpenCV implementation is licensed with the following text:
+
+								   License Agreement
+					For Open Source Computer Vision Library
+
+	 Copyright (C) 2000, Intel Corporation, all rights reserved.
+	 Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+	 Third party copyrights are property of their respective owners.
+
+	 Redistribution and use in source and binary forms, with or without modification,
+	 are permitted provided that the following conditions are met:
+
+	   * Redistribution's of source code must retain the above copyright notice,
+		 this list of conditions and the following disclaimer.
+
+	   * Redistribution's in binary form must reproduce the above copyright notice,
+		 this list of conditions and the following disclaimer in the documentation
+		 and/or other materials provided with the distribution.
+
+	   * The name of the copyright holders may not be used to endorse or promote products
+		 derived from this software without specific prior written permission.
+
+	 This software is provided by the copyright holders and contributors "as is" and
+	 any express or implied warranties, including, but not limited to, the implied
+	 warranties of merchantability and fitness for a particular purpose are disclaimed.
+	 In no event shall the Intel Corporation or contributors be liable for any direct,
+	 indirect, incidental, special, exemplary, or consequential damages
+	 (including, but not limited to, procurement of substitute goods or services;
+	 loss of use, data, or profits; or business interruption) however caused
+	 and on any theory of liability, whether in contract, strict liability,
+	 or tort (including negligence or otherwise) arising in any way out of
+	 the use of this software, even if advised of the possibility of such damage.
+	*/
+	template<typename label_t, typename weight_t> void grow(Image<label_t>& labels, const Image<weight_t>& weights, label_t inQueue = std::numeric_limits<label_t>::max())
+	{
+		// NOTE: This function is invariant to the ordering of the seed points_shared & image orientation - compare
+		// to the singlethreaded one that is not.
+
+		weights.checkSize(labels);
+		weights.mustNotBe(labels);
+
+		// Note: This function works with HHeap and GHeap, too, but BucketMap seems to be the fastest choice.
+		//HHeap<Vec3sc, weight_t> points_shared(min(weights), max(weights), 100);
+		//GHeap<Vec3sc, weight_t> points_shared;
+		BucketMap<Vec3sc, weight_t> points_shared;
+
+
+		// Add all neighbours of seed points_shared to the priority queue
+		forAllPixels(labels, [&](coord_t x, coord_t y, coord_t z)
+			{
+				Vec3sc p((int32_t)x, (int32_t)y, (int32_t)z);
+
+				if (labels(p) == inQueue)
+					throw ITLException(string("Value ") + toString(inQueue) + " must not be used in the labels image, it is needed as a temporary value.");
+
+				if (labels(p) == 0) // Only background points_shared can be neighbours of seeds
+				{
+					bool hasSeedNeighbour = false;
+
+					for (size_t n = 0; n < labels.dimensionality(); n++)
+					{
+						for (int delta = -1; delta <= 1; delta += 2)
+						{
+							Vec3sc np = p;
+							np[n] += delta;
+
+							if (np[n] >= 0 && np[n] < labels.dimension(n))
+							{
+								label_t lbl = labels(np);
+								weight_t w = weights(np);
+								if (w > 0 && lbl != 0 && lbl != inQueue)
+								{
+									hasSeedNeighbour = true;
+								}
+							}
+						}
+					}
+
+					if (hasSeedNeighbour)
+					{
+#pragma omp critical(growInit)
+						{
+							points_shared.push(weights(p), p);
+						}
+						labels(p) = inQueue;
+					}
+				}
+			});
+
+
+		//vector<vector<Vec3sc>*> newPointsLists;
+
+		ProgressIndicator progress("");
+		size_t prevSize = 0;
+
+		// Grow from the point p to all directions if they are not filled yet.
+#pragma omp parallel
+		{
+			vector<Vec3sc> newPoints;
+			newPoints.reserve(250);
+
+			//#pragma omp critical
+			//			{
+			//				newPointsLists.push_back(&newPoints);
+			//			}
+
+			vector<label_t> newLabels;
+			newLabels.reserve(250);
+
+			coord_t idx = omp_get_thread_num();
+			coord_t threadCount = omp_get_num_threads();
+
+			while (true)//(!points_shared.empty())
+			{
+				// NOTE: Loop start and end indices cannot be changed inside the omp parallel region.
+				// NOTE: For reason or another, while(!points_shared.empty()) does not seem to work correctly.
+				//			Separate if(points_shared.empty()) break; works as expected.
+
+
+				if (points_shared.empty())
+					break;
+
+				newPoints.clear();
+
+				// This block ensures that topItems_shared is not used after it will be destroyed in popTopItems.
+				{
+					const std::deque<Vec3sc>& topItems_shared = points_shared.topItems();
+					coord_t N = topItems_shared.size();
+
+					const coord_t minPointsPerThread = 1;
+					coord_t countPerThread = std::max(minPointsPerThread, N / threadCount + 1);
+					coord_t starti = idx * countPerThread;
+					coord_t endi = starti + countPerThread;
+					if (endi > N)
+						endi = N;
+
+					if (starti < N)
+					{
+						newLabels.clear();
+						for (coord_t i = starti; i < endi; i++)
+							newLabels.push_back(0);
+
+						for (coord_t i = starti; i < endi; i++)
+						{
+							Vec3sc p = topItems_shared[i];
+
+							label_t currPixelLabel = 0;
+							weight_t currPixelLabelWeight = 0;
+
+							// Find label for this pixel from the surrounding pixels.
+							// Add adjacent unlabeled pixels to the queue.
+							for (size_t n = 0; n < labels.dimensionality(); n++)
+							{
+								for (int delta = -1; delta <= 1; delta += 2)
+								{
+									Vec3sc np = p;
+									np[n] += delta;
+
+									if (np[n] >= 0 && np[n] < labels.dimension(n))
+									{
+										label_t& lbl = labels(np);
+
+										if (lbl == 0)
+										{
+											// This is a non-labeled neighbour. It goes to the queue.
+											weight_t w = weights(np);
+											if (w > 0)
+											{
+												newPoints.push_back(np);
+											}
+										}
+										else
+										{
+											// This is a labeled neighbour, find if the label of this point should be the label of the neighbour.
+											if (lbl != inQueue)
+											{
+												weight_t w = weights(np);
+												if (currPixelLabelWeight == 0 || w > currPixelLabelWeight) // If there are multiple possibilities, choose the one with the highest weight.
+												{
+													currPixelLabel = lbl;
+													currPixelLabelWeight = w;
+												}
+											}
+										}
+									}
+								}
+							}
+
+							newLabels[i - starti] = currPixelLabel;
+							//newLabels[i] = currPixelLabel;						
+						}
+					}
+
+#pragma omp barrier
+
+					// Set new labels to the image
+					if (starti < N)
+					{
+						for (coord_t n = starti; n < endi; n++)
+						{
+							Vec3sc p = topItems_shared[n];
+
+							// Fill current pixel
+							labels(p) = newLabels[n - starti];
+							//labels(p) = newLabels[n];
+						}
+					}
+				}
+
+#pragma omp barrier
+
+#pragma omp master
+				{
+					points_shared.popTopItems();
+
+
+					size_t s = points_shared.size();
+					if (std::abs((coord_t)s - (coord_t)prevSize) > 500000)
+					{
+						progress.showMessage(toString(s) + " seeds");
+						prevSize = s;
+					}
+				}
+
+#pragma omp barrier
+
+
+				// Alternative 1: Process points in main thread
+				//				// Combine all new_points lists, store minimum w for each point.
+				//				// Then insert to points_shared.
+				//
+				//#pragma omp master
+				//				{
+				//					for (const vector<Vec3sc>* pList : newPointsLists)
+				//					{
+				//						for (size_t n = 0; n < pList->size(); n++)
+				//						{
+				//							Vec3sc np = (*pList)[n];
+				//
+				//							weight_t w = weights(np);
+				//
+				//							if (labels(np) != inQueue)
+				//							{
+				//								points_shared.push(w, np);
+				//								labels(np) = inQueue;
+				//							}
+				//						}
+				//					}
+				//				}
+
+
+				// Alternative 2: Process points using a critical section. This seems to be a tiny bit faster.
+								// Add new points to the points_shared queue.
+#pragma omp critical(grow_collect)
+				{
+					for (size_t n = 0; n < newPoints.size(); n++)
+					{
+						Vec3sc np = newPoints[n];
+
+						weight_t w = weights(np);
+
+						if (labels(np) != inQueue)
+						{
+							points_shared.push(w, np);
+							labels(np) = inQueue;
+						}
+					}
+				}
+
+				// Do not allow the next round to start until all the points are pushed into the points_shared queue.
+#pragma omp barrier
+
+			}
+		}
+
+
+	}
+
+	/**
 	Region grow segmentation.
 	The argument images must be of the same size.
 	Uses Meyer's flooding algorithm.
+	This is the "old" implementation from early versions of pi2.
 	@param labels Image containing the labels of distinct areas. At input, the image must contain the seed points as nonzero pixels and background as zero pixels; after the algorithm finishes, the image will contain the segmented regions corresponding to the seed points. Multiple seeds may have the same value.
 	@param weights Image containing the filling priority of each pixel. This image is not modified. If priority is zero or negative, the pixel is never filled.
 	*/
-	template<typename label_t, typename weight_t> void grow(Image<label_t>& labels, const Image<weight_t>& weights)
+	template<typename label_t, typename weight_t> void growOld(Image<label_t>& labels, const Image<weight_t>& weights)
 	{
 		weights.checkSize(labels);
 		weights.mustNotBe(labels);
@@ -1125,6 +1580,7 @@ namespace itl2
 		void growPriority();
 		void growAll();
 		void growComparison();
+		void growCustomHeap();
 	}
 
 }

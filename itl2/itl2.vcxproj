@@ -45,6 +45,7 @@
     <ClInclude Include="floodfill.h" />
     <ClInclude Include="generation.h" />
     <ClInclude Include="getslice.h" />
+    <ClInclude Include="heaps.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="imagemetadata.h" />
     <ClInclude Include="io\fopen_s.h" />
@@ -151,6 +152,7 @@
     <ClCompile Include="csa.cpp" />
     <ClCompile Include="danielsson.cpp" />
     <ClCompile Include="diskmappedbuffer.cpp" />
+    <ClCompile Include="heaps.cpp" />
     <ClCompile Include="interpolation.cpp" />
     <ClCompile Include="io\itldicom.cpp" />
     <ClCompile Include="io\itljpeg.cpp" />

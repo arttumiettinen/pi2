@@ -206,6 +206,7 @@ int main()
 	//test(itl2::tests::growPriority, "Meyer's growing algorithm");
 	//test(itl2::tests::growAll, "region growing");
 	//test(itl2::tests::growComparison, "region growing algorithm comparison");
+	test(itl2::tests::growCustomHeap, "region growing custom heap algorithm");
 
 
 	//test(itl2::tests::fillSkeleton, "skeleton filling");
@@ -251,7 +252,7 @@ int main()
 
 	//test(itl2::tests::seededDMap, "seeded distance map");
 
-	test(itl2::tests::stddevuint16, "standard deviation, uint16");
+	//test(itl2::tests::stddevuint16, "standard deviation, uint16");
 
 	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
 	//test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");
