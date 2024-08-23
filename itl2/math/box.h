@@ -76,9 +76,9 @@ namespace itl2
 			pdot = Rinv * pdot;
 
 			// See if pdot is inside box radius
-			return NumberUtils<double>::lessThan(abs(pdot.x), radius.x) &&
-				   NumberUtils<double>::lessThan(abs(pdot.y), radius.y) &&
-				   NumberUtils<double>::lessThan(abs(pdot.z), radius.z);
+			return NumberUtils<double>::lessThan(std::abs(pdot.x), radius.x) &&
+				   NumberUtils<double>::lessThan(std::abs(pdot.y), radius.y) &&
+				   NumberUtils<double>::lessThan(std::abs(pdot.z), radius.z);
 		}
 
 		/**

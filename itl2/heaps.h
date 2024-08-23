@@ -4,6 +4,8 @@
 #include <deque>
 #include <queue>
 
+#include "math/numberutils.h"
+#include "math/vectoroperations.h"
 
 namespace itl2
 {
@@ -313,7 +315,7 @@ namespace itl2
 		{
 			queues.reserve(bucketCount);
 			for (size_t n = 0; n < bucketCount; n++)
-				queues.push_back(priority_queue<Entry>());
+				queues.push_back(std::priority_queue<Entry>());
 		}
 
 		/**

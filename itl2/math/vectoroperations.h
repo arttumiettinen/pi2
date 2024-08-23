@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include "math/vec2.h"
+#include "itlexception.h"
 
 namespace itl2
 {

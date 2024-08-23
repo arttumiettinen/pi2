@@ -850,7 +850,7 @@ OpenCV implementation is licensed with the following text:
  or tort (including negligence or otherwise) arising in any way out of
  the use of this software, even if advised of the possibility of such damage.
 */
-	template<typename label_t, typename weight_t> void growSingleThreaded(Image<label_t>& labels, const Image<weight_t>& weights, label_t inQueue = numeric_limits<label_t>::max())
+	template<typename label_t, typename weight_t> void growSingleThreaded(Image<label_t>& labels, const Image<weight_t>& weights, label_t inQueue = std::numeric_limits<label_t>::max())
 	{
 		// NOTE: The result depends on the order of the seed points_shared, i.e., on the orientation of the image!
 
@@ -1076,7 +1076,7 @@ OpenCV implementation is licensed with the following text:
 		// Grow from the point p to all directions if they are not filled yet.
 #pragma omp parallel
 		{
-			vector<Vec3sc> newPoints;
+			std::vector<Vec3sc> newPoints;
 			newPoints.reserve(250);
 
 			//#pragma omp critical
@@ -1084,7 +1084,7 @@ OpenCV implementation is licensed with the following text:
 			//				newPointsLists.push_back(&newPoints);
 			//			}
 
-			vector<label_t> newLabels;
+			std::vector<label_t> newLabels;
 			newLabels.reserve(250);
 
 			coord_t idx = omp_get_thread_num();
