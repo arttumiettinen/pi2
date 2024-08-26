@@ -88,9 +88,9 @@ namespace pilib
 		std::vector<string> lastOutput;
 
 		/**
-		Chunk size for NN5 datasets used in distributed mode.
+		Chunk size for Zarr and NN5 datasets used in distributed mode.
 		*/
-		Vec3c nn5ChunkSize;
+		Vec3c distributedImageChunkSize;
 
 		/**
 		Determines suitable block size etc. for running commands in delayedCommands list.
@@ -187,7 +187,7 @@ namespace pilib
 		{
 			if (chunkSize.min() <= 0)
 				throw ITLException("Chunk size cannot contain negative or zero elements.");
-			nn5ChunkSize = chunkSize;
+			distributedImageChunkSize = chunkSize;
 		}
 
 		/**
@@ -200,7 +200,7 @@ namespace pilib
 
 		Vec3c getChunkSize() const
 		{
-			return nn5ChunkSize;
+			return distributedImageChunkSize;
 		}
 
 		/**

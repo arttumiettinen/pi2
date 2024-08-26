@@ -248,10 +248,10 @@ namespace itl2
 			}
 		}
 
-		//size_t countWritersAt(const AABoxc& box, const std::vector<NN5Process>& processes)
+		//size_t countWritersAt(const AABoxc& box, const std::vector<DistributedImageProcess>& processes)
 		//{
 		//	size_t count = 0;
-		//	for (const NN5Process& process : processes)
+		//	for (const DistributedImageProcess& process : processes)
 		//	{
 		//		if (process.writeBlock.overlaps(box))
 		//			count++;
@@ -263,7 +263,7 @@ namespace itl2
 		Finds out if a chunk (given its bounding box) is 'safe' or not.
 		Safe chunks can be written to without any synchronization or post-processing of the results.
 		*/
-		bool isChunkSafe(const AABoxc& box, const std::vector<NN5Process>& processes)
+		bool isChunkSafe(const AABoxc& box, const std::vector<DistributedImageProcess>& processes)
 		{
 			vector<size_t> readerIndices;
 			vector<size_t> writerIndices;
@@ -319,7 +319,7 @@ namespace itl2
 			}
 		}
 
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<DistributedImageProcess>& processes)
 		{
 			// Find chunks that are
 			// * written to by separate processes, or
@@ -751,14 +751,14 @@ namespace itl2
 					Image<uint16_t> img(256, 256, 129);
 					ramp3(img);
 
-					//vector<NN5Process> processes;
+					//vector<DistributedImageProcess> processes;
 					coord_t z = 0;
 					while (z < img.depth())
 					{
 						coord_t y = 0;
 						while (y < img.height())
 						{
-							//processes.push_back(NN5Process{ AABoxc::fromPosSize(Vec3c(), Vec3c()), AABoxc::fromPosSize(Vec3c(0, y, z), Vec3c(256, 128, 1)) });
+							//processes.push_back(DistributedImageProcess{ AABoxc::fromPosSize(Vec3c(), Vec3c()), AABoxc::fromPosSize(Vec3c(0, y, z), Vec3c(256, 128, 1)) });
 							
 							coord_t d = 2;
 							if (z + d >= img.depth())
@@ -807,12 +807,12 @@ namespace itl2
 				// Write entire image and read.
 				fs::remove_all(entireImageFile);
 				{
-					vector<nn5::NN5Process> processes;
+					vector<nn5::DistributedImageProcess> processes;
 
 					Vec3c processBlockSize(30, 30, 30);
 					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
-							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
+							processes.push_back(DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
@@ -832,9 +832,9 @@ namespace itl2
 					Vec3c block2Start(block1Size.x, 0, 0);
 					Vec3c block2Size(dimensions.x - block1Size.x, dimensions.y, dimensions.z);
 
-					vector<nn5::NN5Process> processes;
-					processes.push_back(NN5Process{ AABoxc::fromPosSize(block1Start, block1Size + Vec3c(10, 0, 0)), AABoxc::fromPosSize(block1Start, block1Size) });
-					processes.push_back(NN5Process{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
+					vector<nn5::DistributedImageProcess> processes;
+					processes.push_back(DistributedImageProcess{ AABoxc::fromPosSize(block1Start, block1Size + Vec3c(10, 0, 0)), AABoxc::fromPosSize(block1Start, block1Size) });
+					processes.push_back(DistributedImageProcess{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
 					nn5::writeBlock(img, entireImageFile, chunkSize, compression, block1Start, dimensions, block1Start, block1Size);
@@ -848,12 +848,12 @@ namespace itl2
 
 				// Write in multiple blocks and read.
 				{
-					vector<nn5::NN5Process> processes;
+					vector<nn5::DistributedImageProcess> processes;
 
 					Vec3c processBlockSize(30, 31, 32);
 					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
-							processes.push_back(NN5Process{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
+							processes.push_back(DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);

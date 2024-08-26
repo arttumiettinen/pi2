@@ -549,7 +549,7 @@ namespace itl2
 
 		
 
-		struct NN5Process
+		struct DistributedImageProcess
 		{
 			AABoxc readBlock;
 			AABoxc writeBlock;
@@ -563,10 +563,10 @@ namespace itl2
 		@param path Path to the NN5 dataset.
 		@param chunkSize Chunk size for the NN5 dataset.
 		@param compression Compression method to be used.
-		@param processes A list of NN5Process objects that define the block that where each process will have read and write access. The blocks may overlap.
+		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
 		@return Number of chunks that require special processing in endConcurrentWrite.
 		*/
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes);
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<DistributedImageProcess>& processes);
 
 		/**
 		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
@@ -575,9 +575,9 @@ namespace itl2
 		@param path Path to the NN5 dataset.
 		@param chunkSize Chunk size for the NN5 dataset.
 		@param compression Compression method to be used.
-		@param processes A list of NN5Process objects that define the block that where each process will have read and write access. The blocks may overlap.
+		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
 		*/
-		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<NN5Process>& processes)
+		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const std::vector<DistributedImageProcess>& processes)
 		{
 			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, compression, processes);
 		}
