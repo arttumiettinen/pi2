@@ -93,7 +93,6 @@ namespace itl2
 
 			void readBlockTest(Vec3c chunkSize)
 			{
-				cout << "readBlockTest chunkSize=" << chunkSize << endl;
 				string path = "./testoutput/readBlock.zarr";
 				Vec3c size = Vec3c(10, 10, 10);
 				Vec3c startOnes(3, 4, 5);

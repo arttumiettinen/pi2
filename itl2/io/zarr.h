@@ -608,7 +608,6 @@ namespace itl2
 			ImageDataType dataType;
 			ZarrMetadata<pixel_t> metadata;
 			string reason;
-			std::cout << "readBlock" << std::endl;
 			if (!itl2::zarr::internals::getInfo(path, datasetShape, dataType, metadata, reason))
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 

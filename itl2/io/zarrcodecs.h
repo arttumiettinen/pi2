@@ -215,7 +215,6 @@ namespace itl2
 						order[1] = orderJSON[1].get<size_t>();
 					if (orderJSON.size() >= 3)
 						order[2] = orderJSON[2].get<size_t>();
-					cout << "transposeOrder=" << order << endl;
 					if (!order.isPermutation()) throw ITLException("TransposeConfiguration error: invalid order: " + toString(order) + "expected a permutation of [0, 1, 2]");
 				}
 				catch (nlohmann::json::exception ex)
@@ -326,14 +325,12 @@ namespace itl2
 			size_t typesize;
 			size_t blocksize;
 			codec.getBloscConfiguration(cname, clevel, shuffle, typesize, blocksize);
-			cout << "Using blosc compressor" << cname << endl;
 			int numinternalthreads = 1;
 
 			size_t realDestSize = blosc_compress_ctx(clevel, (int)shuffle, typesize, srcSize, buffer.data(), temp.data(), destSize, cname.c_str(), blocksize, numinternalthreads);
 
 			if (realDestSize == 0) cout << "Buffer is incompressible.  Giving up." << endl;
 			else if (realDestSize < 0) throw ITLException("Compression error.  Error code: " + toString(realDestSize));
-			else cout << "Compression: " << srcSize << " -> " << realDestSize << " (" << static_cast<double>(srcSize) / realDestSize << "x)" << endl;
 
 			buffer.resize(realDestSize);
 			std::memcpy(buffer.data(), temp.data(), realDestSize);
@@ -376,7 +373,6 @@ namespace itl2
 					{
 						//todo: might be faster to read data sequentially
 						image(x, y, z) = temp[n++];
-						//cout << "set image(" << toString(Vec3c(x, y, z)) << ")=" << image(x, y, z) << endl;
 					}
 				}
 			}
@@ -718,7 +714,6 @@ inline void itl2::zarr::codecs::ZarrCodec::getShardingConfiguration(Vec3c& chunk
 	try
 	{
 		if (this->name != Name::Sharding) throw ITLException("only sharding codec has sharding config");
-		cout << this->configuration << endl;
 		auto chunkShapeJSON = this->configuration["chunk_shape"];
 		chunkShape = Vec3c(1, 1, 1);
 		chunkShape[0] = chunkShapeJSON[0].get<size_t>();
@@ -726,7 +721,6 @@ inline void itl2::zarr::codecs::ZarrCodec::getShardingConfiguration(Vec3c& chunk
 			chunkShape[1] = chunkShapeJSON[1].get<size_t>();
 		if (chunkShapeJSON.size() >= 3)
 			chunkShape[2] = chunkShapeJSON[2].get<size_t>();
-		cout << "chunkShape=" << chunkShape << endl;
 
 		string reason;
 		if (!fromJSON(codecs, this->configuration["codecs"], reason))
