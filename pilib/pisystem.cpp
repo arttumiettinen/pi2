@@ -152,7 +152,7 @@ namespace pilib
 
 		if (!isalpha(value[0]))
 		{
-			reason = "Image name must start with letter.";
+			reason = "Image name must start with letter. Wrong name: " + value;
 			return false;
 		}
 
@@ -456,7 +456,24 @@ namespace pilib
 				return 1;
 			if (trySimpleConversion<InterpolationMode>(dt, value, doConversion, result, reason))
 				return 1;
-
+			if (trySimpleConversion<uint8_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<uint16_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<uint32_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<uint64_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<int8_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<int16_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<int32_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<float32_t>(dt, value, doConversion, result, reason))
+				return 1;
+			if (trySimpleConversion<complex32_t>(dt, value, doConversion, result, reason))
+				return 1;
 			return 0;
 		}
 		else

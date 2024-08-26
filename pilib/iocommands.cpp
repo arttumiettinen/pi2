@@ -17,7 +17,7 @@ namespace pilib
 		ADD_ALL(WriteRawCommand);
 		ADD_ALL(WriteLZ4Command);
 		ADD_ALL(WriteNN5Command);
-		ADD_ALL(WriteZarrCommand);
+		ADD_REAL(WriteZarrCommand);
 		//ADD_ALL(WriteRawBlockCommand);
 		ADD_ALL(WriteRawBlock2Command);
 		CommandList::add<WriteRGBRawCommand>();

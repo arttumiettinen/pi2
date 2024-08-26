@@ -12,273 +12,11 @@ namespace itl2
 {
 	namespace zarr
 	{
-		//TODO: remove isNativeByteOrder
-		bool getInfo(const std::string& path,
-			Vec3c& shape,
-			bool& isNativeByteOrder,
-			ImageDataType& dataType,
-			Vec3c& chunkSize,
-			std::list<codecs::ZarrCodec>& codecs,
-			int& fillValue,
-			std::string& reason)
-		{
-			shape = Vec3c();
-			isNativeByteOrder = true;
-			dataType = ImageDataType::Unknown;
-			chunkSize = Vec3c();
-			fillValue = 43;
-
-			// Check that metadata file exists.
-			string metadataFilename = zarr::internals::zarrMetadataFilename(path);
-			if (!fs::exists(metadataFilename))
-			{
-				reason = "Metadata file does not exist.";
-				return false;
-			}
-
-			// Read metadata and populate shape and pixel data type.
-			ifstream in(metadataFilename);
-			nlohmann::json j;
-
-			try
-			{
-				in >> j;
-			}
-
-			catch (nlohmann::json::exception ex)
-			{
-				reason = string("Unable to parse zarr metadata: ") + ex.what();
-				return false;
-			}
-			if (!j.contains("zarr_format"))
-			{
-				throw ITLException("zarr_format is missing in zarr metadata.");
-			}
-			else
-			{
-				int zarr_format = j["zarr_format"].get<int>();
-				if (zarr_format != 3)
-				{
-					reason = "This zarr implementation supports only zarr_format 3.";
-					return false;
-				}
-			}
-			if (!j.contains("node_type"))
-			{
-				throw ITLException("node_type is missing in zarr metadata.");
-			}
-			else
-			{
-				string node_type = j["node_type"].get<string>();
-				if (node_type != "array")
-				{
-					throw ITLException("This zarr implementation supports only node_type array.");
-				}
-			}
-			if (!j.contains("shape"))
-			{
-				throw ITLException("shape is missing in zarr metadata.");
-			}
-
-			auto dims = j["shape"];
-			if (dims.size() > 3)
-			{
-				reason = "This zarr implementation supports only 1-, 2-, or 3-dimensional datasets.";
-				return false;
-			}
-
-			//transpose xyz -> yxz
-			shape = Vec3c(1, 1, 1);
-			shape[0] = dims[0].get<size_t>();
-			if (dims.size() >= 2)
-				shape[1] = dims[1].get<size_t>();
-			if (dims.size() >= 3)
-				shape[2] = dims[2].get<size_t>();
-
-			cout << "getInfo shape: " << shape << endl;
-
-			if (!j.contains("data_type"))
-			{
-				throw ITLException("data_type is missing in zarr metadata.");
-			}
-			try
-			{
-				string dataTypeString = j["data_type"].get<string>();
-				dataType = fromString<ImageDataType>(dataTypeString);
-				if (dataType == ImageDataType::Unknown)
-				{
-					throw ITLException("Could not identify datatype: " + dataTypeString);
-				}
-			}
-			catch (ITLException& e)
-			{
-				reason = e.message();
-				return false;
-			}
-
-			if (!j.contains("chunk_grid")
-				|| !j["chunk_grid"].contains("configuration")
-				|| !j["chunk_grid"]["configuration"].contains("chunk_shape")
-				|| !j["chunk_grid"].contains("name")
-				|| j["chunk_grid"]["name"].get<string>() != "regular"
-				)
-			{
-				throw ITLException("chunk_grid is missing or malformed in zarr metadata.");
-			}
-			else
-			{
-				auto chunkDims = j["chunk_grid"]["configuration"]["chunk_shape"];
-				if (chunkDims.size() != dims.size())
-				{
-					throw ITLException("Chunk shape and dataset shape contain different number of elements.");
-				}
-
-				chunkSize = Vec3c(1, 1, 1);
-				chunkSize[0] = chunkDims[0].get<size_t>();
-				if (chunkDims.size() >= 2)
-					chunkSize[1] = chunkDims[1].get<size_t>();
-				if (chunkDims.size() >= 3)
-					chunkSize[2] = chunkDims[2].get<size_t>();
-
-				cout << "getInfo chunkSize: " << chunkSize << endl;
-			}
-
-			if (!j.contains("chunk_key_encoding"))
-			{
-				throw ITLException("chunk_key_encoding is missing in zarr metadata.");
-			}
-			else
-			{
-				if (!j["chunk_key_encoding"].contains("name"))
-				{
-					throw ITLException("chunk_key_encoding name is missing in zarr metadata.");
-					return false;
-				}
-				if (j["chunk_key_encoding"]["name"].get<string>() != "default")
-				{
-					reason = "This zarr implementation supports only default chunk_key_encoding.";
-					return false;
-				}
-				if (j["chunk_key_encoding"].contains("configuration")
-					&& !j["chunk_key_encoding"]["configuration"].contains("separator")
-					&& j["chunk_key_encoding"]["configuration"]["separator"].get<string>() != "/")
-				{
-					reason = "This zarr implementation supports only default chunk_key_encoding with separator \"/\".";
-					return false;
-				}
-			}
-
-			if (!j.contains("fill_value"))
-			{
-				throw ITLException("fill_value is missing in zarr metadata.");
-			}
-			else
-			{
-				try
-				{
-					fillValue = j["fill_value"].get<int>();
-				}
-				catch (nlohmann::json::exception ex)
-				{
-					reason =
-						string("Unable to parse fill_value in zarr metadata (this implementation only supports integers): ") +
-							ex.what();
-					return false;
-				}
-			}
-
-			if (!j.contains("codecs"))
-			{
-				throw ITLException("codecs is missing in zarr metadata.");
-			}
-			else
-			{
-				if (!codecs::fromJSON(codecs, j["codecs"], reason))
-				{
-					return false;
-				}
-			}
-			return true;
-		}
-
 		namespace internals
 		{
-			void writeMetadata(const std::string& path, const Vec3c& shape, ImageDataType dataType, const Vec3c& chunkSize, int fillValue, const std::list<codecs::ZarrCodec>& codecs)
-			{
-				nlohmann::json j =
-					{
-						{ "zarr_format", 3 },//zarr updated
-						{ "node_type", "array" },//zarr updated
-						{ "shape", { shape[0], shape[1], shape[2] }},//zarr updated
-						{ "data_type", toString(dataType) },//zarr updated
-						{ "chunk_grid", {{ "name", "regular" }, { "configuration", {{ "chunk_shape", { chunkSize[0], chunkSize[1], chunkSize[2] }}}}}},
-						{ "chunk_key_encoding", {{ "name", "default" }, { "configuration", {{ "separator", "/" }}}}},
-						{ "fill_value", fillValue },
-						{ "codecs", {}}
-					};
-				for (auto& codec : codecs)
-				{
-					j["codecs"].push_back(codec.toJSON());
-				}
-				// TODO: allow other chunk_key_encoding
-				// TODO: optional parameters
-				string metadataFilename = zarr::internals::zarrMetadataFilename(path);
-				ofstream of(metadataFilename, ios_base::trunc | ios_base::out);
-				of << std::setw(4) << j << endl;
-			}
 
-			void handleExisting(const Vec3c& imageDimensions,
-				ImageDataType imageDataType,
-				const std::string& path,
-				const Vec3c& chunkSize,
-				int fillValue,
-				const std::list<codecs::ZarrCodec>& codecs,
-				bool deleteOldData)
-			{
-				// Delete old dataset if it exists.
-				if (fs::exists(path))
-				{
-					bool oldIsNativeByteOrder;
-					Vec3c oldDimensions;
-					ImageDataType oldDataType;
-					Vec3c oldChunkSize;
-					std::list<codecs::ZarrCodec> oldCodecs;
-					string dummyReason;
-					int oldFillValue;
-					if (!zarr::getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCodecs, oldFillValue, dummyReason))
-					{
-						// The path does not contain a Zarr dataset.
-						// If it is no known image, do not delete it.
-						if (!io::getInfo(path, oldDimensions, oldDataType, dummyReason))
-							throw ITLException(string("Unable to write a Zarr as the output folder already exists but cannot be verified to be an image: ") + path
-								+ " Consider removing the existing dataset manually.");
 
-						// Here the path does not contain Zarr but contains an image of known type.
-						// Delete the old image.
-						fs::remove_all(path);
-					}
-					else if (oldDimensions == imageDimensions &&
-						oldIsNativeByteOrder &&
-						oldDataType == imageDataType &&
-						oldChunkSize == chunkSize &&
-						oldCodecs == codecs &&
-						oldFillValue == fillValue)
-					{
-						// The path contains a compatible Zarr dataset.
-						// Delete it if we are not continuing a concurrent write.
-						if (!fs::exists(internals::concurrentTagFile(path)))
-							if (deleteOldData)
-								fs::remove_all(path);
-					}
-					else
-					{
-						// The path contains an incompatible Zarr dataset. Delete it.
-						if (fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
-							throw ITLException(string("The output folder contains an incompatible zarr dataset that is currently being processed concurrently."));
-						fs::remove_all(path);
-					}
-				}
-			}
+
 
 			std::vector<char> readBytesOfFile(std::string& filename)
 			{
@@ -353,8 +91,8 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test writeBlock"));
 			}
 
-			void readBlockTest(Vec3c chunkSize){
-				cout << "readBlockTest chunkSize=" << chunkSize << endl;
+			void readBlockTest(Vec3c chunkSize)
+			{
 				string path = "./testoutput/readBlock.zarr";
 				Vec3c size = Vec3c(10, 10, 10);
 				Vec3c startOnes(3, 4, 5);
@@ -370,15 +108,15 @@ namespace itl2
 				zarr::readBlock(fromDisk, path, startBlock);
 
 				Image<uint16_t> expected(blockSize, 0);
-				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startOnes-startBlock), Vec3<int>(blockSize)), (uint16_t)1);
+				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startOnes - startBlock), Vec3<int>(blockSize)), (uint16_t)1);
 
-				testAssert(equals(img, fromDisk), string("zarr test readBlock chunkSize="+toString(chunkSize)));
+				testAssert(equals(img, fromDisk), string("zarr test readBlock chunkSize=" + toString(chunkSize)));
 			}
 
 			void readBlock()
 			{
-				readBlockTest(Vec3c(1,1,1));
-				readBlockTest(Vec3c(2,2,2));
+				readBlockTest(Vec3c(1, 1, 1));
+				readBlockTest(Vec3c(2, 2, 2));
 				readBlockTest(DEFAULT_CHUNK_SIZE);
 			}
 
@@ -419,7 +157,145 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
+			void zarrMetadataEquals(){
+				ZarrMetadata<uint16_t> metadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata<uint16_t> equalMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata<uint16_t> differentMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
+				testAssert(metadata == equalMetadata, string("zarr test equal metadata equals"));
+				testAssert(!(metadata == differentMetadata), string("zarr test different metadata doesnt equal"));
+			}
 
+			void separatorTest(std::string separator, std::string label)
+			{
+				string path = "./testoutput/test_separator_" + label + ".zarr";
+
+				Image<uint16_t> img(Vec3c(2, 3, 4));
+				ramp3(img);
+				add(img, 10);
+				zarr::write(img,
+					path,
+					Vec3c(1, 1, 1),
+					zarr::DEFAULT_CODECS,
+					separator
+				);
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				std::string filename = path + "/c" + separator + "1" + separator + "2" + separator + "3";
+				testAssert(fs::exists(filename), string("zarr test read and write with separator " + separator + " file does not exist: " + filename));
+
+				testAssert(equals(img, fromDisk), string("zarr test read and write with separator " + separator + " read failed"));
+			}
+			void separator(){
+				separatorTest(".", "dot");
+				separatorTest("/", "slash");
+				separatorTest("-", "minus");
+			}
+
+			void shardingTest(std::string indexLocation, bool withBlosc){
+
+				string path = "./testoutput/test_sharding_" + indexLocation;
+				if(withBlosc) path+="_withBlosc";
+				path+=".zarr";
+
+				Image<uint16_t> img(Vec3c(2, 5, 10));
+				ramp(img, 0);
+				add(img, 10);
+				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
+
+				nlohmann::json codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()};
+				if (withBlosc) codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()};
+
+				nlohmann::json shardingCodecConfigJSON = {
+					{"chunk_shape", { 2, 5, 1 }},
+					{"codecs", codecs},
+					//{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
+					{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
+					{"index_location", indexLocation}
+				};
+
+				zarr::write(img,
+					path,
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ codecs::ZarrCodec(codecs::Name::Sharding,  shardingCodecConfigJSON)});
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				testAssert(equals(img, fromDisk), string("zarr test write sharding with indexLocation=" + indexLocation + " withBlosc="+ toString(withBlosc)));
+			}
+
+			void shardingEmptyInnerChunksTest(string indexLocation)
+			{
+				string path = "./testoutput/test_sharding_empty_inner_chunks_" + indexLocation;
+				Image<uint16_t> img(Vec3c(10, 10, 10));
+				add(img, uint16_t());//TODO DEFAULT_FILLVALUE);
+				nlohmann::json shardingCodecConfigJSON = {
+					{ "chunk_shape", { 5, 5, 5 }},
+					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
+					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
+					{ "index_location", indexLocation }
+				};
+
+				img(0, 0, 0) = 1; //to not have complete shard empty
+				zarr::write(img,
+					path + "_empty",
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
+
+				ramp(img, 0);
+				zarr::write(img,
+					path + "_full",
+					zarr::DEFAULT_CHUNK_SIZE,
+					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
+
+				auto sizeEmptyChunks = fileSize(internals::chunkFile(path + "_empty", 3, Vec3c(0, 0, 0), DEFAULT_SEPARATOR));
+				auto sizeFullChunks = fileSize(internals::chunkFile(path + "_full", 3, Vec3c(0, 0, 0), DEFAULT_SEPARATOR));
+
+				testAssert(sizeEmptyChunks < sizeFullChunks, "shardingEmptyInnerChunksTest" + indexLocation);
+			}
+			void sharding()
+			{
+				shardingTest("end", false);
+				shardingTest("start", false);
+				shardingTest("end", true);
+				shardingTest("start", true);
+				shardingEmptyInnerChunksTest("start");
+				shardingEmptyInnerChunksTest("end");
+			}
+			void emptyChunks(){
+				string path = "./testoutput/test_empty_chunks";
+				Image<uint16_t> img(Vec3c(8, 8, 8));
+				add(img, uint16_t());//TODO DEFAULT_FILLVALUE);
+
+				bool expectedFiles[4][4][4] = {false};
+
+				img(0, 0, 0) = 1;
+				expectedFiles[0][0][0] = true;
+
+				img(7, 7, 7) = 3;
+				expectedFiles[3][3][3] = true;
+
+				img(1, 2, 3) = 1;
+				expectedFiles[0][1][1] = true;
+
+				zarr::write(img,
+					path,
+					Vec3c(2,2,2));
+
+				for (int i = 0; i < 4; ++i)
+				{
+					for (int j = 0; j < 4; ++j)
+					{
+						for (int k = 0; k < 4; ++k)
+						{
+							string filename = internals::chunkFile(path, 3, Vec3c(i,j,k), DEFAULT_SEPARATOR);
+							testAssert(fs::exists(filename) == expectedFiles[i][j][k], "test emptyChunks at " + toString(i) + " " + toString(j) + " " + toString(k));
+
+						}
+					}
+				}
+			}
 		}
 	}
 }

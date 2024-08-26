@@ -463,8 +463,8 @@ namespace pilib
 			//fs::remove(tempFilename);
 			string tempFilename = createTempFilename("particle_analysis_data");
 
-			vector<string> output = CommandList::get<AnalyzeParticlesBlockCommand<pixel_t> >().runDistributed(distributor, { &in, analyzerNames, connectivity, volumeLimit, in.dimensions(), tempFilename, Distributor::BLOCK_INDEX_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() });
-
+			vector<ParamVariant> distributedArgs = { &in, analyzerNames, connectivity, volumeLimit, in.dimensions(), tempFilename, Distributor::BLOCK_INDEX_ARG_TYPE(), Distributor::BLOCK_ORIGIN_ARG_TYPE() };
+			vector<string> output = CommandList::get<AnalyzeParticlesBlockCommand<pixel_t> >().runDistributed(distributor, distributedArgs);
 
 			std::cout << "Loading data..." << std::endl;
 

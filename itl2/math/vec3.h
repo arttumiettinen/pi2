@@ -139,6 +139,14 @@ namespace itl2
                 return *this;
             }
 
+			/**
+			Comparison of greater or equal in all components
+			*/
+			bool operator>=(const Vec3& r)
+			{
+				return x >= r.x && y >= r.y && z >= r.z;
+			}
+
 
             /**
             Addition of constant in-place
