@@ -39,7 +39,7 @@ namespace pilib
 		name(name),
 		pixelDataType(dataType),
 		distributor(&distributor),
-		imageChunkSize(distributor.getChunkSize())
+		distributedImageChunkSize(distributor.getChunkSize())
 	{
 		setReadSourceInternal(sourceFilename, false);
 		createTempFilenames(storageType);
@@ -315,7 +315,7 @@ namespace pilib
 		return s.str();
 	}
 
-	size_t DistributedImageBase::startConcurrentWrite(const std::vector<nn5::DistributedImageProcess>& processes)
+	size_t DistributedImageBase::startConcurrentWrite(const std::vector<io::DistributedImageProcess>& processes)
 	{
 		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
 		{

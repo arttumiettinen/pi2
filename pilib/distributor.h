@@ -22,7 +22,7 @@ namespace pilib
 	Gets character describing progress of single task.
 	*/
 	char getProgressChar(int progress);
-
+ 
 	/**
 	Creates a string containing progress bar for multiple tasks.
 	*/

@@ -266,7 +266,7 @@ namespace pilib
 		/**
 		Start concurrent write process for given processes.
 		*/
-		size_t startConcurrentWrite(const std::vector<itl2::nn5::DistributedImageProcess>& processes);
+		size_t startConcurrentWrite(const std::vector<itl2::io::DistributedImageProcess>& processes);
 
 		/**
 		Retrieve a list of chunks for which it is necessary to execute pi2 code retrieved using emitEndConcurrentWrite.
@@ -622,8 +622,13 @@ namespace pilib
 			}
 			case DistributedImageStorageType::Zarr:
 			{
-				// TODO: NN5 compression default
-				itl2::zarr::internals::write(img, currentWriteTarget(), getChunkSize(), true, false);
+				string path = currentWriteTarget();
+
+				// Delete it if we are not continuing a concurrent write.
+				if (fs::exists(path) && !fs::exists(itl2::zarr::internals::concurrentTagFile(path)))
+					fs::remove_all(path);
+
+				itl2::zarr::write(img, currentWriteTarget(), getChunkSize());
 				break;
 			}
 			case DistributedImageStorageType::Raw:

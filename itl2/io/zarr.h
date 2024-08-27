@@ -10,6 +10,8 @@
 #include "io/zarrcodecs.h"
 #include "generation.h"
 #include "math/vec3.h"
+#include "io/distributedimageprocess.h"
+#include "json.h"
 
 namespace itl2
 {
@@ -66,9 +68,21 @@ namespace itl2
 						{ "data_type", toString(dataType) },//zarr updated
 						{ "chunk_grid", {{ "name", "regular" }, { "configuration", {{ "chunk_shape", { metadata.chunkSize[0], metadata.chunkSize[1], metadata.chunkSize[2] }}}}}},
 						{ "chunk_key_encoding", {{ "name", "default" }, { "configuration", {{ "separator", metadata.separator }}}}},
-						{ "fill_value", metadata.fillValue },
 						{ "codecs", {}}
 					};
+				if constexpr (std::is_integral_v<pixel_t>){
+					j["fill_value"] = static_cast<int64_t>(metadata.fillValue);
+				}
+				else if constexpr (std::is_floating_point_v<pixel_t>){
+					j["fill_value"] = static_cast<double>(metadata.fillValue);
+				}
+				else if constexpr (std::is_unsigned_v<pixel_t>){
+					j["fill_value"] = static_cast<uint16_t>(metadata.fillValue);
+				}
+				else{
+					throw ITLException("could not convert fillValue: " + toString(metadata.fillValue) + "of type " + typeid(pixel_t).name());
+				}
+
 				for (auto& codec : metadata.codecs)
 				{
 					j["codecs"].push_back(codec.toJSON());
@@ -642,6 +656,67 @@ namespace itl2
 
 			readBlock(img, path, Vec3c(0, 0, 0), showProgressInfo);
 		}
+
+		/**
+		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
+		This function should be called before the processes are started.
+		@param targetImg Image that is to be saved into the NN5 dataset by the processes.
+		@param path Path to the NN5 dataset.
+		@param chunkSize Chunk size for the NN5 dataset.
+		@param compression Compression method to be used.
+		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
+		*/
+		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes)
+		{
+			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, processes);
+		}
+
+		/**
+		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
+		This function should be called before the processes are started.
+		@param imageDimensions Dimensions of the image to be saved into the NN5 dataset.
+		@param imageDataType Data type of the image.
+		@param path Path to the NN5 dataset.
+		@param chunkSize Chunk size for the NN5 dataset.
+		@param compression Compression method to be used.
+		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
+		@return Number of chunks that require special processing in endConcurrentWrite.
+		*/
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes);
+
+
+		/**
+		Finalizes concurrent access from multiple processes.
+		This function should be called after all the processes have finished accessing the dataset.
+		This function calls endConcurrentWrite(path, chunkIndex) for all chunks in the dataset for which needsEndConcurrentWrite return true,
+		and removes concurrent tag file from the dataset root folder.
+		@param path Path to the NN5 dataset.
+		*/
+		void endConcurrentWrite(const std::string& path, bool showProgressInfo = false);
+
+		/**
+		Used to test if a block in the given NN5 dataset requires calling endConcurrentWrite after concurrent access by multiple processes.
+		@param path Path to the NN5 dataset.
+		@param chunkIndex Index of the chunk to finalize.
+		*/
+		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex);
+
+		/**
+		Get a list of chunks for which needsEndConcurrentWrite must be called.
+		*/
+		std::vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path);
+
+		/**
+		Finalizes concurrent access from multiple processes for a single chunk in an NN5 dataset.
+		This function can be used instead of the other endConcurrentWrite overload, but it must be called for
+		all chunks in the dataset.
+		The function can be called concurrently for different chunk indices.
+		Processing might involve doing nothing, or reading and re-writing the chunk.
+		@param path Path to the NN5 dataset.
+		@param chunkIndex Index of the chunk to finalize.
+		*/
+		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex);
+
 		namespace tests
 		{
 			void read();

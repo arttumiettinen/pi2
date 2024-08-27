@@ -14,10 +14,6 @@ namespace itl2
 	{
 		namespace internals
 		{
-
-
-
-
 			std::vector<char> readBytesOfFile(std::string& filename)
 			{
 				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
@@ -46,6 +42,39 @@ namespace itl2
 				if (!out)
 					throw ITLException(std::string("Unable to write to ") + filename + std::string(", ") + getStreamErrorMessage());
 			}
+		}
+
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const string& separator)
+		{
+			// Find chunks that are
+			// * written to by separate processes, or
+			// * read from and written to by at least two separate processes,
+			// and tag those unsafe by creating writes folder into the chunk folder.
+
+			//TODO handleExisting
+			//TODO write Metadata
+
+			// Tag the image as concurrently processed
+			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
+
+			size_t unsafeChunkCount = 0;
+			forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				{
+					string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex, separator);
+					//TODO: will that happen later? fs::create_directories(chunkFile);
+
+					string writesFolder = internals::writesFolder(chunkFile);
+
+					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, chunkSize);
+
+					if (!io::isChunkSafe(chunkBox, processes))
+					{
+						// Mark the chunk as unsafe by creating writes folder.
+						fs::create_directories(writesFolder);
+						unsafeChunkCount++;
+					}
+				});
+			return unsafeChunkCount;
 		}
 
 		namespace tests

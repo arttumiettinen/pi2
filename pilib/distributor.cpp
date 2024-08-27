@@ -1218,7 +1218,7 @@ namespace pilib
 		timer.start();
 
 		// Prepare images for concurrent writing
-		map<DistributedImageBase*, vector<nn5::DistributedImageProcess>> distributedImageProcesses;
+		map<DistributedImageBase*, vector<io::DistributedImageProcess>> distributedImageProcesses;
 		for (size_t i = 0; i < jobCount; i++)
 		{
 			if (std::find(skippedJobs.begin(), skippedJobs.end(), i) == skippedJobs.end())
@@ -1241,13 +1241,13 @@ namespace pilib
 							// We are reading and writing the same file.
 							// AND the image is used as input and output.
 							// => The DistributedImageProcess must contain both read and write region.
-							distributedImageProcesses[img].push_back(nn5::DistributedImageProcess{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
+							distributedImageProcesses[img].push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
 						else
 						{
 							// We are reading and writing different file.
 							// => The DistributedImageProcess must contain only the write region as no reads are made from the same file.
-							distributedImageProcesses[img].push_back(nn5::DistributedImageProcess{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize) });
+							distributedImageProcesses[img].push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
 					}
 				}
