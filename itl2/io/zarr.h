@@ -34,44 +34,7 @@ namespace itl2
 #define JSON_SIGNED_t int64_t
 #define JSON_FLOAT_t double
 		typedef std::variant<JSON_UNSIGNED_t, JSON_SIGNED_t, JSON_FLOAT_t> JsonNumberType;
-		inline void setImageValueInJSON(ImageValue v, nlohmann::json j, string key){
-			if (std::holds_alternative<uint8_t>(v))
-				j[key] = static_cast<JSON_UNSIGNED_t>(std::get<uint8_t>(v));
-			else if (std::holds_alternative<uint16_t>(v))
-				j[key] = static_cast<JSON_UNSIGNED_t>(std::get<uint16_t>(v));
-			else if (std::holds_alternative<uint32_t>(v))
-				j[key] = static_cast<JSON_UNSIGNED_t>(std::get<uint32_t>(v));
-			else if (std::holds_alternative<uint64_t>(v))
-				j[key] = static_cast<JSON_UNSIGNED_t>(std::get<uint64_t>(v));
-			else if (std::holds_alternative<int8_t>(v))
-				j[key] = static_cast<JSON_SIGNED_t>(std::get<int8_t>(v));
-			else if (std::holds_alternative<int16_t>(v))
-				j[key] = static_cast<JSON_SIGNED_t>(std::get<int16_t>(v));
-			else if (std::holds_alternative<int32_t>(v))
-				j[key] = static_cast<JSON_SIGNED_t>(std::get<int32_t>(v));
-			else if (std::holds_alternative<int64_t>(v))
-				j[key] = static_cast<JSON_SIGNED_t>(std::get<int64_t>(v));
-			else if (std::holds_alternative<float32_t>(v))
-				j[key] = static_cast<JSON_FLOAT_t>(std::get<float32_t>(v));
-			else
-				throw ITLException("Could not set ImageValue in JSON");
-		}
 
-		template<typename pixel_t> struct CastValue
-		{
-			static void run(JsonNumberType v, pixel_t& target)
-			{
-				if (std::holds_alternative<JSON_FLOAT_t>(v))
-					target = static_cast<pixel_t>(std::get<JSON_FLOAT_t>(v));
-				else if (std::holds_alternative<JSON_UNSIGNED_t>(v))
-					target = static_cast<pixel_t>(std::get<JSON_UNSIGNED_t>(v));
-				else if (std::holds_alternative<JSON_SIGNED_t>(v))
-					target = static_cast<pixel_t>(std::get<JSON_SIGNED_t>(v));
-				else
-					throw ITLException("Could not cast value");
-			}
-		};
-		typedef int64_t fillValue_t; //TODO: allow other fillValue types
 		struct ZarrMetadata
 		{
 			ImageDataType dataType;
@@ -121,7 +84,7 @@ namespace itl2
 						{ "codecs", {}}
 					};
 
-				setImageValueInJSON(metadata.fillValue, j, "fill_value");
+				j["fill_value"] = metadata.fillValue;
 
 				for (auto& codec : metadata.codecs)
 				{
@@ -188,7 +151,7 @@ namespace itl2
 				{
 				  Vec3c pos = Vec3c(x, y, z) + chunkStartPos;
 				  imgChunk(x, y, z) = img(pos);
-				  if (img(pos) != std::get_if<pixel_t>(metadata.fillValue))
+				  if (img(pos) != static_cast<pixel_t>(metadata.fillValue))
 				  {
 					  chunkEmpty = false;
 				  }
@@ -473,22 +436,7 @@ namespace itl2
 				{
 					try
 					{
-						nlohmann::json::value_t fillValue_t = j["fill_value"].type();
-						switch (fillValue_t)
-						{
-						case nlohmann::json::value_t::number_float:
-							JSON_FLOAT_t fillValue_f = j["fill_value"];
-							pick<CastValue>(metadata.dataType, fillValue_f, metadata.fillValue);
-							break;
-						case nlohmann::json::value_t::number_integer:
-							metadata.fillValue = (pixel_t)j["fill_value"].get<int>();
-							break;
-						case nlohmann::json::value_t::number_unsigned:
-							metadata.fillValue = (pixel_t)j["fill_value"].get<uint>();
-							break;
-						default:
-							metadata.fillValue = (pixel_t)j["fill_value"].get<int>();
-						}
+						metadata.fillValue = static_cast<fillValue_t>(j["fill_value"]);
 					}
 					catch (nlohmann::json::exception ex)
 					{
@@ -518,7 +466,6 @@ namespace itl2
 			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
 			*/
 			inline void handleExisting(const Vec3c& imageDimensions,
-				ImageDataType imageDataType,
 				const std::string& path,
 				const ZarrMetadata& metadata,
 				bool deleteOldData)
@@ -560,7 +507,6 @@ namespace itl2
 						fs::remove_all(path);
 					}
 					else if (oldDimensions == imageDimensions &&
-						oldDataType == imageDataType &&
 						oldMetadata == metadata)
 					{
 						// The path contains a compatible Zarr dataset.
@@ -582,19 +528,18 @@ namespace itl2
 
 		inline bool getInfo(const std::string& path, Vec3c& shape, ImageDataType& dataType, std::string& reason)
 		{
-			ZarrMetadata<u_int16_t> dummyMetadata;
-			return zarr::internals::getInfo(path, shape, dataType, dummyMetadata, reason);
+			ZarrMetadata dummyMetadata;
+			return zarr::internals::getInfo(path, shape, dummyMetadata, reason);
 		}
 
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1536, 1536, 1536);
 		inline const string DEFAULT_SEPARATOR = "/";
-#define DEFAULT_FILLVALUE pixel_t()
+		inline const fillValue_t DEFAULT_FILLVALUE = 0;
+		inline const ImageDataType DEFAULT_DATATYPE = ImageDataType::Int32;
 		inline const codecs::Pipeline DEFAULT_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
 		inline const nlohmann::json DEFAULT_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
-		template<typename pixel_t>
-		const ZarrMetadata<pixel_t> defaultZarrMetadata(){
-			return ZarrMetadata<pixel_t>{DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR};
-		}
+		inline const ZarrMetadata DEFAULT_METADATA = {DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR};
+
 		/**
 		Writes a block of an image to the specified location in an .zarr dataset.
 		The output dataset is not truncated if it exists.
@@ -612,7 +557,7 @@ namespace itl2
 			const Vec3c& blockDimensions,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
-			pixel_t fillValue = DEFAULT_FILLVALUE,
+			fillValue_t fillValue = DEFAULT_FILLVALUE,
 			const string& separator = DEFAULT_SEPARATOR,
 			bool showProgressInfo = false)
 		{
@@ -635,15 +580,15 @@ namespace itl2
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
 			const std::string& separator = DEFAULT_SEPARATOR,
-			pixel_t fillValue = pixel_t(),//TODO DEFAULT_FILLVALUE,
+			fillValue_t fillValue = DEFAULT_FILLVALUE,
 			bool showProgressInfo = false)
 		{
 			bool deleteOldData = false;
 			Vec3c dimensions = img.dimensions();
 			Vec3c clampedChunkSize = chunkSize;
 			clamp(clampedChunkSize, Vec3c(1, 1, 1), dimensions);
-			ZarrMetadata<pixel_t> metadata = { clampedChunkSize, codecs, fillValue, separator };
-			internals::handleExisting(dimensions, img.dataType(), path, metadata, deleteOldData);
+			ZarrMetadata metadata = { img.dataType(), clampedChunkSize, codecs, fillValue, separator };
+			internals::handleExisting(dimensions, path, metadata, deleteOldData);
 			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, clampedChunkSize, codecs, fillValue, separator, showProgressInfo);
 		}
 
@@ -659,9 +604,9 @@ namespace itl2
 		{
 			Vec3c datasetShape;
 			ImageDataType dataType;
-			ZarrMetadata<pixel_t> metadata;
+			ZarrMetadata metadata;
 			string reason;
-			if (!itl2::zarr::internals::getInfo(path, datasetShape, dataType, metadata, reason))
+			if (!itl2::zarr::internals::getInfo(path, datasetShape, metadata, reason))
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 
 			if (dataType != img.dataType())
@@ -687,9 +632,9 @@ namespace itl2
 		{
 			Vec3c dimensions;
 			ImageDataType dataType;
-			ZarrMetadata<pixel_t> metadata;
+			ZarrMetadata metadata;
 			string reason;
-			if (!itl2::zarr::internals::getInfo(path, dimensions, dataType, metadata, reason))
+			if (!itl2::zarr::internals::getInfo(path, dimensions, metadata, reason))
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 			img.ensureSize(dimensions);
 

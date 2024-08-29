@@ -46,13 +46,14 @@ namespace itl2
 
 		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const string& separator)
 		{
+
+			//TODO handleExisting
+			//TODO write Metadata
+
 			// Find chunks that are
 			// * written to by separate processes, or
 			// * read from and written to by at least two separate processes,
 			// and tag those unsafe by creating writes folder into the chunk folder.
-
-			//TODO handleExisting
-			//TODO write Metadata
 
 			// Tag the image as concurrently processed
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
@@ -81,7 +82,7 @@ namespace itl2
 		{
 			void read()
 			{
-				Image<int32> fromDisk;
+				Image<int32_t> fromDisk;
 				zarr::read(fromDisk, "./testoutput/zarrita.zarr");
 			}
 			void write()
@@ -258,7 +259,7 @@ namespace itl2
 			{
 				string path = "./testoutput/test_sharding_empty_inner_chunks_" + indexLocation;
 				Image<uint16_t> img(Vec3c(10, 10, 10));
-				add(img, uint16_t());//TODO DEFAULT_FILLVALUE);
+				add(img, DEFAULT_FILLVALUE);
 				nlohmann::json shardingCodecConfigJSON = {
 					{ "chunk_shape", { 5, 5, 5 }},
 					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
@@ -295,7 +296,7 @@ namespace itl2
 			void emptyChunks(){
 				string path = "./testoutput/test_empty_chunks";
 				Image<uint16_t> img(Vec3c(8, 8, 8));
-				add(img, uint16_t());//TODO DEFAULT_FILLVALUE);
+				add(img, DEFAULT_FILLVALUE);
 
 				bool expectedFiles[4][4][4] = {false};
 

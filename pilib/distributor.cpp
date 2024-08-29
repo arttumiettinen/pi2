@@ -1039,9 +1039,9 @@ namespace pilib
 			{
 				// This is InOut image
 
-				//TODO ZARR: does this need update for zarr?
 				// TODO: NN5 should be able to support concurrent reading and writing. Is there some bug somewhere?
 				if (img->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
+					img->currentWriteTargetType() == DistributedImageStorageType::Zarr ||
 					margin != Vec3c(0, 0, 0))
 				{
 					if (img->currentReadSource() == img->currentWriteTarget())
@@ -1287,7 +1287,6 @@ namespace pilib
 		size_t originalJobCount = jobsToSubmit.size();
 		if (maxSubmittedJobCount > 0)
 		{
-			
 			if (jobsToSubmit.size() > maxSubmittedJobCount)
 			{
 				// Add clear command and job start marker to all the job scripts.
