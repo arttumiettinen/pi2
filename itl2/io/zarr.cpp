@@ -83,7 +83,7 @@ namespace itl2
 			void read()
 			{
 				Image<int32_t> fromDisk;
-				zarr::read(fromDisk, "./testoutput/zarrita.zarr");
+				zarr::read(fromDisk, "./testdata/zarrita.zarr");
 			}
 			void write()
 			{
@@ -101,24 +101,31 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test read and write"));
 			}
 
-			void writeBlock()
+			void writeBlockTest(Vec3c chunkSize)
 			{
 				string path = "./testoutput/writeBlock.zarr";
-				Vec3c size = Vec3c(10, 10, 10);
+				Vec3c size = Vec3c(4, 5, 6);
 				Vec3c startBlock(2, 2, 2);
 				Vec3c endBlock(3, 4, 5);
 
 				Image<uint16_t> img(size, 42);
-				add(img, 10);
-				zarr::writeBlock(img, path, Vec3c(0, 0, 0), size, startBlock, endBlock);
+				zarr::write(img, path, chunkSize);
+				drawAll(img, (uint16_t) DEFAULT_FILLVALUE);
+				zarr::writeBlock(img, path, startBlock, endBlock - startBlock, chunkSize);
 
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
 
 				Image<uint16_t> expected(size, 42);
-				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startBlock), Vec3<int>(endBlock)), (uint16_t)52);
+				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startBlock), Vec3<int>(endBlock)), (uint16_t)1);
+				testAssert(equals(expected, fromDisk), string("zarr test writeBlock chunkSize=" + toString(chunkSize)));
+			}
 
-				testAssert(equals(img, fromDisk), string("zarr test writeBlock"));
+			void writeBlock()
+			{
+				writeBlockTest(Vec3c(1, 1, 1));
+				writeBlockTest(Vec3c(2, 2, 2));
+				writeBlockTest(DEFAULT_CHUNK_SIZE);
 			}
 
 			void readBlockTest(Vec3c chunkSize)
@@ -140,7 +147,7 @@ namespace itl2
 				Image<uint16_t> expected(blockSize, 0);
 				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startOnes - startBlock), Vec3<int>(blockSize)), (uint16_t)1);
 
-				testAssert(equals(img, fromDisk), string("zarr test readBlock chunkSize=" + toString(chunkSize)));
+				testAssert(equals(expected, fromDisk), string("zarr test readBlock chunkSize=" + toString(chunkSize)));
 			}
 
 			void readBlock()
@@ -188,9 +195,9 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
 			void zarrMetadataEquals(){
-				ZarrMetadata<uint16_t> metadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
-				ZarrMetadata<uint16_t> equalMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
-				ZarrMetadata<uint16_t> differentMetadata = {Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
+				ZarrMetadata metadata = {ImageDataType::Int32, Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata equalMetadata = {ImageDataType::Int32, Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
+				ZarrMetadata differentMetadata = {ImageDataType::Int32, Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
 				testAssert(metadata == equalMetadata, string("zarr test equal metadata equals"));
 				testAssert(!(metadata == differentMetadata), string("zarr test different metadata doesnt equal"));
 			}

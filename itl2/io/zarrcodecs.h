@@ -367,7 +367,8 @@ namespace itl2
 			std::vector<pixel_t> temp(shape.product());
 			std::memcpy(temp.data(), buffer.data(), buffer.size());
 
-			assert(shape.product() * sizeof(pixel_t) == buffer.size());
+			if(shape.product() * sizeof(pixel_t) != buffer.size())
+				throw ITLException("wrong buffer size for decoding bytes codec");
 			size_t n = 0;
 			for (coord_t x = 0; x < shape.x; x++)
 			{
