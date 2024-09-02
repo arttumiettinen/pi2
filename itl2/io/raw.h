@@ -693,7 +693,6 @@ namespace itl2
 			void parseDimensions();
 			void raw();
 			void writeBlock();
-			void readBlock();
 			void writeBlockFast();
 			void expandFilename();
 		}

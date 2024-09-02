@@ -101,31 +101,58 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test read and write"));
 			}
 
-			void writeBlockTest(Vec3c chunkSize)
+			void printImg(Image<uint16_t>& img){
+				for (int i = 0; i < img.dimension(0); ++i)
+				{
+					for (int j = 0; j < img.dimension(1); ++j)
+					{
+						cout << "(";
+						for (int k = 0; k < img.dimension(2); ++k)
+						{
+							cout << img(i,j,k) << ",";
+						}
+						cout << "), ";
+					}
+					cout << endl;
+				}
+				cout << endl;
+			}
+			void writeBlockTest(Vec3c chunkSize, uint16_t changeValue)
 			{
 				string path = "./testoutput/writeBlock.zarr";
-				Vec3c size = Vec3c(4, 5, 6);
-				Vec3c startBlock(2, 2, 2);
-				Vec3c endBlock(3, 4, 5);
+				Vec3c size = Vec3c(2, 3, 4);
+				Vec3c startBlock(1, 2, 3);
+				Vec3c blockSize(2, 2, 2);
 
 				Image<uint16_t> img(size, 42);
 				zarr::write(img, path, chunkSize);
-				drawAll(img, (uint16_t) DEFAULT_FILLVALUE);
-				zarr::writeBlock(img, path, startBlock, endBlock - startBlock, chunkSize);
+				drawAll(img, changeValue);
+				zarr::writeBlock(img, path, startBlock, blockSize, chunkSize);
 
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
 
 				Image<uint16_t> expected(size, 42);
-				draw(expected, AABoxsc::fromMinMax(Vec3<int>(startBlock), Vec3<int>(endBlock)), (uint16_t)1);
-				testAssert(equals(expected, fromDisk), string("zarr test writeBlock chunkSize=" + toString(chunkSize)));
+				draw(expected, AABoxsc::fromPosSize(Vec3<int>(startBlock), Vec3<int>(blockSize)), changeValue);
+
+				bool imgEquals = equals(expected, fromDisk);
+				testAssert(imgEquals, string("zarr test writeBlock chunkSize=" + toString(chunkSize)));
+
+				if(!imgEquals)
+				{
+					printImg(expected);
+					printImg(fromDisk);
+				}
 			}
 
 			void writeBlock()
 			{
-				writeBlockTest(Vec3c(1, 1, 1));
-				writeBlockTest(Vec3c(2, 2, 2));
-				writeBlockTest(DEFAULT_CHUNK_SIZE);
+				writeBlockTest(Vec3c(1, 1, 1), 1);
+				writeBlockTest(Vec3c(2, 2, 2), 1);
+				writeBlockTest(DEFAULT_CHUNK_SIZE, 1);
+				writeBlockTest(Vec3c(1, 1, 1), DEFAULT_FILLVALUE);
+				writeBlockTest(Vec3c(2, 2, 2), DEFAULT_FILLVALUE);
+				writeBlockTest(DEFAULT_CHUNK_SIZE, DEFAULT_FILLVALUE);
 			}
 
 			void readBlockTest(Vec3c chunkSize)

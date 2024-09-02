@@ -511,18 +511,17 @@ namespace itl2
 				Image<pixel_t> imgChunk(metadata.chunkSize, metadata.fillValue);
 				readBlock(imgChunk, path, chunkStart);
 				string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
-				bool chunkEmpty = true;
 				//write all pixels of chunk in img to imgChunk
 				forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
 				{
 				  Vec3c pos = Vec3c(x, y, z);
 				  imgChunk(pos - currentChunk.position()) = img(pos);
-				  if (img(pos) != static_cast<pixel_t>(metadata.fillValue))
-					  chunkEmpty = false;
 				});
 
-				if (chunkEmpty)
+
+				if (allEquals(imgChunk, static_cast<pixel_t>(metadata.fillValue)))
 				{
+					//chunk is empty so we can delete the chunk file
 					//TODO: what if writesFolder exists?
 					if (fs::exists(filename))
 					{
