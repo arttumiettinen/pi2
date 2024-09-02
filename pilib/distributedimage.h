@@ -622,11 +622,6 @@ namespace pilib
 			}
 			case DistributedImageStorageType::Zarr:
 			{
-				string path = currentWriteTarget();
-
-				// Delete it if we are not continuing a concurrent write.
-				if (fs::exists(path) && !fs::exists(itl2::zarr::internals::concurrentTagFile(path)))
-					fs::remove_all(path);
 
 				itl2::zarr::write(img, currentWriteTarget(), getChunkSize());
 				break;

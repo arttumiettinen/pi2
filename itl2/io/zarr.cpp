@@ -44,11 +44,17 @@ namespace itl2
 			}
 		}
 
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const string& separator)
+		size_t startConcurrentWrite(const Vec3c& imageDimensions,
+			ImageDataType imageDataType,
+			const std::string& path,
+			const Vec3c& chunkSize,
+			const std::vector<io::DistributedImageProcess>& processes,
+			const string& separator)
 		{
 
-			//TODO handleExisting
-			//TODO write Metadata
+			ZarrMetadata metadata = DEFAULT_METADATA;
+			internals::handleExisting(imageDimensions, path, metadata, false, true);
+			internals::writeMetadata(path, imageDimensions, metadata);
 
 			// Find chunks that are
 			// * written to by separate processes, or

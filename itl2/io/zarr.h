@@ -371,8 +371,9 @@ namespace itl2
 			*/
 			inline void handleExisting(const Vec3c& imageDimensions,
 				const std::string& path,
-				const ZarrMetadata& metadata,
-				bool deleteOldData)
+				ZarrMetadata& metadata,
+				bool deleteOldData,
+				bool loadOldMetadata = false)
 			{
 				// Delete old dataset if it exists.
 				if (fs::exists(path))
@@ -403,28 +404,33 @@ namespace itl2
 						catch (ITLException& e)
 						{}
 						if (!isKnownImage)
-							throw ITLException(string("Unable to write a Zarr as the output folder already exists but cannot be verified to be an image: ") + path
+							throw ITLException(string("Unable to write zarr image as the output folder already exists but cannot be verified to be an image: ") + path
 								+ " Consider removing the existing dataset manually. Reason why could not read as zarr: " + zarrReason);
 
 						// Here the path does not contain Zarr but contains an image of known type.
 						// Delete the old image.
 						fs::remove_all(path);
 					}
-					else if (oldDimensions == imageDimensions &&
-						oldMetadata == metadata)
-					{
-						// The path contains a compatible Zarr dataset.
-						// Delete it if we are not continuing a concurrent write.
-						if (!fs::exists(internals::concurrentTagFile(path)))
-							if (deleteOldData)
-								fs::remove_all(path);
-					}
 					else
 					{
-						// The path contains an incompatible Zarr dataset. Delete it.
-						if (fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
-							throw ITLException(string("The output folder contains an incompatible zarr dataset that is currently being processed concurrently."));
-						fs::remove_all(path);
+						if (loadOldMetadata) metadata = oldMetadata;
+
+						if (oldDimensions == imageDimensions &&
+							oldMetadata == metadata)
+						{
+							// The path contains a compatible Zarr dataset.
+							// Delete it if we are not continuing a concurrent write.
+							if (!fs::exists(internals::concurrentTagFile(path)))
+								if (deleteOldData)
+									fs::remove_all(path);
+						}
+						else
+						{
+							// The path contains an incompatible Zarr dataset. Delete it.
+							if (fs::exists(internals::concurrentTagFile(path)) && !deleteOldData)
+								throw ITLException(string("The output folder contains an incompatible zarr dataset that is currently being processed concurrently."));
+							fs::remove_all(path);
+						}
 					}
 				}
 			}
@@ -432,8 +438,10 @@ namespace itl2
 
 		inline bool getInfo(const std::string& path, Vec3c& shape, ImageDataType& dataType, std::string& reason)
 		{
-			ZarrMetadata dummyMetadata;
-			return zarr::internals::getInfo(path, shape, dummyMetadata, reason);
+			ZarrMetadata metadata;
+			bool valid = zarr::internals::getInfo(path, shape, metadata, reason);
+			dataType = metadata.dataType;
+			return valid;
 		}
 
 		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(256, 256, 256);
@@ -587,11 +595,31 @@ namespace itl2
 			const string& separator = DEFAULT_SEPARATOR,
 			bool showProgressInfo = false)
 		{
-			Vec3c clampedChunkSize = chunkSize;
-			if (chunkSize.min()<=0)
-				throw ITLException("Illegal chunk size: " + toString(chunkSize));
+			ZarrMetadata metadata = {img.dataType(), chunkSize, codecs, fillValue, separator};
+			writeBlock(img, path, blockPosition, blockDimensions, metadata, showProgressInfo);
+		}
+
+		/**
+		Writes a block of an image to the specified location in an .zarr dataset.
+		The output dataset is not truncated if it exists.
+		If the output file does not exist, it is created and values outside the block
+		are filled with fillValue
+		@param targetImg Image to write.
+		@param filename Name of file to write.
+		@param filePosition Position in the file to write to.
+		@param fileDimension Total dimensions of the entire output file.
+		@param imagePosition Position in the image where the block to be written starts.
+		@param blockDimensions Dimensions of the block of the source image to write.
+		*/
+		template<typename pixel_t>
+		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& blockPosition,
+			const Vec3c& blockDimensions,
+			const ZarrMetadata metadata,
+			bool showProgressInfo = false)
+		{
+			if (metadata.chunkSize.min()<=0)
+				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			fs::create_directories(path);
-			ZarrMetadata metadata = {img.dataType(), clampedChunkSize, codecs, fillValue, separator};
 			internals::writeMetadata(path, img.dimensions(), metadata);
 			internals::writeChunksInRange(img, path, metadata, blockPosition, blockDimensions, showProgressInfo);
 		}
@@ -610,13 +638,26 @@ namespace itl2
 			fillValue_t fillValue = DEFAULT_FILLVALUE,
 			bool showProgressInfo = false)
 		{
-			bool deleteOldData = false;
-			Vec3c dimensions = img.dimensions();
-			if (chunkSize.min()<=0)
-				throw ITLException("Illegal chunk size: " + toString(chunkSize));
 			ZarrMetadata metadata = { img.dataType(), chunkSize, codecs, fillValue, separator };
-			internals::handleExisting(dimensions, path, metadata, deleteOldData);
-			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, chunkSize, codecs, fillValue, separator, showProgressInfo);
+			write(img, path, metadata, showProgressInfo);
+		}
+
+		/**
+		Write an image to a zarr dataset.
+		@param targetImg Image to write.
+		@param path Name of the top directory of the nn5 dataset.
+		*/
+		template<typename pixel_t>
+		void write(const Image<pixel_t>& img,
+			const std::string& path,
+			ZarrMetadata metadata,
+			bool showProgressInfo = false)
+		{
+			Vec3c dimensions = img.dimensions();
+			if (metadata.chunkSize.min()<=0)
+				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
+			internals::handleExisting(dimensions, path, metadata, false);
+			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, metadata, showProgressInfo);
 		}
 
 		/**
@@ -625,7 +666,6 @@ namespace itl2
 		@param targetImg Image that is to be saved into the NN5 dataset by the processes.
 		@param path Path to the NN5 dataset.
 		@param chunkSize Chunk size for the NN5 dataset.
-		@param compression Compression method to be used.
 		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
 		*/
 		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes)
