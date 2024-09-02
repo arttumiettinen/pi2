@@ -27,6 +27,8 @@ namespace itl2
 		{
 			AABoxc l = AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(1, 1, 1));
 
+			testAssert(l == AABoxc::fromString(toString(l)), "toString and fromString of aabox");
+
 			boxTestExclusive(AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(10, 10, 10)), AABoxc::fromMinMax(Vec3c(5, 0, 0), Vec3c(15, 10, 10)), true, 1);
 			boxTestExclusive(AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(10, 10, 10)), AABoxc::fromMinMax(Vec3c(10, 0, 0), Vec3c(15, 10, 10)), false, 2);
 			boxTestExclusive(AABoxc::fromMinMax(Vec3c(0, 0, 0), Vec3c(10, 10, 10)), AABoxc::fromMinMax(Vec3c(11, 0, 0), Vec3c(15, 10, 10)), false, 3);
