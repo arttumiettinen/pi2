@@ -256,13 +256,13 @@ namespace itl2
 				separatorTest("-", "minus");
 			}
 
-			void shardingTest(std::string indexLocation, bool withBlosc){
+			void shardingTest(std::string indexLocation, bool withBlosc, Vec3c imgShape = Vec3c(2, 5, 10), Vec3c shardShape = Vec3c(2, 5, 1), Vec3c chunkShape = Vec3c(2, 1, 1)){
 
 				string path = "./testoutput/test_sharding_" + indexLocation;
 				if(withBlosc) path+="_withBlosc";
 				path+=".zarr";
 
-				Image<uint16_t> img(Vec3c(2, 5, 10));
+				Image<uint16_t> img(imgShape);
 				ramp(img, 0);
 				add(img, 10);
 				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
@@ -271,7 +271,7 @@ namespace itl2
 				if (withBlosc) codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()};
 
 				nlohmann::json shardingCodecConfigJSON = {
-					{"chunk_shape", { 2, 5, 1 }},
+					{"chunk_shape", { chunkShape.x, chunkShape.y, chunkShape.z }},
 					{"codecs", codecs},
 					//{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
 					{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
@@ -280,7 +280,7 @@ namespace itl2
 
 				zarr::write(img,
 					path,
-					zarr::DEFAULT_CHUNK_SIZE,
+					shardShape,
 					{ codecs::ZarrCodec(codecs::Name::Sharding,  shardingCodecConfigJSON)});
 
 				Image<uint16_t> fromDisk;
@@ -291,11 +291,15 @@ namespace itl2
 
 			void shardingEmptyInnerChunksTest(string indexLocation)
 			{
+				Vec3c imgShape = Vec3c(10, 10,10);
+				Vec3c shardShape = Vec3c(10, 10, 10);
+				Vec3c chunkShape = Vec3c(5, 5, 5);
+
 				string path = "./testoutput/test_sharding_empty_inner_chunks_" + indexLocation;
-				Image<uint16_t> img(Vec3c(10, 10, 10));
+				Image<uint16_t> img(imgShape);
 				add(img, DEFAULT_FILLVALUE);
 				nlohmann::json shardingCodecConfigJSON = {
-					{ "chunk_shape", { 5, 5, 5 }},
+					{ "chunk_shape", { chunkShape.x, chunkShape.y, chunkShape.z }},
 					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
 					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
 					{ "index_location", indexLocation }
@@ -304,13 +308,13 @@ namespace itl2
 				img(0, 0, 0) = 1; //to not have complete shard empty
 				zarr::write(img,
 					path + "_empty",
-					zarr::DEFAULT_CHUNK_SIZE,
+					shardShape,
 					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
 
 				ramp(img, 0);
 				zarr::write(img,
 					path + "_full",
-					zarr::DEFAULT_CHUNK_SIZE,
+					shardShape,
 					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
 
 				auto sizeEmptyChunks = fileSize(internals::chunkFile(path + "_empty", 3, Vec3c(0, 0, 0), DEFAULT_SEPARATOR));
@@ -324,6 +328,7 @@ namespace itl2
 				shardingTest("start", false);
 				shardingTest("end", true);
 				shardingTest("start", true);
+				shardingTest("start", true, Vec3c(10, 10, 10), DEFAULT_CHUNK_SIZE, Vec3c(8,8,8));
 				shardingEmptyInnerChunksTest("start");
 				shardingEmptyInnerChunksTest("end");
 			}

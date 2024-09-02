@@ -515,9 +515,9 @@ namespace itl2
 				throw ITLException(s.str());
 			}
 
-			if(!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape" + toString(shard.dimensions()));
+			if(!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape " + toString(shard.dimensions()));
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
-			if(!(chunksPerShard.componentwiseMultiply(innerChunkShape) == innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape" + toString(shard.dimensions()));
+			if(!(chunksPerShard.componentwiseMultiply(innerChunkShape) == shard.dimensions())) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not evenly divide shard shape " + toString(shard.dimensions()));
 
 			int chunkCount = chunksPerShard.product();
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
