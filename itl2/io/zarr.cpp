@@ -419,7 +419,7 @@ namespace itl2
 			{
 				cout << "Chunk size = " << chunkSize << endl;
 
-				Vec3c dimensions(8, 8, 8);
+				Vec3c dimensions(100, 200, 300);
 
 				Image<uint16_t> img(dimensions);
 				ramp3(img);
@@ -432,7 +432,7 @@ namespace itl2
 				{
 					vector<io::DistributedImageProcess> processes;
 
-					Vec3c processBlockSize(3, 3, 3);
+					Vec3c processBlockSize(30, 30, 30);
 					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 					{
 					  processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(4, 4, 4)),
@@ -451,17 +451,13 @@ namespace itl2
 				fs::remove_all(imageFilename);
 				{
 					Vec3c block1Start(0, 0, 0);
-					Vec3c block1Size(dimensions.x / 2 + 2, dimensions.y, dimensions.z);
-					Vec3c block2Start(block1Size.x-1, 0, 0);
-					Vec3c block2Size(dimensions.x - block2Start.x, dimensions.y, dimensions.z);
+					Vec3c block1Size(dimensions.x / 2 + 3, dimensions.y, dimensions.z);
+					Vec3c block2Start(block1Size.x, 0, 0);
+					Vec3c block2Size(dimensions.x - block1Size.x, dimensions.y, dimensions.z);
 
-					AABoxc block1 = AABoxc::fromPosSize(block1Start, block1Size);
-					AABoxc block2 = AABoxc::fromPosSize(block2Start, block2Size);
-
-					cout << block1 << block2 << endl;
 					vector<io::DistributedImageProcess> processes;
-					processes.push_back(io::DistributedImageProcess{ block1, block1});
-					processes.push_back(io::DistributedImageProcess{ block2, block2});
+					processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(block1Start, block1Size + Vec3c(10, 0, 0)), AABoxc::fromPosSize(block1Start, block1Size) });
+					processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
 
 					zarr::startConcurrentWrite(img, imageFilename, chunkSize, processes, codecs);
 					zarr::writeBlock(img, imageFilename, block1Start, block1Size, metadata);
@@ -498,18 +494,18 @@ namespace itl2
 			void concurrency()
 			{
 				nlohmann::json shardingCodecConfigJSON = {
-					{ "chunk_shape", { 4, 4, 4 }},
+					{ "chunk_shape", { 20, 10, 20 }},
 					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
 					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
 					{ "index_location", "end" }
 				};
 				codecs::Pipeline codecsWithSharding = { codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) };
 
-				concurrencyOneTest(DEFAULT_CODECS, Vec3c(4, 4, 4));
-				//concurrencyOneTest(codecsWithSharding, Vec3c(40, 200, 300));
-//
-				//concurrencyOneTest(DEFAULT_CODECS, Vec3c(40, 30, 20));
-				//concurrencyOneTest(codecsWithSharding, Vec3c(40, 30, 20));
+				concurrencyOneTest(DEFAULT_CODECS,   Vec3c(40, 200, 300));
+				concurrencyOneTest(codecsWithSharding,Vec3c(40, 200, 300));
+
+				concurrencyOneTest(DEFAULT_CODECS,   Vec3c(40, 30, 20));
+				concurrencyOneTest(codecsWithSharding,Vec3c(40, 30, 20));
 			}
 		}
 	}
