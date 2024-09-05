@@ -112,6 +112,17 @@ namespace itl2
 				return chunkFile + "_writes";
 			}
 
+			inline std::string writesFile(const std::string& chunkFile, const uint indexOfWrites, const AABoxc updateRegion)
+			{
+				return writesFolder(chunkFile) + "/"+ toString(indexOfWrites) + "_" + toString(updateRegion);
+			}
+
+			inline AABoxc updateRegionOfWritesFile(std::string writesFile){
+				auto delimiter = writesFile.rfind('_');
+				writesFile.erase(0, delimiter+1);
+				return AABoxc::fromString(writesFile);
+			}
+
 			inline Vec3c clampedChunkSize(const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize)
 			{
 				Vec3c datasetChunkStart = chunkIndex.componentwiseMultiply(chunkSize);
@@ -126,19 +137,20 @@ namespace itl2
 				return realChunkSize;
 			}
 
-			std::vector<char> readBytesOfFile(std::string& filename);
+			std::vector<char> readBytesOfFile(const std::string& filename);
 			void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos = 0);
 
+			/*
+			 * outputBlock: image where the data should get read to
+			 * filename: path to the file containing this chunk
+			 * updateRegion: the bounding box of coordinates of the original image which should get written to outputBlock
+			 * blockStart: top left coordinate of outputBlock
+			 * chunkStart: top left coordinate of this chunk
+			 * metadata: metadata of the zarr dataset
+			 */
 
-			/**
-			Reads zarr chunk files.
-			*/
 			template<typename pixel_t>
-			void readChunksInRange(Image<pixel_t>& outputBlock, const std::string& path,
-				const ZarrMetadata& metadata,
-				const Vec3c& datasetShape,
-				const Vec3c& start, const Vec3c& end,
-				bool showProgressInfo)
+			void readChunkInBlock(Image<pixel_t>& outputBlock, const std::string& filename, const AABoxc updateRegion, const Vec3c blockStart, const Vec3c chunkStart, const ZarrMetadata& metadata)
 			{
 				Vec3c transposedChunkShape = metadata.chunkSize;
 				for (auto codec : metadata.codecs)
@@ -150,36 +162,50 @@ namespace itl2
 						transposedChunkShape = transposedChunkShape.transposed(order);
 					}
 				}
-				const AABoxc selectedBlock = AABoxc::fromMinMax(start, end);
+
+				AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, metadata.chunkSize);
+				if (updateRegion.overlapsExclusive(currentChunk))
+				{
+					AABox<coord_t> readRegion = updateRegion.intersection(currentChunk);
+					if (fs::is_directory(filename))
+					{
+						throw ITLException(filename + string(" is a directory, but it should be a file."));
+					}
+					if (fs::is_regular_file(filename))
+					{
+						std::vector<char> buffer = readBytesOfFile(filename);
+						Image<pixel_t> imgChunk(transposedChunkShape);
+						decodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
+
+						//write all pixels of chunk back to img
+						forAllInBox(readRegion, [&](coord_t x, coord_t y, coord_t z)
+						{
+						  Vec3c pos = Vec3c(x, y, z);
+						  outputBlock(pos - blockStart) = imgChunk(pos - chunkStart);
+						});
+					}
+					else
+					{
+						draw<pixel_t>(outputBlock, readRegion, static_cast<pixel_t>(metadata.fillValue));
+					}
+				}
+			}
+			/**
+			Reads zarr chunk files.
+			*/
+			template<typename pixel_t>
+			void readChunksInRange(Image<pixel_t>& outputBlock, const std::string& path,
+				const ZarrMetadata& metadata,
+				const Vec3c& datasetShape,
+				const Vec3c& blockStart,
+				bool showProgressInfo)
+			{
+
+				const AABoxc selectedBlock = AABoxc::fromPosSize(blockStart, outputBlock.dimensions());
 				forAllChunks(datasetShape, metadata.chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
-				  AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, metadata.chunkSize);
-				  if (selectedBlock.overlapsExclusive(currentChunk))
-				  {
-					  AABox<coord_t> readRegion = selectedBlock.intersection(currentChunk);
-					  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex, metadata.separator);
-					  if (fs::is_directory(filename))
-					  {
-						  throw ITLException(filename + string(" is a directory, but it should be a file."));
-					  }
-					  if (fs::is_regular_file(filename))
-					  {
-						  std::vector<char> buffer = readBytesOfFile(filename);
-						  Image<pixel_t> imgChunk(transposedChunkShape);
-						  decodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
-
-						  //write all pixels of chunk back to img
-						  forAllInBox(readRegion, [&](coord_t x, coord_t y, coord_t z)
-						  {
-							Vec3c pos = Vec3c(x, y, z);
-							outputBlock(pos - selectedBlock.position()) = imgChunk(pos - currentChunk.position());
-						  });
-					  }
-					  else
-					  {
-						  draw<pixel_t>(outputBlock, readRegion, static_cast<pixel_t>(metadata.fillValue));
-					  }
-				  }
+				  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex, metadata.separator);
+				  readChunkInBlock(outputBlock, filename, selectedBlock, blockStart, chunkStart, metadata);
 				});
 			}
 
@@ -476,12 +502,7 @@ namespace itl2
 			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= datasetShape.x || fileStart.y >= datasetShape.y || fileStart.z >= datasetShape.z)
 				throw ITLException("Out of bounds start position in readBlock.");
 
-			Vec3c cStart = fileStart;
-			clamp(cStart, Vec3c(0, 0, 0), datasetShape);
-			Vec3c cEnd = fileStart + img.dimensions();
-			clamp(cEnd, Vec3c(0, 0, 0), datasetShape);
-
-			internals::readChunksInRange(img, path, metadata, datasetShape, cStart, cEnd, showProgressInfo);
+			internals::readChunksInRange(img, path, metadata, datasetShape, fileStart, showProgressInfo);
 		}
 		/**
 		Reads a zarr dataset file to the given image.
@@ -513,47 +534,49 @@ namespace itl2
 				@param writeSize Size of block to be written.
 				*/
 			template<typename pixel_t>
-			void writeSingleChunk(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkStart, const Vec3c& chunkIndex,
-				AABoxc updateRegion, AABoxc currentChunk, const ZarrMetadata& metadata)
+			void writeSingleChunk(Image<pixel_t>& imgChunk, std::string filename,
+				AABoxc updateRegion, const ZarrMetadata& metadata, const bool ignoreWritesFolder = false)
 			{
-				Image<pixel_t> imgChunk(metadata.chunkSize, metadata.fillValue);
-				readBlock(imgChunk, path, chunkStart);
-				string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
-				//write all pixels of chunk in img to imgChunk
-				forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
+				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
+				// Chunk is unsafe if its folder contains writes folder.
+				string writesFolder = internals::writesFolder(filename);
+				if (!ignoreWritesFolder && fs::exists(writesFolder))
 				{
-				  Vec3c pos = Vec3c(x, y, z);
-				  imgChunk(pos - currentChunk.position()) = img(pos);
-				});
-
-
-				if (allEquals(imgChunk, static_cast<pixel_t>(metadata.fillValue)))
+					// Unsafe chunk: write to separate writes folder.
+					int writesBefore = 0; //TODO count existing files in folder
+					filename = writesFile(filename, writesBefore, updateRegion);
+				}
+				else if (allEquals(imgChunk, static_cast<pixel_t>(metadata.fillValue)))
 				{
-					//chunk is empty so we can delete the chunk file
-					//TODO: what if writesFolder exists?
+					//chunk is safe and empty, so we can delete the chunk file
 					if (fs::exists(filename))
 					{
 						fs::remove(filename);
 					}
+					return;
 				}
-				else
-				{
+				std::vector<char> buffer;
+				encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
+				writeBytesToFile(buffer, filename);
 
-					// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
-					// Chunk is unsafe if its folder contains writes folder.
-					//todo: when will writesFolder be created?
-					string writesFolder = internals::writesFolder(filename);
-					if (fs::exists(writesFolder))
+			}
+
+			template<typename pixel_t>
+			void printImg(Image<pixel_t>& img){
+				for (int i = 0; i < img.dimension(0); ++i)
+				{
+					for (int j = 0; j < img.dimension(1); ++j)
 					{
-						std::cout << "writeSingleChunk unsafe, writesFolder exist" << std::endl;
-						// Unsafe chunk: write to separate writes folder.
-						filename = writesFolder + toString(updateRegion);
+						cout << "(";
+						for (int k = 0; k < img.dimension(2); ++k)
+						{
+							cout << img(i,j,k) << ",";
+						}
+						cout << "), ";
 					}
-					std::vector<char> buffer;
-					assert(imgChunk.dimensions() == currentChunk.size());
-					encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
-					writeBytesToFile(buffer, filename);
+					cout << endl;
 				}
+				cout << endl;
 			}
 
 			template<typename pixel_t>
@@ -569,7 +592,16 @@ namespace itl2
 				  if (selectedBlock.overlapsExclusive(currentChunk))
 				  {
 					  AABoxc updateRegion = selectedBlock.intersection(currentChunk).intersection(img.bounds());
-					  writeSingleChunk(img, path, chunkStart, chunkIndex, updateRegion, currentChunk, metadata);
+					  Image<pixel_t> imgChunk(metadata.chunkSize, metadata.fillValue);
+					  readBlock(imgChunk, path, chunkStart); //TODO: use readChunkInBlock
+					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
+					  //write all pixels of chunk in img to imgChunk
+					  forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
+					  {
+						Vec3c pos = Vec3c(x, y, z);
+						imgChunk(pos - currentChunk.position()) = img(pos);
+					  });
+					  writeSingleChunk(imgChunk, filename, updateRegion, metadata);
 				  }
 				});
 			}
@@ -663,19 +695,6 @@ namespace itl2
 		/**
 		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
 		This function should be called before the processes are started.
-		@param targetImg Image that is to be saved into the NN5 dataset by the processes.
-		@param path Path to the NN5 dataset.
-		@param chunkSize Chunk size for the NN5 dataset.
-		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
-		*/
-		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes)
-		{
-			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, processes);
-		}
-
-		/**
-		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
-		This function should be called before the processes are started.
 		@param imageDimensions Dimensions of the image to be saved into the NN5 dataset.
 		@param imageDataType Data type of the image.
 		@param path Path to the NN5 dataset.
@@ -684,7 +703,21 @@ namespace itl2
 		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
 		@return Number of chunks that require special processing in endConcurrentWrite.
 		*/
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes);
+		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const codecs::Pipeline& codecs=DEFAULT_CODECS);
+
+		/**
+		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
+		This function should be called before the processes are started.
+		@param targetImg Image that is to be saved into the NN5 dataset by the processes.
+		@param path Path to the NN5 dataset.
+		@param chunkSize Chunk size for the NN5 dataset.
+		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
+		*/
+		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const codecs::Pipeline& codecs=DEFAULT_CODECS)
+		{
+			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, processes, codecs);
+		}
+
 
 
 		/**
@@ -692,7 +725,7 @@ namespace itl2
 		This function should be called after all the processes have finished accessing the dataset.
 		This function calls endConcurrentWrite(path, chunkIndex) for all chunks in the dataset for which needsEndConcurrentWrite return true,
 		and removes concurrent tag file from the dataset root folder.
-		@param path Path to the NN5 dataset.
+		@param path Path to the zarr dataset.
 		*/
 		void endConcurrentWrite(const std::string& path, bool showProgressInfo = false);
 
@@ -731,6 +764,7 @@ namespace itl2
 			void separator();
 			void sharding();
 			void emptyChunks();
+			void concurrency();
 
 		}
 	}
