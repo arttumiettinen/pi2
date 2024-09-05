@@ -540,13 +540,9 @@ namespace itl2
 				// Check if we are in an unsafe chunk where writing to the chunk file is prohibited.
 				// Chunk is unsafe if its folder contains writes folder.
 				string writesFolder = internals::writesFolder(filename);
-				if (!ignoreWritesFolder && fs::exists(writesFolder))
-				{
-					// Unsafe chunk: write to separate writes folder.
-					int writesBefore = 0; //TODO count existing files in folder
-					filename = writesFile(filename, writesBefore, updateRegion);
-				}
-				else if (allEquals(imgChunk, static_cast<pixel_t>(metadata.fillValue)))
+				bool unsafe = !ignoreWritesFolder && fs::exists(writesFolder);
+
+				if (!unsafe && allEquals(imgChunk, static_cast<pixel_t>(metadata.fillValue)))
 				{
 					//chunk is safe and empty, so we can delete the chunk file
 					if (fs::exists(filename))
@@ -557,6 +553,12 @@ namespace itl2
 				}
 				std::vector<char> buffer;
 				encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
+				if(unsafe){
+					// Unsafe chunk: write to separate writes folder.
+					int writesBefore = countFiles(writesFolder);
+					//the filename consists of the order in which writesFiles got written and the updated region
+					filename = writesFile(filename, writesBefore, updateRegion);
+				}
 				writeBytesToFile(buffer, filename);
 
 			}
