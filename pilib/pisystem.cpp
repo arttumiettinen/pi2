@@ -488,7 +488,7 @@ namespace pilib
 		{
 			try
 			{
-				result = nlohmann::json::parse(value);
+				result = nlohmann::json::parse(parsedValue);
 				return 1;
 			}
 			catch (const nlohmann::json::parse_error& e)

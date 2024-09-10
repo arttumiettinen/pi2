@@ -197,12 +197,11 @@ namespace itl2
 			void readChunksInRange(Image<pixel_t>& outputBlock, const std::string& path,
 				const ZarrMetadata& metadata,
 				const Vec3c& datasetShape,
-				const Vec3c& blockStart,
-				bool showProgressInfo)
+				const Vec3c& blockStart)
 			{
 
 				const AABoxc selectedBlock = AABoxc::fromPosSize(blockStart, outputBlock.dimensions());
-				forAllChunks(datasetShape, metadata.chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(datasetShape, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 				  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex, metadata.separator);
 				  readChunkInBlock(outputBlock, filename, selectedBlock, blockStart, chunkStart, metadata);
@@ -488,7 +487,7 @@ namespace itl2
 		@param fileStart Start location of the read in the file. The size of the image defines the size of the block that is read.
 		*/
 		template<typename pixel_t>
-		void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
+		void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart)
 		{
 			Vec3c datasetShape;
 			ZarrMetadata metadata;
@@ -502,7 +501,7 @@ namespace itl2
 			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= datasetShape.x || fileStart.y >= datasetShape.y || fileStart.z >= datasetShape.z)
 				throw ITLException("Out of bounds start position in readBlock.");
 
-			internals::readChunksInRange(img, path, metadata, datasetShape, fileStart, showProgressInfo);
+			internals::readChunksInRange(img, path, metadata, datasetShape, fileStart);
 		}
 		/**
 		Reads a zarr dataset file to the given image.
@@ -510,7 +509,7 @@ namespace itl2
 		@param path Path to the root of the nn5 dataset.
 		*/
 		template<typename pixel_t>
-		void read(Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
+		void read(Image<pixel_t>& img, const std::string& path)
 		{
 			Vec3c dimensions;
 			ImageDataType dataType;
@@ -520,7 +519,7 @@ namespace itl2
 				throw ITLException(string("Unable to read zarr dataset: ") + reason);
 			img.ensureSize(dimensions);
 
-			readBlock(img, path, Vec3c(0, 0, 0), showProgressInfo);
+			readBlock(img, path, Vec3c(0, 0, 0));
 		}
 
 		namespace internals
@@ -584,11 +583,10 @@ namespace itl2
 			template<typename pixel_t>
 			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const ZarrMetadata& metadata,
 				const Vec3c& blockPosition,
-				const Vec3c& blockDimensions,
-				bool showProgressInfo)
+				const Vec3c& blockDimensions)
 			{
 				const AABoxc selectedBlock = AABoxc::fromPosSize(blockPosition, blockDimensions);
-				forAllChunks(img.dimensions(), metadata.chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 				  AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, metadata.chunkSize);
 				  if (selectedBlock.overlapsExclusive(currentChunk))
@@ -626,11 +624,10 @@ namespace itl2
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
 			fillValue_t fillValue = DEFAULT_FILLVALUE,
-			const string& separator = DEFAULT_SEPARATOR,
-			bool showProgressInfo = false)
+			const string& separator = DEFAULT_SEPARATOR)
 		{
 			ZarrMetadata metadata = {img.dataType(), chunkSize, codecs, fillValue, separator};
-			writeBlock(img, path, blockPosition, blockDimensions, metadata, showProgressInfo);
+			writeBlock(img, path, blockPosition, blockDimensions, metadata);
 		}
 
 		/**
@@ -648,14 +645,13 @@ namespace itl2
 		template<typename pixel_t>
 		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& blockPosition,
 			const Vec3c& blockDimensions,
-			const ZarrMetadata metadata,
-			bool showProgressInfo = false)
+			const ZarrMetadata metadata)
 		{
 			if (metadata.chunkSize.min()<=0)
 				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			fs::create_directories(path);
 			internals::writeMetadata(path, img.dimensions(), metadata);
-			internals::writeChunksInRange(img, path, metadata, blockPosition, blockDimensions, showProgressInfo);
+			internals::writeChunksInRange(img, path, metadata, blockPosition, blockDimensions);
 		}
 
 		/**
@@ -669,11 +665,10 @@ namespace itl2
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
 			const std::string& separator = DEFAULT_SEPARATOR,
-			fillValue_t fillValue = DEFAULT_FILLVALUE,
-			bool showProgressInfo = false)
+			fillValue_t fillValue = DEFAULT_FILLVALUE)
 		{
 			ZarrMetadata metadata = { img.dataType(), chunkSize, codecs, fillValue, separator };
-			write(img, path, metadata, showProgressInfo);
+			write(img, path, metadata);
 		}
 
 		/**
@@ -684,14 +679,13 @@ namespace itl2
 		template<typename pixel_t>
 		void write(const Image<pixel_t>& img,
 			const std::string& path,
-			ZarrMetadata metadata,
-			bool showProgressInfo = false)
+			ZarrMetadata metadata)
 		{
 			Vec3c dimensions = img.dimensions();
 			if (metadata.chunkSize.min()<=0)
 				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			internals::handleExisting(dimensions, path, metadata, false);
-			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, metadata, showProgressInfo);
+			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, metadata);
 		}
 
 		/**
@@ -729,7 +723,7 @@ namespace itl2
 		and removes concurrent tag file from the dataset root folder.
 		@param path Path to the zarr dataset.
 		*/
-		void endConcurrentWrite(const std::string& path, bool showProgressInfo = false);
+		void endConcurrentWrite(const std::string& path);
 
 		/**
 		Used to test if a block in the given NN5 dataset requires calling endConcurrentWrite after concurrent access by multiple processes.

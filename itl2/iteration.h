@@ -113,13 +113,12 @@ namespace itl2
 	Call lambda(chunkIndex, chunkStart) for all chunks in an image of given dimensions and chunk size.
 	*/
 	template<typename F>
-	void forAllChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize, bool showProgressInfo, F&& lambda)
+	void forAllChunks(const Vec3c& imageDimensions, const Vec3c& chunkSize, F&& lambda)
 	{
 
 		size_t maxSteps = 0;
-		if (showProgressInfo)
-			maxSteps = countChunks(imageDimensions, chunkSize);
-		ProgressIndicator progress(maxSteps, showProgressInfo);
+		maxSteps = countChunks(imageDimensions, chunkSize);
+		ProgressIndicator progress(maxSteps);
 
 		Vec3c chunkStart(0, 0, 0);
 		Vec3c chunkIndex(0, 0, 0);

@@ -380,7 +380,7 @@ namespace pilib
 		}
 		if (currentWriteTargetType() == DistributedImageStorageType::Zarr)
 		{
-			zarr::endConcurrentWrite(currentWriteTarget(), false);
+			zarr::endConcurrentWrite(currentWriteTarget());
 		}
 
         // Temporary image corresponding to old read source is not needed anymore as it

@@ -514,7 +514,7 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 					{
 						// The image has been saved to a non-temporary file, so we cannot just move it.
 						// The file must be copied.
-						copyFile(in.currentReadSource(), fname, true);
+						copyFile(in.currentReadSource(), fname);
 					}
 					else
 					{

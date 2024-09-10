@@ -458,7 +458,7 @@ namespace itl2
 					}
 				}
 			}
-			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(shard.dimensions(), innerChunkShape, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 			{
 			  index_t nBytes = shardIndexArrayNBytes(chunkIndex);
 			  index_t offset = shardIndexArrayOffsets(chunkIndex);
@@ -528,7 +528,7 @@ namespace itl2
 			//TODO: concurrency needed? then working with fixed nbytes would be necessary
 			//TODO: empty innerChunks? setting both values offset and nbytes to 2^64 - 1
 			std::vector<char> shardBuffer;
-			forAllChunks(shard.dimensions(), innerChunkShape, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(shard.dimensions(), innerChunkShape, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 			{
 			  AABoxc currentInnerChunk = AABoxc::fromPosSize(chunkStart, innerChunkShape);
 			  Image<pixel_t> innerChunk(innerChunkShape);
