@@ -13,7 +13,7 @@ namespace itl2
 	using std::cout, std::endl;
 
 	namespace zarr{
-		typedef int64_t fillValue_t; //TODO: allow other fillValue types
+		typedef coord_t fillValue_t; //TODO: allow other fillValue types
 	}
 	namespace zarr::codecs
 	{

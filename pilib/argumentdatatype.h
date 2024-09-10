@@ -57,16 +57,6 @@ namespace pilib
 		ImageInt64,
 		ImageFloat32,
 		ImageComplex32,
-		UInt8,
-		UInt16,
-		UInt32,
-		UInt64,
-		Int8,
-		Int16,
-		Int32,
-		Int64,
-		Float32,
-		Complex32,
 		Vect3d,
 		Vect3c,
 		JSON,
@@ -173,45 +163,6 @@ namespace pilib
 		return ArgumentDataType::ImageComplex32;
 	}
 
-	template<> inline ArgumentDataType parameterType<uint8_t>()
-	{
-		return ArgumentDataType::UInt8;
-	}
-
-	template<> inline ArgumentDataType parameterType<uint16_t>()
-	{
-		return ArgumentDataType::UInt16;
-	}
-
-	template<> inline ArgumentDataType parameterType<uint32_t> ()
-	{
-		return ArgumentDataType::UInt32;
-	}
-
-	template<> inline ArgumentDataType parameterType<int8_t> ()
-	{
-		return ArgumentDataType::Int8;
-	}
-
-	template<> inline ArgumentDataType parameterType<int16_t> ()
-	{
-		return ArgumentDataType::Int16;
-	}
-
-	template<> inline ArgumentDataType parameterType<int32_t> ()
-	{
-		return ArgumentDataType::Int32;
-	}
-
-	template<> inline ArgumentDataType parameterType<float32_t> ()
-	{
-		return ArgumentDataType::Float32;
-	}
-
-	template<> inline ArgumentDataType parameterType<complex32_t> ()
-	{
-		return ArgumentDataType::Complex32;
-	}
 
 	template<> inline ArgumentDataType parameterType<Vec3d>()
 	{
@@ -271,26 +222,6 @@ namespace pilib
 			return "float32 image";
 		if (t == ArgumentDataType::ImageComplex32)
 			return "complex32 image";
-		if (t == ArgumentDataType::UInt8)
-			return "uint8";
-		if (t == ArgumentDataType::UInt16)
-			return "uint16";
-		if (t == ArgumentDataType::UInt32)
-			return "uint32";
-		if (t == ArgumentDataType::UInt64)
-			return "uint64";
-		if (t == ArgumentDataType::Int8)
-			return "int8";
-		if (t == ArgumentDataType::Int16)
-			return "int16";
-		if (t == ArgumentDataType::Int32)
-			return "int32";
-		if (t == ArgumentDataType::Int64)
-			return "int64";
-		if (t == ArgumentDataType::Float32)
-			return "float32";
-		if (t == ArgumentDataType::Complex32)
-			return "complex32";
 		if (t == ArgumentDataType::Vect3d)
 			return "3-component real vector";
 		if (t == ArgumentDataType::Vect3c)
@@ -369,6 +300,7 @@ namespace pilib
 	typedef std::variant<
 	    coord_t,
 		coord_t*,
+		size_t,		 // TODO: Is this data type necessary?
 		double,
 		double*,
 		bool,
@@ -385,7 +317,6 @@ namespace pilib
 		Image<int8_t>*, Image<int16_t>*, Image<int32_t>*, Image<int64_t>*,
 		Image<float32_t>*,
 		Image<complex32_t>*,
-		uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, float32_t, complex32_t,
 		DistributedImage<uint8_t>*, DistributedImage<uint16_t>*, DistributedImage<uint32_t>*, DistributedImage<uint64_t>*,
 		DistributedImage<int8_t>*, DistributedImage<int16_t>*, DistributedImage<int32_t>*, DistributedImage<int64_t>*,
 		DistributedImage<float32_t>*,
