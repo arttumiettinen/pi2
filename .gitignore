@@ -1,3 +1,7 @@
+venv/
+testoutput/
+
+.idea/
 
 *.raw
 __pycache__
@@ -272,3 +276,11 @@ ModelManifest.xml
 .fake/
 /exp_table.txt
 /testing/N0098_B525_B526_510x510x512_block_match.mat
+
+/venv
+/.idea
+/.run
+/testdata
+/testoutput
+/zarrita_write.py
+/.vscode

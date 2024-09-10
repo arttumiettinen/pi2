@@ -123,7 +123,7 @@ namespace pilib
 						args.push_back(make_tuple(ParsedArgType::String, arg));
 						trim(argSection);
 						if (argSection.length() > 0 && argSection[0] != ',')
-							throw ParseException("Trailing characters after string value.");
+							throw ParseException("Trailing characters ("+argSection+") after arg: "+ arg);
 						if (argSection.length() > 0)
     						argSection.erase(argSection.begin());
 					}
@@ -135,7 +135,7 @@ namespace pilib
 						args.push_back(make_tuple(ParsedArgType::String, arg));
 						trim(argSection);
 						if (argSection.length() > 0 && argSection[0] != ',')
-							throw ParseException("Trailing characters after string value.");
+							throw ParseException("Trailing characters ("+argSection+") after arg: "+ arg);
 						if (argSection.length() > 0)
     						argSection.erase(argSection.begin());
 					}
@@ -167,7 +167,7 @@ namespace pilib
 		}
 	}
 
-	
+
 
 	/**
 	Tests if the given value is valid image name.
@@ -182,7 +182,7 @@ namespace pilib
 
 		if (!isalpha(value[0]))
 		{
-			reason = "Image name must start with letter.";
+			reason = "Image name must start with letter. Wrong name: " + value;
 			return false;
 		}
 
@@ -484,6 +484,19 @@ namespace pilib
 
 			throw logic_error("This line of code should never be reached (String data type handling in TryConvert).");
 		}
+		else if (targetDt == ArgumentDataType::JSON)
+		{
+			try
+			{
+				result = nlohmann::json::parse(parsedValue);
+				return 1;
+			}
+			catch (const nlohmann::json::parse_error& e)
+			{
+				reason = e.what();
+				return 0;
+			}
+		}
 		else if(targetDt == ArgumentDataType::Int ||
 			targetDt == ArgumentDataType::Double ||
 			targetDt == ArgumentDataType::Bool)
@@ -612,7 +625,7 @@ namespace pilib
 				{
 					reason = string("Image ") + parsedValue + string(" does not exist.");
 				}
-				
+
 				// Do not return 0 here, as we might be able to create a suitable image below.
 				//return 0;
 			}
@@ -648,7 +661,7 @@ namespace pilib
 				// Do not return 0 here, as we might be able to create a suitable image below.
 				//return 0;
 			}
-			
+
 			if(!variablesMustExist)
 			{
 				// Image can be created.
@@ -679,7 +692,7 @@ namespace pilib
 
 				return 2;
 			}
-			
+
 			// reason should be already set here.
 			return 0;
 		}
@@ -768,7 +781,7 @@ namespace pilib
 		}
 
 		throw logic_error("This line of code should be impossible to reach. This means a data type is not properly configured in TryParse.");
-			
+
 
 
 

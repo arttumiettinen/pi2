@@ -110,6 +110,13 @@ namespace itl2
 			return AABox<T>::fromCenterRadius(center, r);
 		}
 
+		static AABox<T> fromString(std::string s){
+			AABox<T> box;
+			std::stringstream iss(s);
+			iss >> box;
+			return box;
+		}
+
 		/**
 		Calculates squared distance between this box and point p.
 		Returns 0 if the point is inside the box.
@@ -268,6 +275,9 @@ namespace itl2
             return AABox(minc, maxc);
         }
 
+		bool operator==(const AABox<T> v) const {
+			return minc == v.minc && maxc == v.maxc;
+		}
 		/**
 		Converts this object to string.
 		*/
@@ -276,7 +286,22 @@ namespace itl2
 			stream << "(min = " << v.minc << ", max = " << v.maxc << ")";
 			return stream;
 		}
+
     };
+
+	template<typename T>
+	std::istream& operator>>(std::istream& i, AABox<T>& out)
+	{
+		Vec3<T> minc;
+		Vec3<T> maxc;
+		i.ignore(7); //"(min = "
+		i >> minc;
+		i.ignore(8); //", max = "
+		i >> maxc;
+		i.ignore(1, ')');
+		out = AABox<T>::fromMinMax(minc, maxc);
+		return i;
+	}
 
 	typedef AABox<itl2::coord_t> AABoxc;
 	typedef AABox<int32_t> AABoxsc;
