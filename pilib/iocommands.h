@@ -7,6 +7,7 @@
 #include "commandlist.h"
 #include "standardhelp.h"
 #include "timing.h"
+#include "json.h"
 
 #include <vector>
 
@@ -915,6 +916,63 @@ template<typename pixel_t> class WriteZarrCommand : public Command, public Distr
 		}
 	};
 
+
+	template<typename pixel_t> class WriteZarrBlockCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		WriteZarrBlockCommand() : Command("writezarrblock", "Write an image to a specified position in a zarr dataset. Optionally can write only a block of the source image.",
+			{
+				CommandArgument<Image<pixel_t> >(ParameterDirection::In, "input image", "Image to save."),
+				CommandArgument<std::string>(ParameterDirection::In, "filename", "Name (and path) of the dataset to write."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "image position", "Position of the image in the target file."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "file dimensions", "Dimensions of the output file. Specify zero to parse dimensions from the file. In this case it must exist.", Vec3c(0, 0, 0)),
+				CommandArgument<Vec3c>(ParameterDirection::In, "block position", "Position of the block in the target file that will be written."),
+				CommandArgument<Vec3c>(ParameterDirection::In, "block size", "Size of the block to write. Specify zero to write the whole source image.", Vec3c(0, 0, 0)),
+				CommandArgument<Vec3c>(ParameterDirection::In, "chunk size", "Chunk size of the zarr dataset", zarr::DEFAULT_CHUNK_SIZE),
+				CommandArgument<nlohmann::json>(ParameterDirection::In, "codecs", "zarr codecs as string using doubleqoutes (\") in json format", zarr::DEFAULT_CODECS_JSON),
+				CommandArgument<zarr::fillValue_t>(ParameterDirection::In, "fillValue", "Value filling empty pixels", zarr::DEFAULT_FILLVALUE),
+				CommandArgument<std::string>(ParameterDirection::In, "separator", "Character separating dimensions in the chunkfile names", zarr::DEFAULT_SEPARATOR),
+			})
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<pixel_t>& img = *pop<Image<pixel_t>* >(args);
+			std::string fname = pop<std::string>(args);
+
+			Vec3c position = pop<Vec3c>(args);
+			Vec3c fileSize = pop<Vec3c>(args);
+			Vec3c blockPosition = pop<Vec3c>(args);
+			Vec3c blockSize = pop<Vec3c>(args);
+			Vec3c chunkSize = pop<Vec3c>(args);
+			std::list<itl2::zarr::codecs::ZarrCodec> codecs;
+			std::string reason;
+			if (!itl2::zarr::codecs::fromJSON(codecs, pop<nlohmann::json>(args), reason)){
+				throw ParseException("could not parse zarr codecs: " + reason);
+			}
+			zarr::fillValue_t fillValue = pop<zarr::fillValue_t>(args);
+			std::string separator = pop<std::string>(args);
+
+			if (blockSize.x <= 0 || blockSize.y <= 0 || blockSize.z <= 0)
+				blockSize = img.dimensions();
+
+			// Parse dimensions from files if no dimensions are provided
+			if (fileSize.x <= 0 || fileSize.y <= 0 || fileSize.z <= 0)
+			{
+				Vec3c dims;
+				itl2::ImageDataType dt2;
+				if (!zarr::getInfo(fname, dims, dt2, reason))
+					throw ParseException(std::string("Unable to find metadata from Zarr dataset: ") + fname + ". " + reason);
+				fileSize = dims;
+			}
+
+			zarr::writeBlock(img, fname, position, fileSize, blockPosition, blockSize, chunkSize, codecs, fillValue, separator);
+		}
+	};
 
 	class EndConcurrentWriteCommand : public Command
 	{

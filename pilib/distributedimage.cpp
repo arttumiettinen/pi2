@@ -304,7 +304,9 @@ namespace pilib
 		{
 		case DistributedImageStorageType::Zarr:
 		{
-			s << "writezarrblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ", " << distributedImageChunkSize << ");" << endl;
+			//TODO: using default zarr metadata only
+			Vec3c blockPos = filePos + imagePos;
+			s << "writezarrblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << blockPos << ", " << blockSize << ", " << distributedImageChunkSize << ");" << endl;
 			break;
 		}
 		case DistributedImageStorageType::NN5:

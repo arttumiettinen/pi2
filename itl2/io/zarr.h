@@ -582,26 +582,31 @@ namespace itl2
 
 			template<typename pixel_t>
 			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const ZarrMetadata& metadata,
+				const Vec3c& imgPosition,
+				const Vec3c& fileDimensions,
 				const Vec3c& blockPosition,
 				const Vec3c& blockDimensions)
 			{
 				const AABoxc selectedBlock = AABoxc::fromPosSize(blockPosition, blockDimensions);
-				forAllChunks(img.dimensions(), metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(fileDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 				  AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, metadata.chunkSize);
 				  if (selectedBlock.overlapsExclusive(currentChunk))
 				  {
-					  AABoxc updateRegion = selectedBlock.intersection(currentChunk).intersection(img.bounds());
-					  Image<pixel_t> imgChunk(metadata.chunkSize, metadata.fillValue);
-					  readBlock(imgChunk, path, chunkStart); //TODO: use readChunkInBlock
+					  AABoxc updateRegion = selectedBlock
+						  .intersection(currentChunk)
+						  .intersection(AABoxc::fromPosSize(imgPosition, img.dimensions()));
+
+					  Image<pixel_t> chunk(metadata.chunkSize, metadata.fillValue);
+					  readBlock(chunk, path, chunkStart); //TODO: use readChunkInBlock
 					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
 					  //write all pixels of chunk in img to imgChunk
 					  forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
 					  {
 						Vec3c pos = Vec3c(x, y, z);
-						imgChunk(pos - currentChunk.position()) = img(pos);
+						chunk(pos - currentChunk.position()) = img(pos - imgPosition);
 					  });
-					  writeSingleChunk(imgChunk, filename, updateRegion, metadata);
+					  writeSingleChunk(chunk, filename, updateRegion, metadata);
 				  }
 				});
 			}
@@ -619,7 +624,9 @@ namespace itl2
 		@param blockDimensions Dimensions of the block of the source image to write.
 		*/
 		template<typename pixel_t>
-		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& blockPosition,
+		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& imgPosition,
+			const Vec3c& fileDimensions,
+			const Vec3c& blockPosition,
 			const Vec3c& blockDimensions,
 			const Vec3c& chunkSize = DEFAULT_CHUNK_SIZE,
 			codecs::Pipeline codecs = DEFAULT_CODECS,
@@ -627,7 +634,7 @@ namespace itl2
 			const string& separator = DEFAULT_SEPARATOR)
 		{
 			ZarrMetadata metadata = {img.dataType(), chunkSize, codecs, fillValue, separator};
-			writeBlock(img, path, blockPosition, blockDimensions, metadata);
+			writeBlock(img, path, imgPosition, fileDimensions, blockPosition, blockDimensions, metadata);
 		}
 
 		/**
@@ -643,15 +650,17 @@ namespace itl2
 		@param blockDimensions Dimensions of the block of the source image to write.
 		*/
 		template<typename pixel_t>
-		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& blockPosition,
+		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& imgPosition,
+			const Vec3c& fileDimensions,
+			const Vec3c& blockPosition,
 			const Vec3c& blockDimensions,
 			const ZarrMetadata metadata)
 		{
 			if (metadata.chunkSize.min()<=0)
 				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			fs::create_directories(path);
-			internals::writeMetadata(path, img.dimensions(), metadata);
-			internals::writeChunksInRange(img, path, metadata, blockPosition, blockDimensions);
+			internals::writeMetadata(path, fileDimensions, metadata);
+			internals::writeChunksInRange(img, path, metadata, imgPosition, fileDimensions, blockPosition, blockDimensions);
 		}
 
 		/**
@@ -685,7 +694,7 @@ namespace itl2
 			if (metadata.chunkSize.min()<=0)
 				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			internals::handleExisting(dimensions, path, metadata, false);
-			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, metadata);
+			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, metadata);
 		}
 
 		/**
