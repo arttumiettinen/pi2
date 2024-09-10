@@ -1,0 +1,3 @@
+
+$(info Using Broadwell arch)
+CXXFLAGS += -march=broadwell

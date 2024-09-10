@@ -18,5 +18,5 @@ filename template [input]
 
 **Data type:** string
 
-Filename template corresponding to the sequence, as described in readsequence command documentation.
+Filename template corresponding to the sequence. The template must specify a directory name and/or file name template including wildcards \*, ?, @ that identifies files that belong to the sequence. Wildcard \* corresponds to any sequence, ? to any character, and @ to one or more numerical digits.
 

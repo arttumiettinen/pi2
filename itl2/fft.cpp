@@ -14,6 +14,8 @@
 #include "transform.h"
 #include "noise.h"
 #include "math/mathutils.h"
+#include "math/matrix.h"
+#include "generation.h"
 
 using namespace std;
 
@@ -494,10 +496,12 @@ namespace itl2
 		//	return 0;
 		//}
 
+		
+
 		/**
 		Finds location of peak in correlation image.
 		*/
-		Vec3d findPeak(Image<float32_t>& img, const Vec3c& maxShift, float32_t& maxVal)
+		Vec3d findPeak(const Image<float32_t>& img, const Vec3c& maxShift, SubpixelAccuracy mode, float32_t& maxVal)
 		{
 			// Find position of maximum
 			Vec3c maxPos(0, 0, 0);
@@ -524,103 +528,188 @@ namespace itl2
 
 			Vec3d fullPixelMaxPos((double)maxPos.x, (double)maxPos.y, (double)maxPos.z);
 
-			// No subpixel accuracy
-			//return fullPixelShift;
-			
-			// Centroid method for subpixel accuracy
-			// See Song Feng, Linhua Deng, Guofeng Shu, Feng Wang, Hui Deng and Kaifan Ji - A Subpixel Registration Algorithm for Low PSNR Images
-			// Get data around the maximum (periodically) and calculate mean position of the peak.
-			// This sould work as the peak should resemble a delta-peak. The center of mass of the peak should lie
-			// at the exact location of the shift.
-			const coord_t r = 8;
-
-			// Selection of this threshold value could affect results a lot.
-			float32_t b = 0.1f * maxVal;
-
-			coord_t x0 = maxPos.x;
-			coord_t y0 = maxPos.y;
-			coord_t z0 = maxPos.z;
-
-			double xsum = 0;
-			double ysum = 0;
-			double zsum = 0;
-			double wsum = 0;
-
-			for (coord_t z = z0 - r; z <= z0 + r; z++)
+			switch (mode)
 			{
-				coord_t zz = modulo(z, img.depth());
-				for (coord_t y = y0 - r; y <= y0 + r; y++)
+			case SubpixelAccuracy::None:
+			{
+				// No subpixel accuracy
+				return fullPixelMaxPos;
+			}
+			case SubpixelAccuracy::Centroid:
+			{
+				// Centroid method for subpixel accuracy
+				// See Song Feng, Linhua Deng, Guofeng Shu, Feng Wang, Hui Deng and Kaifan Ji - A Subpixel Registration Algorithm for Low PSNR Images
+				// Get data around the maximum (periodically) and calculate mean position of the peak.
+				// This sould work as the peak should resemble a delta-peak. The center of mass of the peak should lie
+				// at the exact location of the shift.
+				const coord_t r = 8;
+
+				// Selection of this threshold value could affect results a lot.
+				float32_t b = 0.1f * maxVal;
+
+				coord_t x0 = maxPos.x;
+				coord_t y0 = maxPos.y;
+				coord_t z0 = maxPos.z;
+
+				double xsum = 0;
+				double ysum = 0;
+				double zsum = 0;
+				double wsum = 0;
+
+				for (coord_t z = z0 - r; z <= z0 + r; z++)
 				{
-					coord_t yy = modulo(y, img.height());
-
-					for (coord_t x = x0 - r; x <= x0 + r; x++)
+					coord_t zz = modulo(z, img.depth());
+					for (coord_t y = y0 - r; y <= y0 + r; y++)
 					{
-						coord_t xx = modulo(x, img.width());
+						coord_t yy = modulo(y, img.height());
 
-						// Make weight positive
-						// Taking absolute value may not be as good as clamping to zero. As there should not be
-						// any negative values it may be better to clamp, because abs would promote negative noise values
-						// to positive weight values.
-						//float p = abs(img[yy * w + xx]);
-						float32_t p = img(xx, yy, zz);
-						if (p > b)
+						for (coord_t x = x0 - r; x <= x0 + r; x++)
 						{
-							p -= b;
+							coord_t xx = modulo(x, img.width());
 
-							xsum += p * x;
-							ysum += p * y;
-							zsum += p * z;
-							wsum += p;
+							// Make weight positive
+							// Taking absolute value may not be as good as clamping to zero. As there should not be
+							// any negative values it may be better to clamp, because abs would promote negative noise values
+							// to positive weight values.
+							//float p = abs(img[yy * w + xx]);
+							float32_t p = img(xx, yy, zz);
+							if (p > b)
+							{
+								p -= b;
+
+								xsum += p * x;
+								ysum += p * y;
+								zsum += p * z;
+								wsum += p;
+							}
 						}
 					}
 				}
+
+				if (wsum > 0.00001)
+				{
+					Vec3d subPixelMaxPos = Vec3d(xsum, ysum, zsum) / wsum;
+
+					// Sanity check: use sub-pixel estimate only if it is near full-pixel maximum position
+					if ((subPixelMaxPos - fullPixelMaxPos).abs().max() <= 2)
+						return subPixelMaxPos;
+
+					return fullPixelMaxPos;
+				}
+				else
+				{
+					return fullPixelMaxPos;
+				}
 			}
-
-			if (wsum > 0.00001)
+			case SubpixelAccuracy::Quadratic:
 			{
-				Vec3d subPixelMaxPos = Vec3d(xsum, ysum, zsum) / wsum;
+				// Fit quadratic equation into the 27-neighbourhood of the maximum.
 
-				// Sanity check: use sub-pixel estimate only if it is near full-pixel maximum position
-				if((subPixelMaxPos - fullPixelMaxPos).abs().max() <= 2)
-					return subPixelMaxPos;
+				// q = a + b x + c x^2 + d y + e y^2 + f z + g z^2
+				// q is correlation value
+				// x, y, z are shifts
+
+				// Get (periodic) 27-neighbourhood of the peak into column vector q
+				// and build problem matrix A such that
+				// A * [a, b, c, d, e, f, g]^T = q
+				Matrix q(27, 1);
+				Matrix A(27, 7);
+
+				const coord_t r = 1;
+				coord_t x0 = maxPos.x;
+				coord_t y0 = maxPos.y;
+				coord_t z0 = maxPos.z;
+				coord_t n = 0;
+				for (coord_t z = z0 - r; z <= z0 + r; z++)
+				{
+					coord_t zz = modulo(z, img.depth());
+					for (coord_t y = y0 - r; y <= y0 + r; y++)
+					{
+						coord_t yy = modulo(y, img.height());
+
+						for (coord_t x = x0 - r; x <= x0 + r; x++)
+						{
+							coord_t xx = modulo(x, img.width());
+
+							float32_t p = img(xx, yy, zz);
+							q(n) = p;
+
+							float32_t xf = (float32_t)x;
+							float32_t yf = (float32_t)y;
+							float32_t zf = (float32_t)z;
+
+							A(n, 0) = 1;
+							A(n, 1) = xf;
+							A(n, 2) = xf * xf;
+							A(n, 3) = yf;
+							A(n, 4) = yf * yf;
+							A(n, 5) = zf;
+							A(n, 6) = zf * zf;
+
+							n++;
+						}
+					}
+				}
+
+				// Solve the coefficient matrix.
+				Matrix coeff = A.solve(q);
+
+				// Solve the position of the maximum of the quadratic.
+				double a = coeff(0);
+				double b = coeff(1);
+				double c = coeff(2);
+				double d = coeff(3);
+				double e = coeff(4);
+				double f = coeff(5);
+				double g = coeff(6);
+
+				double u = -b / (2 * c);
+				double v = -d / (2 * e);
+				double w = -f / (2 * g);
+				maxVal = (float32_t)(a + b * u + c * u * u + d * v + e * v * v + f * w + g * w * w);
+
+				Vec3d subPixelMaxPos(u, v, w);
 				
+				// Sanity check: use sub-pixel estimate only if it is near full-pixel maximum position
+				if ((subPixelMaxPos - fullPixelMaxPos).abs().max() <= 1)
+					return subPixelMaxPos;
+
 				return fullPixelMaxPos;
 			}
-			else
-			{
-				return fullPixelMaxPos;
+			//case SubpixelAccuracy::Foroosh:
+			//{
+				// Foroosh method for subpixel accuracy
+				// This seems to give mostly quite accurate results but sometimes it fails big resulting in bad outliers.
+				//coord_t x0 = maxPos.x;
+				//coord_t y0 = maxPos.y;
+				//coord_t z0 = maxPos.z;
+
+				//float32_t C000 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
+				//float32_t Cp100 = img(modulo(x0 + 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
+				//float32_t Cm100 = img(modulo(x0 - 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
+				//float32_t Cp010 = img(modulo(x0, img.width()), modulo(y0 + 1, img.height()), modulo(z0, img.depth()));
+				//float32_t Cm010 = img(modulo(x0, img.width()), modulo(y0 - 1, img.height()), modulo(z0, img.depth()));
+				//float32_t Cp001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 + 1, img.depth()));
+				//float32_t Cm001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 - 1, img.depth()));
+
+				//float32_t dx = forooshHelper2(C000, Cp100, Cm100);
+				//float32_t dy = forooshHelper2(C000, Cp010, Cm010);
+				//float32_t dz = forooshHelper2(C000, Cp001, Cm001);
+				//return Vec3d(x0 + dx, y0 + dy, z0 + dz);
+			//}
+			default:
+				throw std::logic_error("Invalid subpixel accuracy mode passed to findPeak method.");
 			}
-			
-			
-			// Foroosh method for subpixel accuracy
-			// This seems to give mostly quite accurate results but sometimes it fails big resulting in bad outliers.
-			//coord_t x0 = maxPos.x;
-			//coord_t y0 = maxPos.y;
-			//coord_t z0 = maxPos.z;
-
-			//float32_t C000 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
-			//float32_t Cp100 = img(modulo(x0 + 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
-			//float32_t Cm100 = img(modulo(x0 - 1, img.width()), modulo(y0, img.height()), modulo(z0, img.depth()));
-			//float32_t Cp010 = img(modulo(x0, img.width()), modulo(y0 + 1, img.height()), modulo(z0, img.depth()));
-			//float32_t Cm010 = img(modulo(x0, img.width()), modulo(y0 - 1, img.height()), modulo(z0, img.depth()));
-			//float32_t Cp001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 + 1, img.depth()));
-			//float32_t Cm001 = img(modulo(x0, img.width()), modulo(y0, img.height()), modulo(z0 - 1, img.depth()));
-
-			//float32_t dx = forooshHelper2(C000, Cp100, Cm100);
-			//float32_t dy = forooshHelper2(C000, Cp010, Cm010);
-			//float32_t dz = forooshHelper2(C000, Cp001, Cm001);
-			//return Vec3d(x0 + dx, y0 + dy, z0 + dz);
 		}
 
 		
 	}
 
-	/*
-	Calculates shift between img1 and img2 using phase correlation.
-	@param maxShift Maximal shift that is considered.
-	*/
-	Vec3d phaseCorrelation(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, double& goodness)
+	
+	void correlogram(Image<float32_t>& img1, Image<float32_t>& img2)
 	{
+		img1.checkSize(img2);
+
 		//raw::writed(img1, "img1");
 		//raw::writed(img2, "img2");
 
@@ -656,10 +745,16 @@ namespace itl2
 
 		ifft(img1FFT, img1);
 		//raw::writed(img1, "correlation");
+	}
+
+	
+	Vec3d phaseCorrelationShift(Image<float32_t>& img1, Image<float32_t>& img2, const Vec3c& maxShift, SubpixelAccuracy mode, double& goodness)
+	{
+		correlogram(img1, img2);
 
 		// Now img1 contains a peak at the location of the shift.
 		float32_t maxVal;
-		Vec3d shift = internals::findPeak(img1, maxShift, maxVal);
+		Vec3d shift = internals::findPeak(img1, maxShift, mode, maxVal);
 
 		// This uncertainty estimation is from MatLab code corresponding to paper
 		// Manuel Guizar-Sicairos, Samuel T. Thurman, and James R. Fienup, "Efficient subpixel image registration algorithms," Opt.Lett. 33, 156 - 158 (2008).
@@ -692,38 +787,93 @@ namespace itl2
 
 		void phaseCorrelation2()
 		{
-			// NOTE: No asserts!
-
 			Image<uint16_t> tmp;
-			raw::read(tmp, "./input_data/t1-head_256x256x129.raw");
+			raw::read(tmp, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> reference;
 			convert(tmp, reference);
+			Image<float32_t> refCopy;
+			convert(tmp, refCopy);
 
-			raw::read(tmp, "./input_data/t1-head_rot_trans_256x256x129.raw");
+			raw::read(tmp, "../test_input_data/t1-head_rot_trans_256x256x129.raw");
 
 			Image<float32_t> deformed;
 			convert(tmp, deformed);
 
 			
-			double goodness;
-			Vec3d shift = phaseCorrelation(reference, deformed, 30 * Vec3c(1, 1, 1), goodness);
+			double goodness, goodness_fit;
+			Vec3d shift = phaseCorrelationShift(reference, deformed, 30 * Vec3c(1, 1, 1), SubpixelAccuracy::Centroid, goodness);
+			Vec3d shift_fit = phaseCorrelationShift(refCopy, deformed, 30 * Vec3c(1, 1, 1), SubpixelAccuracy::Quadratic, goodness_fit);
 
-			cout << shift << endl;
 
+			// The most correct shift is near [-15, -5, 0]
+			cout << "Centroid method: " << shift << "; " << goodness << endl;
+			cout << "Quadratic method: " << shift_fit << "; " << goodness_fit << endl;
+
+			testAssert((shift - Vec3d(-15, -5, 0)).max() < 1, "shift (centroid) is invalid");
+			testAssert((shift_fit - Vec3d(-15, -5, 0)).max() < 1, "shift (quadratic) is invalid");
 
 		}
 
-		void phaseCorrelation()
+		void phaseCorrelationBoundary()
+		{
+			// Shows how an edge affects phase correlation.
+			// Result for both constant-value outside of the boundary and noise outside of the boundary
+			// are shown.
+			// NOTE: Not a real assert-test.
+			float32_t blockColor = 200;
+			double noiseStd = 200;
+
+			Image<uint16_t> head;
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
+
+			Image<float32_t> head32(head.dimensions());
+			convert(head, head32);
+
+			
+			draw(head32, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), blockColor);
+			raw::writed(head32, "./pc_boundary/original");
+
+			Vec3d shiftGT(15.5, 12, 0);
+
+			Image<float32_t> headShifted(head.dimensions());
+			translate(head, headShifted, shiftGT);
+
+			draw(headShifted, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), blockColor);
+			
+			raw::writed(headShifted, "./pc_boundary/shifted");
+
+			double goodness;
+			Vec3d shift = phaseCorrelationShift(head32, headShifted, 20 * Vec3c(1, 1, 1), SubpixelAccuracy::Centroid, goodness);
+
+			convert(head, head32);
+			draw(head32, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), blockColor);
+
+			
+			noise(head32, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), 0, noiseStd);
+			raw::writed(head32, "./pc_boundary/original_noise");
+			noise(headShifted, AABoxc::fromMinMax(Vec3c(head.width() / 2, 0, 0), head.dimensions()), 0, noiseStd);
+			raw::writed(headShifted, "./pc_boundary/shifted_noise");
+
+			double goodness2;
+			Vec3d shiftNoise = phaseCorrelationShift(head32, headShifted, 20 * Vec3c(1, 1, 1), SubpixelAccuracy::Centroid, goodness2);
+
+
+			cout << "Ground truth shift   = " << -shiftGT << endl;
+			cout << "Measured (black box) = " << shift << endl;
+			cout << "Measured (noise box) = " << shiftNoise << endl;
+		}
+
+		void phaseCorrelationSingleTest(SubpixelAccuracy mode, double tolerance)
 		{
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16;
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
-			
+
 			std::default_random_engine generator;
 
 			int maxShift = 2;
@@ -733,9 +883,10 @@ namespace itl2
 			out.open("./fourier/shift_errors.txt");
 
 			cout << "true x,\tmeas x,\tdelta" << endl;
-			cout << "true y,\tmeas y,\tdelta" << endl; 
+			cout << "true y,\tmeas y,\tdelta" << endl;
 			cout << "true z,\tmeas z,\tdelta" << endl;
 			cout << "goodness" << endl;
+			ProgressIndicator progress(100);
 			for (coord_t n = 0; n < 100; n++)
 			{
 				Vec3d shiftGT(distribution(generator), distribution(generator), distribution(generator));
@@ -750,25 +901,36 @@ namespace itl2
 				raw::writed(headShifted, "./fourier/shifted_noisy_head");
 
 				double goodness;
-				Vec3d shift = phaseCorrelation(headShifted, head, maxShift * Vec3c(1, 1, 1), goodness);
+				Vec3d shift = phaseCorrelationShift(headShifted, head, maxShift * Vec3c(1, 1, 1), mode, goodness);
 
 
-				cout << shiftGT.x << ",\t" << shift.x << ",\t" << (shift.x - shiftGT.x)  << endl;
+				cout << shiftGT.x << ",\t" << shift.x << ",\t" << (shift.x - shiftGT.x) << endl;
 				cout << shiftGT.y << ",\t" << shift.y << ",\t" << (shift.y - shiftGT.y) << endl;
 				cout << shiftGT.z << ",\t" << shift.z << ",\t" << (shift.z - shiftGT.z) << endl;
 				cout << goodness << endl;
-				
+
 				out << shiftGT.x << ", " << shiftGT.y << ", " << shiftGT.z << ", " << shift.x << ", " << shift.y << ", " << shift.z << ", " << goodness << endl;
 
-				showProgress(n, 100);
+				progress.step();
+				
+				testAssert(abs(shift.x - shiftGT.x) < tolerance, "phase correlation dx");
+				testAssert(abs(shift.y - shiftGT.y) < tolerance, "phase correlation dy");
+				testAssert(abs(shift.z - shiftGT.z) < tolerance, "phase correlation dz");
 			}
 
+		}
+
+		void phaseCorrelation()
+		{
+			phaseCorrelationSingleTest(SubpixelAccuracy::Centroid, 0.1);
+			phaseCorrelationSingleTest(SubpixelAccuracy::Quadratic, 0.2);
+			phaseCorrelationSingleTest(SubpixelAccuracy::None, 0.6);
 		}
 
 		void fourierTransformPair()
 		{
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 			
 			//Image<float32_t> head(head16.dimensions());
 			//convert(head16, head);
@@ -795,7 +957,7 @@ namespace itl2
 		void dctPair()
 		{
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);
@@ -819,7 +981,7 @@ namespace itl2
 			// NOTE: No asserts
 
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head(head16.dimensions());
 			convert(head16, head);

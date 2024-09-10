@@ -32,7 +32,7 @@ results [input]
 
 **Data type:** float32 image
 
-Analysis results image.
+Particle analysis results image.
 
 fill color [input]
 ~~~~~~~~~~~~~~~~~~

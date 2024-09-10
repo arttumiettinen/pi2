@@ -478,6 +478,11 @@ namespace itl2
 		return i;
 	}
 
+	extern template class Vec3<itl2::float32_t>;
+	extern template class Vec3<double>;
+	extern template class Vec3<itl2::coord_t>;
+	extern template class Vec3<int32_t>;
+
 	typedef Vec3<itl2::float32_t> Vec3f;
     typedef Vec3<double> Vec3d;
 	typedef Vec3<itl2::coord_t> Vec3c;
@@ -598,21 +603,40 @@ namespace itl2
 	}
 
 	/**
-	See toCartesian overloads.
+	Converts from spherical coordinates (r, azimuthal, polar) to cartesian coordinates (x, y, z).
 	*/
-	inline Vec3d toCartesian(double r, double azimuthal, double polar)
+	inline Vec3d sphericalToCartesian(double r, double azimuthal, double polar)
 	{
 		double x, y, z;
-		toCartesian(r, azimuthal, polar, x, y, z);
+		sphericalToCartesian(r, azimuthal, polar, x, y, z);
 		return Vec3d(x, y, z);
 	}
 
 	/**
-	See toSpherical overloads.
+	Converts from cartesian coordinates (x, y, z) to spherical coordinates (r, azimuthal, polar).
 	*/
-	inline void toSpherical(const Vec3d& v, double& r, double& azimuthal, double& polar)
+	inline void cartesianToSpherical(const Vec3d& v, double& r, double& azimuthal, double& polar)
 	{
-		toSpherical(v.x, v.y, v.z, r, azimuthal, polar);
+		cartesianToSpherical(v.x, v.y, v.z, r, azimuthal, polar);
+	}
+
+	/**
+	Convert from cartesian coordinates (x, y, z) to cylindrical coordinates (r, azimuthal, z).
+	*/
+	inline void cartesianToCylindrical(const Vec3d& v, double& r, double& azimuthal, double& z)
+	{
+		z = v.z;
+		cartesianToPolar(v.x, v.y, r, azimuthal);
+	}
+
+	/**
+	Convert from cylindrical coordinates (r, azimuthal, z) to cartesian coordinates (x, y, z).
+	*/
+	inline Vec3d cylindricalToCartesian(double r, double azimuthal, double z)
+	{
+		double x, y;
+		polarToCartesian(r, azimuthal, x, y);
+		return Vec3d(x, y, z);
 	}
 
 	/**

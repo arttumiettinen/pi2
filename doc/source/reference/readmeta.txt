@@ -30,4 +30,4 @@ Name and path of file to read from.
 See also
 --------
 
-:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`
+:ref:`setmeta`, :ref:`getmeta`, :ref:`writemeta`, :ref:`readmeta`, :ref:`clearmeta`, :ref:`listmeta`, :ref:`copymeta`, :ref:`metarowcount`, :ref:`metacolumncount`

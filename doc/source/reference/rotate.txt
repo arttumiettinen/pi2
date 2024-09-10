@@ -98,7 +98,7 @@ This argument is used internally in distributed processing. It is assigned the f
 See also
 --------
 
-:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`, :ref:`carttocyl`
 
 :code:`rotate(input image, output image, angle, axis, interpolation mode, boundary condition, block origin, full input dimensions)`
 ===================================================================================================================================
@@ -179,4 +179,4 @@ This argument is used internally in distributed processing. It is assigned the f
 See also
 --------
 
-:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`, :ref:`carttocyl`

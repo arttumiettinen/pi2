@@ -32,9 +32,19 @@ namespace pilib
 			return calculateOverlap(args);
 		}
 
-		virtual size_t getDistributionDirection2(const vector<ParamVariant>& args) const override
+		virtual size_t getDistributionDirection1(const std::vector<ParamVariant>& args) const override
+		{
+			return 2;
+		}
+
+		virtual size_t getDistributionDirection2(const std::vector<ParamVariant>& args) const override
 		{
 			return 1;
+		}
+
+		virtual size_t getDistributionDirection3(const std::vector<ParamVariant>& args) const override
+		{
+			return 0;
 		}
 
 		virtual bool canDelay(const vector<ParamVariant>& args) const override

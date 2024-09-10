@@ -12,8 +12,8 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16(256, 256, 129);
-			//raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
-			raw::read(head16, "./input_data/t1-head_256x256x129.raw");
+			//raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_256x256x129.raw");
 
 			//threshold(head16, 128);
 

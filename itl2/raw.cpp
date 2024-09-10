@@ -85,7 +85,7 @@ namespace itl2
 			void writeBlock()
 			{
 				Image<uint16_t> head(256, 256, 129);
-				raw::read(head, "./input_data/t1-head_256x256x129.raw");
+				raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 				Vec3c outputDimensions = round(1.5 * Vec3d(head.dimensions()));
 				string outFile = concatDimensions("./raw/head_3D_montage", outputDimensions);
@@ -100,7 +100,7 @@ namespace itl2
 						for (coord_t x = 0; x < 3; x++)
 						{
 							Vec3c pos(x * blockSize.x, y * blockSize.y, z * blockSize.z);
-							raw::writeBlock(head, outFile, pos, outputDimensions, blockStart, blockSize, true);
+							raw::writeBlock(head, outFile, pos, outputDimensions, blockStart, blockSize);
 						}
 					}
 				}
@@ -110,7 +110,7 @@ namespace itl2
 			void writeBlockFast()
 			{
 				Image<uint16_t> head(256, 256, 129);
-				raw::read(head, "./input_data/t1-head_256x256x129.raw");
+				raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 				Vec3c outputDimensions = head.dimensions();
 				string outFile = concatDimensions("./raw/head_fast_blocks", outputDimensions);
@@ -124,7 +124,7 @@ namespace itl2
 					
 					if (pos.z + blockSize.z > head.dimensions().z)
 						blockSize.z = head.dimensions().z - pos.z;
-					raw::writeBlock(head, outFile, pos, outputDimensions, pos, blockSize, true);
+					raw::writeBlock(head, outFile, pos, outputDimensions, pos, blockSize);
 				}
 
 				Image<uint16_t> headBlocks(256, 256, 129);
@@ -149,12 +149,12 @@ namespace itl2
 
 			void expandFilename()
 			{
-				expandSingleTest("./input_data/t1-head", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
-				expandSingleTest("./input_data/t1-head_", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
-				expandSingleTest("./input_data/t1-head_256x256x129", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
-				expandSingleTest("./input_data/t1-head_256x256x129.raw", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
-				expandSingleTest("./input_data/t1-head_bin", ".\\input_data\\t1-head_bin_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt8);
-				expandSingleTest("./input_data/t1-head_bin_dmap", ".\\input_data\\t1-head_bin_dmap_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::Float32);
+				expandSingleTest("../test_input_data/t1-head", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("../test_input_data/t1-head_", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("../test_input_data/t1-head_256x256x129", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("../test_input_data/t1-head_256x256x129.raw", ".\\input_data\\t1-head_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt16);
+				expandSingleTest("../test_input_data/t1-head_bin", ".\\input_data\\t1-head_bin_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::UInt8);
+				expandSingleTest("../test_input_data/t1-head_bin_dmap", ".\\input_data\\t1-head_bin_dmap_256x256x129.raw", Vec3c(256, 256, 129), ImageDataType::Float32);
 			}
 		}
 	}

@@ -21,6 +21,7 @@ namespace pilib
 		CommandList::add<ClearCommand>();
 		CommandList::add<DistributeCommand>();
 		CommandList::add<MaxMemoryCommand>();
+		CommandList::add<GetMaxMemoryCommand>();
 		CommandList::add<MaxJobsCommand>();
 		CommandList::add<ChunkSizeCommand>();
 		CommandList::add<DelayingCommand>();
@@ -36,13 +37,19 @@ namespace pilib
 		CommandList::add<ReadSequenceCommand>();
 		CommandList::add<ReadVolCommand>();
 		CommandList::add<WaitReturnCommand>();
+
 		CommandList::add<TimingCommand>();
+		CommandList::add<SaveTimingCommand>();
+		CommandList::add<ResetTimingCommand>();
 
 		CommandList::add<MapRawCommand>();
 		CommandList::add<MapRaw2Command>();
 
 		CommandList::add<NewValueCommand>();
 		CommandList::add<SetStringCommand>();
+		CommandList::add<SetIntCommand>();
+		CommandList::add<SetRealCommand>();
+		CommandList::add<SetBoolCommand>();
 
 		CommandList::add<NewImageCommand>();
 		CommandList::add<NewImage2Command>();
@@ -86,6 +93,12 @@ namespace pilib
 			cout << "Please see LICENSE.txt bundled with this software or" << endl;
 			cout << "https://www.gnu.org/licenses/gpl-3.0.html for full license text." << endl;
 		}
+
+
+		cout << endl << endl;
+		cout << "-----------------------------------------------------------------------------------------" << endl << endl;
+		cout << "This software is based in part on the work of the Independent JPEG Group." << endl;
+		cout << endl;
 
 
 		cout << endl << endl;
@@ -590,7 +603,18 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 	void TimingCommand::run(vector<ParamVariant>& args) const
 	{
-		cout << Timing::toString() << endl;
+		cout << GlobalTimer::results().toString() << endl;
+	}
+
+	void SaveTimingCommand::run(vector<ParamVariant>& args) const
+	{
+		string fname = pop<string>(args);
+		GlobalTimer::results().toFile(fname);
+	}
+
+	void ResetTimingCommand::run(vector<ParamVariant>& args) const
+	{
+		GlobalTimer::reset();
 	}
 
 	void ListCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
@@ -618,39 +642,18 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		cout << "Variables:" << endl;
 		cout << "----------" << endl;
 		size_t count = 0;
-		auto v = system->getStringNames();
+		auto v = system->getValueNames();
 		for (const string& name : v)
 		{
 			count++;
-			cout << name << " (string)" << endl;
+			Value* val = system->getValue(name);
+			cout << name << " (" << pilib::toString(val->getType()) << ")" << endl;
 		}
 
 		if (count > 0)
 			cout << "Total " << count << " variables." << endl;
 		else
 			cout << "-- none --" << endl;
-
-		//double totalSize = 0;
-		//auto v = system->getVariableNames();
-		//for (const string& name : v)
-		//{
-		//	ImageBase* img = system->getImageNoThrow(name);
-		//	if (img)
-		//	{
-		//		Vec3c dimensions = img->dimensions();
-		//		size_t pixelSize = img->pixelSize();
-		//		size_t dataSize = img->pixelCount() * pixelSize;
-		//		totalSize += dataSize;
-
-		//		cout << name << ", " << dimensions << ", " << itl2::toString(img->dataType()) << ", " << bytesToString((double)dataSize) << endl;
-		//	}
-		//	else
-		//	{
-		//		cout << name << " (variable)" << endl;
-		//	}
-		//}
-		//if(v.size() > 0)
-		//	cout << "Images occupy total of " << bytesToString(totalSize) << " RAM." << endl;
 
 	}
 
@@ -681,14 +684,35 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		string dts = pop<string>(args);
 		string value = pop<string>(args);
 
+		ValueType type;
 		if (dts == "string")
-		{
-			system->replaceString(name, make_shared<string>(value));
-		}
+			type = ValueType::String;
+		else if (dts == "int" || dts == "integer")
+			type = ValueType::Int;
+		else if (dts == "real" || dts == "float" || dts == "double")
+			type = ValueType::Real;
+		else if (dts == "bool" || dts == "boolean")
+			type = ValueType::Bool;
 		else
-		{
 			throw ITLException(string("Unsupported variable type: ") + dts);
+
+		shared_ptr<Value> pival = make_shared<Value>(type);
+		
+		if (value != "")
+		{
+			if (dts == "string")
+				pival->stringValue = value;
+			else if (dts == "int" || dts == "integer")
+				pival->intValue = fromString<coord_t>(value);
+			else if (dts == "real" || dts == "float" || dts == "double")
+				pival->realValue = fromString<double>(value);
+			else if (dts == "bool" || dts == "boolean")
+				pival->boolValue = fromString<bool>(value);
+			else
+				throw ITLException(string("Unsupported variable type: ") + dts);
 		}
+
+		system->replaceValue(name, pival);
 	}
 
 	vector<string> NewValueCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
@@ -710,6 +734,63 @@ the FAQ for more information on the distribution of modified source versions.)EN
 	}
 
 	vector<string> SetStringCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+
+	void SetIntCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		coord_t* name = pop<coord_t*>(args);
+		coord_t value = pop<coord_t>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetIntCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+
+	void SetRealCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		double* name = pop<double*>(args);
+		double value = pop<double>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetRealCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
+	{
+		PISystem* system = distributor.getSystem();
+
+		runInternal(system, args);
+
+		return vector<string>();
+	}
+
+
+
+	void SetBoolCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		bool* name = pop<bool*>(args);
+		bool value = pop<bool>(args);
+
+		*name = value;
+	}
+
+	vector<string> SetBoolCommand::runDistributed(Distributor& distributor, vector<ParamVariant>& args) const
 	{
 		PISystem* system = distributor.getSystem();
 
@@ -1048,10 +1129,10 @@ the FAQ for more information on the distribution of modified source versions.)EN
 
 		Vec3c dimensions;
 		ImageDataType dt;
-		string endianness;
+		bool isBigEndian;
 		size_t headerSize;
 		string reason;
-		if (!vol::getInfo(filename, dimensions, dt, endianness, headerSize, reason))
+		if (!vol::getInfo(filename, dimensions, dt, isBigEndian, headerSize, reason))
 			throw ITLException(string("Not a .vol file: ") + filename + ". " + reason);
 
 		pick<CreateImageAndReadVol>(dt, dimensions, name, system, filename);
@@ -1065,7 +1146,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			io::readBlock<pixel_t>(img, filename, blockStart, true);
+			io::readBlock<pixel_t>(img, filename, blockStart);
 		}
 	};
 
@@ -1122,7 +1203,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& fileDims, const Vec3c& blockStart)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			raw::readBlockNoParse<pixel_t>(img, filename, fileDims, blockStart, true);
+			raw::readBlockNoParse<pixel_t>(img, filename, fileDims, blockStart, false);
 		}
 	};
 
@@ -1193,7 +1274,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		static void run(const Vec3c& dimensions, const string& imgName, PISystem* system, const string& filename, const Vec3c& blockStart)
 		{
 			Image<pixel_t>& img = *CreateImage<pixel_t>::run(dimensions, imgName, system);
-			sequence::readBlock<pixel_t>(img, filename, blockStart, true);
+			sequence::readBlock<pixel_t>(img, filename, blockStart);
 		}
 	};
 
@@ -1383,7 +1464,7 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		{
 			system->replaceImage(name, nullptr);
 			system->replaceDistributedImage(name, nullptr);
-			system->replaceString(name, nullptr);
+			system->replaceValue(name, nullptr);
 		}
 		else
 		{
@@ -1392,8 +1473,8 @@ the FAQ for more information on the distribution of modified source versions.)EN
 				system->replaceImage(name, nullptr);
 				system->replaceDistributedImage(name, nullptr);
 			}
-			for (auto name : system->getStringNames())
-				system->replaceString(name, nullptr);
+			for (auto name : system->getValueNames())
+				system->replaceValue(name, nullptr);
 		}
 	}
 
@@ -1504,6 +1585,15 @@ the FAQ for more information on the distribution of modified source versions.)EN
 		double maxMem = pop<double>(args);
 		if (system->getDistributor())
 			system->getDistributor()->allowedMemory(itl2::round(maxMem * 1024.0 * 1024.0));
+	}
+
+	void GetMaxMemoryCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const
+	{
+		double* maxMem = pop<double*>(args);
+		if (system->getDistributor())
+			*maxMem = system->getDistributor()->allowedMemory() / (1024.0 * 1024.0);
+		else
+			*maxMem = itl2::memorySize() / (1024.0 * 1024.0);
 	}
 
 	void MaxJobsCommand::runInternal(PISystem* system, vector<ParamVariant>& args) const

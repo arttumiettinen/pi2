@@ -6,7 +6,7 @@ bilateralfilter
 
 **Syntax:** :code:`bilateralfilter(input image, output image, spatial sigma, radiometric sigma, boundary condition)`
 
-Bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel.
+Bilateral filtering. Removes noise from the image while trying to preserve sharp edges. The filter is realized as a weighted local average, where weight value depends on both spatial and radiometric distance to the central pixel. See also C. Tomasi, R. Manduchi, Bilateral filtering for gray and color images, Sixth International Conference on Computer Vision, Bombay, 1998.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
@@ -30,7 +30,7 @@ Output image.
 spatial sigma [input]
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Data type:** real
+**Data type:** 3-component real vector
 
 Standard deviation of Gaussian kernel used for spatial smoothing.
 

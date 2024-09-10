@@ -19,7 +19,7 @@ namespace itl2
 		*/
 		Linear,
 		/**
-		Cubic interpolation
+		Cubic convolution interpolation.
 		*/
 		Cubic
 	};

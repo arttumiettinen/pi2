@@ -30,4 +30,4 @@ The dimension to flip. Zero corresponds to :math:`x`, one to :math:`y`, etc.
 See also
 --------
 
-:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`, :ref:`carttocyl`

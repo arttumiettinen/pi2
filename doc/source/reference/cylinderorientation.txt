@@ -6,7 +6,7 @@ cylinderorientation
 
 **Syntax:** :code:`cylinderorientation(geometry, phi, theta, derivative sigma, smoothing sigma)`
 
-Estimates local orientation of cylindrical structures using the structure tensor method.
+Estimates local orientation of cylindrical structures using the structure tensor method. See also B. Jähne, Practical handbook on image processing for scientific and technical applications. CRC Press, 2004.
 
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 

@@ -35,6 +35,13 @@ namespace itl2
 			isBigEndian = false;
 			dataType = ImageDataType::Unknown;
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+			{
+				failReason = "Not a file.";
+				return false;
+			}
+
 			if (fs::path(filename).extension().string() != ".pcr")
 			{
 				failReason = "Not a .pcr file.";
@@ -51,7 +58,7 @@ namespace itl2
 
 			if (reader.parseError() < 0)
 			{
-				failReason = string("Unable to open file ") + filename;
+				failReason = "Unable to open file.";
 				return false;
 			}
 
@@ -115,10 +122,10 @@ namespace itl2
 			void read()
 			{
 				Image<uint16_t> img;
-				raw::read(img, "./input_data/t1-head");
+				raw::read(img, "../test_input_data/t1-head");
 
 				Image<uint16_t> img2;
-				pcr::read(img2, "./input_data/t1-head.pcr");
+				pcr::read(img2, "../test_input_data/t1-head.pcr");
 
 				testAssert(equals(img, img2), "PCR read");
 			}

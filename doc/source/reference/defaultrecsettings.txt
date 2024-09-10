@@ -1,0 +1,26 @@
+.. _defaultrecsettings:
+
+defaultrecsettings
+******************
+
+
+**Syntax:** :code:`defaultrecsettings(image)`
+
+Writes default reconstruction settings to image metadata.
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image to process.
+
+See also
+--------
+
+:ref:`fbppreprocess`, :ref:`fbp`, :ref:`deadpixelremoval`, :ref:`createfbpfilter`, :ref:`defaultrecsettings`

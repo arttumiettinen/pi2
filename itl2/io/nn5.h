@@ -136,7 +136,7 @@ namespace itl2
 					case NN5Compression::Raw:
 					{
 						filename = concatDimensions(filename, realWriteSize);
-						raw::writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords, realWriteSize, false);
+						raw::writeBlock(img, filename, startInChunkCoords, realChunkSize, startInImageCoords, realWriteSize);
 						break;
 					}
 					case NN5Compression::LZ4:
@@ -158,7 +158,7 @@ namespace itl2
 					case NN5Compression::Raw:
 					{
 						filename = concatDimensions(filename, realWriteSize);
-						raw::writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize, false);
+						raw::writeBlock(img, filename, Vec3c(0, 0, 0), realWriteSize, startInImageCoords, realWriteSize);
 						break;
 					}
 					case NN5Compression::LZ4:
@@ -177,9 +177,9 @@ namespace itl2
 			/**
 			Writes NN5 chunk files.
 			*/
-			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize, bool showProgressInfo)
+			template<typename pixel_t> void writeChunks(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, const Vec3c& datasetSize)
 			{
-				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					writeSingleChunk(img, path, chunkIndex, chunkSize, datasetSize, Vec3c(0, 0, 0), chunkStart, chunkSize, compression);
 				});
@@ -188,8 +188,7 @@ namespace itl2
 			template<typename pixel_t> void writeChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
 				const Vec3c& filePosition, const Vec3c& fileDimensions,
 				const Vec3c& imagePosition,
-				const Vec3c& blockDimensions,
-				bool showProgressInfo)
+				const Vec3c& blockDimensions)
 			{
 				// Writes block of image defined by (imagePosition, blockDimensions) to file (defined by path),
 				// to location defined by filePosition.
@@ -198,7 +197,7 @@ namespace itl2
 
 				AABoxc fileTargetBlock = AABoxc::fromPosSize(filePosition, blockDimensions);
 
-				forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(fileDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						// This is done for all chunks in the output file.
 						// We will need to update the chunk if the file block to be written (fileTargetBlock)
@@ -349,11 +348,11 @@ namespace itl2
 			/**
 			Reads NN5 chunk files.
 			*/
-			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo)
+			template<typename pixel_t> void readChunks(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
 			{
 				Image<pixel_t> temp;
 
-				forAllChunks(img.dimensions(), chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(img.dimensions(), chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						readSingleChunk(img, path, img.dimensions(), chunkIndex, chunkStart, chunkSize, compression, temp);
 					});
@@ -365,15 +364,14 @@ namespace itl2
 			*/
 			template<typename pixel_t> void readChunksInRange(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
 				const Vec3c& datasetDimensions,
-				const Vec3c& start, const Vec3c& end,
-				bool showProgressInfo)
+				const Vec3c& start, const Vec3c& end)
 			{
 				Image<pixel_t> temp;
 
 				AABoxc imageBox = AABoxc::fromMinMax(start, end);
 
 				// This is a check-all-chunks algoritm. Alternatively, we could calculate the required chunk range.
-				forAllChunks(datasetDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(datasetDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 					{
 						AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, chunkSize);
 						if (currentChunk.overlapsExclusive(imageBox))
@@ -393,12 +391,12 @@ namespace itl2
 			void beginWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData);
 		
 
-			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData, bool showProgressInfo)
+			template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool deleteOldData)
 			{
 				internals::beginWrite(img.dimensions(), img.dataType(), path, chunkSize, compression, deleteOldData);
 
 				// Write data
-				internals::writeChunks(img, path, chunkSize, compression, img.dimensions(), showProgressInfo);
+				internals::writeChunks(img, path, chunkSize, compression, img.dimensions());
 			}
 		}
 
@@ -417,9 +415,9 @@ namespace itl2
 		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression, bool showProgressInfo = false)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression)
 		{
-			internals::write(img, path, chunkSize, compression, false, showProgressInfo);
+			internals::write(img, path, chunkSize, compression, true);
 		}
 
 
@@ -428,9 +426,9 @@ namespace itl2
 		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, bool showProgressInfo = false)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize)
 		{
-			write(img, path, chunkSize, NN5Compression::LZ4, showProgressInfo);
+			write(img, path, chunkSize, NN5Compression::LZ4);
 		}
 
 		/**
@@ -443,9 +441,9 @@ namespace itl2
 		@param targetImg Image to write.
 		@param path Name of the top directory of the nn5 dataset.
 		*/
-		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
+		template<typename pixel_t> void write(const Image<pixel_t>& img, const std::string& path)
 		{
-			write(img, path, DEFAULT_CHUNK_SIZE, showProgressInfo);
+			write(img, path, DEFAULT_CHUNK_SIZE);
 		}
 
 		/**
@@ -462,8 +460,7 @@ namespace itl2
 		template<typename pixel_t> void writeBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, NN5Compression compression,
 			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
-			const Vec3c& blockDimensions,
-			bool showProgressInfo = false)
+			const Vec3c& blockDimensions)
 		{
 			internals::check(chunkSize);
 
@@ -473,7 +470,7 @@ namespace itl2
 			internals::writeMetadata(path, fileDimensions, img.dataType(), chunkSize, compression);
 
 			// Write data
-			internals::writeChunksInRange(img, path, chunkSize, compression, filePosition, fileDimensions, imagePosition, blockDimensions, showProgressInfo);
+			internals::writeChunksInRange(img, path, chunkSize, compression, filePosition, fileDimensions, imagePosition, blockDimensions);
 		}
 
 
@@ -483,7 +480,7 @@ namespace itl2
 		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
 		@param path Path to the root of the nn5 dataset.
 		*/
-		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& path, bool showProgressInfo = false)
+		template<typename pixel_t> void read(Image<pixel_t>& img, const std::string& path)
 		{
 			bool isNativeByteOrder;
 			Vec3c dimensions;
@@ -499,7 +496,7 @@ namespace itl2
 
 			img.ensureSize(dimensions);
 
-			internals::readChunks(img, path, chunkSize, compression, showProgressInfo);
+			internals::readChunks(img, path, chunkSize, compression);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
@@ -512,7 +509,7 @@ namespace itl2
 		@param filename The name of the dataset to read.
 		@param fileStart Start location of the read in the file. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& path, const Vec3c& fileStart)
 		{
 			bool isNativeByteOrder;
 			Vec3c fileDimensions;
@@ -542,7 +539,7 @@ namespace itl2
 				return;
 			}
 
-			internals::readChunksInRange(img, path, chunkSize, compression, fileDimensions, cStart, cEnd, showProgressInfo);
+			internals::readChunksInRange(img, path, chunkSize, compression, fileDimensions, cStart, cEnd);
 
 			if (!isNativeByteOrder)
 				swapByteOrder(img);
@@ -585,7 +582,7 @@ namespace itl2
 		and removes concurrent tag file from the dataset root folder.
 		@param path Path to the NN5 dataset.
 		*/
-		void endConcurrentWrite(const std::string& path, bool showProgressInfo = false);
+		void endConcurrentWrite(const std::string& path);
 
 		/**
 		Used to test if a block in the given NN5 dataset requires calling endConcurrentWrite after concurrent access by multiple processes.

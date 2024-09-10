@@ -27,11 +27,24 @@ namespace pilib
 
 	DistributedImageStorageType DistributedImageBase::suggestStorageType(const Distributor& distributor, const Vec3c& dimensions)
 	{
-		//return DistributedImageStorageType::NN5;
-		if (dimensions.product() >= distributor.getChunkSize().product())
-			return DistributedImageStorageType::NN5;
+		if (distributor.getUseNN5())
+		{
+			// This condition is not good. Images of sizes like 3x100000000x1 will be stored in NN5 and that
+			// leads to bad performance.
+			//if (dimensions.product() >= distributor.getChunkSize().product())
+			// Let's try with a condition that requires all dimensions be 'chunkable'.
+			Vec3c cs = distributor.getChunkSize();
+			if(dimensions.x >= cs.x &&
+				dimensions.y >= cs.y &&
+				dimensions.z >= cs.z)
+				return DistributedImageStorageType::NN5;
+			else
+				return DistributedImageStorageType::Raw;
+		}
 		else
+		{
 			return DistributedImageStorageType::Raw;
+		}
 	}
 	
 	DistributedImageBase::DistributedImageBase(Distributor& distributor, const string& name, const Vec3c& dimensions, ImageDataType dataType, const string& sourceFilename, DistributedImageStorageType storageType) :
@@ -74,6 +87,7 @@ namespace pilib
 			// Create new temp files.
 			fs::remove_all(tempFilename1);
 			fs::remove_all(tempFilename2);
+			// TODO: Should we keep or change the storage type here?
 			writeTargetType = storageType;
 			// This assigns writeTarget, too.
 			createTempFilenames(storageType);
@@ -362,7 +376,7 @@ namespace pilib
     {
 		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
 		{
-			nn5::endConcurrentWrite(currentWriteTarget(), false);
+			nn5::endConcurrentWrite(currentWriteTarget());
 		}
 		if (currentWriteTargetType() == DistributedImageStorageType::Zarr)
 		{

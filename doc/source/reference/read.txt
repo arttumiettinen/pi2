@@ -8,6 +8,10 @@ read
 
 Reads an image or image sequence from disk. Determines type of file automatically.
 
+.. note::
+	In Python/pi2py2, the image name parameter is not specified, and the function returns the newly created image read from the disk.
+
+
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments

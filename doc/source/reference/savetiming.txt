@@ -1,0 +1,70 @@
+.. _savetiming:
+
+savetiming
+**********
+
+
+**Syntax:** :code:`savetiming(file name)`
+
+Saves timing information to a file. Running this command causes all delayed commands to be executed. The output includes the following time classes.
+
+**Overhead**
+
+General overhead, e.g. parsing inputs, finding correct commands to run etc.
+This includes the total overhead time spent in the main process, and in possible cluster job processes.
+
+**I/O**
+
+Time spent in I/O-bound processing. This is the time when the disk I/O is the bottleneck.
+This includes the total I/O time spent in the main process, and in possible cluster job processes.
+Time spent in output data compression is counted to this time class.
+
+**Computation**
+
+Time spent in CPU/GPU-bound processing. This is the time when the CPU/GPU is the bottleneck.
+This includes the total computation time spent in the main process, and in possible cluster job processes.
+This is the default mode for all commands.
+
+**Job execution**
+
+Total distributed job execution time.
+This value includes Overhead+IO+Computation of all jobs, plus workload manager node reservation, process starting, etc. overhead.
+This value does not include time spent in workload manager queue.
+
+**Job queuing**
+
+Total distributed job queuing time.
+This is the total time all jobs have spent in the workload manager queue, waiting to be executed.
+
+**Total job waiting**
+
+Total time from submitting the first distributed job until all of them are found to be finished.
+This is the total time spent in the job execution process, from submission to jobs until all of them are done.
+
+**Write preparation**
+
+Time spent in preparing for writing output images (e.g. NN5 write preparation).
+This is the total time spent in the submitting process while preparing writing of output images.
+
+**Total write finalization waiting**
+
+Time spent in write finalization jobs, including queuing (e.g. NN5 write finalization jobs).
+This is the total time spent in the submitting process, from submission of write finalization jobs until all of them are done.
+
+
+This command can be used in the distributed processing mode, but it does not participate in distributed processing.
+
+Arguments
+---------
+
+file name [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+The name and path of the file where the information is to be saved.
+
+See also
+--------
+
+:ref:`help`, :ref:`info`, :ref:`license`, :ref:`echo`, :ref:`print`, :ref:`waitreturn`, :ref:`hello`, :ref:`timing`, :ref:`savetiming`, :ref:`resettiming`

@@ -15,7 +15,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head;
-			raw::read(head, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 			inpaintNearest(head);
 
@@ -27,7 +27,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint8_t> img;
-			raw::read(img, "./input_data/orig_20x20x1.raw");
+			raw::read(img, "../test_input_data/orig_20x20x1.raw");
 
 			for (coord_t y = 5; y < 10; y++)
 			{
@@ -39,7 +39,7 @@ namespace itl2
 
 			raw::writed(img, "./inpaint/data_missing");
 
-			itl2::inpaintGarcia<uint8_t>(img, 0, true, 0.5);
+			itl2::inpaintGarcia<uint8_t>(img, 0, 0.5);
 
 			raw::writed(img, "./inpaint/inpaint_garcia");
 
@@ -49,7 +49,7 @@ namespace itl2
 		{
 			Image<float32_t> img;
 			Image<float32_t> inpaintedZeroTolerance;
-			raw::read(img, "./input_data/" + imgname + "_53x53x53.raw");
+			raw::read(img, "../test_input_data/" + imgname + "_53x53x53.raw");
 
 			for (coord_t z = 0; z < img.depth(); z++)
 			{
@@ -67,8 +67,8 @@ namespace itl2
 			raw::writed(img, "./inpaint/" + imgname + "_data_missing");
 
 			setValue(inpaintedZeroTolerance, img);
-			itl2::inpaintGarcia<float32_t>(inpaintedZeroTolerance, 0, true, 0);
-			itl2::inpaintGarcia<float32_t>(img, 0, true, tolerance);
+			itl2::inpaintGarcia<float32_t>(inpaintedZeroTolerance, 0, 0);
+			itl2::inpaintGarcia<float32_t>(img, 0, tolerance);
 
 			raw::writed(img, "./inpaint/" + imgname + "_inpaint_garcia_tol" + toString(tolerance));
 

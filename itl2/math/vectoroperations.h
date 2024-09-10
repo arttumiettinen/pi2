@@ -7,21 +7,21 @@
 namespace itl2
 {
 
-	inline void toPolar(std::vector<Vec2d>& v)
-	{
-		for(size_t n = 0; n < v.size(); n++)
-		{
-			toPolar(v[n]);
-		}
-	}
+	//inline void toPolar(std::vector<Vec2d>& v)
+	//{
+	//	for(size_t n = 0; n < v.size(); n++)
+	//	{
+	//		cartesianToPolar(v[n]);
+	//	}
+	//}
 
-	inline void toCartesian(std::vector<Vec2d>& v)
-	{
-		for(size_t n = 0; n < v.size(); n++)
-		{
-			toCartesian(v[n]);
-		}
-	}
+	//inline void toCartesian(std::vector<Vec2d>& v)
+	//{
+	//	for(size_t n = 0; n < v.size(); n++)
+	//	{
+	//		toCartesian(v[n]);
+	//	}
+	//}
 	
 	/**
 	Cast all items in a std::vector to some other type.

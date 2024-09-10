@@ -34,6 +34,70 @@ namespace pilib
 	void showProgressBar(const std::string& bar, size_t& barLength);
 
 	/**
+	Stores information about chunks of images used in distributed processing.
+	*/
+	struct DistributionChunk
+	{
+	public:
+		/**
+		For input image: File position where read operation should start.
+		*/
+		Vec3c readStart;
+
+		/**
+		For input image: Size of block to read.
+		*/
+		Vec3c readSize;
+
+		/**
+		For output image: File position where the data should be written to.
+		*/
+		Vec3c writeFilePos;
+
+		/**
+		For output image: Position of good data region in the output image. This image position corresponds to the writeFilePos in the output file.
+		*/
+		Vec3c writeImPos;
+
+		/**
+		For output image: Size of block to write.
+		*/
+		Vec3c writeSize;
+
+		/**
+		3-component index of the chunk.
+		*/
+		Vec3c chunkIndex3;
+
+		DistributionChunk(const Vec3c& readStart, const Vec3c& readSize,
+			const Vec3c& writeFilePos, const Vec3c& writeImPos, const Vec3c& writeSize,
+			const Vec3c& chunkIndex3) :
+			readStart(readStart), readSize(readSize),
+			writeFilePos(writeFilePos), writeImPos(writeImPos), writeSize(writeSize),
+			chunkIndex3(chunkIndex3)
+		{
+		}
+
+		bool operator==(const DistributionChunk& r) const
+		{
+			return readStart == r.readStart &&
+				readSize == r.readSize &&
+				writeFilePos == r.writeFilePos &&
+				writeImPos == r.writeImPos &&
+				writeSize == r.writeSize &&
+				chunkIndex3 == r.chunkIndex3;
+		}
+
+		/**
+		Inequality, tests for strict inequality even for numeric storage types.
+		*/
+		bool operator!=(const DistributionChunk& r) const
+		{
+			return !(*this == r);
+		}
+	};
+
+	/**
 	Base class for objects that are used to distribute commands to multiple processes.
 	*/
 	class Distributor
@@ -93,10 +157,15 @@ namespace pilib
 		Vec3c distributedImageChunkSize;
 
 		/**
+		Set to false to prefer Raw files over NN5 datasets.
+		*/
+		bool useNN5;
+
+		/**
 		Determines suitable block size etc. for running commands in delayedCommands list.
 		Throws exception if the commands cannot be run together.
 		*/
-		void determineDistributionConfiguration(Vec3c& margin, std::set<DistributedImageBase*>& inputImages, std::set<DistributedImageBase*>& outputImages, JobType& jobType, std::map<DistributedImageBase*, std::vector<std::tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > >& blocksPerImage, size_t& memoryReq);
+		void determineDistributionConfiguration(Vec3c& margin, std::set<DistributedImageBase*>& inputImages, std::set<DistributedImageBase*>& outputImages, JobType& jobType, std::map<DistributedImageBase*, std::vector<DistributionChunk> >& blocksPerImage, size_t& memoryReq);
 
 		/**
 		Runs commands that have been accumulated to the delayed command list.
@@ -115,7 +184,34 @@ namespace pilib
 		*/
 		bool tryDelay(Delayed& d);
 
+		/**
+		Reads general distributor settings from ini file.
+		Call this from derived class constructor when settings file has been found.
+		*/
+		void readSettings(INIReader& reader);
+
 	protected:
+
+		/**
+		Identifies this running instance from others so that multiple SLURM distributor instances can run from the same working folder.
+		*/
+		std::string myName;
+
+		/**
+		Creates unique name for a job.
+		*/
+		std::string makeJobName(size_t jobIndex) const;
+
+		/**
+		Creates name for job timing output file.
+		*/
+		std::string makeTimingName(size_t jobIndex) const;
+
+		/**
+		Queue time and execution time (wall-clock) for each submitted job.
+		*/
+		std::vector<std::tuple<double, double>> jobTiming;
+
 
 		Distributor(PISystem* piSystem);
 
@@ -128,18 +224,11 @@ namespace pilib
 		}
 
 		/**
-		Gets configuration directory.
+		Gets contents of the configuration file.
+		Reads generic settings into the base class.
+		@param filenameTemplate The name template of the configuration file (file name without extension), this is decided by the derived class.
 		*/
-		fs::path getConfigDirectory() const
-		{
-			return configDir;
-		}
-
-		/**
-		Reads general distributor settings from ini file.
-		Call this from derived class constructor when settings file has been found.
-		*/
-		void readSettings(INIReader& reader);
+		INIReader readConfig(const std::string& filenameTemplate);
 
 
 	public:
@@ -160,6 +249,12 @@ namespace pilib
 		*/
 		typedef coord_t BLOCK_INDEX_ARG_TYPE;
 		inline static const std::string BLOCK_INDEX_ARG_NAME = "block index";
+
+		/**
+		3-component block index command parameter type and name.
+		*/
+		typedef Vec3c BLOCK_INDEX3_ARG_TYPE;
+		inline static const std::string BLOCK_INDEX3_ARG_NAME = "block index 3";
 
 		/**
 		Enables or disables delaying.
@@ -198,6 +293,17 @@ namespace pilib
 			maxSubmittedJobCount = count;
 		}
 
+		/**
+		Gets a value indicating whether NN5 should be preferred over Raw files.
+		*/
+		bool getUseNN5() const
+		{
+			return useNN5;
+		}
+
+		/**
+		Gets chunk size for NN5 files.
+		*/
 		Vec3c getChunkSize() const
 		{
 			return distributedImageChunkSize;
@@ -237,6 +343,7 @@ namespace pilib
 		/**
 		Waits until all jobs have completed.
 		Throws exception if any of the jobs fails or job output does not end in line "Everything done.".
+		If returns succesfully and job queuing times can be reported, must fill jobTiming array.
 		@return Output written by each job.
 		*/
 		virtual std::vector<string> waitForJobs() = 0;

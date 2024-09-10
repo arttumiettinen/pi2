@@ -57,7 +57,7 @@ namespace itl2
 	inline void sleep(unsigned int ms)
 	{
 #if defined(__linux__)  || defined(__APPLE__)
-		usleep(ms);
+		usleep(ms * 1000);
 #elif defined(_WIN32)
 		Sleep(ms);
 #else
@@ -103,128 +103,6 @@ namespace itl2
 		return (size_t)status.ullTotalPhys;
 #endif
 	}
-
-	/**
-	Shows progress information in single-threaded process.
-	Shows at most 100 steps of progress (i.e. skips printing if the result wouldn't change).
-	Selects most suitable progress indicator for terminal and file output.
-	NOTE: Might not show the progress indicator if the function is not called for every possible n between [0, max-1].
-	@param n The zero-based index of last iteration that has been completed.
-	@param max Number of iterations.
-	*/
-	inline void showProgress(size_t n, size_t max, bool show = true)
-	{
-		if (!show)
-			return;
-
-		if (n > 0)
-		{
-			static int count = 0;
-			count++;
-
-			if (isTerminal())
-			{
-				coord_t prevProgress = round((double)(n - 1) / (double)(max - 1) * 100);
-				coord_t currProgress = round((double)(n) / (double)(max - 1) * 100);
-				if (currProgress > prevProgress)
-				{
-					if(currProgress < 100)
-						::std::cout << currProgress << " %              \r" << ::std::flush;
-					else
-						::std::cout << "                   \r" << ::std::flush;
-				}
-			}
-			else
-			{
-				coord_t prevProgress = round((double)(n - 1) / (double)(max - 1) * 100 / 10);
-				coord_t currProgress = round((double)(n) / (double)(max - 1) * 100 / 10);
-				for(coord_t n = prevProgress; n < currProgress; n++)
-				{
-					::std::cout << "=" << ::std::flush;
-				}
-
-				if (prevProgress < 10  && currProgress == 10)
-				{
-					::std::cout << ::std::endl;
-				}
-			}
-		}
-	}
-
-	/**
-	Showw progress information for multithreaded processes.
-	Call from each thread once in each iteration.
-
-	@param counter Reference to counter variable common to all threads.
-	@param max Total number of iterations all threads are going to make.
-	*/
-	inline void showThreadProgress(size_t& counter, size_t max, bool show = true)
-	{
-		if (!show)
-			return;
-
-		size_t localCounter;
-
-#if defined(_MSC_VER)
-		#pragma omp atomic
-		counter++;
-
-		localCounter = counter;
-#else
-		#pragma omp atomic capture
-		localCounter = ++counter;
-#endif
-
-		if (localCounter > 0)
-		{
-			if (isTerminal())
-			{
-				coord_t prevProgress = round((double)(localCounter - 1) / (double)(max - 1) * 100);
-				coord_t currProgress = round((double)(localCounter    ) / (double)(max - 1) * 100);
-				if (currProgress > prevProgress)
-				{
-					#pragma omp critical
-					{
-						if (currProgress < 100)
-							::std::cout << currProgress << " %              \r" << ::std::flush;
-						else
-							::std::cout << "                   \r" << ::std::flush;
-					}
-				}
-			}
-			else
-			{
-				coord_t prevProgress = round((double)(localCounter - 1) / (double)(max - 1) * 100 / 10);
-				coord_t currProgress = round((double)(localCounter    ) / (double)(max - 1) * 100 / 10);
-				if (currProgress > prevProgress)
-				{
-					#pragma omp critical
-					{
-						for (coord_t n = prevProgress; n < currProgress; n++)
-						{
-							::std::cout << "=" << ::std::flush;
-						}
-
-						if (prevProgress < 10 && currProgress == 10)
-						{
-							::std::cout << ::std::endl;
-						}
-					}
-				}
-			}
-		}
-
-		/*#pragma omp critical(show_progress)
-		{
-			showProgress(counter, max);
-			counter++;
-		}*/
-	}
-
-
-
-
-
 
 
 	/**
@@ -344,54 +222,6 @@ namespace itl2
 		throw ITLException(errstr.str());
 	}
 
-	///**
-	//Convert from string to vector
-	//*/
-	//template<>
-	//inline Vec2f fromString(const string& value)
-	//{
-	//	try
-	//	{
-	//		if (value.length() < 1)
-	//			throw ITLException("Empty string.");
-
-	//		if (value[0] == '[')
-	//		{
-	//			// Vector notation [1, 2]
-	//			std::stringstream parts;
-	//			parts << value;
-	//			std::string sx, sy;
-	//			std::getline(parts, sx, '[');
-	//			std::getline(parts, sx, ',');
-	//			std::getline(parts, sy, ']');
-
-	//			trim(sx);
-	//			trim(sy);
-
-	//			Vec2f result;
-	//			result.x = itl2::fromString<float32_t>(sx);
-	//			result.y = itl2::fromString<float32_t>(sy);
-	//			return result;
-	//		}
-	//		else
-	//		{
-	//			// Single number
-
-	//			float32_t val = itl2::fromString<float32_t>(value);
-
-	//			Vec2f result;
-	//			result.x = val;
-	//			result.y = val;
-	//			return result;
-	//		}
-	//	}
-	//	catch (ITLException)
-	//	{
-	//		ostringstream errstr;
-	//		errstr << "Value '" << value << "' is not a valid 2-component vector.";
-	//		throw ITLException(errstr.str());
-	//	}
-	//}
 
 	namespace internals
 	{
@@ -628,6 +458,36 @@ namespace itl2
 		return "False";
 	}
 
+	/**
+	Escape characters [],\n\r=
+	*/
+	void escape(std::string& value);
+
+	/**
+	Undo escapement done using escape method.
+	*/
+	void undoEscape(std::string& value);
+
+	/**
+	Converts vector to string, escapes characters that cannot occur in the output using escape(...) function.
+	*/
+	template<typename T>
+	std::string toString(const std::vector<T>& value)
+	{
+		std::ostringstream str;
+		str << "[";
+		for (size_t n = 0; n < value.size(); n++)
+		{
+			std::string esc = toString(value[n]);
+			escape(esc);
+			str << esc;
+			if (n < value.size() - 1)
+				str << ", ";
+		}
+		str << "]";
+		return str.str();
+	}
+
 
 	inline double sizeRound(double size)
 	{
@@ -663,5 +523,10 @@ namespace itl2
 	template<typename T>
 	bool listContains(const std::list<T>& l, const T& elem){
 		return std::find(l.begin(), l.end(), elem) != l.end();
+	}
+
+	namespace tests
+	{
+		void escapes();
 	}
 }

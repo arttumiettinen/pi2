@@ -10,6 +10,8 @@
 #include "utilities.h"
 #include "fastmaxminfilters.h"
 #include "median.h"
+#include "math/vec4.h"
+#include "progress.h"
 
 namespace itl2
 {
@@ -39,6 +41,7 @@ namespace itl2
 		createNeighbourhoodMask(nbType, nbRadius, mask);
 
 		size_t totalProcessed = 0;
+		ProgressIndicator progress(img.dimensionality() == 3 ? img.depth() : img.height());
 		#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
 			
@@ -59,7 +62,7 @@ namespace itl2
 						}
 					}
 
-					showThreadProgress(totalProcessed, img.depth());
+					progress.step();
 				}
 			}
 			else
@@ -73,6 +76,7 @@ namespace itl2
 
 						out(x, y, 0) = pixelRound<out_t>(processNeighbourhood(nb, mask));
 					}
+					progress.step();
 				}
 			}
 		}
@@ -103,6 +107,7 @@ namespace itl2
 		Image<pixel_t> mask;
 		createNeighbourhoodMask(nbType, nbRadius, mask);
 
+		ProgressIndicator progress(img.dimensionality() == 3 ? img.depth() : img.height());
 		size_t totalProcessed = 0;
 		#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
@@ -123,7 +128,7 @@ namespace itl2
 						}
 					}
 
-					showThreadProgress(totalProcessed, img.depth());
+					progress.step();
 				}
 			}
 			else
@@ -136,6 +141,8 @@ namespace itl2
 						getNeighbourhood(img, Vec3c(x, y, 0), nbRadius, nb, bc);
 						out(x, y, 0) = pixelRound<out_t>(processNeighbourhood(nb, mask, parameter));
 					}
+
+					progress.step();
 				}
 			}
 		}
@@ -147,7 +154,7 @@ namespace itl2
 		Separable filtering helper (for one image+parameter).
 		*/
 		template<typename pixel_t, typename param_t, typename NumberUtils<pixel_t>::FloatType processNeighbourhood(const Image<pixel_t>& nb, const Image<pixel_t>& mask, param_t param)>
-		void sepFilterOneDimension(Image<pixel_t>& img, coord_t r, size_t dim, param_t param, BoundaryCondition bc, bool showProgressInfo = true)
+		void sepFilterOneDimension(Image<pixel_t>& img, coord_t r, size_t dim, param_t param, BoundaryCondition bc)
 		{
 			coord_t N = 2 * r + 1;
 			Image<pixel_t> mask(N);
@@ -157,6 +164,7 @@ namespace itl2
 
 			if (dim == 0)
 			{
+				ProgressIndicator progress(img.depth());
 				#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 				{
 					Image<pixel_t> buffer(N);
@@ -201,12 +209,13 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, img.depth(), showProgressInfo);
+						progress.step();
 					}
 				}
 			}
 			else if (dim == 1)
 			{
+				ProgressIndicator progress(img.depth());
 				#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 				{
 					Image<pixel_t> buffer(N);
@@ -251,12 +260,13 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, img.depth(), showProgressInfo);
+						progress.step();
 					}
 				}
 			}
 			else if (dim == 2)
 			{
+				ProgressIndicator progress(img.height());
 				#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 				{
 					Image<pixel_t> buffer(N);
@@ -301,7 +311,7 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, img.height(), showProgressInfo);
+						progress.step();
 					}
 				}
 			}
@@ -317,9 +327,9 @@ namespace itl2
 		}
 
 		template<typename pixel_t, typename NumberUtils<pixel_t>::FloatType processNeighbourhood(const Image<pixel_t>& nb, const Image<pixel_t>& mask)>
-		void sepFilterOneDimension(Image<pixel_t>& img, coord_t r, size_t dim, BoundaryCondition bc, bool showProgressInfo = true)
+		void sepFilterOneDimension(Image<pixel_t>& img, coord_t r, size_t dim, BoundaryCondition bc)
 		{
-			internals::sepFilterOneDimension<pixel_t, int, internals::paramRemover<pixel_t, processNeighbourhood> >(img, r, dim, 0, bc, showProgressInfo);
+			internals::sepFilterOneDimension<pixel_t, int, internals::paramRemover<pixel_t, processNeighbourhood> >(img, r, dim, 0, bc);
 		}
 
 
@@ -339,6 +349,7 @@ namespace itl2
 
 			if (dim == 0)
 			{
+				ProgressIndicator progress(img1.depth());
 				#pragma omp parallel if(!omp_in_parallel() && img1.pixelCount() > PARALLELIZATION_THRESHOLD)
 				{
 					Image<pixel1_t> buffer1(N);
@@ -403,12 +414,13 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, img1.depth());
+						progress.step();
 					}
 				}
 			}
 			else if (dim == 1)
 			{
+				ProgressIndicator progress(img1.depth());
 				#pragma omp parallel if(!omp_in_parallel() && img1.pixelCount() > PARALLELIZATION_THRESHOLD)
 				{
 					Image<pixel1_t> buffer1(N);
@@ -473,12 +485,13 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, img1.depth());
+						progress.step();
 					}
 				}
 			}
 			else if (dim == 2)
 			{
+				ProgressIndicator progress(img1.height());
 				#pragma omp parallel if(!omp_in_parallel() && img1.pixelCount() > PARALLELIZATION_THRESHOLD)
 				{
 					Image<pixel1_t> buffer1(N);
@@ -543,7 +556,7 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, img1.height());
+						progress.step();
 					}
 				}
 			}
@@ -565,11 +578,11 @@ namespace itl2
 	@param nbRadius Radius of the neighbourhood.
 	*/
 	template<typename pixel_t, typename NumberUtils<pixel_t>::FloatType processNeighbourhood(const Image<pixel_t>& nb, const Image<pixel_t>& mask)>
-	void sepFilter(Image<pixel_t>& img, const Vec3c& nbRadius, BoundaryCondition bc, bool showProgressInfo = true)
+	void sepFilter(Image<pixel_t>& img, const Vec3c& nbRadius, BoundaryCondition bc)
 	{
 		for (size_t n = 0; n < std::max<size_t>(1, img.dimensionality()); n++)
 		{
-			internals::sepFilterOneDimension<pixel_t, processNeighbourhood>(img, nbRadius[n], n, bc, showProgressInfo);
+			internals::sepFilterOneDimension<pixel_t, processNeighbourhood>(img, nbRadius[n], n, bc);
 		}
 	}
 
@@ -583,7 +596,7 @@ namespace itl2
 	@param param Parameter for each dimension.
 	*/
 	template<typename pixel_t, typename param_t, typename NumberUtils<pixel_t>::FloatType processNeighbourhood(const Image<pixel_t>& nb, const Image<pixel_t>& mask, param_t param)>
-	void sepFilter(Image<pixel_t>& img, const Vec3c& nbRadius, const Vec3<param_t>& params, BoundaryCondition bc, bool showProgressInfo = true)
+	void sepFilter(Image<pixel_t>& img, const Vec3c& nbRadius, const Vec3<param_t>& params, BoundaryCondition bc)
 	{
 		// NOTE: (see also sepgauss)
 		// If taking derivative with Nearest boundary condition, we must filter up to dimension where the derivative is being taken, otherwise we just return (2D) filtered version of the original.
@@ -594,7 +607,7 @@ namespace itl2
 
 		for (size_t n = 0; n < std::max<size_t>(1, img.dimensionality()); n++)
 		{
-			internals::sepFilterOneDimension<pixel_t, param_t, processNeighbourhood>(img, nbRadius[n], n, params[n], bc, showProgressInfo);
+			internals::sepFilterOneDimension<pixel_t, param_t, processNeighbourhood>(img, nbRadius[n], n, params[n], bc);
 		}
 	}
 
@@ -827,12 +840,12 @@ namespace itl2
 		Bilateral filter
 		Mask is not used.
 		*/
-		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType bilateralOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask, Vec2d spatialandrangesigma)
+		template<typename pixel_t> typename NumberUtils<pixel_t>::FloatType bilateralOp(const Image<pixel_t>& nb, const Image<pixel_t>& mask, Vec4d spatialandrangesigma)
 		{
-			typename NumberUtils<pixel_t>::RealFloatType sigmas = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[0];
-			typename NumberUtils<pixel_t>::RealFloatType sigmat = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[1];
-
-
+			//typename NumberUtils<pixel_t>::RealFloatType sigmas = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[0];
+			//typename NumberUtils<pixel_t>::RealFloatType sigmat = (typename NumberUtils<pixel_t>::RealFloatType)spatialandrangesigma[1];
+			Vec4<typename NumberUtils<pixel_t>::RealFloatType> sigma(spatialandrangesigma);
+			
 			typename NumberUtils<pixel_t>::FloatType sum = 0.0;
 			typename NumberUtils<pixel_t>::RealFloatType wsum = 0.0;
 
@@ -847,14 +860,26 @@ namespace itl2
 					{
 						typename NumberUtils<pixel_t>::FloatType pix = (typename NumberUtils<pixel_t>::FloatType)nb(x, y, z);
 						
-						typename NumberUtils<pixel_t>::RealFloatType r2 = (Vec3c(x, y, z) - center).normSquared<typename NumberUtils<pixel_t>::RealFloatType>();
-						//double r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz);
 						typename NumberUtils<pixel_t>::FloatType c = pix - centerVal;
+						
+						Vec3<typename NumberUtils<pixel_t>::RealFloatType> r(Vec3c(x, y, z) - center);
 
 						typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)(
-							(1 / (sigmas * sqrt(2 * PI)) * ::exp(-(r2) / (2 * sigmas * sigmas))) *	    // Spatial
-							(1 / (sigmat * sqrt(2 * PI)) * ::exp(-(c * c) / (2 * sigmat * sigmat)))     // Range
+							::exp(-(r.x * r.x) / (2 * sigma.x * sigma.x)	// Spatial x
+								- (r.y * r.y) / (2 * sigma.y * sigma.y)		// Spatial y
+								- (r.z * r.z) / (2 * sigma.z * sigma.z)		// Spatial z
+								- (c * c) / (2 * sigma.w * sigma.w)	// Radiometric
+								)
 							);
+
+						// This works if the sigma is the same in all coordinate directions.
+						//typename NumberUtils<pixel_t>::RealFloatType r2 = (Vec3c(x, y, z) - center).normSquared<typename NumberUtils<pixel_t>::RealFloatType>();
+						//double r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz);
+						//typename NumberUtils<pixel_t>::RealFloatType w = (typename NumberUtils<pixel_t>::RealFloatType)(
+						//	(1 / (sigmas * sqrt(2 * PI)) * ::exp(-(r2) / (2 * sigmas * sigmas))) *	    // Spatial
+						//	(1 / (sigmat * sqrt(2 * PI)) * ::exp(-(c * c) / (2 * sigmat * sigmat)))     // Range
+						//	);
+
 						// This approximation seems to create decent quality image but it is not really faster.
 						//double w = (1 / (2 * PI)) * normPdfApprox(sqrt(r2), 0, sigmas)    // Spatial
 						//	* normPdfApprox(c, 0, sigmat);								// Range
@@ -1060,7 +1085,7 @@ namespace itl2
 		/**
 		Separable Gaussian filtering in-place.
 		*/
-		template<typename pixel_t> void sepgauss(Image<pixel_t>& img, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc, bool showProgressInfo = true)
+		template<typename pixel_t> void sepgauss(Image<pixel_t>& img, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc)
 		{
 			checkDerivativeDimension(derivativeDimension1);
 			checkDerivativeDimension(derivativeDimension2);
@@ -1087,17 +1112,17 @@ namespace itl2
 				kernels[n] = &kernelImages[n];
 			}
 
-			sepFilter<pixel_t, const Image<float32_t>*, internals::convolution1DOp<pixel_t> >(img, nbRadius, kernels, bc, showProgressInfo);
+			sepFilter<pixel_t, const Image<float32_t>*, internals::convolution1DOp<pixel_t> >(img, nbRadius, kernels, bc);
 		}
 
 		/**
 		Separable Gaussian filtering.
 		Use only if data type has good enough accuracy.
 		*/
-		template<typename input_t, typename output_t> void sepgauss(const Image<input_t>& in, Image<output_t>& out, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc, bool showProgressInfo = true)
+		template<typename input_t, typename output_t> void sepgauss(const Image<input_t>& in, Image<output_t>& out, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc)
 		{
 			setValue(out, in);
-			sepgauss(out, sigma, derivativeDimension1, derivativeDimension2, bc, showProgressInfo);
+			sepgauss(out, sigma, derivativeDimension1, derivativeDimension2, bc);
 		}
 	}
 
@@ -1279,9 +1304,9 @@ namespace itl2
 	*/
 	template<typename input_t, typename output_t>
 	typename std::enable_if<std::is_signed<output_t>::value>::type
-		gaussDerivative(const Image<input_t>& in, Image<output_t>& out, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest, bool showProgressInfo = true)
+		gaussDerivative(const Image<input_t>& in, Image<output_t>& out, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		internals::sepgauss(in, out, sigma, derivativeDimension1, derivativeDimension2, bc, showProgressInfo);
+		internals::sepgauss(in, out, sigma, derivativeDimension1, derivativeDimension2, bc);
 	}
 
 	/**
@@ -1299,9 +1324,9 @@ namespace itl2
 	*/
 	template<typename input_t, typename output_t>
 	typename std::enable_if<std::is_signed<output_t>::value>::type
-		gaussDerivative(const Image<input_t>& in, Image<output_t>& out, double sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest, bool showProgressInfo = true)
+		gaussDerivative(const Image<input_t>& in, Image<output_t>& out, double sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		gaussDerivative(in, out, Vec3d(sigma, sigma, sigma), derivativeDimension1, derivativeDimension2, bc, showProgressInfo);
+		gaussDerivative(in, out, Vec3d(sigma, sigma, sigma), derivativeDimension1, derivativeDimension2, bc);
 	}
 
 	/**
@@ -1319,9 +1344,9 @@ namespace itl2
 	*/
 	template<typename pixel_t>
 	typename std::enable_if<std::is_signed<pixel_t>::value>::type
-		gaussDerivative(Image<pixel_t>& img, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest, bool showProgressInfo = true)
+		gaussDerivative(Image<pixel_t>& img, const Vec3d& sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		internals::sepgauss(img, sigma, derivativeDimension1, derivativeDimension2, bc, showProgressInfo);
+		internals::sepgauss(img, sigma, derivativeDimension1, derivativeDimension2, bc);
 	}
 
 	/**
@@ -1339,9 +1364,9 @@ namespace itl2
 	*/
 	template<typename pixel_t>
 	typename std::enable_if<std::is_signed<pixel_t>::value>::type
-		gaussDerivative(Image<pixel_t>& img, double sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest, bool showProgressInfo = true)
+		gaussDerivative(Image<pixel_t>& img, double sigma, coord_t derivativeDimension1, coord_t derivativeDimension2, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		gaussDerivative(img, Vec3d(sigma, sigma, sigma), derivativeDimension1, derivativeDimension2, bc, showProgressInfo);
+		gaussDerivative(img, Vec3d(sigma, sigma, sigma), derivativeDimension1, derivativeDimension2, bc);
 	}
 
 
@@ -1775,6 +1800,22 @@ template<typename pixel_t, typename out_t> void name##Filter(const Image<pixel_t
 		closingFilter(img, tmp, Vec3c(nbRadius, nbRadius, nbRadius), nbType, bc, allowOpt);
 	}
 
+
+	/**
+	Calculates bilateral filtering.
+	@param in Input image.
+	@param out Output image.
+	@param spatialSigma Standard deviation of Gaussian kernel used for spatial smoothing.
+	@param rangeSigma Standard deviation of Gaussian kernel used to avoid smoothing edges of features. Order of magnitude must be similar to difference between gray levels of background and objects.
+	@param bc Boundary condition (BoundaryCondition::Zero or Nearest).
+	*/
+	template<typename pixel_t, typename out_t> void bilateralFilter(const Image<pixel_t>& in, Image<out_t>& out, const Vec3d& spatialSigma, double rangeSigma, BoundaryCondition bc = BoundaryCondition::Nearest)
+	{
+		Vec4d sigma(spatialSigma.x, spatialSigma.y, spatialSigma.z, rangeSigma);
+		Vec3c nbRadius = ceil(3 * spatialSigma);
+		filter<pixel_t, out_t, Vec4d, internals::bilateralOp<pixel_t> >(in, out, nbRadius, sigma, NeighbourhoodType::Rectangular, bc);
+	}
+
 	/**
 	Calculates bilateral filtering.
 	@param in Input image.
@@ -1785,9 +1826,10 @@ template<typename pixel_t, typename out_t> void name##Filter(const Image<pixel_t
 	*/
 	template<typename pixel_t, typename out_t> void bilateralFilter(const Image<pixel_t>& in, Image<out_t>& out, double spatialSigma, double rangeSigma, BoundaryCondition bc = BoundaryCondition::Nearest)
 	{
-		coord_t nbRadius = (coord_t)ceil(3 * spatialSigma);
-		filter<pixel_t, out_t, Vec2d, internals::bilateralOp<pixel_t> >(in, out, Vec3c(nbRadius, nbRadius, nbRadius), Vec2d(spatialSigma, rangeSigma), NeighbourhoodType::Rectangular, bc);
+		bilateralFilter(in, out, Vec3d(spatialSigma, spatialSigma, spatialSigma), rangeSigma, bc);
 	}
+
+	
 
 
 

@@ -8,6 +8,11 @@ using namespace std;
 
 namespace itl2
 {
+	template class Vec3<itl2::float32_t>;
+	template class Vec3<double>;
+	template class Vec3<itl2::coord_t>;
+	template class Vec3<int32_t>;
+
 	namespace tests
 	{
 		void vectorAngles()

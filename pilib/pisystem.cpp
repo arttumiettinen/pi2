@@ -7,6 +7,7 @@
 #include "slurmdistributor.h"
 #include "localdistributor.h"
 #include "lsfdistributor.h"
+#include "timing.h"
 
 using namespace std;
 
@@ -51,12 +52,27 @@ namespace pilib
 		return result;
 	}
 
+	/**
+	Test if the string represents a valid boolean value.
+	*/
+	bool isValidBoolean(const string& value)
+	{
+		try
+		{
+			bool val = fromString<bool>(value);
+			return true;
+		}
+		catch (ITLException)
+		{
+			return false;
+		}
+	}
 
 	/**
 	Parse line expected to contain function call
 	funcname(param1, param2, param3, ...)
 	*/
-	void PISystem::parseFunctionCall(const string& line, string& name, vector<string>& args)
+	void PISystem::parseFunctionCall(const string& line, string& name, vector<tuple<ParsedArgType, string>>& args)
 	{
 		args.clear();
 
@@ -97,14 +113,14 @@ namespace pilib
 							throw ParseException("Trailing characters after vector value.");
 
 						arg = arg + ']'; // There is already [ in the beginning of the arg.
-						args.push_back(arg);
+						args.push_back(make_tuple(ParsedArgType::Value, arg));
 					}
 					else if (argSection[0] == '"')
 					{
 						// Start of double-quote string
 						argSection.erase(argSection.begin());
 						string arg = parseString(argSection, '"');
-						args.push_back(arg);
+						args.push_back(make_tuple(ParsedArgType::String, arg));
 						trim(argSection);
 						if (argSection.length() > 0 && argSection[0] != ',')
 							throw ParseException("Trailing characters ("+argSection+") after arg: "+ arg);
@@ -116,7 +132,7 @@ namespace pilib
 						// Start of single-quote string
 						argSection.erase(argSection.begin());
 						string arg = parseString(argSection, '\'');
-						args.push_back(arg);
+						args.push_back(make_tuple(ParsedArgType::String, arg));
 						trim(argSection);
 						if (argSection.length() > 0 && argSection[0] != ',')
 							throw ParseException("Trailing characters ("+argSection+") after arg: "+ arg);
@@ -130,7 +146,19 @@ namespace pilib
 						char delim;
 						string arg = getToken(argSection, ",", delim);
 						trim(arg);
-						args.push_back(arg);
+
+						// Is this a boolean value?
+						ParsedArgType type = ParsedArgType::Value;
+
+						string dummy;
+						if (isValidBoolean(arg))
+							type = ParsedArgType::Value;
+						else if (isValidImageName(arg, dummy))
+							type = ParsedArgType::Name;
+						else
+							type = ParsedArgType::Value;
+
+						args.push_back(make_tuple(type, arg));
 					}
 
 					trim(argSection);
@@ -138,6 +166,8 @@ namespace pilib
 			}
 		}
 	}
+
+
 
 	/**
 	Tests if the given value is valid image name.
@@ -264,10 +294,16 @@ namespace pilib
 	Tries to convert string to given data type using fromString implementation.
 	Returns true if succesfull (and if dt matches target_t).
 	*/
-	template<typename target_t> bool trySimpleConversion(ArgumentDataType dt, const string& value, bool doConversion, ParamVariant& result, string& reason)
+	template<typename target_t> bool trySimpleConversion(ArgumentDataType dt, const string& value, bool doConversion, ParamVariant& result, string& reason, bool allowLiterals)
 	{
 		if (parameterType<target_t>() != dt)
 			return false;
+
+		if (!allowLiterals)
+		{
+			reason = "Literal value is not allowed here.";
+			return false;
+		}
 
 		try
 		{
@@ -313,55 +349,265 @@ namespace pilib
 	If conversion is not possible, reason string is assigned an explanation of the error.
 	@return 0 if there is no match, 1 if the argument type and parameter type match, and 2 if they match after creation of new images.
 	*/
-	int PISystem::tryConvert(string& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, string& reason)
+	int PISystem::tryConvert(tuple<ParsedArgType, string>& value, const CommandArgumentBase& type, bool doConversion, ParamVariant& result, string& reason)
 	{
-		ArgumentDataType dt = type.dataType();
+		ArgumentDataType targetDt = type.dataType();
+		ParameterDirection direction = type.direction();
+		ParsedArgType parsedType = get<0>(value);
+		string parsedValue = get<1>(value);
 
-		if (type.direction() == ParameterDirection::In || type.direction() == ParameterDirection::InOut)
+		bool variableValuesAsPointers = false;
+		bool variablesMustExist = false;
+		bool allowLiterals = false;
+		if (direction == ParameterDirection::In)
 		{
-			// Input parameter.
-			// Strings must be convertible to primitives, images and variables must exist.
+			// Accept literal values.
+			// Named variables must exist and are converted to their values.
+			// Images must exist.
 
-			if (isValidImageName(value, reason))
+			allowLiterals = true;
+			variableValuesAsPointers = false;
+			variablesMustExist = true;
+		}
+		else if (direction == ParameterDirection::InOut)
+		{
+			// No literal values allowed.
+			// Named variables must exist and are converted to pointers.
+			// Images must exist.
+
+			allowLiterals = false;
+			variableValuesAsPointers = true;
+			variablesMustExist = true;
+		}
+		else if (direction == ParameterDirection::Out)
+		{
+			// No literal values allowed.
+			// Named variables can be created and are converted to pointers.
+			// Images can be created and are converted to pointers.
+
+			allowLiterals = false;
+			variableValuesAsPointers = true;
+			variablesMustExist = false;
+		}
+		else
+		{
+			throw new ITLException("Unsupported parameter direction in TryConvert.");
+		}
+
+
+		if (targetDt == ArgumentDataType::String)
+		{
+			// Decide if the value is literal or name of a variable.
+
+			// The value is a variable name, if variable with such a name exists.
+			auto it = namedValues.find(parsedValue);
+			bool isExistingVarName = it != namedValues.end();
+
+			// If the value is parsed from a quoted string, it is never a variable name.
+			bool isStringLiteral = false;
+			if (parsedType == ParsedArgType::String)
+				isStringLiteral = true;
+
+			string dummyReason;
+			bool isNewVariableName = isValidImageName(parsedValue, dummyReason);
+
+			if (isExistingVarName)
 			{
-				if (dt == ArgumentDataType::String)
-				{
-					// Find string variable
+				// The value is the name of an existing variable.
+				// Such names cannot be literal string values.
 
-					auto it = strings.find(value);
-					if (it != strings.end())
+				if (doConversion)
+				{
+					if (variableValuesAsPointers)
+						result = &(it->second->stringValue);
+					else
+						result = it->second->stringValue;
+					namedValueStore.push_back(it->second);
+				}
+				return 1;
+			}
+			else
+			{
+				// The value is not an existing variable name, but could be either
+				// string literal or name of a new variable.
+
+				if (isStringLiteral)
+				{
+					// The value has been parsed as a quoted string, so it is not a variable name.
+
+					if (!allowLiterals)
 					{
-						if(doConversion)
-							result = *(it->second);
+						reason = "A variable name is required here.";
+						return 0;
+					}
+
+					if (doConversion)
+						result = parsedValue;
+					return 1;
+				}
+				else
+				{
+					// The value might be name of a new variable or string literal.
+					if (isNewVariableName && !variablesMustExist)
+					{
+						// Name is OK to be a variable name, and new variables are allowed.
+
+						// Create new string variable.
+						if (doConversion)
+						{
+							shared_ptr<Value> ptr = make_shared<Value>(ValueType::String);
+							if (variableValuesAsPointers)
+								result = &(ptr.get()->stringValue);
+							else
+								result = ptr.get()->stringValue;
+							namedValues[parsedValue] = ptr;
+							namedValueStore.push_back(ptr);
+						}
+						return 2;
+					}
+					else
+					{
+						// Name is not a variable name, or creation of new variables is not allowed.
+						if (!allowLiterals)
+						{
+							reason = "A variable name is required here.";
+							return 0;
+						}
+
+						if (doConversion)
+							result = parsedValue;
 						return 1;
 					}
+
 				}
-				else if (isImage(dt))
+			}
+
+			throw logic_error("This line of code should never be reached (String data type handling in TryConvert).");
+		}
+		else if (targetDt == ArgumentDataType::JSON)
+		{
+			try
+			{
+				result = nlohmann::json::parse(value);
+				return 1;
+			}
+			catch (const nlohmann::json::parse_error& e)
+			{
+				reason = e.what();
+				return 0;
+			}
+		}
+		else if(targetDt == ArgumentDataType::Int ||
+			targetDt == ArgumentDataType::Double ||
+			targetDt == ArgumentDataType::Bool)
+		{
+			// Decide if the value is literal or name of a variable.
+
+			// For these data types, literal values are either numerical or "true" or "false".
+			// It should be enough to try conversion and assume variable name if conversion does not work.
+			if (trySimpleConversion<bool>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			if (trySimpleConversion<double>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			if (trySimpleConversion<coord_t>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+
+
+			// At this point, the value is not literal. Find named variable.
+			auto it = namedValues.find(parsedValue);
+			if (it != namedValues.end())
+			{
+				if (doConversion)
 				{
-					// Find image with given name
-
-					ImageDataType idt = argumentDataTypeToImageDataType(dt);
-
-					if (!isDistributed())
+					if (variableValuesAsPointers)
 					{
-						// Non-distributed case
-
-						auto it = images.find(value);
-						if (it == images.end())
+						if (targetDt == ArgumentDataType::Int)
+							result = &(it->second->intValue);
+						else if (targetDt == ArgumentDataType::Double)
+							result = &(it->second->realValue);
+						else if (targetDt == ArgumentDataType::Bool)
+							result = &(it->second->boolValue);
+						else
+							throw new ITLException("Variable type not correctly implemented (1).");
+					}
+					else
+					{
+						if (targetDt == ArgumentDataType::Int)
+							result = it->second->intValue;
+						else if (targetDt == ArgumentDataType::Double)
+							result = it->second->realValue;
+						else if (targetDt == ArgumentDataType::Bool)
+							result = it->second->boolValue;
+						else
+							throw new ITLException("Variable type not correctly implemented (2).");
+					}
+					namedValueStore.push_back(it->second);
+				}
+				return 1;
+			}
+			else
+			{
+				if (!variablesMustExist)
+				{
+					// Create a new variable
+					if (doConversion)
+					{
+						shared_ptr<Value> ptr;
+						if (targetDt == ArgumentDataType::Int)
 						{
-							reason = string("Image ") + value + string(" does not exist.");
-							return 0;
+							ptr = make_shared<Value>(ValueType::Int);
+							if(variableValuesAsPointers)
+								result = &(ptr.get()->intValue);
+							else
+								result = ptr.get()->intValue;
 						}
-
-						// Check that image data type is correct
-						ImageBase* p = it->second.get();
-
-						if (idt != p->dataType())
+						else if (targetDt == ArgumentDataType::Double)
 						{
-							reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-							return 0;
+							ptr = make_shared<Value>(ValueType::Real);
+							if(variableValuesAsPointers)
+								result = &(ptr.get()->realValue);
+							else
+								result = ptr.get()->realValue;
 						}
+						else if (targetDt == ArgumentDataType::Bool)
+						{
+							ptr = make_shared<Value>(ValueType::Bool);
+							if(variableValuesAsPointers)
+								result = &(ptr.get()->boolValue);
+							else
+								result = ptr.get()->boolValue;
+						}
+						else
+							throw new ITLException("Variable type not correctly implemented (3).");
+						namedValues[parsedValue] = ptr;
+						namedValueStore.push_back(ptr);
+					}
+					return 2;
+				}
+			}
 
+			reason = string("Value '") + parsedValue + "' is not a valid literal or a variable name.";
+			return 0;
+		}
+		else if (isImage(targetDt))
+		{
+			// Find image with given name
+
+			ImageDataType idt = argumentDataTypeToImageDataType(targetDt);
+			Vec3c oldSize(1, 1, 1);
+			if (!isDistributed())
+			{
+				// Non-distributed case
+
+				auto it = images.find(parsedValue);
+				if (it != images.end())
+				{
+					// Check that image data type is correct
+					ImageBase* p = it->second.get();
+					oldSize = p->dimensions();
+
+					if (idt == p->dataType())
+					{
 						if (doConversion)
 						{
 							imageStore.push_back(it->second);
@@ -372,22 +618,28 @@ namespace pilib
 					}
 					else
 					{
-						auto it = distributedImgs.find(value);
-						if (it == distributedImgs.end())
-						{
-							reason = string("Image ") + value + string(" does not exist.");
-							return 0;
-						}
+						reason = string("Expected ") + toString(idt) + string(" image, but ") + parsedValue + string(" is ") + toString(p->dataType()) + string(" image.");
+					}
+				}
+				else
+				{
+					reason = string("Image ") + parsedValue + string(" does not exist.");
+				}
 
-						// Check that image data type is correct
-						DistributedImageBase* p = it->second.get();
+				// Do not return 0 here, as we might be able to create a suitable image below.
+				//return 0;
+			}
+			else
+			{
+				auto it = distributedImgs.find(parsedValue);
+				if (it != distributedImgs.end())
+				{
+					// Check that image data type is correct
+					DistributedImageBase* p = it->second.get();
+					oldSize = p->dimensions();
 
-						if (idt != p->dataType())
-						{
-							reason = string("Expected ") + toString(idt) + string(" image, but ") + value + string(" is ") + toString(p->dataType()) + string(" image.");
-							return 0;
-						}
-
+					if (idt == p->dataType())
+					{
 						if (doConversion)
 						{
 							distributedImageStore.push_back(it->second);
@@ -396,152 +648,32 @@ namespace pilib
 
 						return 1;
 					}
-				}
-			}
-
-
-
-			if (trySimpleConversion<string>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<bool>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<double>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<Vec3d>(dt, value, doConversion, result, reason))
-				return 1;
-			if (dt == ArgumentDataType::Vect3d)
-			{
-				Vec3d v;
-				if (getImageAsVec3(value, v))
-				{
-					if (doConversion)
-						result = v;
-					return 1;
-				}
-			}
-			if (dt == ArgumentDataType::JSON)
-			{
-				try
-				{
-					result = nlohmann::json::parse(value);
-					return 1;
-				}
-				catch (const nlohmann::json::parse_error& e)
-				{
-					reason = e.what();
-					return 0;
-				}
-			}
-			if (trySimpleConversion<Vec3c>(dt, value, doConversion, result, reason))
-				return 1;
-			if (dt == ArgumentDataType::Vect3c)
-			{
-				Vec3d v;
-				if (getImageAsVec3(value, v))
-				{
-					if (doConversion)
-						result = round(v);
-					return 1;
-				}
-			}
-			if (trySimpleConversion<coord_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<size_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<NeighbourhoodType>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<BoundaryCondition>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<Connectivity>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<InterpolationMode>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<uint8_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<uint16_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<uint32_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<uint64_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<int8_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<int16_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<int32_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<float32_t>(dt, value, doConversion, result, reason))
-				return 1;
-			if (trySimpleConversion<complex32_t>(dt, value, doConversion, result, reason))
-				return 1;
-			return 0;
-		}
-		else
-		{
-			// Output parameter
-
-			if (!isValidImageName(value, reason))
-				return 0;
-
-			if (isImage(dt))
-			{
-				ImageDataType idt = argumentDataTypeToImageDataType(dt);
-
-				// Any image type can be output automatically, but existing images get higher priority
-
-				// Search match from existing images.
-				Vec3c oldSize(1, 1, 1);
-				if (!isDistributed())
-				{
-					auto it = images.find(value);
-					if (it != images.end())
+					else
 					{
-						ImageBase* p = it->second.get();
-						oldSize = p->dimensions();
-
-						if (p->dataType() == idt)
-						{
-							// Match
-							if (doConversion)
-							{
-								imageStore.push_back(it->second);
-								pick<CastImage>(idt, p, result);
-							}
-							return 1;
-						}
+						reason = string("Expected ") + toString(idt) + string(" image, but ") + parsedValue + string(" is ") + toString(p->dataType()) + string(" image.");
 					}
 				}
 				else
 				{
-					auto it = distributedImgs.find(value);
-					if (it != distributedImgs.end())
-					{
-						DistributedImageBase* p = it->second.get();
-						oldSize = p->dimensions();
-
-						if (p->dataType() == idt)
-						{
-							// Match
-							if (doConversion)
-							{
-								distributedImageStore.push_back(it->second);
-								pick<CastDistributedImage>(idt, p, result);
-							}
-							return 1;
-						}
-					}
+					reason = string("Image ") + parsedValue + string(" does not exist.");
 				}
 
+				// Do not return 0 here, as we might be able to create a suitable image below.
+				//return 0;
+			}
+
+			if(!variablesMustExist)
+			{
+				// Image can be created.
 				// No match found from existing images.
-				// Create image if it does not exist.
 				if (doConversion)
 				{
 					if (!isDistributed())
 					{
 						// Create normal image
 						// Retain size of old image of the same name
-						pick<CreateImage>(idt, oldSize, value, this);
-						auto ptr = images.at(value);
+						pick<CreateImage>(idt, oldSize, parsedValue, this);
+						auto ptr = images.at(parsedValue);
 						imageStore.push_back(ptr);
 						ImageBase* p = ptr.get();
 						pick<CastImage>(idt, p, result);
@@ -550,8 +682,8 @@ namespace pilib
 					{
 						// Create distributed image
 						// Retain size of old image of the same name
-						pick<CreateEmptyDistributedImage>(idt, value, oldSize, this);
-						auto ptr = distributedImgs.at(value);
+						pick<CreateEmptyDistributedImage>(idt, parsedValue, oldSize, this);
+						auto ptr = distributedImgs.at(parsedValue);
 						distributedImageStore.push_back(ptr);
 						DistributedImageBase* p = ptr.get();
 						pick<CastDistributedImage>(idt, p, result);
@@ -560,37 +692,405 @@ namespace pilib
 
 				return 2;
 			}
-			else if (dt == ArgumentDataType::String)
+
+			// reason should be already set here.
+			return 0;
+		}
+		else if (targetDt == ArgumentDataType::Vect3d)
+		{
+			// Literal value or image name
+
+			// Here we assume that image names are effectively literals.
+			if (!allowLiterals)
 			{
-				// Search match from existing values.
-				auto it = strings.find(value);
-				if(it != strings.end())
-				{
-					if (doConversion)
-					{
-						stringStore.push_back(it->second);
-						result = it->second.get();
-					}
+				reason = "Literal value is not allowed here.";
+				return 0;
+			}
+
+			// Literals are of form "[1.0, 2.0, 3.0]" or number "1.0" => variable name cannot be of same form than literal.
+			if (!isValidImageName(parsedValue, reason))
+			{
+				// Must be literal
+				if (trySimpleConversion<Vec3d>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
 					return 1;
-				}
-
-				// No match found from existing values. Create new value.
-				if (doConversion)
-				{
-					shared_ptr<string> ptr = make_shared<string>("");
-					stringStore.push_back(ptr);
-					strings[value] = ptr;
-					result = ptr.get();
-				}
-
-				return 2;
+				return 0;
 			}
 			else
 			{
-				// Any other output data type is not supported...
-				throw runtime_error("Output parameter data type not implemented.");
+				Vec3d v;
+				if (getImageAsVec3(parsedValue, v))
+				{
+					if (doConversion)
+						result = v;
+					return 2;
+				}
+
+				reason = string("Value '") + parsedValue + "' is not a valid vector literal or name of a 3-pixel image.";
+				return 0;
 			}
 		}
+		else if (targetDt == ArgumentDataType::Vect3c)
+		{
+			// Literal value or image name
+
+			// Here we assume that image names are effectively literals.
+			if (!allowLiterals)
+			{
+				reason = "Literal value is not allowed here.";
+				return 0;
+			}
+
+
+			// Literals are of form "[1, 2, 3]" or number "1" => variable name cannot be of same form than literal.
+			if (!isValidImageName(parsedValue, reason))
+			{
+				// Must be literal
+				if (trySimpleConversion<Vec3c>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+					return 1;
+				return 0;
+			}
+			else
+			{
+				Vec3d v;
+				if (getImageAsVec3(parsedValue, v))
+				{
+					if (doConversion)
+						result = round(v);
+					return 2;
+				}
+
+				reason = string("Value '") + parsedValue + "' is not a valid integer vector literal or name of a 3-pixel image.";
+				return 0;
+			}
+		}
+		else
+		{
+			// All other data types must be literal values.
+
+			if (trySimpleConversion<size_t>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			if (trySimpleConversion<NeighbourhoodType>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			if (trySimpleConversion<BoundaryCondition>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			if (trySimpleConversion<Connectivity>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			if (trySimpleConversion<InterpolationMode>(targetDt, parsedValue, doConversion, result, reason, allowLiterals))
+				return 1;
+			return 0;
+		}
+
+		throw logic_error("This line of code should be impossible to reach. This means a data type is not properly configured in TryParse.");
+
+
+
+
+
+		//ArgumentDataType dt = type.dataType();
+
+		//ParsedArgType parsedType = get<0>(value);
+		//string parsedValue = get<1>(value);
+
+		//if (type.direction() == ParameterDirection::In || type.direction() == ParameterDirection::InOut)
+		//{
+		//	// Input parameter.
+		//	// Strings must be convertible to primitives, images and variables must exist.
+
+		//	if (parsedType == ParsedArgType::Name /* && isValidImageName(parsedValue, reason) */)
+		//	{
+		//		if (dt == ArgumentDataType::String ||
+		//			dt == ArgumentDataType::Int ||
+		//			dt == ArgumentDataType::Double ||
+		//			dt == ArgumentDataType::Bool)
+		//		{
+		//			// Find named value
+
+		//			auto it = namedValues.find(parsedValue);
+		//			if (it != namedValues.end())
+		//			{
+		//				if (doConversion)
+		//				{
+		//					if (dt == ArgumentDataType::String)
+		//						result = &(it->second->stringValue);
+		//					else if (dt == ArgumentDataType::Int)
+		//						result = &(it->second->intValue);
+		//					else if (dt == ArgumentDataType::Double)
+		//						result = &(it->second->realValue);
+		//					else if (dt == ArgumentDataType::Bool)
+		//						result = &(it->second->boolValue);
+		//					else
+		//						throw new ITLException("In or InOut value type not implemented.");
+		//					namedValueStore.push_back(it->second);
+		//				}
+		//				return 1;
+		//			}
+		//			reason = string("No variable '") + parsedValue + string("' found.");
+		//		}
+		//		else if (isImage(dt))
+		//		{
+		//			// Find image with given name
+
+		//			ImageDataType idt = argumentDataTypeToImageDataType(dt);
+
+		//			if (!isDistributed())
+		//			{
+		//				// Non-distributed case
+
+		//				auto it = images.find(parsedValue);
+		//				if (it == images.end())
+		//				{
+		//					reason = string("Image ") + parsedValue + string(" does not exist.");
+		//					return 0;
+		//				}
+
+		//				// Check that image data type is correct
+		//				ImageBase* p = it->second.get();
+
+		//				if (idt != p->dataType())
+		//				{
+		//					reason = string("Expected ") + toString(idt) + string(" image, but ") + parsedValue + string(" is ") + toString(p->dataType()) + string(" image.");
+		//					return 0;
+		//				}
+
+		//				if (doConversion)
+		//				{
+		//					imageStore.push_back(it->second);
+		//					pick<CastImage>(idt, p, result);
+		//				}
+
+		//				return 1;
+		//			}
+		//			else
+		//			{
+		//				auto it = distributedImgs.find(parsedValue);
+		//				if (it == distributedImgs.end())
+		//				{
+		//					reason = string("Image ") + parsedValue + string(" does not exist.");
+		//					return 0;
+		//				}
+
+		//				// Check that image data type is correct
+		//				DistributedImageBase* p = it->second.get();
+
+		//				if (idt != p->dataType())
+		//				{
+		//					reason = string("Expected ") + toString(idt) + string(" image, but ") + parsedValue + string(" is ") + toString(p->dataType()) + string(" image.");
+		//					return 0;
+		//				}
+
+		//				if (doConversion)
+		//				{
+		//					distributedImageStore.push_back(it->second);
+		//					pick<CastDistributedImage>(idt, p, result);
+		//				}
+
+		//				return 1;
+		//			}
+		//		}
+		//		else if (dt == ArgumentDataType::Vect3d)
+		//		{
+		//			Vec3d v;
+		//			if (getImageAsVec3(parsedValue, v))
+		//			{
+		//				if (doConversion)
+		//					result = v;
+		//				return 2;
+		//			}
+		//		}
+		//		else if (dt == ArgumentDataType::Vect3c)
+		//		{
+		//			Vec3d v;
+		//			if (getImageAsVec3(parsedValue, v))
+		//			{
+		//				if (doConversion)
+		//					result = round(v);
+		//				return 2;
+		//			}
+		//		}
+		//	}
+
+		//	// We accept quoted strings and, e.g., numbers as strings.
+		//	if ((parsedType == ParsedArgType::String || parsedType == ParsedArgType::Value) &&
+		//		trySimpleConversion<string>(dt, parsedValue, doConversion, result, reason))
+		//		return 1;
+
+		//	if (parsedType == ParsedArgType::Value)
+		//	{
+		//		if (trySimpleConversion<bool>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<double>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<Vec3d>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<Vec3c>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<coord_t>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<size_t>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<NeighbourhoodType>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<BoundaryCondition>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<Connectivity>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//		if (trySimpleConversion<InterpolationMode>(dt, parsedValue, doConversion, result, reason))
+		//			return 1;
+		//	}
+		//	return 0;
+		//}
+		//else
+		//{
+		//	// Output parameter
+
+		//	if (parsedType != ParsedArgType::Name /*!isValidImageName(parsedValue, reason)*/)
+		//		return 0;
+
+		//	if (isImage(dt))
+		//	{
+		//		ImageDataType idt = argumentDataTypeToImageDataType(dt);
+
+		//		// Any image type can be output automatically, but existing images get higher priority
+
+		//		// Search match from existing images.
+		//		Vec3c oldSize(1, 1, 1);
+		//		if (!isDistributed())
+		//		{
+		//			auto it = images.find(parsedValue);
+		//			if (it != images.end())
+		//			{
+		//				ImageBase* p = it->second.get();
+		//				oldSize = p->dimensions();
+
+		//				if (p->dataType() == idt)
+		//				{
+		//					// Match
+		//					if (doConversion)
+		//					{
+		//						imageStore.push_back(it->second);
+		//						pick<CastImage>(idt, p, result);
+		//					}
+		//					return 1;
+		//				}
+		//			}
+		//		}
+		//		else
+		//		{
+		//			auto it = distributedImgs.find(parsedValue);
+		//			if (it != distributedImgs.end())
+		//			{
+		//				DistributedImageBase* p = it->second.get();
+		//				oldSize = p->dimensions();
+
+		//				if (p->dataType() == idt)
+		//				{
+		//					// Match
+		//					if (doConversion)
+		//					{
+		//						distributedImageStore.push_back(it->second);
+		//						pick<CastDistributedImage>(idt, p, result);
+		//					}
+		//					return 1;
+		//				}
+		//			}
+		//		}
+
+		//		// No match found from existing images.
+		//		// Create image if it does not exist.
+		//		if (doConversion)
+		//		{
+		//			if (!isDistributed())
+		//			{
+		//				// Create normal image
+		//				// Retain size of old image of the same name
+		//				pick<CreateImage>(idt, oldSize, parsedValue, this);
+		//				auto ptr = images.at(parsedValue);
+		//				imageStore.push_back(ptr);
+		//				ImageBase* p = ptr.get();
+		//				pick<CastImage>(idt, p, result);
+		//			}
+		//			else
+		//			{
+		//				// Create distributed image
+		//				// Retain size of old image of the same name
+		//				pick<CreateEmptyDistributedImage>(idt, parsedValue, oldSize, this);
+		//				auto ptr = distributedImgs.at(parsedValue);
+		//				distributedImageStore.push_back(ptr);
+		//				DistributedImageBase* p = ptr.get();
+		//				pick<CastDistributedImage>(idt, p, result);
+		//			}
+		//		}
+
+		//		return 2;
+		//	}
+		//	else if (dt == ArgumentDataType::String ||
+		//			dt == ArgumentDataType::Int ||
+		//			dt == ArgumentDataType::Double ||
+		//			dt == ArgumentDataType::Bool)
+		//	{
+		//		// Search match from existing values.
+		//		auto it = namedValues.find(parsedValue);
+		//		if(it != namedValues.end())
+		//		{
+		//			if (doConversion)
+		//			{
+		//				if (dt == ArgumentDataType::String)
+		//					result = &(it->second->stringValue);
+		//				else if (dt == ArgumentDataType::Int)
+		//					result = &(it->second->intValue);
+		//				else if (dt == ArgumentDataType::Double)
+		//					result = &(it->second->realValue);
+		//				else if (dt == ArgumentDataType::Bool)
+		//					result = &(it->second->boolValue);
+		//				else
+		//					throw new ITLException("In or InOut value type not implemented.");
+		//				namedValueStore.push_back(it->second);
+		//			}
+		//			return 1;
+		//		}
+
+		//		// No match found from existing values. Create new value.
+		//		if (doConversion)
+		//		{
+		//			//shared_ptr<string> ptr = make_shared<string>("");
+		//			//stringStore.push_back(ptr);
+		//			//strings[value] = ptr;
+		//			//result = ptr.get();
+		//			shared_ptr<Value> ptr;
+		//			if (dt == ArgumentDataType::String)
+		//			{
+		//				ptr = make_shared<Value>(ValueType::String);
+		//				result = &(ptr.get()->stringValue);
+		//			}
+		//			else if (dt == ArgumentDataType::Int)
+		//			{
+		//				ptr = make_shared<Value>(ValueType::Int);
+		//				result = &(ptr.get()->intValue);
+		//			}
+		//			else if (dt == ArgumentDataType::Double)
+		//			{
+		//				ptr = make_shared<Value>(ValueType::Real);
+		//				result = &(ptr.get()->realValue);
+		//			}
+		//			else if (dt == ArgumentDataType::Bool)
+		//			{
+		//				ptr = make_shared<Value>(ValueType::Bool);
+		//				result = &(ptr.get()->boolValue);
+		//			}
+		//			else
+		//				throw new ITLException("In or InOut value type not implemented.");
+		//			namedValues[parsedValue] = ptr;
+		//			namedValueStore.push_back(ptr);
+		//		}
+
+		//		return 2;
+		//	}
+		//	else
+		//	{
+		//		// Any other output data type is not supported...
+		//		throw runtime_error("Output parameter data type not implemented.");
+		//	}
+		//}
 
 
 	}
@@ -601,7 +1101,7 @@ namespace pilib
 	If 0 is returned, reason parameter is assigned an explanation why this match does not succeed.
 	@return 0 if there is no match, 1 if there is match, and 2 if there is match after creation of new images.
 	*/
-	int PISystem::matchParameterTypes(const vector<CommandArgumentBase>& types, vector<string>& values, string& reason)
+	int PISystem::matchParameterTypes(const vector<CommandArgumentBase>& types, vector<tuple<ParsedArgType, string>>& values, string& reason)
 	{
 		// No match if there are more values than arguments.
 		if (values.size() > types.size())
@@ -668,7 +1168,7 @@ namespace pilib
 	Searches the command based on name and arguments, and if found, executes it.
 	If not found, throws ParseException.
 	*/
-	void PISystem::executeCommand(const string& name, vector<string>& args)
+	void PISystem::executeCommand(const string& name, vector<tuple<ParsedArgType, string>>& args)
 	{
 		// Match name
 		vector<Command*> candidates = CommandList::byName(name);
@@ -752,13 +1252,21 @@ namespace pilib
 			throw logic_error("null command");
 
 		// Add defaults to the parameter array
-		vector<string> realArgs;
+		vector<tuple<ParsedArgType, string>> realArgs;
 		realArgs.reserve(cmd->args().size());
 		size_t N0 = args.size();
 		for (size_t n = 0; n < N0; n++)
 			realArgs.push_back(args[n]);
 		for (size_t n = N0; n < cmd->args().size(); n++)
-			realArgs.push_back(cmd->args()[n].defaultValue());
+		{
+			// Note: default argument parsed type is never Name.
+			ParsedArgType defType;
+			if (cmd->args()[n].dataType() == ArgumentDataType::String && cmd->args()[n].direction() == ParameterDirection::In)
+				defType = ParsedArgType::String;
+			else
+				defType = ParsedArgType::Value;
+			realArgs.push_back(make_tuple(defType, cmd->args()[n].defaultValue()));
+		}
 
 		// Commands that should not be echoed to screen
 		bool isNoShow = cmd->name() == "help" || cmd->name() == "info" || cmd->name() == "license";
@@ -769,7 +1277,12 @@ namespace pilib
 			cout << cmd->name() << "(";
 			for (size_t n = 0; n < realArgs.size(); n++)
 			{
-				cout << "\"" << realArgs[n] << "\"";
+				ParsedArgType type = get<0>(realArgs[n]);
+				string val = get<1>(realArgs[n]);
+				if (type == ParsedArgType::String) // Only strings should be quoted.
+					cout << "\"" << val << "\"";
+				else
+					cout << val;
 				if (n < realArgs.size() - 1)
 					cout << ", ";
 			}
@@ -817,6 +1330,7 @@ namespace pilib
 		if (!isDistributed())
 		{
 			// Normal processing without distribution or anything fancy
+			TimingFlag flag(TimeClass::Computation);
 			cmd->runInternal(this, convertedArgs);
 		}
 		else
@@ -825,6 +1339,7 @@ namespace pilib
 			Distributable* dist = dynamic_cast<Distributable*>(cmd);
 			if (dist)
 			{
+				// NOTE: GlobalTimer continues in Overhead mode.
 				dist->runDistributed(*distributor, convertedArgs);
 			}
 			else
@@ -839,7 +1354,7 @@ namespace pilib
 			cout << "Operation took " << setprecision(3) << timer.getSeconds() << " s" << endl;
 
 		imageStore.clear();
-		stringStore.clear();
+		namedValueStore.clear();
 		distributedImageStore.clear();
 	}
 
@@ -851,7 +1366,7 @@ namespace pilib
 		trim(statement);
 
 		string cmd;
-		vector<string> args;
+		vector<tuple<ParsedArgType, string>> args;
 		parseFunctionCall(statement, cmd, args);
 
 		//cout << "Name: " << cmd << endl;
@@ -937,11 +1452,11 @@ namespace pilib
 		return keys;
 	}
 
-	std::vector<std::string> PISystem::getStringNames() const
+	std::vector<std::string> PISystem::getValueNames() const
 	{
 		std::vector<string> keys;
-		keys.reserve(strings.size());
-		for (auto const& item : strings)
+		keys.reserve(namedValues.size());
+		for (auto const& item : namedValues)
 		{
 			keys.push_back(item.first);
 		}
@@ -985,18 +1500,18 @@ namespace pilib
 		return images.at(name).get();
 	}
 
-	string* PISystem::getString(const string& name)
+	Value* PISystem::getValue(const string& name)
 	{
-		return strings.at(name).get();
+		return namedValues.at(name).get();
 	}
 
-	string* PISystem::getStringNoThrow(const string& name)
+	Value* PISystem::getValueNoThrow(const string& name)
 	{
 		return noThrow([&]
 			{
-				return getString(name);
+				return getValue(name);
 			},
-			"String with given name not found.");
+			"Value with given name not found.");
 	}
 
 	/**
@@ -1097,23 +1612,14 @@ namespace pilib
 		//}
 	}
 
-	void PISystem::replaceString(const std::string& name, std::shared_ptr<string> newValue)
+	void PISystem::replaceValue(const std::string& name, std::shared_ptr<Value> newValue)
 	{
-		if (strings.find(name) != strings.end())
-			strings.erase(name);
+		if (namedValues.find(name) != namedValues.end())
+			namedValues.erase(name);
 
 		if (newValue)
-			strings[name] = newValue;
+			namedValues[name] = newValue;
 	}
-
-	//void PISystem::replaceNamedValue(const string& name, ArgumentDataType dt, shared_ptr<ParamVariant> newValue)
-	//{
-	//	if (namedValues.find(name) != namedValues.end())
-	//		namedValues.erase(name);
-	//	
-	//	if (newValue)
-	//		namedValues[name] = make_pair(dt, newValue);
-	//}
 
 	/**
 	Get distributed image having given name.
@@ -1229,6 +1735,10 @@ namespace pilib
 		if (!running)
 		{
 			running = true;
+
+			// Reset global timer by calling start explicitly.
+			GlobalTimer::start();
+			TimingFlag flag(TimeClass::Overhead);
 
 			while (commandsWaiting.size() > 0)
 			{

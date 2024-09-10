@@ -519,7 +519,7 @@ namespace itl2
 	{
 		size_t changed = 0;
 		std::deque<Vec3c> points;
-		size_t counter = 0;
+		ProgressIndicator progress(6 * img.depth());
 
 		for(int direction = 1; direction <= 6; direction++)
 		{
@@ -556,7 +556,7 @@ namespace itl2
 						}
 					}
 
-					showThreadProgress(counter, 6 * img.depth());
+					progress.step();
 				}
 			}
 

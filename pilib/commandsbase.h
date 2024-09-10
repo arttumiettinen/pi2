@@ -21,6 +21,34 @@ namespace pilib
 	}
 
 	/**
+	Base class for commands that only read input image.
+	*/
+	template<typename input_t> class OneImageCommand : public Command
+	{
+	protected:
+		friend class CommandList;
+
+		OneImageCommand(const string& name, const string& help, const std::vector<CommandArgumentBase>& extraArgs = {}, const string& seeAlso = "") :
+			Command(name, help,
+				concat({
+					CommandArgument<Image<input_t> >(ParameterDirection::In, "image", "Image to process.")
+					}, extraArgs),
+				seeAlso
+			)
+		{
+		}
+
+	public:
+		virtual void run(std::vector<ParamVariant>& args) const override
+		{
+			Image<input_t>& in = *pop<Image<input_t>* >(args);
+			run(in, args);
+		}
+
+		virtual void run(const Image<input_t>& in, std::vector<ParamVariant>& args) const = 0;
+	};
+
+	/**
 	Base class for commands that do processing in-place.
 	*/
 	template<typename input_t> class OneImageInPlaceCommand : public Command
@@ -56,13 +84,14 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		TwoImageInputOutputCommand(const string& name, const string& help, const std::vector<CommandArgumentBase>& extraArgs = {}, const string& seeAlso = "") :
+		TwoImageInputOutputCommand(const string& name, const string& help, const std::vector<CommandArgumentBase>& extraArgs = {}, const string& seeAlso = "", const string& uiNotes = "") :
 			Command(name, help,
 				concat({
 					CommandArgument<Image<input_t> >(ParameterDirection::In, "input image", "Input image."),
 					CommandArgument<Image<output_t> >(ParameterDirection::Out, "output image", "Output image.")
 					}, extraArgs),
-				seeAlso
+				seeAlso,
+				uiNotes
 				)
 		{
 		}

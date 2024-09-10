@@ -249,12 +249,12 @@ namespace itl2
 		/**
 		Sets straight-through nodes to INVALID_VERTEX.
 		*/
-		void markStraightThroughNodes(bool reportProgress = true);
+		void markStraightThroughNodes();
 
 		/**
 		Sets isolated nodes to INVALID_VERTEX.
 		*/
-		void markIsolatedNodes(bool reportProgress = true);
+		void markIsolatedNodes();
 
 	public:
 
@@ -287,7 +287,7 @@ namespace itl2
 		Degree of a node is number of edges connected to it.
 		Loops that begin and end in the same node are counted as two edges (i.e. two connections to the node).
 		*/
-		void degree(std::vector<size_t>& deg, bool reportProgress) const;
+		void degree(std::vector<size_t>& deg) const;
 
 		/**
 		Finds parent nodes of node n and adds indices of edges from parent nodes to node n to the given list.
@@ -327,28 +327,28 @@ namespace itl2
 		/**
 		Invalidates all connections where node n is source or target, and adds new connections from parent nodes of n to child nodes of n.
 		*/
-		//void disconnect(size_t n, bool reportProgress);
+		//void disconnect(size_t n);
 
 		/**
 		Remove edges marked as invalid.
 		*/
-		void clean(bool reportProgress);
+		void clean();
 
 		/**
 		Removes connections to nodes with exactly 2 edges ("straight-through nodes").
 		Retains edges from a node to itself.
 		*/
-		void removeStraightThroughNodes(bool reportProgress = true);
+		void removeStraightThroughNodes();
 
 		/**
 		Removes all nodes that have no connections.
 		*/
-		//void removeIsolatedNodes(bool reportProgress = true);
+		//void removeIsolatedNodes();
 
 		/**
 		Remove nodes that have no connections and whose coordinates are nan.
 		*/
-		void removeInvalidNodes(bool reportProgress = true);
+		void removeInvalidNodes();
 
 		/**
 		Prunes the network.
@@ -356,7 +356,7 @@ namespace itl2
 		@param removeStraightThrough If set to true, all straight-through nodes (nodes with degree = 2) are removed after pruning. This operation might change the network even if no edges are pruned.
 		@param removeIsolated If set to true, all isolated nodes (nodes with degree = 0) will be removed after pruning. This operation might change the network even if no edges are pruned.
 		*/
-		void prune(float32_t maxLength, bool removeStraightThrough, bool removeIsolated, bool reportProgress = true);
+		void prune(float32_t maxLength, bool removeStraightThrough, bool removeIsolated);
 
 		/**
 		Convert network to a pair of images.
@@ -431,7 +431,7 @@ namespace itl2
 		/**
 		Removes all edges whose index is given in the array.
 		*/
-		void removeEdges(const std::vector<coord_t>& edgeIndices, bool removeStraightThrough, bool removeIsolated, bool reportProgress);
+		void removeEdges(const std::vector<coord_t>& edgeIndices, bool removeStraightThrough, bool removeIsolated);
 	};
 
 	namespace tests

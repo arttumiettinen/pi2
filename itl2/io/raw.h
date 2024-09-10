@@ -296,6 +296,10 @@ namespace itl2
 		*/
 		template<typename pixel_t, typename ReadPixel = decltype(raw::readPixel<pixel_t>)> void readNoParse(Image<pixel_t>& img, const std::string& filename, size_t bytesToSkip = 0, ReadPixel readPixel = raw::readPixel<pixel_t>)
 		{
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException(std::string("Not a file: ") + filename);
+
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
 			if(!in)
@@ -344,7 +348,7 @@ namespace itl2
 		@param fileDimensions Dimensions of the whole file.
 		@param fileStartPos Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlockNoParse(Image<pixel_t>& img, const std::string& filename, const Vec3c& fileDimensions, const Vec3c& fileStart, bool showProgressInfo = false, size_t bytesToSkip = 0)
+		template<typename pixel_t> void readBlockNoParse(Image<pixel_t>& img, const std::string& filename, const Vec3c& fileDimensions, const Vec3c& fileStart, size_t bytesToSkip = 0)
 		{
 			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= fileDimensions.x || fileStart.y >= fileDimensions.y || fileStart.z >= fileDimensions.z)
 				throw ITLException("Out of bounds start position in raw::readBlock.");
@@ -361,6 +365,9 @@ namespace itl2
 				return;
 			}
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+				throw ITLException(std::string("Not a file: ") + filename);
 
 			std::ifstream in(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 
@@ -377,6 +384,7 @@ namespace itl2
 			{
 				// Reading whole scan lines.
 				// We can read one slice per one read call.
+				ProgressIndicator progress(cEnd.z - cStart.z);
 				for (coord_t z = cStart.z; z < cEnd.z; z++)
 				{
 					size_t filePos = (z * fileDimensions.x * fileDimensions.y + cStart.y * fileDimensions.x + cStart.x) * sizeof(pixel_t);
@@ -387,16 +395,16 @@ namespace itl2
 
 					if (in.bad())
 					{
-						showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
 						throw ITLException(std::string("Failed to read (slice at a time) block of ") + filename + std::string(", ") + getStreamErrorMessage());
 					}
 
-					showProgress(z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+					progress.step();
 				}
 			}
 			else
 			{
 				// Reading partial scan lines.
+				ProgressIndicator progress(cEnd.z - cStart.z);
 				for (coord_t z = cStart.z; z < cEnd.z; z++)
 				{
 					for (coord_t y = cStart.y; y < cEnd.y; y++)
@@ -409,13 +417,11 @@ namespace itl2
 
 						if (in.bad())
 						{
-							showProgress(cEnd.z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
 							throw ITLException(std::string("Failed to read block of ") + filename + std::string(", ") + getStreamErrorMessage());
 						}
 					}
 
-					
-					showProgress(z - cStart.z, cEnd.z - cStart.z, showProgressInfo);
+					progress.step();
 				}
 			}
 
@@ -478,13 +484,13 @@ namespace itl2
 		@param filename The name of the file to read.
 		@param fileStartPos Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& fileStart, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, std::string filename, const Vec3c& fileStart)
 		{
 			Vec3c dimensions;
 			getInfoAndCheck<pixel_t>(filename, dimensions);
 
 			internals::expandRawFilename(filename);
-			readBlockNoParse(img, filename, dimensions, fileStart, showProgressInfo);
+			readBlockNoParse(img, filename, dimensions, fileStart);
 		}
 
 
@@ -499,13 +505,11 @@ namespace itl2
 		@param fileDimension Total dimensions of the entire output file.
 		@param imagePosition Position in the image where the block to be written starts.
 		@param blockDimensions Dimensions of the block of the source image to write.
-		@param showProgressInfo Set to true to show a progress bar.
 		*/
 		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename,
 			const Vec3c& filePosition, const Vec3c& fileDimensions,
 			const Vec3c& imagePosition,
-			const Vec3c& blockDimensions,
-			bool showProgressInfo = false)
+			const Vec3c& blockDimensions)
 		{
 			Vec3c fileStartPos = filePosition;
 			clamp(fileStartPos, Vec3c(0, 0, 0), fileDimensions);
@@ -529,7 +533,7 @@ namespace itl2
 
 			const pixel_t* pBuffer = img.getData();
 			{
-				ProgressIndicator prog(fileEndPos.z - fileStartPos.z, showProgressInfo);
+				ProgressIndicator prog(fileEndPos.z - fileStartPos.z);
 
 				for (coord_t z = fileStartPos.z; z < fileEndPos.z; z++)
 				{
@@ -585,11 +589,10 @@ namespace itl2
 		@param filename Name of file to write.
 		@param filePosition Position in the file to write to.
 		@param fileDimension Total dimensions of the output file.
-		@param showProgressInfo Set to true to show a progress bar.
 		*/
-		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions, bool showProgressInfo = false)
+		template<typename pixel_t> void writeBlock(const Image<pixel_t>& img, const std::string& filename, const Vec3c& filePosition, const Vec3c& fileDimensions)
 		{
-			writeBlock(img, filename, filePosition, fileDimensions, Vec3c(0, 0, 0), img.dimensions(), showProgressInfo);
+			writeBlock(img, filename, filePosition, fileDimensions, Vec3c(0, 0, 0), img.dimensions());
 		}
 
 		/**

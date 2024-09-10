@@ -22,8 +22,8 @@ namespace itl2
 		Vec2d pdot = p - c;
 
 		// Rotate pdot such that ellipsoid axes are aligned with coordinate axes
-		Vec2d u1 = toCartesian(1.0, phi1);
-		Vec2d u2 = toCartesian(1.0, phi1 + PI / 2.0);
+		Vec2d u1 = polarToCartesian(1.0, phi1);
+		Vec2d u2 = polarToCartesian(1.0, phi1 + PI / 2.0);
 
 		Matrix3x3d R(u1.x, u2.x, 0,
 			u1.y, u2.y, 0,
@@ -55,9 +55,9 @@ namespace itl2
 		Vec3d pdot = p - c;
 
 		// Rotate pdot such that ellipsoid axes are aligned with coordinate axes
-		Vec3d u1 = toCartesian(1.0, phi1, theta1);
-		Vec3d u2 = toCartesian(1.0, phi2, theta2);
-		Vec3d u3 = toCartesian(1.0, phi3, theta3);
+		Vec3d u1 = sphericalToCartesian(1.0, phi1, theta1);
+		Vec3d u2 = sphericalToCartesian(1.0, phi2, theta2);
+		Vec3d u3 = sphericalToCartesian(1.0, phi3, theta3);
 
 		Matrix3x3d R(u1.x, u2.x, u3.x,
 					 u1.y, u2.y, u3.y,
@@ -172,8 +172,8 @@ namespace itl2
 			double phi1, double theta1,
 			double phi2, double theta2) :
 			Ellipsoid(center, axes,
-				toCartesian(1.0, phi1, theta1),
-				toCartesian(1.0, phi2, theta2))
+				sphericalToCartesian(1.0, phi1, theta1),
+				sphericalToCartesian(1.0, phi2, theta2))
 		{
 		}
 

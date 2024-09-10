@@ -171,6 +171,7 @@ namespace itl2
 
 		// Process all pixels in the image
 		size_t counter = 0;
+		ProgressIndicator progress(in.depth());
 		#pragma omp parallel for if(!omp_in_parallel() && in.pixelCount() >= PARALLELIZATION_THRESHOLD)
 		for (coord_t cz = 0; cz < in.depth(); cz++)
 		{
@@ -213,7 +214,7 @@ namespace itl2
 				}
 			}
 
-			showThreadProgress(counter, in.depth());
+			progress.step();
 		}
 	}
 

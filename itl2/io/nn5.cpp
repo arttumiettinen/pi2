@@ -156,6 +156,25 @@ namespace itl2
 		{
 			void writeMetadata(const std::string& path, const Vec3c& dimensions, ImageDataType dataType, const Vec3c& chunkSize, NN5Compression compression)
 			{
+				// Do not re-write the data if it does not change. This is the case
+				// in concurrent writeBlock processing and there the metadata file must not be changed.
+				bool oldIsNativeByteOrder;
+				Vec3c oldDimensions;
+				ImageDataType oldDataType;
+				Vec3c oldChunkSize;
+				NN5Compression oldCompression;
+				string dummyReason;
+				if (getInfo(path, oldDimensions, oldIsNativeByteOrder, oldDataType, oldChunkSize, oldCompression, dummyReason))
+				{
+					if (oldDimensions == dimensions &&
+						oldIsNativeByteOrder == true &&
+						oldDataType == dataType &&
+						oldChunkSize == chunkSize &&
+						oldCompression == compression)
+						// No changes, so don't write a new file.
+						return;
+				}
+
 				nlohmann::json j;
 				j["Dimensions"][0] = dimensions[0];
 				j["Dimensions"][1] = dimensions[1];
@@ -274,7 +293,7 @@ namespace itl2
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
 
 			size_t unsafeChunkCount = 0;
-			forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(imageDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					string chunkFolder = internals::chunkFolder(path, getDimensionality(imageDimensions), chunkIndex);
 					fs::create_directories(chunkFolder);
@@ -327,7 +346,7 @@ namespace itl2
 
 			size_t dimensionality = getDimensionality(imageDimensions);
 			vector<Vec3c> result;
-			forAllChunks(imageDimensions, chunkSize, false, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(imageDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						result.push_back(chunkIndex);
@@ -460,7 +479,7 @@ namespace itl2
 			internals::endConcurrentWrite(path, imageDimensions, dataType, chunkSize, compression, chunkIndex);
 		}
 
-		void endConcurrentWrite(const std::string& path, bool showProgressInfo)
+		void endConcurrentWrite(const std::string& path)
 		{
 			bool isNativeByteOrder;
 			Vec3c fileDimensions;
@@ -472,7 +491,7 @@ namespace itl2
 				throw ITLException(string("Unable to read nn5 dataset: ") + reason);
 			size_t dimensionality = getDimensionality(fileDimensions);
 
-			forAllChunks(fileDimensions, chunkSize, showProgressInfo, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(fileDimensions, chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
 				{
 					if(needsEndConcurrentWrite(path, dimensionality, chunkIndex))
 						internals::endConcurrentWrite(path, fileDimensions, dataType, chunkSize, compression, chunkIndex);
@@ -532,11 +551,11 @@ namespace itl2
 				cout << "Testing chunk size " << chunkSize << ", compression = " << toString(compression) << endl;
 
 				// Write
-				nn5::write(img, "./nn5_testimage", chunkSize, compression, true);
+				nn5::write(img, "./nn5_testimage", chunkSize, compression);
 
 				// Read
 				Image<uint16_t> read;
-				nn5::read(read, "./nn5_testimage", true);
+				nn5::read(read, "./nn5_testimage");
 
 				raw::writed(read, "./nn5_results/read_from_disk");
 
@@ -752,7 +771,7 @@ namespace itl2
 					vector<io::DistributedImageProcess> processes;
 
 					Vec3c processBlockSize(30, 30, 30);
-					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
@@ -793,13 +812,13 @@ namespace itl2
 					vector<io::DistributedImageProcess> processes;
 
 					Vec3c processBlockSize(30, 31, 32);
-					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
 						});
 
 					nn5::startConcurrentWrite(img, entireImageFile, chunkSize, compression, processes);
-					forAllChunks(dimensions, processBlockSize, true, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
 							nn5::writeBlock(img, entireImageFile, chunkSize, compression, processBlockStart, dimensions, processBlockStart, processBlockSize);
 						});

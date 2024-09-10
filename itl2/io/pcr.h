@@ -61,7 +61,7 @@ namespace itl2
 		@param filename Path to the file to read.
 		@param start Start location of the read. The size of the image defines the size of the block that is read.
 		*/
-		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start, bool showProgressInfo = false)
+		template<typename pixel_t> void readBlock(Image<pixel_t>& img, const std::string& filename, const Vec3c& start)
 		{
 			Vec3c dimensions;
 			ImageDataType dataType;
@@ -74,7 +74,7 @@ namespace itl2
 			if (dataType != imageDataType<pixel_t>())
 				throw ITLException(string("Pixel data type in the PCR file is ") + toString(dataType) + ", but image data type is " + toString(imageDataType<pixel_t>()) + ".");
 
-			raw::readBlockNoParse(img, datafile, dimensions, start, showProgressInfo);
+			raw::readBlockNoParse(img, datafile, dimensions, start);
 
 			if (isBigEndianFile != isBigEndian())
 				swapByteOrder(img);

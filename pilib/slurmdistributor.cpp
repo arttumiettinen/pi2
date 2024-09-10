@@ -8,8 +8,6 @@
 #include <algorithm>
 #include "filesystem.h"
 
-#include <random>
-
 using namespace itl2;
 using namespace std;
 
@@ -19,17 +17,7 @@ namespace pilib
 
 	SLURMDistributor::SLURMDistributor(PISystem* system) : Distributor(system), allowedMem(0)
 	{
-		// Create unique name for this distributor
-		std::random_device dev;
-		std::mt19937 rng(dev());
-		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
-		myName = itl2::toString(dist(rng));
-
-		fs::path configPath = getConfigDirectory() / "slurm_config.txt";
-			
-		//cout << "Reading settings from " << configPath << endl;
-
-		INIReader reader(configPath.string());
+		INIReader reader = Distributor::readConfig("slurm_config");
 
 		extraArgsFastJobsSBatch = reader.get<string>("extra_args_fast_jobs_sbatch", "");
 		extraArgsNormalJobsSBatch = reader.get<string>("extra_args_normal_jobs_sbatch", "");
@@ -44,8 +32,10 @@ namespace pilib
 		squeueCommand = reader.get<string>("squeue_command", "squeue");
 		scancelCommand = reader.get<string>("scancel_command", "scancel");
 		sinfoCommand = reader.get<string>("sinfo_command", "sinfo");
+		progressPollInterval = reader.get<int>("progress_poll_interval", 1000);
 
-		readSettings(reader);
+		if (progressPollInterval < 1)
+			progressPollInterval = 1;
 		
 		allowedMemory(mem);
 	}
@@ -88,11 +78,6 @@ namespace pilib
 		cout << "Memory per node in the SLURM cluster: " << bytesToString((double)allowedMem) << endl;
 	}
 
-	string SLURMDistributor::makeJobName(size_t jobIndex) const
-	{
-		return "pi2-" + itl2::toString<size_t>(jobIndex) + "-" + myName;
-	}
-	
 	string SLURMDistributor::makeInputName(size_t jobIndex) const
 	{
 	    return "./slurm-io-files/" + makeJobName(jobIndex) + "-in.txt";
@@ -282,6 +267,74 @@ namespace pilib
 		return (int)std::count(line.begin(), line.end(), '=') * 10;
 	}
 
+	double parseSlurmTime(string str)
+	{
+		try
+		{
+			// Parse from format [days-]hours:minutes:seconds
+			int days = 0;
+			size_t dashPos = str.find('-');
+			if (dashPos != string::npos)
+			{
+				string daysStr = str.substr(0, dashPos);
+				str = str.substr(dashPos + 1);
+
+				days = fromString<int32_t>(daysStr);
+			}
+
+			size_t colonPos = str.find(':');
+			if (colonPos == string::npos)
+				return -1;
+			string hoursStr = str.substr(0, colonPos);
+			str = str.substr(colonPos + 1);
+
+			colonPos = str.find(':');
+			if (colonPos == string::npos)
+				return -1;
+			string minsStr = str.substr(0, colonPos);
+			string secsStr = str.substr(colonPos + 1);
+
+			int hours = fromString<int32_t>(hoursStr);
+			int mins = fromString<int32_t>(minsStr);
+			int secs = fromString<int32_t>(secsStr);
+
+			return days * 24 * 60 * 60 + hours * 60 * 60 + mins * 60 + secs;
+		}
+		catch (ITLException)
+		{
+			// Invalid conversion. The input is invalid. Return -1.
+			return -1;
+		}
+	}
+
+	double parseRawTime(const string& str)
+	{
+		try
+		{
+			return fromString<int32_t>(str);
+		}
+		catch (ITLException)
+		{
+			// Invalid conversion. The input is invalid. Return -1.
+			return -1;
+		}
+	}
+
+	tuple<double, double> SLURMDistributor::getJobTimes(size_t jobIndex) const
+	{
+		string slurmId = itl2::toString(get<0>(submittedJobs[jobIndex]));
+
+		string result = execute("sacct", string("-X --noheader -o reserved,elapsedraw -j ") + slurmId);
+		trim(result);
+
+		vector<string> parts = split(result, false, ' ');
+		
+		if (parts.size() != 2)
+			return make_tuple(-1.0, -1.0); // Output is invalid, unable to parse it.
+
+		return make_tuple(parseSlurmTime(parts[0]), parseRawTime(parts[1]));
+	}
+
 	vector<int> SLURMDistributor::getJobProgress() const
 	{
 		vector<int> progress;
@@ -417,7 +470,7 @@ namespace pilib
 			bool done = false;
 			do
 			{
-				itl2::sleep(500);
+				itl2::sleep(progressPollInterval);
 
 				vector<int> progress = getJobProgress();
 
@@ -495,9 +548,18 @@ namespace pilib
 				size_t doneCount = 0;
 				for (size_t n = 0; n < progress.size(); n++)
 				{
-					//if (progress[n] == JOB_FAILED || progress[n] >= 100)
 					if (progress[n] >= 100)
+					{
 						doneCount++;
+
+						if (jobTiming.size() == progress.size())
+						{
+							if (get<0>(jobTiming[n]) < -1 || get<1>(jobTiming[n]) < -1)
+							{
+								jobTiming[n] = getJobTimes(n);
+							}
+						}
+					}
 				}
 
 				done = doneCount == progress.size();

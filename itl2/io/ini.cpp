@@ -105,8 +105,9 @@ int ini_parse_file(FILE* file,
 #endif
         start = lskip(rstrip(start));
 
-        if (*start == ';' || *start == '#') {
+        if (*start == ';' || *start == '#' || *start == '!') {
             /* Per Python ConfigParser, allow '#' comments at start of line */
+            // NOTE: ! comment character added for PyHST .vol.info support.
         }
 #if INI_ALLOW_MULTILINE
         else if (*prev_name && *start && start > line) {

@@ -23,7 +23,7 @@ Input image.
 output image [output]
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
 
 Output image.
 
@@ -41,7 +41,7 @@ binning type [input]
 
 **Default value:** mean
 
-Name of binning type to be performed. Currently 'mean', 'min' and 'max' are supported.
+Name of binning type to be performed. Currently 'mean', 'sum', 'min' and 'max' are supported.
 
 See also
 --------

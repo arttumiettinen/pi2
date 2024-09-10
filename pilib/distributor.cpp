@@ -14,6 +14,8 @@
 #include <tuple>
 #include "filesystem.h"
 #include "timing.h"
+#include <random>
+#include <regex>
 
 using namespace std;
 
@@ -146,19 +148,97 @@ namespace pilib
 		showSubmittedScripts(false),
 		allowDelaying(false)
 	{
-		configDir = findPi2().remove_filename();
-		piCommand = "\"" + findPi2().string() + "\"";
+		// Create unique name for this distributor
+		std::random_device dev;
+		std::mt19937 rng(dev());
+		std::uniform_int_distribution<std::mt19937::result_type> dist(0, 10000);
+		myName = itl2::toString(dist(rng));
+
+		fs::path piPath = findPi2();
+		piCommand = "\"" + piPath.string() + "\"";
+		configDir = piPath.remove_filename(); // NOTE: remove_filename modifies the original path and returns *this!
 	}
 
+	/**
+	Try to find cluster-specific configuration in format
+	[template]_[hostname regexp].txt
+	For example,
+	slurm_config_puhti-any.bullx.txt
+	slurm_config_ra-any.psi.ch.txt
+	String any will be replaced by *, as in Windows * is now allowed in file names.
+	*/
+	string selectConfigFile(const fs::path& directory, const string& filenameTemplate)
+	{
+		// Algorithm:
+		// Get host name.
+		// Get all files in the source dir that match "template_(*).txt"
+		// For each of them, extract (*), and check if it matches the hostname.
+		// If yes, we have found the correct settings file.
+		// If none matches, check if generic template.txt exists.
+		// If yes, we have found the correct settings file.
+		// If not, try other directory.
+
+		string hostname = getHostname();
+		vector<string> files = buildFileList((directory / (filenameTemplate + "_*.txt")).string());
+		for (string file : files)
+		{
+            fs::path fp = file;
+
+            fs::path directory = fp;
+            directory.remove_filename();
+            fs::path filename = fp.filename();
+
+			string fs = std::regex_replace(filename.string(), std::regex("any"), "*");
+			string exp = fs.substr(filenameTemplate.length() + 1, fs.length() - string(".txt").length() - filenameTemplate.length() - 1);
+
+			if (matches(hostname, exp))
+				return file;
+		}
+
+		if (fs::exists(directory / "slurm_config.txt"))
+			return (directory / "slurm_config.txt").string();
+
+		return "";
+	}
+
+	INIReader Distributor::readConfig(const std::string& filenameTemplate)
+	{
+		// First try to search config file from the current directory.
+		fs::path configPath = selectConfigFile(".", filenameTemplate);
+		if (configPath != "")
+		{
+			INIReader reader(configPath.string());
+			readSettings(reader);
+			return reader;
+		}
+
+		// Then try a global config file from the installation directory.
+		configPath = selectConfigFile(configDir, filenameTemplate);
+		INIReader reader(configPath.string());
+		readSettings(reader);
+		return reader;
+	}
 
 	void Distributor::readSettings(INIReader& reader)
 	{
+		cout << "Reading distributed processing settings from " << reader.getFilename() << endl;
 		piCommand = reader.get<string>("pi2_command", piCommand);
 		showSubmittedScripts = reader.get<bool>("show_submitted_scripts", false);
 		allowDelaying = reader.get<bool>("allow_delaying", true);
+		useNN5 = reader.get<bool>("use_nn5", true);
 		chunkSize(reader.get<Vec3c>("chunk_size", nn5::DEFAULT_CHUNK_SIZE));
 		maxSubmittedJobCount = reader.get<size_t>("max_parallel_submit_count", 0);
 		promoteThreshold = reader.get<size_t>("promote_threshold", 3);
+	}
+
+	string Distributor::makeJobName(size_t jobIndex) const
+	{
+		return "pi2-" + itl2::toString<size_t>(jobIndex) + "-" + myName;
+	}
+
+	string Distributor::makeTimingName(size_t jobIndex) const
+	{
+		return "./job-timing/" + makeJobName(jobIndex) + "-timing.txt";
 	}
 
 
@@ -201,28 +281,16 @@ namespace pilib
 		out_width = out_right - out_left;
 	}
 
-	vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > determineBlocksFromBlockSize(size_t refIndex, const Vec3c& margin, const Vec3c& blockSize, const Command* command, vector<ParamVariant>& args, const vector<ParamVariant>& argsForGetCorrespondingBlock)
+
+	vector<vector<DistributionChunk> > determineBlocksFromBlockSize(size_t refIndex, const Vec3c& margin, const Vec3c& blockSize, const Command* command, vector<ParamVariant>& args, const vector<ParamVariant>& argsForGetCorrespondingBlock)
 	{
 		// allBlocks[parameter index][block index] = tuple<read start, read size, output position in file, output start position in image, output region size>
-		vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > allBlocks(args.size(), vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> >());
+		vector<vector<DistributionChunk> > allBlocks(args.size(), vector<DistributionChunk>());
 
 		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
 		Vec3c refDims = img->dimensions();
 
-		//for (coord_t iz = 0; iz < blockCounts.z; iz++)
-		//{
-		//	for (coord_t iy = 0; iy < blockCounts.y; iy++)
-		//	{
-		//		for (coord_t ix = 0; ix < blockCounts.x; ix++)
-		//		{
-					//// Select a block from reference image
-					//Vec3c refStart(ix * refSize.x, iy * refSize.y, iz * refSize.z);
-
-					//// ceiling in refSize calculation may cause bad blocks, skip those
-					//if (refStart.x >= refDims.x || refStart.y >= refDims.y || refStart.z >= refDims.z)
-					//	break;
-
-		forAllChunks(refDims, blockSize, false, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
+		forAllChunks(refDims, blockSize, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
 			{
 
 				// Add margins to the reference block
@@ -260,12 +328,9 @@ namespace pilib
 						dynamic_cast<const Distributable&>(*command).getCorrespondingBlock(argsForGetCorrespondingBlock, n, readStart, readSize, writeFilePos, writeImPos, writeSize);
 					}
 
-					allBlocks[n].push_back(make_tuple(readStart, readSize, writeFilePos, writeImPos, writeSize));
+					allBlocks[n].push_back(DistributionChunk(readStart, readSize, writeFilePos, writeImPos, writeSize, chunkIndex));
 				}
 			});
-		//		}
-		//	}
-		//}
 
 		return allBlocks;
 	}
@@ -287,7 +352,7 @@ namespace pilib
 	position where image read operation starts, size of block to read, position in file where output data should be written,
 	position in the image where output data region starts, and size of block to write.
 	*/
-	vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > determineBlocks(size_t refIndex, const Vec3c& margin, const Vec3c& blockCounts, const Command* command, vector<ParamVariant>& args, const vector<ParamVariant>& argsForGetCorrespondingBlock)
+	vector<vector<DistributionChunk> > determineBlocks(size_t refIndex, const Vec3c& margin, const Vec3c& blockCounts, const Command* command, vector<ParamVariant>& args, const vector<ParamVariant>& argsForGetCorrespondingBlock)
 	{
 		Vec3c refSize = blockSizeFromBlockCounts(refIndex, blockCounts, args);
 		return determineBlocksFromBlockSize(refIndex, margin, refSize, command, args, argsForGetCorrespondingBlock);
@@ -297,7 +362,7 @@ namespace pilib
 	Calculates memory requirement given image blocks and command.
 	allBlocks[parameter index][block index] = tuple<read start, read size, output position in file, output start position in image, output region size>
 	*/
-	size_t calcRequiredMemory(const vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > >& allBlocks, const Command* command)
+	size_t calcRequiredMemory(const vector<vector<DistributionChunk> >& allBlocks, const Command* command)
 	{
 		// Calculate pixel size of each arg (zero for non-image args)
 		vector<size_t> pixelSizes;
@@ -318,7 +383,7 @@ namespace pilib
 			for (size_t n = 0; n < blocks.size(); n++)
 			{
 				const auto& tup = blocks[n];
-				Vec3c readSize = get<1>(tup);
+				Vec3c readSize = tup.readSize;
 				blockMems[n] += readSize.x * readSize.y * readSize.z * pixelSizes[parami];
 			}
 		}
@@ -330,13 +395,13 @@ namespace pilib
 	/**
 	Calculates size of largest block in the given block list in pixels.
 	*/
-	size_t maxBlockSize(const vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> >& blocks)
+	size_t maxBlockSize(const vector<DistributionChunk>& blocks)
 	{
 		size_t maxSize = 0;
 		for (size_t n = 0; n < blocks.size(); n++)
 		{
 			const auto& tup = blocks[n];
-			Vec3c readSize = get<1>(tup);
+			Vec3c readSize = tup.readSize;
 			size_t size = readSize.x * readSize.y * readSize.z;
 			maxSize = std::max(maxSize, size);
 		}
@@ -423,7 +488,7 @@ namespace pilib
 		set<DistributedImageBase*> inputImages;
 		set<DistributedImageBase*> outputImages;
 		JobType jobType;
-		map<DistributedImageBase*, vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > blocksPerImage;
+		map<DistributedImageBase*, vector<DistributionChunk> > blocksPerImage;
 		size_t memoryReq;
 		try
 		{
@@ -582,6 +647,35 @@ namespace pilib
 		return result;
 	}
 
+	/**
+	Finds third distribution direction.
+	*/
+	size_t getDistributionDirection3(const vector<Delayed>& delayedCommands)
+	{
+		if (delayedCommands.size() <= 0)
+			throw logic_error("No commands.");
+
+		size_t result = delayedCommands[0].getDistributionDirection3();
+
+		if (result >= numeric_limits<size_t>::max())
+			return numeric_limits<size_t>::max();
+
+		for (size_t n = 1; n < delayedCommands.size(); n++)
+		{
+			size_t dir = delayedCommands[n].getDistributionDirection3();
+
+			// Any command that does not allow distribution in second direction disables multi-direction distribution.
+			if (dir >= numeric_limits<size_t>::max())
+				return numeric_limits<size_t>::max();
+
+			// If commands have different allowed second directions, we disable second direction altogether.
+			if (dir != result)
+				return numeric_limits<size_t>::max();
+		}
+
+		return result;
+	}
+
 	void Distributor::flush()
 	{
 		runDelayedCommands();
@@ -608,7 +702,7 @@ namespace pilib
 	}
 
 
-	void Distributor::determineDistributionConfiguration(Vec3c& margin, set<DistributedImageBase*>& inputImages, set<DistributedImageBase*>& outputImages, JobType& jobType, map<DistributedImageBase*, vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > >& blocksPerImage, size_t& memoryReq)
+	void Distributor::determineDistributionConfiguration(Vec3c& margin, set<DistributedImageBase*>& inputImages, set<DistributedImageBase*>& outputImages, JobType& jobType, map<DistributedImageBase*, vector<DistributionChunk> >& blocksPerImage, size_t& memoryReq)
 	{
 		if (delayedCommands.size() <= 0)
 			return;
@@ -637,20 +731,29 @@ namespace pilib
 		// Find distribution directions
 		size_t distributionDirection1 = getDistributionDirection1(delayedCommands);
 		size_t distributionDirection2 = getDistributionDirection2(delayedCommands);
+		size_t distributionDirection3 = getDistributionDirection3(delayedCommands);
 
 		if (distributionDirection1 > 2)
 			throw logic_error("Invalid distribution direction.");
 
 		if (distributionDirection2 == distributionDirection1)
-			throw logic_error("Both distribution directions can't be the same.");
+			throw logic_error("Distribution directions 1 and 2 can't be the same.");
+
+		if (distributionDirection3 <= 2 &&
+			(distributionDirection3 == distributionDirection1 || distributionDirection3 == distributionDirection2))
+			throw logic_error("Distribution direction 3 can't be the same than 1 or 2.");
 
 		// If we need to distribute in two directions, check that all output images support it.
 		// Otherwise distribution is not allowed as e.g. sequences can't be written to in parallel.
 		bool distributionDirection2Allowed = distributionDirection2 <= 2;
-		if (distributionDirection2Allowed)
+		bool distributionDirection3Allowed = distributionDirection2Allowed && distributionDirection3 <= 2;
+		if (distributionDirection2Allowed || distributionDirection3Allowed)
 		{
-			if(!canWriteArbitaryBlocks(outputImages))
+			if (!canWriteArbitaryBlocks(outputImages))
+			{
 				distributionDirection2Allowed = false;
+				distributionDirection3Allowed = false;
+			}
 		}
 
         size_t preferredSubdivisions = getPreferredSubdivisions(delayedCommands);
@@ -730,8 +833,8 @@ namespace pilib
 				
 				refSize = temp;
 
-				// blocksPerParameter[parameter index][block index] = tuple<block definition>
-				vector<vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > blocksPerParameter = determineBlocksFromBlockSize(d.getRefIndex(), margin, refSize, d.getCommand(), d.getArgs(), d.getArgsForGetCorrespondingBlock());
+				// blocksPerParameter[parameter index][block index] = <block definition>
+				vector<vector<DistributionChunk> > blocksPerParameter = determineBlocksFromBlockSize(d.getRefIndex(), margin, refSize, d.getCommand(), d.getArgs(), d.getArgsForGetCorrespondingBlock());
 
 
 				// Store block size for each image.
@@ -787,7 +890,8 @@ namespace pilib
 			{
 				// TODO: This condition is a bit "hacky" and will probably fail some time.
 				if ((img->dimensions()[distributionDirection1] > 1 && subDivisions[distributionDirection1] >= img->dimensions()[distributionDirection1]) ||
-					(distributionDirection2 <= 2 && img->dimensions()[distributionDirection2] > 1 && subDivisions[distributionDirection2] >= img->dimensions()[distributionDirection2])
+					(distributionDirection2Allowed && img->dimensions()[distributionDirection2] > 1 && subDivisions[distributionDirection2] >= img->dimensions()[distributionDirection2]) ||
+					(distributionDirection3Allowed && img->dimensions()[distributionDirection3] > 1 && subDivisions[distributionDirection3] >= img->dimensions()[distributionDirection3])
 					)
 				{
 					throw ITLException(string("Unable to find suitable subdivision. The smallest possible blocks of the input and output images require ") + bytesToString((double)memoryReq) + " of memory, but only " + bytesToString((double)allowedMemory()) + " is available for a single process. See also cluster configuration file max_memory setting.");
@@ -799,10 +903,11 @@ namespace pilib
 			// The logic below:
 			// If there is preferredBlockSizeMultiple:
 			// 	Divide in distributionDirection1 until refSize[distributionDirection1] <= preferredBlockSizeMultiple[distributionDirection1]
-			// 	Then divide in distributionDirection2 if it is available, until refSize[distributionDirection1] <= preferredBlockSizeMultiple[distributionDirection1]
-			//	Then divide the direction that has less subdivisions.
+			// 	Then divide in distributionDirection2 if it is available, until refSize[distributionDirection2] <= preferredBlockSizeMultiple[distributionDirection2]
+			//	Then divide in distributionDirection3 if it is available, until refSize[distributionDirection3] <= preferredBlockSizeMultiple[distributionDirection3]
+			//	Then divide the direction that has the least subdivisions.
 			// else:
-			//	Divide in distributionDirection1 and 2 like before
+			//	Divide in distributionDirection1 and 2 and 3 like before
 			// => Potentially less unsafe blocks than with just the "else" part.
 
 			Vec3c oldSubDivisions = subDivisions;
@@ -819,6 +924,16 @@ namespace pilib
 						if (refSize[distributionDirection2] > preferredBlockSizeMultiple[distributionDirection2])
 						{
 							subDivisions[distributionDirection2]++;
+						}
+						else
+						{
+							if (distributionDirection3Allowed)
+							{
+								if (refSize[distributionDirection3] > preferredBlockSizeMultiple[distributionDirection3])
+								{
+									subDivisions[distributionDirection3]++;
+								}
+							}
 						}
 					}
 				}
@@ -846,6 +961,7 @@ namespace pilib
 						subDivisions[distributionDirection2]++;
 					else
 						subDivisions[distributionDirection1]++;
+					// TODO: Subdivide in the third direction, too.
 				}
 			}
 
@@ -1024,7 +1140,7 @@ namespace pilib
 		set<DistributedImageBase*> inputImages;
 		set<DistributedImageBase*> outputImages;
 		JobType jobType;
-		map<DistributedImageBase*, vector<tuple<Vec3c, Vec3c, Vec3c, Vec3c, Vec3c> > > blocksPerImage;
+		map<DistributedImageBase*, vector<DistributionChunk> > blocksPerImage;
 		size_t memoryReq;
 		determineDistributionConfiguration(margin, inputImages, outputImages, jobType, blocksPerImage, memoryReq);
 
@@ -1040,8 +1156,8 @@ namespace pilib
 				// This is InOut image
 
 				// TODO: NN5 should be able to support concurrent reading and writing. Is there some bug somewhere?
-				if (img->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
-					img->currentWriteTargetType() == DistributedImageStorageType::Zarr ||
+				if (//img->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
+					//img->currentWriteTargetType() == DistributedImageStorageType::Zarr ||
 					margin != Vec3c(0, 0, 0))
 				{
 					if (img->currentReadSource() == img->currentWriteTarget())
@@ -1049,6 +1165,15 @@ namespace pilib
 						img->newWriteTarget();
 					}
 				}
+				// TODO: This seems to work in tests, too, but is not more efficient unless lineskeleton
+				// etc commands are altered such that they can skip unnecessary (copy-only) jobs.
+				//if(img->currentWriteTargetType() != DistributedImageStorageType::NN5 && margin != Vec3c(0, 0 ,0))
+				//{
+				//	if (img->currentReadSource() == img->currentWriteTarget())
+				//	{
+				//		img->newWriteTarget();
+				//	}
+				//}
 			}
 		}
 		//}
@@ -1112,8 +1237,8 @@ namespace pilib
 			// Image read commands
 			for(DistributedImageBase* img : inputImages)
 			{
-				Vec3c readStart = get<0>(blocksPerImage[img][i]);
-				Vec3c readSize = get<1>(blocksPerImage[img][i]);
+				Vec3c readStart = blocksPerImage[img][i].readStart;
+				Vec3c readSize = blocksPerImage[img][i].readSize;
 				script << img->emitReadBlock(readStart, readSize, true);
 			}
 
@@ -1122,8 +1247,8 @@ namespace pilib
 			{
 				if (inputImages.find(img) == inputImages.end())
 				{
-					Vec3c readStart = get<0>(blocksPerImage[img][i]);
-					Vec3c readSize = get<1>(blocksPerImage[img][i]);
+					Vec3c readStart = blocksPerImage[img][i].readStart;
+					Vec3c readSize = blocksPerImage[img][i].readSize;
 					script << img->emitReadBlock(readStart, readSize, false);
 				}
 			}
@@ -1137,12 +1262,13 @@ namespace pilib
 				size_t refIndex = delayedCommands[cmdi].getRefIndex();
 
 				DistributedImageBase* refImage = getDistributedImage(args[refIndex]);
-				Vec3c readStart = get<0>(blocksPerImage[refImage][i]);
-				Vec3c readSize = get<1>(blocksPerImage[refImage][i]);
-				Vec3c writeFilePos = get<2>(blocksPerImage[refImage][i]);
-				Vec3c writeImPos = get<3>(blocksPerImage[refImage][i]);
-				Vec3c writeSize = get<4>(blocksPerImage[refImage][i]);
-				if (delayedCommands[cmdi].needsToRun(readStart, readSize, writeFilePos, writeImPos, writeSize, i))
+				Vec3c readStart = blocksPerImage[refImage][i].readStart;
+				Vec3c readSize = blocksPerImage[refImage][i].readSize;
+				Vec3c writeFilePos = blocksPerImage[refImage][i].writeFilePos;
+				Vec3c writeImPos = blocksPerImage[refImage][i].writeImPos;
+				Vec3c writeSize = blocksPerImage[refImage][i].writeSize;
+				Vec3c chunkIndex3 = blocksPerImage[refImage][i].chunkIndex3;
+				if (delayedCommands[cmdi].needsToRun(readStart, readSize, writeFilePos, writeImPos, writeSize, i, chunkIndex3))
 				{
 					hasCommandsToRun = true;
 					script << command->name() << "(";
@@ -1160,6 +1286,10 @@ namespace pilib
 						{
 							argVal = (coord_t)i;
 						}
+						else if (argDef.dataType() == parameterType<BLOCK_INDEX3_ARG_TYPE>() && argDef.name() == BLOCK_INDEX3_ARG_NAME)
+						{
+							argVal = chunkIndex3;
+						}
 
 						script << "\"" << argumentToString(argDef, argVal) << "\"";
 						if (n < args.size() - 1)
@@ -1175,9 +1305,9 @@ namespace pilib
 				// Only write if the image is still visible from the main PI system object
 				if (piSystem->isDistributedImage(img))
 				{
-					Vec3c writeFilePos = get<2>(blocksPerImage[img][i]);
-					Vec3c writeImPos = get<3>(blocksPerImage[img][i]);
-					Vec3c writeSize = get<4>(blocksPerImage[img][i]);
+					Vec3c writeFilePos = blocksPerImage[img][i].writeFilePos;
+					Vec3c writeImPos = blocksPerImage[img][i].writeImPos;
+					Vec3c writeSize = blocksPerImage[img][i].writeSize;
 
 					// Only write if writing is requested by the command.
 					if(writeSize.min() > 0)
@@ -1214,8 +1344,7 @@ namespace pilib
 			}
 		}
 
-		Timer timer;
-		timer.start();
+		TimingFlag timingFlag(TimeClass::WritePreparation);
 
 		// Prepare images for concurrent writing
 		map<DistributedImageBase*, vector<io::DistributedImageProcess>> distributedImageProcesses;
@@ -1230,17 +1359,19 @@ namespace pilib
 					if (outputImages.find(img) != outputImages.end())
 					{
 						const auto& valueList = item.second;
-						Vec3c readStart = get<0>(valueList[i]);
-						Vec3c readSize = get<1>(valueList[i]);
-						Vec3c writeFilePos = get<2>(valueList[i]);
-						Vec3c writeImPos = get<3>(valueList[i]);
-						Vec3c writeSize = get<4>(valueList[i]);
+						Vec3c readStart = valueList[i].readStart;
+						Vec3c readSize = valueList[i].readSize;
+						Vec3c writeFilePos = valueList[i].writeFilePos;
+						Vec3c writeImPos = valueList[i].writeImPos;
+						Vec3c writeSize = valueList[i].writeSize;
 						if (img->currentReadSource() == img->currentWriteTarget() &&
 							inputImages.find(img) != inputImages.end())
 						{
 							// We are reading and writing the same file.
 							// AND the image is used as input and output.
 							// => The DistributedImageProcess must contain both read and write region.
+							//cout << "DEBUG: DistributedImageProcess will contain both read and write region." << endl;
+
 							distributedImageProcesses[img].push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
 						else
@@ -1279,7 +1410,7 @@ namespace pilib
 				cout << "Image " << img->varName() << " has " << unsafeCount << " unsafe chunks." << endl;
 		}
 
-		Timing::Add(TimeClass::WritePreparation, timer.lap());
+		timingFlag.changeMode(TimeClass::WritePreparation);
 
 		// Combine small jobs
 		const string jobStartLine = "------ start of job";
@@ -1316,11 +1447,18 @@ namespace pilib
 		if (combinationRounds > 0)
 			cout << "Small jobs were combined into " << jobsToSubmit.size() << " larger jobs (" << std::fixed << std::setprecision(1) << tasksPerJob << " small jobs per combined job)." << endl;
 
+		timingFlag.changeMode(TimeClass::JobsInclQueuing);
+
 		// Submit jobs
-		for (auto& tup : jobsToSubmit)
+		jobTiming.clear();
+		jobTiming.reserve(jobsToSubmit.size());
+		for(size_t jobIndex = 0; jobIndex < jobsToSubmit.size(); jobIndex++)
 		{
-			string& script = get<0>(tup);
+			const auto& tup = jobsToSubmit[jobIndex];
+			string script = get<0>(tup);
 			JobType type = get<1>(tup);
+
+			script += "\nsavetiming('" + makeTimingName(jobIndex) + "');";
 
 			if (showSubmittedScripts)
 			{
@@ -1332,6 +1470,7 @@ namespace pilib
 			if (tasksPerJob >= promoteThreshold)
 				type = promote(type);
 
+			jobTiming.push_back(make_tuple(-2.0, -2.0));
 			submitJob(script, type);
 		}
 
@@ -1343,7 +1482,23 @@ namespace pilib
 			cout << "Waiting for jobs to finish..." << endl;
 			lastOutput = waitForJobs();
 
-			Timing::Add(TimeClass::JobsInclQueuing, timer.lap());
+			// Calculate job timing. Part of the data comes from this process (the submitting process) and another part from the job process.
+			for (size_t jobIndex = 0; jobIndex < jobsToSubmit.size(); jobIndex++)
+			{
+				const auto& tuple = jobTiming[jobIndex];
+				double queueing = get<0>(tuple);
+				double execution = get<1>(tuple);
+				if(queueing >= 0)
+					GlobalTimer::results().add(TimeClass::JobQueueing, queueing);
+				if(execution >= 0)
+					GlobalTimer::results().add(TimeClass::JobExecution, execution);
+
+				string timingFile = makeTimingName(jobIndex);
+				if (fs::exists(timingFile))
+					GlobalTimer::results().accumulate(TimingResults::fromFile(timingFile));
+			}
+
+			timingFlag.changeMode(TimeClass::WriteFinalizationInclQueuing);
 
 			// Submit endConcurrentWrite jobs
 			// Limit the number of jobs to reduce queuing latency.
@@ -1397,8 +1552,7 @@ namespace pilib
 				img->writeComplete();
 			}
 
-			Timing::Add(TimeClass::WriteFinalizationInclQueuing, timer.lap());
-
+			timingFlag.changeMode(TimeClass::Overhead);
 
 			if (combinationRounds > 0)
 			{
@@ -1409,10 +1563,12 @@ namespace pilib
 		}
 		catch (...)
 		{
+			jobTiming.clear();
 			delayedCommands.clear();
 			throw;
 		}
 
+		jobTiming.clear();
 		// This may deallocate images that are not in PISystem anymore.
 		delayedCommands.clear();
 	}

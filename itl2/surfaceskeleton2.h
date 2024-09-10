@@ -164,7 +164,7 @@ namespace itl2
 			itl2::internals::createAllowedHashList();
 
 			size_t changed = 0;
-			size_t counter = 0;
+			ProgressIndicator progress(6 * img.depth());
 			std::vector<Vec3c> pointsToRemove;
 			pointsToRemove.reserve(10000);
 
@@ -217,7 +217,7 @@ namespace itl2
 
 						}
 
-						showThreadProgress(counter, 6 * img.depth());
+						progress.step();
 					}
 				}
 

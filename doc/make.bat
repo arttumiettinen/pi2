@@ -29,11 +29,11 @@ if errorlevel 9009 (
 REM Remove old command reference
 rmdir /S /Q .\source\reference 2>nul
 REM Generate new
-"..\x64\Release no OpenCL\pi2" commandreference(./source/reference)
+"..\x64\Release\pi2" commandreference(./source/reference)
 REM Copy index
 copy .\reference_index.txt .\source\reference\index.txt
 REM Generate license text
-"..\x64\Release no OpenCL\pi2" license > .\source\license
+"..\x64\Release\pi2" license > .\source\license
 
 REM Build docs with Sphinx
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%

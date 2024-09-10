@@ -5,10 +5,9 @@
     <ProjectGuid>ba94b144-c555-4822-8258-53a8861b7dc7</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>..\x64\Debug no OpenCL\pi2py2_examples.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
-    <WorkingDirectory>..\x64\Debug no OpenCL</WorkingDirectory>
+    <StartupFile>pi2py2_examples.py</StartupFile>
+    <SearchPath>..\x64\Release\</SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>python_scripts</Name>
     <RootNamespace>elastic_stitcher</RootNamespace>
@@ -16,14 +15,16 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <CommandLineArguments>
     </CommandLineArguments>
-    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
     <PublishUrl>
     </PublishUrl>
     <Environment>
     </Environment>
-    <InterpreterId>
-    </InterpreterId>
+    <InterpreterId>Global|PythonCore|3.8</InterpreterId>
     <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
+    <TestFramework>pytest</TestFramework>
+    <UnitTestPattern>test*.py</UnitTestPattern>
+    <UnitTestRootDirectory>.</UnitTestRootDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -58,13 +59,14 @@
     <Compile Include="pi2py2_examples.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="pi2py2_tests.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="stitch_settings_from_phoenix_scans.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="stitch_settings_from_tomcat_scans.py" />
+    <Compile Include="test_pi2py2.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|3.8" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

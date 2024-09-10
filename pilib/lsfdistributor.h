@@ -66,11 +66,6 @@ namespace pilib
 		std::string jobInitCommands;
 
 		/**
-		Identifies this running instance from others so that multiple LSF distributor instances can run from the same working folder.
-		*/
-		std::string myName;
-
-		/**
 		Cancels job with given LSF id.
 		*/
 		void cancelJob(size_t id) const;
@@ -109,11 +104,6 @@ namespace pilib
 		Submits job with given index again.
 		*/
 		void resubmit(size_t jobIndex);
-
-		/**
-		Creates unique name for a job.
-		*/
-		std::string makeJobName(size_t jobIndex) const;
 
 		/**
 		Creates input file name.

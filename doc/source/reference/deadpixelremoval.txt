@@ -41,4 +41,4 @@ Magnitude parameter :math:`M`.
 See also
 --------
 
-:ref:`fbppreprocess`, :ref:`fbp`
+:ref:`fbppreprocess`, :ref:`fbp`, :ref:`deadpixelremoval`, :ref:`createfbpfilter`, :ref:`defaultrecsettings`

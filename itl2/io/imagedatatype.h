@@ -233,6 +233,30 @@ namespace itl2
 	}
 
 	/**
+	Calls F<data_type>::run(args...), where data_type is data type corresponding to dt enumeration value.
+	Use instead of long if/switch chains where ImageDataType must be converted to real type.
+	The run method must be static.
+	Does not consider complex pixel data types.
+	*/
+	template<template<class> class F, class... Args> void pickReal(ImageDataType dt, Args&&... args)
+	{
+		switch (dt)
+		{
+		case ImageDataType::UInt8: F<uint8_t>::run(args...); break;
+		case ImageDataType::UInt16: F<uint16_t>::run(args...); break;
+		case ImageDataType::UInt32: F<uint32_t>::run(args...); break;
+		case ImageDataType::UInt64: F<uint64_t>::run(args...); break;
+		case ImageDataType::Int8: F<int8_t>::run(args...); break;
+		case ImageDataType::Int16: F<int16_t>::run(args...); break;
+		case ImageDataType::Int32: F<int32_t>::run(args...); break;
+		case ImageDataType::Int64: F<int64_t>::run(args...); break;
+		case ImageDataType::Float32: F<float32_t>::run(args...); break;
+		//case ImageDataType::Complex32: F<complex32_t>::run(args...); break;
+		default: throw ITLException(string("Unsupported data type: ") + toString(dt));
+		}
+	}
+
+	/**
 	Parses data type string dts and calls F<parsed_data_type>::run(args...).
 	Use instead of long if/switch chains where ImageDataType must be converted to real type.
 	The run method must be static.
@@ -245,5 +269,21 @@ namespace itl2
 			throw ITLException(string("Invalid data type: ") + dts);
 
 		pick<F, Args...>(dt, std::forward<Args>(args)...);
+	}
+
+	/**
+	Parses data type string dts and calls F<parsed_data_type>::run(args...).
+	Use instead of long if/switch chains where ImageDataType must be converted to real type.
+	The run method must be static.
+	Does not consider complex pixel data types.
+	*/
+	template<template<class> class F, class... Args> void pickReal(const string& dts, Args&&... args)
+	{
+		ImageDataType dt = fromString<ImageDataType>(dts);
+
+		if (dt == ImageDataType::Unknown)
+			throw ITLException(string("Invalid data type: ") + dts);
+
+		pickReal<F, Args...>(dt, std::forward<Args>(args)...);
 	}
 }

@@ -41,6 +41,11 @@ namespace pilib
 		std::string sbatchCommand, squeueCommand, scancelCommand, sinfoCommand;
 
 		/**
+		Interval for job progress polls. Give in milliseconds.
+		*/
+		int progressPollInterval;
+
+		/**
 		Returns suitable sbatch arguments given type of job.
 		*/
 		std::string extraArgsSBatch(JobType jobType) const
@@ -64,11 +69,6 @@ namespace pilib
 		Commands run on each node before pi.
 		*/
 		std::string jobInitCommands;
-
-		/**
-		Identifies this running instance from others so that multiple SLURM distributor instances can run from the same working folder.
-		*/
-		std::string myName;
 
 		/**
 		Cancels job with given SLURM id.
@@ -106,14 +106,14 @@ namespace pilib
 		int getJobProgressFromLog(size_t jobIndex) const;
 
 		/**
+		Retrieves job queueing time [s] and execution time [s] from SLURM.
+		*/
+		std::tuple<double, double> getJobTimes(size_t jobIndex) const;
+
+		/**
 		Submits job with given index again.
 		*/
 		void resubmit(size_t jobIndex);
-
-		/**
-		Creates unique name for a job.
-		*/
-		std::string makeJobName(size_t jobIndex) const;
 
 		/**
 		Creates input file name.

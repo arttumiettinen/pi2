@@ -111,10 +111,36 @@ extern "C"
 	The returned pointer is valid until the object is destroyed.
 	@param pi Pi object created using createPI() function.
 	@param name Name of object whose contents are to be returned.
-	@param Pointer to the string value or zero if no object with given name exists, or if the object is not a string value.
+	@param Pointer to the value or zero if no object with given name exists, or if the object is not of correct type.
 	*/
 	PILIB_API const char* getString(void* pi, const char* name);
 
+	/**
+	Gets value of a integer object.
+	The returned pointer is valid until the object is destroyed.
+	@param pi Pi object created using createPI() function.
+	@param name Name of object whose contents are to be returned.
+	@param The value, or minimum possible value if an object with the given name does not exist, or if the object is of wrong type.
+	*/
+	PILIB_API const int64_t getInt(void* pi, const char* name);
+
+	/**
+	Gets value of a real number object.
+	The returned pointer is valid until the object is destroyed.
+	@param pi Pi object created using createPI() function.
+	@param name Name of object whose contents are to be returned.
+	@param The value, or minimum possible value if an object with the given name does not exist, or if the object is of wrong type.
+	*/
+	PILIB_API const float32_t getReal(void* pi, const char* name);
+
+	/**
+	Gets value of a boolean object as 0 or 1.
+	The returned pointer is valid until the object is destroyed.
+	@param pi Pi object created using createPI() function.
+	@param name Name of object whose contents are to be returned.
+	@param The value (0 for false or 1 for true), or maximum possible value if an object with the given name does not exist, or if the object is of wrong type.
+	*/
+	PILIB_API const uint8_t getBool(void* pi, const char* name);
 
 	/**
 	In distributed computing mode, flushes changes made to image data through pointers returned by getData to files.

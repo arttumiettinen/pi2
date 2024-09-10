@@ -106,9 +106,8 @@ namespace itl2
 	@param dir1, dir2 If not nullptr, directions of largest and smallest principal curvature will be filled to these images.
 	@param bc Boundary condition.
 	@param nonSurfaceValue Value that is used to fill the non-surface points in the kappa1 and kappa2 images.
-	@param showProgressInfo Flag indicating whether or not progress information should be printed.
 	*/
-	template<typename pixel_t, typename out_t> void surfaceCurvature(const Image<pixel_t>& img, float32_t radius, Image<out_t>* kappa1 = nullptr, Image<out_t>* kappa2 = nullptr, Image<Vec3f>* dir1 = nullptr, Image<Vec3f>* dir2 = nullptr, BoundaryCondition bc = BoundaryCondition::Nearest, out_t nonSurfaceValue = 0, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void surfaceCurvature(const Image<pixel_t>& img, float32_t radius, Image<out_t>* kappa1 = nullptr, Image<out_t>* kappa2 = nullptr, Image<Vec3f>* dir1 = nullptr, Image<Vec3f>* dir2 = nullptr, BoundaryCondition bc = BoundaryCondition::Nearest, out_t nonSurfaceValue = 0)
 	{
 // Define this to save debug information for plotting in Matlab
 //#define SAVE_DEBUG
@@ -145,7 +144,7 @@ std::vector<Vec3f> vdir1, vdir2;
 			dir2->ensureSize(img);
 		}
 
-		size_t counter = 0;
+		ProgressIndicator progress(img.depth());
 		#pragma omp parallel for if(img.pixelCount() >= PARALLELIZATION_THRESHOLD)
 		for (coord_t z = 0; z < img.depth(); z++)
 		{
@@ -402,7 +401,7 @@ std::vector<Vec3f> vdir1, vdir2;
 				}
 			}
 
-			showThreadProgress(counter, img.depth(), showProgressInfo);
+			progress.step();
 		}
 
 #if defined(SAVE_DEBUG)

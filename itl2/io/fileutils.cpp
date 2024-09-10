@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 
 #elif defined(_WIN32)
 
@@ -123,8 +124,9 @@ namespace itl2
 		LPVOID lpData
 	)
 	{
-		//showProgress(TotalBytesTransferred.QuadPart, TotalFileSize.QuadPart + 1);
-		cout << bytesToString((double)TotalBytesTransferred.QuadPart) << " / " << bytesToString((double)TotalFileSize.QuadPart) << "\r";
+		// TODO: This should use ProgressIndicator.
+		//cout << bytesToString((double)TotalBytesTransferred.QuadPart) << " / " << bytesToString((double)TotalFileSize.QuadPart) << "\r";
+		
 		return PROGRESS_CONTINUE;
 	};
 #endif
@@ -133,7 +135,7 @@ namespace itl2
 	Copies a file.
 	The destination file is overwritten.
 	*/
-	void copyFile(const std::string& sourceName, const std::string& destinationName, bool showProgressInfo)
+	void copyFile(const std::string& sourceName, const std::string& destinationName)
 	{
 		fs::path p1(sourceName);
 		fs::path p2(destinationName);
@@ -157,14 +159,9 @@ namespace itl2
 
 		BOOL cancel = FALSE;
 		LPPROGRESS_ROUTINE progress = nullptr;
-		if (showProgressInfo)
-			progress = &progressRoutine;
 		
 		if (CopyFileExA(sourceName.c_str(), destinationName.c_str(), progress, NULL, &cancel, 0) == 0)
 			throw ITLException(string("Unable to copy ") + sourceName + " to " + destinationName);
-
-		if(showProgressInfo)
-			cout << "                          \r" << flush;
 #else
 
 #error fileutils.cpp not configured for this platform.
@@ -371,8 +368,6 @@ namespace itl2
 		vector<string> results = buildFileList(templ);
 
 		// Remove non-images
-		//coord_t w, h;
-		//ImageDataType dt;
 		for (size_t n = 0; n < results.size(); n++)
 		{
 			// This is too slow!
@@ -383,7 +378,12 @@ namespace itl2
 			toLower(exts);
 
 			// TODO: Add other formats here.
-			if(ext != ".tif" && ext != ".tiff" && ext != ".png")
+			if(ext != ".tif" &&
+				ext != ".tiff" &&
+				ext != ".png" &&
+				ext != ".jpg" &&
+				ext != ".jpeg" &&
+				ext != ".dcm")
 			{
 				results.erase(results.begin() + n);
 				n--;
@@ -393,4 +393,29 @@ namespace itl2
 		return results;
 	}
 
+
+	std::string getHostname()
+	{
+#if defined(__linux__) || defined(__APPLE__)
+
+		char hostname[HOST_NAME_MAX + 1];
+		gethostname(&hostname[0], HOST_NAME_MAX);
+		return string(hostname);
+
+#elif defined(_WIN32)
+		char hostname[MAX_COMPUTERNAME_LENGTH + 1];
+		DWORD bufCharCount = MAX_COMPUTERNAME_LENGTH + 1;
+		GetComputerNameA(hostname, &bufCharCount);
+
+		char domain[MAX_COMPUTERNAME_LENGTH + 1];
+		bufCharCount = MAX_COMPUTERNAME_LENGTH + 1;
+		GetComputerNameExA(ComputerNameDnsDomain, domain, &bufCharCount);
+
+		string sdomain = string(domain);
+		if (sdomain.length() > 0)
+			sdomain = "." + sdomain;
+
+		return string(hostname) + sdomain;
+#endif
+	}
 }

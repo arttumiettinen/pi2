@@ -81,6 +81,13 @@ namespace itl2
 			datafile = "";
 			isBigEndian = false;
 
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+			{
+				failReason = "Not a file.";
+				return false;
+			}
+
 			ifstream in(filename.c_str(), ios_base::in | ios_base::binary);
 
 			if (!in)
@@ -212,7 +219,7 @@ namespace itl2
 			void readWrite()
 			{
 				Image<uint16_t> img;
-				raw::read(img, "./input_data/t1-head");
+				raw::read(img, "../test_input_data/t1-head");
 
 				nrrd::writed(img, "./nrrd/t1-head");
 

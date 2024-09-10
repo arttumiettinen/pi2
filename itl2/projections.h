@@ -4,10 +4,12 @@
 #include "utilities.h"
 #include "math/mathutils.h"
 #include "pointprocess.h"
+#include "progress.h"
 
 #include <set>
 #include <unordered_set>
 #include <limits>
+#include <type_traits>
 
 namespace itl2
 {
@@ -16,7 +18,7 @@ namespace itl2
 	Project one dimension of the image.
 	Use to create x, y and z projections.
 	*/
-	template<typename pixel_t, typename out_t, void process(pixel_t, double&)> void projectDimension(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, double initialValue, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t, void process(pixel_t, double&)> void projectDimension(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, double initialValue)
 	{
 		//// This version works but is relatively complicated compared to the simple version below.
 		//// Z project -> zstep = inf, ystep = 1, xstep = 1, zstep2 = 1, ystep2 = inf, xstep2 = inf; resultsize = [xdim, ydim]
@@ -74,12 +76,12 @@ namespace itl2
 
 
 		// Simpler version
-		size_t counter = 0;
 		if (dimension == 2)
 		{
 			// Z project
 			out.init(img.width(), img.height());
 
+			ProgressIndicator progress(img.height());
 			#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t y = 0; y < img.height(); y++)
 			{
@@ -93,7 +95,7 @@ namespace itl2
 					out(x, y) = pixelRound<out_t>(res);
 				}
 
-				showThreadProgress(counter, img.height(), showProgressInfo);
+				progress.step();
 			}
 		}
 		else if (dimension == 1)
@@ -102,6 +104,7 @@ namespace itl2
 			// Y project
 			out.init(img.width(), img.depth());
 
+			ProgressIndicator progress(img.depth());
 			#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t z = 0; z < img.depth(); z++)
 			{
@@ -115,7 +118,7 @@ namespace itl2
 					out(x, z) = pixelRound<out_t>(res);
 				}
 
-				showThreadProgress(counter, img.depth(), showProgressInfo);
+				progress.step();
 			}
 		}
 		else if (dimension == 0)
@@ -123,6 +126,7 @@ namespace itl2
 			// X project. Swap z and y in output to make the image more logical (in some sense...)
 			out.init(img.depth(), img.height());
 
+			ProgressIndicator progress(img.height());
 			#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t y = 0; y < img.height(); y++)
 			{
@@ -136,7 +140,7 @@ namespace itl2
 					out(out.width() - z - 1, y) = pixelRound<out_t>(res);
 				}
 
-				showThreadProgress(counter, img.height(), showProgressInfo);
+				progress.step();
 			}
 		}
 		else
@@ -153,7 +157,7 @@ namespace itl2
 	Use to create x, y and z projections that pick output value from second image.
 	*/
 	template<typename pixel_t, typename val_t, typename out_t, typename outval_t, void process(pixel_t, double&, val_t, val_t&)>
-	void projectDimension(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, double initialValue, val_t initialVal, bool showProgressInfo = true)
+	void projectDimension(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, double initialValue, val_t initialVal)
 	{
 		img.checkSize(valImg);
 
@@ -164,6 +168,7 @@ namespace itl2
 			out.init(img.width(), img.height());
 			outVal.init(img.width(), img.height());
 
+			ProgressIndicator progress(img.height());
 #pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t y = 0; y < img.height(); y++)
 			{
@@ -179,7 +184,7 @@ namespace itl2
 					outVal(x, y) = val;
 				}
 
-				showThreadProgress(counter, img.height(), showProgressInfo);
+				progress.step();
 			}
 		}
 		else if (dimension == 1)
@@ -189,6 +194,7 @@ namespace itl2
 			out.init(img.width(), img.depth());
 			outVal.init(img.width(), img.depth());
 
+			ProgressIndicator progress(img.depth());
 #pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t z = 0; z < img.depth(); z++)
 			{
@@ -204,7 +210,7 @@ namespace itl2
 					outVal(x, z) = val;
 				}
 
-				showThreadProgress(counter, img.depth(), showProgressInfo);
+				progress.step();
 			}
 		}
 		else if (dimension == 0)
@@ -213,6 +219,7 @@ namespace itl2
 			out.init(img.depth(), img.height());
 			outVal.init(img.depth(), img.height());
 
+			ProgressIndicator progress(img.height());
 #pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD && !omp_in_parallel())
 			for (coord_t y = 0; y < img.height(); y++)
 			{
@@ -228,7 +235,7 @@ namespace itl2
 					outVal(out.width() - z - 1, y) = val;
 				}
 
-				showThreadProgress(counter, img.height(), showProgressInfo);
+				progress.step();
 			}
 		}
 		else
@@ -298,7 +305,17 @@ namespace itl2
 	Determines if pixel values in the two images are equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel1_t, typename pixel2_t> bool equals(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
+	template<
+		typename pixel1_t,
+		typename pixel2_t
+		//typename = std::enable_if_t<		// Not available for floating point types.
+		//	std::conjunction_v<
+		//		std::negation<std::is_floating_point<pixel1_t> >,
+		//		std::negation<std::is_floating_point<pixel2_t> >
+		//	>
+		//>
+	>
+	bool equals(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
 	{
 		a.checkSize(b);
 
@@ -337,7 +354,17 @@ namespace itl2
 	Determines if pixel values in the two images are not equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel1_t, typename pixel2_t> bool differs(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
+	template<
+		typename pixel1_t,
+		typename pixel2_t
+		//typename = std::enable_if_t<		// Not available for floating point types.
+		//	std::conjunction_v<
+		//		std::negation<std::is_floating_point<pixel1_t> >,
+		//		std::negation<std::is_floating_point<pixel2_t> >
+		//	>
+		//>
+	>
+	bool differs(const Image<pixel1_t>& a, const Image<pixel2_t>& b)
 	{
 		return !equals(a, b);
 	}
@@ -347,7 +374,7 @@ namespace itl2
 	Determines if pixel values in the two images are equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel_t, typename = std::enable_if_t<std::is_floating_point_v<pixel_t> > > bool equals(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
+	template<typename pixel_t> bool equalsTol(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
 	{
 		a.checkSize(b);
 
@@ -355,7 +382,8 @@ namespace itl2
 #pragma omp parallel for if(a.pixelCount() > PARALLELIZATION_THRESHOLD)
 		for (coord_t n = 0; n < a.pixelCount(); n++)
 		{
-			if (eq && !NumberUtils<pixel_t>::equals(a(n), b(n), tolerance))
+			//if (eq && !NumberUtils<pixel_t>::equals(a(n), b(n), tolerance))
+			if(eq && abs(a(n) - b(n)) >= tolerance) // Note: NumberUtils equals does not use tolerance for integer types.
 				eq = false;
 
 			// Showing progress info here would induce more processing than is done in the whole loop.
@@ -368,9 +396,9 @@ namespace itl2
 	Determines if pixel values in the two images are not equal.
 	@param a, b Images to compare
 	*/
-	template<typename pixel_t, typename = std::enable_if_t<std::is_floating_point_v<pixel_t> > > bool differs(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
+	template<typename pixel_t> bool differsTol(const Image<pixel_t>& a, const Image<pixel_t>& b, pixel_t tolerance = NumberUtils<pixel_t>::tolerance())
 	{
-		return !equals(a, b, tolerance);
+		return !equalsTol(a, b, tolerance);
 	}
 
 
@@ -858,11 +886,10 @@ namespace itl2
 	@param img Input image.
 	@param dimension Zero-based dimension over which the projection should be made.
 	@param out Output image.
-	@param showProgressInfo Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void sum(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void sum(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out)
 	{
-		projectDimension<pixel_t, out_t, internals::sumProjectionOp<pixel_t>>(img, dimension, out, 0, showProgressInfo);
+		projectDimension<pixel_t, out_t, internals::sumProjectionOp<pixel_t>>(img, dimension, out, 0);
 	}
 
 	/**
@@ -870,11 +897,10 @@ namespace itl2
 	@param img Input image.
 	@param dimension Zero-based dimension over which the projection should be made.
 	@param out Output image.
-	@param showProgressInfo Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void min(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void min(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out)
 	{
-		projectDimension<pixel_t, out_t, internals::minProjectionOp<pixel_t> >(img, dimension, out, std::numeric_limits<double>::infinity(), showProgressInfo);
+		projectDimension<pixel_t, out_t, internals::minProjectionOp<pixel_t> >(img, dimension, out, std::numeric_limits<double>::infinity());
 	}
 
 	/**
@@ -882,11 +908,10 @@ namespace itl2
 	@param img Input image.
 	@param dimension Zero-based dimension over which the projection should be made.
 	@param out Output image.
-	@param showProgressInfo Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void max(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void max(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out)
 	{
-		projectDimension<pixel_t, out_t, internals::maxProjectionOp<pixel_t> >(img, dimension, out, -std::numeric_limits<double>::infinity(), showProgressInfo);
+		projectDimension<pixel_t, out_t, internals::maxProjectionOp<pixel_t> >(img, dimension, out, -std::numeric_limits<double>::infinity());
 	}
 
 
@@ -898,11 +923,10 @@ namespace itl2
 	@param dimension Zero-based dimension over which the projection should be made.
 	@param out Output image.
 	@param outVal Output where picked values will be placed.
-	@param showProgressInfo Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename val_t, typename out_t> void min(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, bool showProgressInfo = true)
+	template<typename pixel_t, typename val_t, typename out_t> void min(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal)
 	{
-		projectDimension<pixel_t, val_t, out_t, val_t, internals::minProjectionValOp<pixel_t, val_t> >(img, valImg, dimension, out, outVal, std::numeric_limits<double>::infinity(), val_t(), showProgressInfo);
+		projectDimension<pixel_t, val_t, out_t, val_t, internals::minProjectionValOp<pixel_t, val_t> >(img, valImg, dimension, out, outVal, std::numeric_limits<double>::infinity(), val_t());
 	}
 
 	/**
@@ -913,11 +937,10 @@ namespace itl2
 	@param dimension Zero-based dimension over which the projection should be made.
 	@param out Output image.
 	@param outVal Output where picked values will be placed.
-	@param showProgressInfo Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename val_t, typename out_t> void max(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal, bool showProgressInfo = true)
+	template<typename pixel_t, typename val_t, typename out_t> void max(const Image<pixel_t>& img, const Image<val_t>& valImg, size_t dimension, Image<out_t>& out, Image<val_t>& outVal)
 	{
-		projectDimension<pixel_t, val_t, out_t, val_t, internals::maxProjectionValOp<pixel_t, val_t> >(img, valImg, dimension, out, outVal, -std::numeric_limits<double>::infinity(), val_t(), showProgressInfo);
+		projectDimension<pixel_t, val_t, out_t, val_t, internals::maxProjectionValOp<pixel_t, val_t> >(img, valImg, dimension, out, outVal, -std::numeric_limits<double>::infinity(), val_t());
 	}
 
 
@@ -926,11 +949,10 @@ namespace itl2
 	@param img Input image.
 	@param dimension Zero-based dimension over which the projection should be made.
 	@param out Output image.
-	@param showProgressInfo Set to true to show a progress bar.
 	*/
-	template<typename pixel_t, typename out_t> void mean(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out, bool showProgressInfo = true)
+	template<typename pixel_t, typename out_t> void mean(const Image<pixel_t>& img, size_t dimension, Image<out_t>& out)
 	{
-		sum(img, dimension, out, showProgressInfo);
+		sum(img, dimension, out);
 		divide(out, (double)img.dimension(dimension));
 	}
 

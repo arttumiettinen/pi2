@@ -1,0 +1,60 @@
+.. _carttocyl:
+
+carttocyl
+*********
+
+
+**Syntax:** :code:`carttocyl(input image, output image, origin, interpolation mode, boundary condition)`
+
+Converts input image in cartesian coordinates :math:`(x, y, z)` to cylindrical coordinates :math:`(r, azimuthal, z)`. For 2D images, converts from cartesian coordinates :math:`(x, y)` to cylindrical coordinates :math:`(z, azimuthal)`. "The size of the output must be set to the desired image size. The output image size defines sampling of the cylindrical coordinate space as follows. "The :math:`x`-coordinate of the output image corresponds to :math:`r`, and the width of the output corresponds to the maximum :math:`r` considered; "The :math:`y`-coordinate corresponds to azimuthal angle such that :math:`y = 0` equals :math:`azimuthal = 0`, and :math:`y = \text{height}` equals :math:`2\pi`; "The :math:`z`-coordinate is the same coordinate than in the input image (but accounts for the position of the origin given in the origin parameter).
+
+This command cannot be used in the distributed processing mode. If you need it, please contact the authors.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Input image.
+
+output image [output]
+~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Output image.
+
+origin [input]
+~~~~~~~~~~~~~~
+
+**Data type:** 3-component real vector
+
+**Default value:** "[0, 0, 0]"
+
+The origin of the cylindrical coordinates in the input image.
+
+interpolation mode [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** interpolation mode
+
+**Default value:** Linear
+
+Interpolation mode. Can be Nearest for nearest neighbour interpolation, Linear for linear interpolation, or Cubic for cubic interpolation.
+
+boundary condition [input]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** boundary condition
+
+**Default value:** Zero
+
+Boundary condition. Zero indicates that values outside of image bounds are taken to be zero. Nearest indicates that the nearest value inside the image is to be used in place of values outside of image bounds.
+
+See also
+--------
+
+:ref:`rot90cw`, :ref:`rot90ccw`, :ref:`rotate`, :ref:`flip`, :ref:`reslice`, :ref:`crop`, :ref:`copy`, :ref:`scalelabels`, :ref:`carttocyl`

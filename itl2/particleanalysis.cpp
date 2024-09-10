@@ -101,7 +101,8 @@ namespace itl2
 					size_t counter = 0;
 					uint8_t fillColor = internals::SpecialColors<uint8_t>::fillColor();
 					uint8_t largeColor = internals::SpecialColors<uint8_t>::largeColor();
-					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, conn, volumeLimit, fillColor, largeColor, counter, img3.depth() * img3.height(), Vec3sc(0, 0, (int32_t)minZ));
+					ProgressIndicator progress(block.depth());
+					internals::analyzeParticlesSingleBlock(block, analyzers, blockResults, &blockIncompleteParticles, &blockLargeEdgePoints, conn, volumeLimit, fillColor, largeColor, Vec3sc(0, 0, (int32_t)minZ), progress);
 
 					allResults.push_back(blockResults);
 
@@ -236,7 +237,7 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img);
@@ -255,7 +256,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// Detailed check
 				Results results;
@@ -287,7 +288,7 @@ namespace itl2
 		{
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img, Connectivity::AllNeighbours, 3000);
@@ -306,7 +307,7 @@ namespace itl2
 
 			{
 				Image<uint8_t> img;
-				raw::read(img, "./input_data/complicated_particles_1");
+				raw::read(img, "../test_input_data/complicated_particles_1");
 
 				// General check
 				checkThreading(img, Connectivity::NearestNeighbours, 3000);

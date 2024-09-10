@@ -28,7 +28,7 @@ namespace itl2
 		void histogram()
 		{
 			Image<uint16_t> head(256, 256, 129);
-			raw::read(head, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<int> hist(100);
 
@@ -36,7 +36,7 @@ namespace itl2
 
 			// Read ground truth file
 
-			ifstream file("./input_data/t1-head_histogram_0_1000_100.txt");
+			ifstream file("../test_input_data/t1-head_histogram_0_1000_100.txt");
 			string str;
 			int n = 0;
 			getline(file, str); // Reads header line
@@ -65,10 +65,10 @@ namespace itl2
 		void histogram2d()
 		{
 			Image<uint16_t> head(256, 256, 129);
-			raw::read(head, "./input_data/t1-head_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_256x256x129.raw");
 
 			Image<uint8_t> headbin(256, 256, 129+10);
-			raw::read(headbin, "./input_data/t1-head_bin_256x256x129.raw");
+			raw::read(headbin, "../test_input_data/t1-head_bin_256x256x129.raw");
 
 			Image<float32_t> hist(100, 5);
 

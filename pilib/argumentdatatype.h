@@ -368,11 +368,14 @@ namespace pilib
 
 	typedef std::variant<
 	    coord_t,
+		coord_t*,
 		double,
+		double*,
 		bool,
+		bool*,
 		string,
 		string*,
-		NeighbourhoodType,
+		NeighbourhoodType,	// TODO: Is it possible to handle these data types through simple string conversions?
 		BoundaryCondition,
 		Connectivity,
 		InterpolationMode,

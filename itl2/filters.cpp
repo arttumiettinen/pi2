@@ -14,7 +14,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head16(256, 256, 129);
-			raw::read(head16, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head16, "../test_input_data/t1-head_noisy_256x256x129.raw");
 			divide(head16, 4);
 			raw::writed(head16, "./filters/gauss_orig");
 
@@ -68,7 +68,7 @@ namespace itl2
 		void separableOptimization()
 		{
 			Image<uint16_t> head(256, 256, 129);
-			raw::read(head, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head32(head.dimensions());
 			convert(head, head32);
@@ -101,7 +101,7 @@ namespace itl2
 			using DT = uint16_t;
 			Image<DT> img(1000, 1000);
 			ramp(img, 0);
-			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (DT)10000);
+			draw(img, Sphere(Vec3f(50, 50, 0), 25.0f), (DT)50000);
 			raw::writed(img, "./filters/stddev_orig");	
 			Image<DT> filtered(img.dimensions());
 			stddevFilter(img, filtered, 5);
@@ -113,7 +113,7 @@ namespace itl2
 			// NOTE: No asserts!
 
 			Image<uint16_t> head(256, 256, 129);
-			raw::read(head, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_noisy_256x256x129.raw");
 
 			Image<float32_t> head32(head.dimensions());
 			convert(head, head32);
@@ -153,7 +153,7 @@ namespace itl2
 			//min(filtered, head32, 2);
 
 			Image<float32_t> tr(100, 100);
-			raw::read(tr, "./input_data/test_rect_100x100x1.raw");
+			raw::read(tr, "../test_input_data/test_rect_100x100x1.raw");
 
 			meanFilter(tr, filtered2, Vec3c(10, 10, 0));
 			raw::writed(filtered2, "./filters/test_rect_rect_filtered_xy");
@@ -165,7 +165,7 @@ namespace itl2
 
 			Image<uint16_t> head(256, 256, 129);
 			Image<uint16_t> filtered;
-			raw::read(head, "./input_data/t1-head_noisy_256x256x129.raw");
+			raw::read(head, "../test_input_data/t1-head_noisy_256x256x129.raw");
 			bilateralFilter(head, filtered, 2, 25);
 			raw::writed(filtered, "./filters/bilateral_filtered2");
 		}

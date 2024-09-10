@@ -338,6 +338,11 @@ namespace itl2
 			}
     };
 
+	extern template class Vec2<itl2::float32_t>;
+	extern template class Vec2<double>;
+	extern template class Vec2<itl2::coord_t>;
+	extern template class Vec2<int32_t>;
+
     typedef Vec2<double> Vec2d;
 	typedef Vec2<itl2::float32_t> Vec2f;
 	typedef Vec2<itl2::coord_t> Vec2c;
@@ -351,35 +356,21 @@ namespace itl2
 	}
 
 	/**
-	See tocartesian overloads.
+	Converts polar coordinates (r, azimuthal) to cartesian coordinates (x, y).
 	*/
-	inline Vec2d toCartesian(double r, double azimuthal)
+	inline Vec2d polarToCartesian(double r, double azimuthal)
 	{
 		double x, y;
-		toCartesian(r, azimuthal, x, y);
+		polarToCartesian(r, azimuthal, x, y);
 		return Vec2d(x, y);
 	}
 
 	/**
-	Converts v=(x, y) in cartesian coordinates to v=(r, atzimuthal)
+	Converts (x, y) in cartesian coordinates to polar coordinates (r, atzimuthal)
 	*/
-	inline void toPolar(Vec2d& v)
+	inline void cartesianToPolar(Vec2d& v, double& r, double& azimuthal)
 	{
-		double r, atz;
-		toPolar(v.x, v.y, r, atz);
-		v.x = r;
-		v.y = atz;
-	}
-
-	/**
-	Converts v=(r, atzimuthal) in cartesian coordinates to v=(x, y)
-	*/
-	inline void toCartesian(Vec2d& v)
-	{
-		double x, y;
-		toCartesian(v.x, v.y, x, y);
-		v.x = x;
-		v.y = y;
+		cartesianToPolar(v.x, v.y, r, azimuthal);
 	}
 
 	/*

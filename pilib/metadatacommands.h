@@ -7,7 +7,7 @@ namespace pilib
 {
 	inline std::string metaSeeAlso()
 	{
-		return "setmeta, getmeta, writemeta, readmeta, clearmeta, listmeta, copymeta";
+		return "setmeta, getmeta, writemeta, readmeta, clearmeta, listmeta, copymeta, metarowcount, metacolumncount";
 	}
 
 	template<typename input_t, typename output_t> class CopyMetadataCommand : public TwoImageInputOutputCommand<input_t, output_t>
@@ -30,6 +30,56 @@ namespace pilib
 	};
 
 
+	template<typename input_t> class MetaRowCountCommand : public OneImageCommand<input_t>
+	{
+	protected:
+		friend class CommandList;
+
+		MetaRowCountCommand() : OneImageCommand<input_t>("metarowcount", "Retrieves count of rows in a metadata item.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
+				CommandArgument<coord_t>(ParameterDirection::Out, "count", "Item count.")
+			},
+			metaSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(const Image<input_t>& in, std::vector<ParamVariant>& args) const override
+		{
+			const string& key = std::get<string>(args[0]);
+			coord_t* out = std::get<coord_t*>(args[1]);
+			*out = in.metadata.rowCount(key);
+		}
+	};
+
+
+	template<typename input_t> class MetaColumnCountCommand : public OneImageCommand<input_t>
+	{
+	protected:
+		friend class CommandList;
+
+		MetaColumnCountCommand() : OneImageCommand<input_t>("metacolumncount", "Retrieves count of columns in a specific row of a metadata item.",
+			{
+				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
+				CommandArgument<coord_t>(ParameterDirection::In, "row index", "Index of the row whose column count is to be returned."),
+				CommandArgument<coord_t>(ParameterDirection::Out, "count", "Item count.")
+			},
+			metaSeeAlso())
+		{
+		}
+
+	public:
+		virtual void run(const Image<input_t>& in, std::vector<ParamVariant>& args) const override
+		{
+			const string& key = std::get<string>(args[0]);
+			coord_t row = std::get<coord_t>(args[1]);
+			coord_t* out = std::get<coord_t*>(args[2]);
+			*out = in.metadata.columnCount(key, row);
+		}
+	};
+
+
 	template<typename input_t> class SetMetadataCommand : public OneImageInPlaceCommand<input_t>
 	{
 	protected:
@@ -39,8 +89,8 @@ namespace pilib
 			{
 				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
 				CommandArgument<string>(ParameterDirection::In, "value", "Value of the metadata item."),
-				CommandArgument<size_t>(ParameterDirection::In, "i", "Row index of the item to set in the data matrix.", 0),
-				CommandArgument<size_t>(ParameterDirection::In, "j", "Column index of the item to set in the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "column", "Column index of the item to set in the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "row", "Row index of the item to set in the data matrix.", 0),
 			},
 			metaSeeAlso())
 		{
@@ -58,17 +108,17 @@ namespace pilib
 	};
 
 
-	template<typename input_t> class GetMetadataCommand : public OneImageInPlaceCommand<input_t>
+	template<typename input_t> class GetMetadataCommand : public OneImageCommand<input_t>
 	{
 	protected:
 		friend class CommandList;
 
-		GetMetadataCommand() : OneImageInPlaceCommand<input_t>("getmeta", "Gets metadata item from an image.",
+		GetMetadataCommand() : OneImageCommand<input_t>("getmeta", "Gets metadata item from an image.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "key", "Name of the metadata item."),
 				CommandArgument<string>(ParameterDirection::Out, "value", "Value of the metadata item is placed into this string."),
-				CommandArgument<size_t>(ParameterDirection::In, "i", "Row index of the item to retrieve from the data matrix.", 0),
-				CommandArgument<size_t>(ParameterDirection::In, "j", "Column index of the item to retrieve from the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "column", "Column index of the item to retrieve from the data matrix.", 0),
+				CommandArgument<size_t>(ParameterDirection::In, "row", "Row index of the item to retrieve from the data matrix.", 0),
 				CommandArgument<string>(ParameterDirection::In, "default", "This value is returned if the key is not found", ""),
 			},
 			metaSeeAlso())
@@ -76,7 +126,7 @@ namespace pilib
 		}
 
 	public:
-		virtual void run(Image<input_t>& in, std::vector<ParamVariant>& args) const override
+		virtual void run(const Image<input_t>& in, std::vector<ParamVariant>& args) const override
 		{
 			const string& key = std::get<string>(args[0]);
 			string* value = std::get<string*>(args[1]);
@@ -89,12 +139,12 @@ namespace pilib
 	};
 
 
-	template<typename pixel_t> class WriteMetadataCommand : public OneImageInPlaceCommand<pixel_t>
+	template<typename pixel_t> class WriteMetadataCommand : public OneImageCommand<pixel_t>
 	{
 	protected:
 		friend class CommandList;
 
-		WriteMetadataCommand() : OneImageInPlaceCommand<pixel_t>("writemeta", "Writes image metadata to disk.",
+		WriteMetadataCommand() : OneImageCommand<pixel_t>("writemeta", "Writes image metadata to disk.",
 			{
 				CommandArgument<string>(ParameterDirection::In, "filename", "Name and path of file to write. The file will be replaced."),
 			},
@@ -103,7 +153,7 @@ namespace pilib
 		}
 
 	public:
-		virtual void run(Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
+		virtual void run(const Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
 		{
 			const string& filename = std::get<string>(args[0]);
 			in.metadata.writeToFile(filename);
@@ -152,12 +202,12 @@ namespace pilib
 	};
 
 
-	template<typename pixel_t> class ListMetadataCommand : public OneImageInPlaceCommand<pixel_t>
+	template<typename pixel_t> class ListMetadataCommand : public OneImageCommand<pixel_t>
 	{
 	protected:
 		friend class CommandList;
 
-		ListMetadataCommand() : OneImageInPlaceCommand<pixel_t>("listmeta", "Builds a comma-separated list of the names of all the metadata items in an image.",
+		ListMetadataCommand() : OneImageCommand<pixel_t>("listmeta", "Builds a comma-separated list of the names of all the metadata items in an image.",
 			{
 				CommandArgument<string>(ParameterDirection::Out, "names", "Names of metadata items will be stored in this string."),
 			},
@@ -166,7 +216,7 @@ namespace pilib
 		}
 
 	public:
-		virtual void run(Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
+		virtual void run(const Image<pixel_t>& in, std::vector<ParamVariant>& args) const override
 		{
 			string& s = *std::get<string*>(args[0]);
 			s = "";

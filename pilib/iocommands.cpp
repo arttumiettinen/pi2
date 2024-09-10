@@ -13,19 +13,17 @@ namespace pilib
 		CommandList::add<ShowRawInfoCommand>();
 		CommandList::add<ShowSequenceInfoCommand>();
 		ADD_ALL(WriteTiffCommand);
+		ADD_ALL(WritePngCommand);
 		ADD_ALL(WriteNRRDCommand);
 		ADD_ALL(WriteRawCommand);
 		ADD_ALL(WriteLZ4Command);
 		ADD_ALL(WriteNN5Command);
 		ADD_REAL(WriteZarrCommand);
-		//ADD_ALL(WriteRawBlockCommand);
-		ADD_ALL(WriteRawBlock2Command);
+		ADD_ALL(WriteRawBlockCommand);
 		CommandList::add<WriteRGBRawCommand>();
 		ADD_ALL(WriteSequenceCommand);
-		//ADD_ALL(WriteSequenceBlockCommand);
-		ADD_ALL(WriteSequenceBlock2Command);
-		//ADD_ALL(WriteNN5BlockCommand);
-		ADD_ALL(WriteNN5Block2Command);
+		ADD_ALL(WriteSequenceBlockCommand);
+		ADD_ALL(WriteNN5BlockCommand);
 		CommandList::add<EndConcurrentWriteCommand>();
 	}
 }

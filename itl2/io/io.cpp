@@ -10,7 +10,7 @@ namespace itl2
 	
     	bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
-			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, zarrReason, lz4Reason;
+			string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, zarrReason, lz4Reason, dicomReason;
 			if (vol::getInfo(filename, dimensions, dataType, volReason))
 			{
 				return true;
@@ -47,9 +47,13 @@ namespace itl2
 			{
 				return true;
 			}
+			else if (dicom::getInfo(filename, dimensions, dataType, dicomReason))
+			{
+				return true;
+			}
 			else
 			{
-				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, zarrReason, lz4Reason);
+				reason = internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, zarrReason, lz4Reason, dicomReason);
 				return false;
 			}
 		}
@@ -62,15 +66,15 @@ namespace itl2
 				Image<uint8_t> img8;
 				Image<uint16_t> img;
 				
-				io::read(img8, "./input_data/uint8.png");
-				io::read(img8, "./input_data/t1-head_bin_");
+				io::read(img8, "../test_input_data/uint8.png");
+				io::read(img8, "../test_input_data/t1-head_bin_");
 				
-				io::read(img, "./input_data/t1-head");
-				io::read(img, "./input_data/t1-head_");
-				io::read(img, "./input_data/t1-head_256x256x129");
-				io::read(img, "./input_data/t1-head_256x256x129.raw");
+				io::read(img, "../test_input_data/t1-head");
+				io::read(img, "../test_input_data/t1-head_");
+				io::read(img, "../test_input_data/t1-head_256x256x129");
+				io::read(img, "../test_input_data/t1-head_256x256x129.raw");
 				
-				io::read(img, "./input_data/t1-head.tif");
+				io::read(img, "../test_input_data/t1-head.tif");
 
 				sequence::write(img, "./sequence/head/head_@(5)_test.tif");
 
@@ -78,6 +82,20 @@ namespace itl2
 				io::read(seq, "./sequence/head/head_@_test.tif");
 
 				testAssert(equals(img, seq), "read and written sequence are not equal.");
+			}
+
+			void badnn5()
+			{
+				string path = "./bad_nn5/0/0/0";
+				fs::create_directories(path);
+
+				Vec3c dimensions;
+				ImageDataType dt;
+				string reason;
+				bool result = io::getInfo(path, dimensions, dt, reason);
+				std::cout << reason << std::endl;
+				testAssert(result == false, "reading bad nn5");
+
 			}
 		}
 	}

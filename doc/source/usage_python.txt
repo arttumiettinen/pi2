@@ -7,26 +7,34 @@ Pi2 can be used from Python scripts and from iPython console.
 In order to initialize Pi2, the package pi2py must be imported and a Pi2 object created::
 	
 	import sys
-	sys.path.append('path/to/pi2/folder')
+	sys.path.append("path/to/pi2/folder")
 	
 	from pi2py2 import *
 	pi = Pi2()
-	
-A common pitfall is that the pi2py.py file must be in the Python path so that the Python interpreter finds it.
-The easiest way is to execute the above commands in the directory that contains the pi2py.py file.
-Pi2py is written in Python 3.6, and might or might not work in other Python versions.
 
-After initalization, all the functionality of Pi2 can be accessed through the Pi2 object::
+**Note**
+The :code:`'path/to/pi2/folder'` should point to the folder of the compiled binary distribution of pi2, not to the source code repository. Typically, the correct folder will be :code:`pi2/bin-linux64/release-nocl` or something similar, where the first folder is the root of the source code repository.
+
+**Note**
+Windows users should beware that Python uses the standard directory separator backslash \\-character as escape character.
+This means you need to specify the path either using forward slashes "/" (:code:`"path/to/folder"`), double \\-characters (:code:`"path\\to\\folder"`), or a raw string (:code:`r"path\to\folder"`).
+
+If the pi2py2.py file is in the current working directory, then the :code:`sys.path.append` command does not need to be run.
+Pi2py is written for Python versions >= 3.6.
+
+After initialization, all the functionality of Pi2 can be accessed through the Pi2 object::
 
 	img = pi.newimage(ImageDataType.UINT8, 100, 100, 100)
 	pi.noise(img, 100, 25)
 	pi.writetif(img, './noise')
 
 For reference on the available functionality, use either iPython help or the :ref:`command_reference` page.
+Note that there are some small differences between arguments specified in the :ref:`command_reference` and what pi2py2 expects. The largest difference is that instead of image name, you can pass object returned by the newimage command.
+
 There are many Python examples available here: https://github.com/arttumiettinen/pi2/blob/master/python_scripts/pi2py2_examples.py
 Most of them are documented in the :ref:`examples` page.
 
-The Python bindings in the pi2py.py file are self-generating so they are always up-to-date.
+The Python bindings in the pi2py2.py file are (mostly) self-generating so they are always (mostly) up-to-date.
 
 Pi2 and NumPy
 -------------
@@ -37,25 +45,21 @@ NumPy arrays can be used together with Pi2 in a few ways.
 Outputting to NumPy arrays is not supported at the moment.
 Additionally, 3-element NumPy arrays can be used in all occasions where a 3-element vector is required.
 
-2. Image data can be retrieved as a Numpy array using :code:`Pi2Image.get_data()` function.
+2. Image data can be retrieved as a Numpy array using :code:`Pi2Image.to_numpy()` function.
 The function returns the data in the image as NumPy array of appropriate shape and data type.
 The NumPy array is a copy of the original image data so changes made to it are not reflected in the Pi2 system.
 
 Retrieving image data as a NumPy array causes it to be read into RAM in its entirety.
 This might not be desirable in distributed computing mode, if the image is large.
 
-3. NumPy array can be copied into a Pi2 image using :code:`Pi2Image.set_data(array)` function.
-The data of the array is copied from NumPy into the Pi2 system, so changes made by Pi2 are not reflected in the
-NumPy array.
+3. NumPy array can be copied into a Pi2 image using :code:`Pi2Image.from_numpy(array)` function.
+The data of the array is copied from NumPy into the Pi2 system, so changes made by Pi2 are not reflected in the NumPy array.
 
-For 'power users' there is also a method :code:`Pi2Image.get_data_pointer()` that returns reference to the image data
-in the Pi2 system as a NumPy array.
+For 'power users' there is also a method :code:`Pi2Image.to_numpy_pointer()` that returns reference to the image data in the Pi2 system as a NumPy array.
 Changes made to the array are reflected in the Pi2 system and vice versa.
-However, please note that Pi2 commands that change the size of the image will re-allocate the memory reserved for the
-image and this process invalidates any NumPy arrays returned by the :code:`get_data_pointer()` method.
+However, please note that Pi2 commands that change the size of the image will re-allocate the memory reserved for the image and this process invalidates any NumPy arrays returned by the :code:`to_numpy_pointer()` method.
 Accessing invalidated array might result in program crash.
-Arrays returned by the :code:`get_data()` method are not affected by this problem.
+Arrays returned by the :code:`to_numpy()` method are not affected by this problem.
 
-If Pi2 is in distributed computing mode, calling :code:`Pi2Image.get_data_pointer()` will cause the image to be read into
-RAM in its entirety.
+If Pi2 is in distributed computing mode, calling :code:`Pi2Image.to_numpy_pointer()` will cause the image to be read into RAM in its entirety.
 In this mode, changes made to the NumPy array are not reflected to the image until :code:`Pi2Image.flush_pointer()` method is called.

@@ -1,0 +1,38 @@
+.. _writenn5:
+
+writenn5
+********
+
+
+**Syntax:** :code:`writenn5(input image, path, chunk size)`
+
+Write an image to an .nn5 dataset.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image, complex32 image
+
+Image to save.
+
+path [input]
+~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of the dataset to write. If the dataset exists, its current contents are erased.
+
+chunk size [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[1536, 1536, 1536]"
+
+Chunk size for the NN5 dataset to be written.
+

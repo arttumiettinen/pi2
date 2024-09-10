@@ -285,6 +285,16 @@ namespace itl2
 
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, string& reason)
 		{
+			if (!fs::exists(filename))
+				reason = "File not found.";
+
+			// This is required in some Linux systems to differentiate files from directories.
+			if (!fs::is_regular_file(filename))
+			{
+				reason = "Not a file.";
+				return false;
+			}
+
 			internals::initTIFF();
 			auto tifObj = std::unique_ptr<TIFF, decltype(TIFFClose)*>(TIFFOpen(filename.c_str(), "r"), TIFFClose);
 			TIFF* tif = tifObj.get();
@@ -310,7 +320,7 @@ namespace itl2
 				Image<uint16_t> img2;
 				try
 				{
-					tiff::read(img2, "./input_data/t1-head_256x256x129.raw");
+					tiff::read(img2, "../test_input_data/t1-head_256x256x129.raw");
 					throw std::runtime_error("TIFF reader did not raise exception for non-tiff file.");
 				}
 				catch (ITLException e)
@@ -323,7 +333,7 @@ namespace itl2
 
 				// 2D, 8-bit
 				string reason;
-				tiff::getInfo("./input_data/uint8.tif", dims, dt, reason);
+				tiff::getInfo("../test_input_data/uint8.tif", dims, dt, reason);
 				testAssert(reason == "", "reason");
 				testAssert(dims.x == 100, "tif width");
 				testAssert(dims.y == 200, "tif height");
@@ -331,7 +341,7 @@ namespace itl2
 				testAssert(dt == ImageDataType::UInt8, "tif data type (uint8)");
 
 				Image<uint8_t> img1;
-				tiff::read(img1, "./input_data/uint8.tif");
+				tiff::read(img1, "../test_input_data/uint8.tif");
 				raw::writed(img1, "./tiff/uint8");
 				tiff::writed(img1, "./tiff/uint8_out");
 
@@ -342,7 +352,7 @@ namespace itl2
 
 				// 2D, 16-bit
 				reason = "";
-				tiff::getInfo("./input_data/uint16.tif", dims, dt, reason);
+				tiff::getInfo("../test_input_data/uint16.tif", dims, dt, reason);
 				testAssert(reason == "", "reason");
 				testAssert(dims.x == 100, "tif width");
 				testAssert(dims.y == 200, "tif height");
@@ -350,7 +360,7 @@ namespace itl2
 				testAssert(dt == ImageDataType::UInt16, "tif data type (uint16)");
 
 				
-				tiff::read(img2, "./input_data/uint16.tif");
+				tiff::read(img2, "../test_input_data/uint16.tif");
 				raw::writed(img2, "./tiff/uint16");
 				tiff::writed(img2, "./tiff/uint16_out");
 
@@ -360,9 +370,9 @@ namespace itl2
 
 
 				// 3d tiff files
-				tiff::read(img2, "./input_data/t1-head.tif");
+				tiff::read(img2, "../test_input_data/t1-head.tif");
 				Image<uint16_t> gt;
-				raw::read(gt, "./input_data/t1-head");
+				raw::read(gt, "../test_input_data/t1-head");
 				testAssert(equals(img2, gt), ".tif and .raw are not equal.");
 
 				tiff::write(img2, "./tiff/t1-head.tif");
@@ -371,17 +381,17 @@ namespace itl2
 
 				// Tiled vs non-tiled tiff files
 				Image<uint8_t> nontiled, tiled;
-				tiff::read(nontiled, "./input_data/GraphicEx-cramps.tif");
-				tiff::read(tiled, "./input_data/GraphicEx-cramps-tile.tif");
+				tiff::read(nontiled, "../test_input_data/GraphicEx-cramps.tif");
+				tiff::read(tiled, "../test_input_data/GraphicEx-cramps-tile.tif");
 				testAssert(equals(nontiled, tiled), "Tiled and non-tiled .tif are not equal.");
 
 				// Read block of head
 				Image<uint16_t> headBlock(128, 128, 64);
-				tiff::readBlock(headBlock, "./input_data/t1-head.tif", Vec3c(128, 128, 63), true);
+				tiff::readBlock(headBlock, "../test_input_data/t1-head.tif", Vec3c(128, 128, 63));
 				raw::writed(headBlock, "./tiff/head_block");
 
 				Image<uint16_t> headBlockGTFull, headBlockGT(128, 128, 64);
-				tiff::read(headBlockGTFull, "./input_data/t1-head.tif");
+				tiff::read(headBlockGTFull, "../test_input_data/t1-head.tif");
 				crop(headBlockGTFull, headBlockGT, Vec3c(128, 128, 63));
 
 				testAssert(equals(headBlock, headBlockGT), ".tif block read and crop");

@@ -11,6 +11,7 @@
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "pointprocess.h"
+#include "progress.h"
 
 namespace itl2
 {
@@ -35,7 +36,7 @@ namespace itl2
 	@param edgeSkip This many pixels at the image edge are not considered in the histogram.
 	@param pWeight Pointer to image that stores weight of each pixel.
 	*/
-	template<typename pixel_t, typename hist_t, typename weight_t = hist_t> void histogram(const Image<pixel_t>& img, Image<hist_t>& histogram, const Vec2d& range, coord_t edgeSkip = 0, const Image<weight_t>* pWeight = nullptr, bool showProgressInfo = true)
+	template<typename pixel_t, typename hist_t, typename weight_t = hist_t> void histogram(const Image<pixel_t>& img, Image<hist_t>& histogram, const Vec2d& range, coord_t edgeSkip = 0, const Image<weight_t>* pWeight = nullptr)
 	{
 		if (pWeight)
 			pWeight->checkSize(img);
@@ -46,6 +47,7 @@ namespace itl2
 		using sum_t = typename histogram_intermediate_type<hist_t, weight_t>::type;
 		Image<sum_t> sums(histogram.dimensions());
 
+		ProgressIndicator progress(img.depth());
 		#pragma omp parallel if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
 		{
 			Image<sum_t> privateHist(sums.dimensions());
@@ -85,7 +87,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, img.depth(), showProgressInfo);
+				progress.step();
 			}
 
 			#pragma omp critical(histogram_reduction)
@@ -132,8 +134,6 @@ namespace itl2
 		//			}
 		//		}
 		//	}
-
-		//	showThreadProgress(counter, img.depth());
 		//}
 	}
 
@@ -225,7 +225,7 @@ namespace itl2
 		using sum_t = typename histogram_intermediate_type<hist_t, weight_t>::type;
 		Image<sum_t> sums(histogram.dimensions());
 
-		size_t counter = 0;
+		ProgressIndicator progress(std::max((coord_t)0, minDims.z - 2 * edgeSkip));
 		#pragma omp parallel if(minDims.x * minDims.y * minDims.z > PARALLELIZATION_THRESHOLD)
 		{
 			Image<sum_t> privateHist(sums.dimensions());
@@ -276,7 +276,7 @@ namespace itl2
 					}
 				}
 
-				showThreadProgress(counter, minDims.z);
+				progress.step();
 			}
 
 			#pragma omp critical(ndhistogram_reduction)

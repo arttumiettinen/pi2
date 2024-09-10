@@ -3,6 +3,7 @@
 #include "image.h"
 #include "boundarycondition.h"
 #include "math/vec3.h"
+#include "progress.h"
 
 #include <vector>
 
@@ -229,8 +230,7 @@ namespace itl2
 				}
 			}
 
-			
-			size_t counter = 0;
+			ProgressIndicator progress(startPoints.size());
 			#pragma omp parallel if(!omp_in_parallel() && img.pixelCount() > PARALLELIZATION_THRESHOLD)
 			{
 				std::vector<pixel_t> g(img.width() + img.height() + img.depth(), 0);
@@ -266,7 +266,7 @@ namespace itl2
 						n++;
 					}
 
-					showThreadProgress(counter, startPoints.size());
+					progress.step();
 				}
 			}
 
@@ -338,6 +338,7 @@ namespace itl2
 		template<typename pixel_t, typename Operation> void sphereOpApprox(Image<pixel_t>& img, const DecomposedSphere& directions, BoundaryCondition bc, Operation op, pixel_t padValue)
 		{
 			coord_t j = 0;
+			ProgressIndicator progress(directions.dirs.size());
 			for (size_t i = 0; i < directions.Ns.size(); i++)
 			{
 				coord_t rl = directions.rls[i];
@@ -348,6 +349,7 @@ namespace itl2
 					if (rl > 0)
 						lineOp<pixel_t, Operation>(img, rl, directions.dirs[j], padValue, bc, op);
 					j++;
+					progress.step();
 				}
 			}
 		}

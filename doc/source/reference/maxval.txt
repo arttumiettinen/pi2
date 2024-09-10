@@ -8,6 +8,10 @@ maxval
 
 Calculates max of all pixels in the input image. The output is a 1x1x1 image.
 
+.. note::
+	In Python/pi2py2, the output image is not specified, and the result value is returned by the function.
+
+
 This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
 
 Arguments
@@ -16,14 +20,14 @@ Arguments
 input image [input]
 ~~~~~~~~~~~~~~~~~~~
 
-**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
 
 Input image.
 
 output image [output]
 ~~~~~~~~~~~~~~~~~~~~~
 
-**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, float32 image, int8 image, int16 image, int32 image, int64 image
 
 Output image.
 
