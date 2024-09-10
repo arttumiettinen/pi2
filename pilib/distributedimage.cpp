@@ -39,7 +39,7 @@ namespace pilib
 		name(name),
 		pixelDataType(dataType),
 		distributor(&distributor),
-		nn5ChunkSize(distributor.getChunkSize())
+		distributedImageChunkSize(distributor.getChunkSize())
 	{
 		setReadSourceInternal(sourceFilename, false);
 		createTempFilenames(storageType);
@@ -177,8 +177,8 @@ namespace pilib
 			Vec3c newDims;
 			string reason;
 
-			// Try NN5
-			isNewImage = nn5::getInfo(filename, newDims, dt, reason) == false;
+			// Try Zarr
+			isNewImage = zarr::getInfo(filename, newDims, dt, reason) == false;
 			if (!isNewImage)
 			{
 				if (check)
@@ -187,41 +187,56 @@ namespace pilib
 						throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
 				}
 				dims = newDims;
-				readSourceType = DistributedImageStorageType::NN5;
+				readSourceType = DistributedImageStorageType::Zarr;
 			}
 			else
 			{
-				// Try Raw
-				isNewImage = raw::getInfo(filename, newDims, dt, reason) == false;
+				// Try NN5
+				isNewImage = nn5::getInfo(filename, newDims, dt, reason) == false;
 				if (!isNewImage)
 				{
 					if (check)
 					{
-						if (itl2::pixelSize(dt) != pixelSize())
+						if (dt != dataType())
 							throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
 					}
 					dims = newDims;
-					readSourceType = DistributedImageStorageType::Raw;
-					// This ensures that the file name is the full one, not the one without dimensions.
-					raw::internals::expandRawFilename(readSource);
+					readSourceType = DistributedImageStorageType::NN5;
 				}
 				else
 				{
-					// Try sequence
-					isNewImage = sequence::getInfo(filename, newDims, dt, reason) == false;
+					// Try Raw
+					isNewImage = raw::getInfo(filename, newDims, dt, reason) == false;
 					if (!isNewImage)
 					{
 						if (check)
 						{
-							if (dt != dataType())
+							if (itl2::pixelSize(dt) != pixelSize())
 								throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
 						}
 						dims = newDims;
-						readSourceType = DistributedImageStorageType::Sequence;
+						readSourceType = DistributedImageStorageType::Raw;
+						// This ensures that the file name is the full one, not the one without dimensions.
+						raw::internals::expandRawFilename(readSource);
 					}
 					else
 					{
-						// The input file is nothing supported. We'll assume it is a new file.
+						// Try sequence
+						isNewImage = sequence::getInfo(filename, newDims, dt, reason) == false;
+						if (!isNewImage)
+						{
+							if (check)
+							{
+								if (dt != dataType())
+									throw ITLException("Invalid distributed image source file. Data type does not match data type of distributed image object.");
+							}
+							dims = newDims;
+							readSourceType = DistributedImageStorageType::Sequence;
+						}
+						else
+						{
+							// The input file is nothing supported. We'll assume it is a new file.
+						}
 					}
 				}
 			}
@@ -273,10 +288,15 @@ namespace pilib
 		
 		switch (currentWriteTargetType())
 		{
+		case DistributedImageStorageType::Zarr:
+		{
+			s << "writezarrblock(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ", " << distributedImageChunkSize << ");" << endl;
+			break;
+		}
 		case DistributedImageStorageType::NN5:
 		{
 			// TODO: No NN5 compression specified.
-			s << "writenn5block(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ", " << nn5ChunkSize << ");" << endl;
+			s << "writenn5block(\"" << uniqueName() << "\", \"" << currentWriteTarget() << "\", " << filePos << ", " << dims << ", " << imagePos << ", " << blockSize << ", " << distributedImageChunkSize << ");" << endl;
 			break;
 		}
 		case DistributedImageStorageType::Raw:
@@ -295,12 +315,16 @@ namespace pilib
 		return s.str();
 	}
 
-	size_t DistributedImageBase::startConcurrentWrite(const std::vector<nn5::NN5Process>& processes)
+	size_t DistributedImageBase::startConcurrentWrite(const std::vector<io::DistributedImageProcess>& processes)
 	{
 		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
 		{
 			// TODO: NN5 compression defaults to LZ4
-			return nn5::startConcurrentWrite(dimensions(), dataType(), currentWriteTarget(), nn5ChunkSize, nn5::NN5Compression::LZ4, processes);
+			return nn5::startConcurrentWrite(dimensions(), dataType(), currentWriteTarget(), distributedImageChunkSize, nn5::NN5Compression::LZ4, processes);
+		}
+		if (currentWriteTargetType() == DistributedImageStorageType::Zarr)
+		{
+			return zarr::startConcurrentWrite(dimensions(), dataType(), currentWriteTarget(), distributedImageChunkSize, processes);
 		}
 		return 0;
 	}
@@ -308,6 +332,10 @@ namespace pilib
 	string DistributedImageBase::emitEndConcurrentWrite(const Vec3c& chunk) const
 	{
 		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
+		{
+			return string("endconcurrentwrite(\"") + currentWriteTarget() + "\", " + toString(chunk) + ")";
+		}
+		if (currentWriteTargetType() == DistributedImageStorageType::Zarr)
 		{
 			return string("endconcurrentwrite(\"") + currentWriteTarget() + "\", " + toString(chunk) + ")";
 		}
@@ -323,6 +351,10 @@ namespace pilib
 		{
 			return nn5::getChunksThatNeedEndConcurrentWrite(currentWriteTarget());
 		}
+		if (currentWriteTargetType() == DistributedImageStorageType::Zarr)
+		{
+			return zarr::getChunksThatNeedEndConcurrentWrite(currentWriteTarget());
+		}
 		return vector<Vec3c>();
 	}
 
@@ -331,6 +363,10 @@ namespace pilib
 		if (currentWriteTargetType() == DistributedImageStorageType::NN5)
 		{
 			nn5::endConcurrentWrite(currentWriteTarget(), false);
+		}
+		if (currentWriteTargetType() == DistributedImageStorageType::Zarr)
+		{
+			zarr::endConcurrentWrite(currentWriteTarget(), false);
 		}
 
         // Temporary image corresponding to old read source is not needed anymore as it

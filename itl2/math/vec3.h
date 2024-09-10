@@ -465,6 +465,19 @@ namespace itl2
             }
     };
 
+	template<typename T>
+	std::istream& operator>>(std::istream& i, Vec3<T>& out)
+	{
+		i.ignore(1, '[');
+		i >> out.x;
+		i.ignore(2, ',');
+		i >> out.y;
+		i.ignore(2, ',');
+		i >> out.z;
+		i.ignore(1, ']');
+		return i;
+	}
+
 	typedef Vec3<itl2::float32_t> Vec3f;
     typedef Vec3<double> Vec3d;
 	typedef Vec3<itl2::coord_t> Vec3c;

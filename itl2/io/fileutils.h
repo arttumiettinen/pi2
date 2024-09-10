@@ -67,6 +67,11 @@ namespace itl2
 	std::vector<std::string> buildFileList(const std::string& templ);
 
 	/**
+	Counts the number of regular files within the directory. Contains the same result as buildFileList.size but more performant
+	 */
+	int countFiles(const std::string& directory);
+
+	/**
 	Works as buildFileList but removed non-image files from the list.
 	*/
 	std::vector<std::string> buildFilteredFileList(const std::string& templ);
