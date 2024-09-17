@@ -69,14 +69,14 @@ namespace itl2
 			ofstream out(internals::concurrentTagFile(path), ios_base::out | ios_base::trunc | ios_base::binary);
 
 			size_t unsafeChunkCount = 0;
-			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 				{
 					string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex, metadata.separator);
 					//TODO: will that happen later? fs::create_directories(chunkFile);
 
 					string writesFolder = internals::writesFolder(chunkFile);
 
-					AABoxc chunkBox = AABoxc::fromPosSize(chunkStart, metadata.chunkSize);
+					AABoxc chunkBox = AABoxc::fromPosSize(chunkPosition, metadata.chunkSize);
 
 					if (!io::isChunkSafe(chunkBox, processes))
 					{
@@ -118,7 +118,7 @@ namespace itl2
 
 			size_t dimensionality = getDimensionality(imageDimensions);
 			vector<Vec3c> result;
-			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 				{
 					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex, metadata.separator))
 						result.push_back(chunkIndex);
@@ -129,7 +129,7 @@ namespace itl2
 		template<typename pixel_t> struct CombineChunkWrites
 		{
 		public:
-			static void run(const string& path, const Vec3c& datasetSize, const ZarrMetadata& metadata, const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			static void run(const string& path, const Vec3c& datasetSize, const ZarrMetadata& metadata, const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 			{
 				string chunkFile = internals::chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
 				string writesFolder = internals::writesFolder(chunkFile);
@@ -142,17 +142,18 @@ namespace itl2
 					if (!sortedWritesFiles.empty())
 					{
 						Image<pixel_t> imgChunk(metadata.chunkSize);
-						AABoxc chunkRegion = AABoxc::fromPosSize(chunkStart, metadata.chunkSize);
-						internals::readChunkInBlock(imgChunk, chunkFile, chunkRegion, chunkStart,chunkStart, metadata);
+						AABoxc chunkRegion = AABoxc::fromPosSize(chunkPosition, metadata.chunkSize);
+						internals::readSingleChunk(imgChunk, chunkFile, metadata);
 
 						// Modify data with the new writes.
 						for (const string& writesFile : sortedWritesFiles)
 						{
 							AABoxc updateRegion = internals::updateRegionOfWritesFile(writesFile);
-							internals::readChunkInBlock(imgChunk, writesFile, updateRegion, chunkStart,chunkStart, metadata);
+							AABoxc chunkUpdateRegion = updateRegion.intersection(chunkRegion).translate(-chunkPosition);
+							internals::readSingleChunk(imgChunk, writesFile, chunkUpdateRegion, metadata);
 						}
 						// Write back to disk.
-						internals::writeSingleChunk(imgChunk, chunkFile, chunkRegion, metadata, true);
+						internals::writeSingleChunk(imgChunk, chunkFile, AABoxc(), metadata, true);
 					}
 					else cout << "writes folder empty: " << writesFolder << endl;
 
@@ -171,9 +172,9 @@ namespace itl2
 				throw ITLException("Unable to read zarr dataset. path: " + path + " reason: " + reason);
 			}
 
-			forAllChunks(dimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+			forAllChunks(dimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 				{
-				  pick<CombineChunkWrites>(metadata.dataType, path, dimensions, metadata, chunkIndex, chunkStart);
+				  pick<CombineChunkWrites>(metadata.dataType, path, dimensions, metadata, chunkIndex, chunkPosition);
 				});
 
 			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
@@ -505,7 +506,8 @@ namespace itl2
 
 					Image<uint16_t> entireFromDisk;
 					zarr::read(entireFromDisk, imageFilename);
-					testAssert(equals(entireFromDisk, img), "Zarr entire image read/write cycle with concurrency enabled");
+					bool imgEquals = equals(entireFromDisk, img);
+					testAssert(imgEquals, "Zarr entire image read/write cycle with concurrency enabled");
 				}
 				// Write in 2 blocks and read.
 				fs::remove_all(imageFilename);
@@ -548,7 +550,7 @@ namespace itl2
 
 					Image<uint16_t> entireFromDisk;
 					zarr::read(entireFromDisk, imageFilename);
-					testAssert(equals(entireFromDisk, img), "Zarr entire image read/write cycle with concurrency enabled");
+					testAssert(equals(entireFromDisk, img), "Zarr entire image read/write cycle with pseudo-concurrent blocks");
 				}
 			}
 			void concurrency()

@@ -251,7 +251,7 @@ int main()
 
 	//test(itl2::tests::seededDMap, "seeded distance map");
 
-	test(itl2::tests::stddevuint16, "standard deviation, uint16");
+	//test(itl2::tests::stddevuint16, "standard deviation, uint16");
 
 	//test(itl2::tests::sphereMaxApprox, "fast max filter approximation accuracy");
 	//test(itl2::tests::sphereMinApprox, "fast min filter approximation accuracy");

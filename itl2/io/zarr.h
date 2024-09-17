@@ -16,6 +16,9 @@
 #include "io/distributedimageprocess.h"
 #include "json.h"
 #include "datatypes.h"
+#define JSON_UNSIGNED_t uint16_t
+#define JSON_SIGNED_t int64_t
+#define JSON_FLOAT_t double
 
 
 namespace itl2
@@ -29,10 +32,6 @@ namespace itl2
 	namespace zarr
 	{
 		typedef std::variant<uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float32_t, complex32_t> ImageValue;
-
-#define JSON_UNSIGNED_t uint16_t
-#define JSON_SIGNED_t int64_t
-#define JSON_FLOAT_t double
 		typedef std::variant<JSON_UNSIGNED_t, JSON_SIGNED_t, JSON_FLOAT_t> JsonNumberType;
 
 		struct ZarrMetadata
@@ -55,6 +54,24 @@ namespace itl2
 
 		namespace internals
 		{
+			//TODO: remove this debug method
+			template<typename pixel_t>
+			void printImg(Image<pixel_t>& img){
+				for (int i = 0; i < img.dimension(0); ++i)
+				{
+					for (int j = 0; j < img.dimension(1); ++j)
+					{
+						cout << "(";
+						for (int k = 0; k < img.dimension(2); ++k)
+						{
+							cout << img(i,j,k) << ",";
+						}
+						cout << "), ";
+					}
+					cout << endl;
+				}
+				cout << endl;
+			}
 
 			inline string zarrMetadataFilename(const string& path)
 			{
@@ -65,8 +82,6 @@ namespace itl2
 			{
 				return path + "/concurrent";
 			}
-
-
 
 			/**
 			Writes Zarr metadata file.
@@ -90,7 +105,6 @@ namespace itl2
 				{
 					j["codecs"].push_back(codec.toJSON());
 				}
-				// TODO: allow other chunk_key_encoding
 				// TODO: optional parameters
 				string metadataFilename = zarr::internals::zarrMetadataFilename(path);
 				std::ofstream of(metadataFilename, std::ios_base::trunc | std::ios_base::out);
@@ -125,14 +139,14 @@ namespace itl2
 
 			inline Vec3c clampedChunkSize(const Vec3c& chunkIndex, const Vec3c& chunkSize, const Vec3c& datasetSize)
 			{
-				Vec3c datasetChunkStart = chunkIndex.componentwiseMultiply(chunkSize);
-				Vec3c datasetChunkEnd = datasetChunkStart + chunkSize;
+				Vec3c datasetChunkPosition = chunkIndex.componentwiseMultiply(chunkSize);
+				Vec3c datasetChunkEnd = datasetChunkPosition + chunkSize;
 				for (size_t n = 0; n < datasetChunkEnd.size(); n++)
 				{
 					if (datasetChunkEnd[n] > datasetSize[n])
 						datasetChunkEnd[n] = datasetSize[n];
 				}
-				Vec3c realChunkSize = datasetChunkEnd - datasetChunkStart;
+				Vec3c realChunkSize = datasetChunkEnd - datasetChunkPosition;
 
 				return realChunkSize;
 			}
@@ -140,17 +154,67 @@ namespace itl2
 			std::vector<char> readBytesOfFile(const std::string& filename);
 			void writeBytesToFile(std::vector<char>& buffer, const std::string& filename, size_t startInFilePos = 0);
 
-			/*
-			 * outputBlock: image where the data should get read to
-			 * filename: path to the file containing this chunk
-			 * updateRegion: the bounding box of coordinates of the original image which should get written to outputBlock
-			 * blockStart: top left coordinate of outputBlock
-			 * chunkStart: top left coordinate of this chunk
-			 * metadata: metadata of the zarr dataset
-			 */
-
+			/**
+			Reads a zarr chunk.
+			@param imgChunk Target for the chunk data that will be read.
+			@param filename Path to the chunk file.
+			@param metadata Zarr metadata.
+			*/
 			template<typename pixel_t>
-			void readChunkInBlock(Image<pixel_t>& outputBlock, const std::string& filename, const AABoxc updateRegion, const Vec3c blockStart, const Vec3c chunkStart, const ZarrMetadata& metadata)
+			void readSingleChunk(Image<pixel_t>& imgChunk, const std::string& filename,
+				const ZarrMetadata& metadata)
+			{
+				{
+					if (fs::is_directory(filename))
+					{
+						throw ITLException(filename + string(" is a directory, but it should be a file."));
+					}
+					if (fs::is_regular_file(filename))
+					{
+						std::vector<char> buffer = readBytesOfFile(filename);
+						decodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
+					}
+					else
+					{
+						drawAll<pixel_t>(imgChunk, static_cast<pixel_t>(metadata.fillValue));
+					}
+				}
+			}
+
+			/**
+			Reads a region of a zarr chunk.
+			@param imgChunk Target for the chunk data that will be read.
+			@param filename Path to the chunk file.
+			@param updateRegion Region within the chunk that will be read.
+			@param metadata Zarr metadata.
+			*/
+			template<typename pixel_t>
+			void readSingleChunk(Image<pixel_t>& imgChunk, const std::string& filename,
+				AABoxc updateRegion,
+				const ZarrMetadata& metadata)
+			{
+				Image<pixel_t> temp(imgChunk.dimensions());
+				readSingleChunk(temp, filename, metadata);
+
+				forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
+				{
+				  Vec3c pos = Vec3c(x, y, z);
+				  imgChunk(pos) = temp(pos);
+				});
+			}
+			/**
+			Reads a block of an image.
+			@param outputBlock Target for data that will be read.
+			@param path Path to the zarr file.
+			@param fileDimensions Total dimensions of the zarr file.
+			@param blockPosition Position of the block that should get read within the zarr file
+			@param metadata Zarr metadata.
+			*/
+			template<typename pixel_t>
+			void readChunksInRange(Image<pixel_t>& outputBlock, const std::string& path,
+				const Vec3c& fileDimensions,
+				const Vec3c& blockPosition,
+				const ZarrMetadata& metadata)
 			{
 				Vec3c transposedChunkShape = metadata.chunkSize;
 				for (auto codec : metadata.codecs)
@@ -163,48 +227,24 @@ namespace itl2
 					}
 				}
 
-				AABox<coord_t> currentChunk = AABox<coord_t>::fromPosSize(chunkStart, metadata.chunkSize);
-				if (updateRegion.overlapsExclusive(currentChunk))
+				const AABoxc blockRegion = AABoxc::fromPosSize(blockPosition, outputBlock.dimensions());
+				forAllChunks(fileDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 				{
-					AABox<coord_t> readRegion = updateRegion.intersection(currentChunk);
-					if (fs::is_directory(filename))
-					{
-						throw ITLException(filename + string(" is a directory, but it should be a file."));
-					}
-					if (fs::is_regular_file(filename))
-					{
-						std::vector<char> buffer = readBytesOfFile(filename);
-						Image<pixel_t> imgChunk(transposedChunkShape);
-						decodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
+				  AABox<coord_t> chunkRegion = AABox<coord_t>::fromPosSize(chunkPosition, metadata.chunkSize);
+				  if (blockRegion.overlapsExclusive(chunkRegion))
+				  {
+					  string filename = chunkFile(path, getDimensionality(fileDimensions), chunkIndex, metadata.separator);
+					  Image<pixel_t> imgChunk(transposedChunkShape);
+					  readSingleChunk(imgChunk, filename, metadata);
 
-						//write all pixels of chunk back to img
-						forAllInBox(readRegion, [&](coord_t x, coord_t y, coord_t z)
-						{
-						  Vec3c pos = Vec3c(x, y, z);
-						  outputBlock(pos - blockStart) = imgChunk(pos - chunkStart);
-						});
-					}
-					else
-					{
-						draw<pixel_t>(outputBlock, readRegion, static_cast<pixel_t>(metadata.fillValue));
-					}
-				}
-			}
-			/**
-			Reads zarr chunk files.
-			*/
-			template<typename pixel_t>
-			void readChunksInRange(Image<pixel_t>& outputBlock, const std::string& path,
-				const ZarrMetadata& metadata,
-				const Vec3c& datasetShape,
-				const Vec3c& blockStart)
-			{
-
-				const AABoxc selectedBlock = AABoxc::fromPosSize(blockStart, outputBlock.dimensions());
-				forAllChunks(datasetShape, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
-				{
-				  string filename = chunkFile(path, getDimensionality(datasetShape), chunkIndex, metadata.separator);
-				  readChunkInBlock(outputBlock, filename, selectedBlock, blockStart, chunkStart, metadata);
+					  //update blockRegion within chunk
+					  AABox<coord_t> readRegion = blockRegion.intersection(chunkRegion);
+					  forAllInBox(readRegion, [&](coord_t x, coord_t y, coord_t z)
+					  {
+						Vec3c pos = Vec3c(x, y, z);
+						outputBlock(pos - blockPosition) = imgChunk(pos - chunkPosition);
+					  });
+				  }
 				});
 			}
 
@@ -392,7 +432,11 @@ namespace itl2
 
 			/**
 			Checks that provided zarr information is correct and writes metadata.
+			@param imageDimensions Dimensions of the new image
+			@param path Path to the root of the zarr dataset.
+			@param metadata Zarr metadata of the new image
 			@param deleteOldData Contents of the dataset are usually deleted when a write process is started. Set this to false to delete only if the path contains an incompatible dataset, but keep the dataset if it seems to be the same than the current image.
+			@param loadOldMetadata If the there is an existing zarr dataset at the path, load its zarr metadata.
 			*/
 			inline void handleExisting(const Vec3c& imageDimensions,
 				const std::string& path,
@@ -477,13 +521,10 @@ namespace itl2
 		inline const nlohmann::json DEFAULT_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
 		inline const ZarrMetadata DEFAULT_METADATA = {DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR};
 
-
-
 		/**
-		Reads a part of a .zarr dataset to the given image.
-		NOTE: Does not support out of bounds start position.
-		@param targetImg Image where the data is placed. The size of the image defines the size of the block that is read.
-		@param filename The name of the dataset to read.
+		Reads a part of a zarr dataset to the given image.
+		@param img Image where the data is placed. The size of the image defines the size of the block that is read.
+		@param path Path to the root of the zarr dataset.
 		@param fileStart Start location of the read in the file. The size of the image defines the size of the block that is read.
 		*/
 		template<typename pixel_t>
@@ -501,12 +542,12 @@ namespace itl2
 			if (fileStart.x < 0 || fileStart.y < 0 || fileStart.z < 0 || fileStart.x >= datasetShape.x || fileStart.y >= datasetShape.y || fileStart.z >= datasetShape.z)
 				throw ITLException("Out of bounds start position in readBlock.");
 
-			internals::readChunksInRange(img, path, metadata, datasetShape, fileStart);
+			internals::readChunksInRange(img, path, datasetShape, fileStart, metadata);
 		}
 		/**
 		Reads a zarr dataset file to the given image.
-		@param targetImg Image where the data is placed. The size of the image will be set based on the dataset contents.
-		@param path Path to the root of the nn5 dataset.
+		@param img Image where the data is placed. The size of the image will be set based on the dataset contents.
+		@param path Path to the root of the zarr dataset.
 		*/
 		template<typename pixel_t>
 		void read(Image<pixel_t>& img, const std::string& path)
@@ -525,13 +566,13 @@ namespace itl2
 		namespace internals
 		{
 			/**
-				Writes single Zarr chunk file.
-				@param chunkIndex Index of the chunk to write. This is used to determine the correct output folder.
-				@param chunkSize Chunk size of the dataset.
-				@param startInChunkCoords Start position of the block to be written in the coordinates of the chunk.
-				@param chunkStart Start position of the block to be written in the coordinates of image targetImg.
-				@param writeSize Size of block to be written.
-				*/
+			Writes a single zarr chunk file.
+			@param imgChunk Data to be written to the chunk.
+			@param filename Path to the chunk file.
+			@param updateRegion Region within the entire output file that will be written to.
+			@param metadata Zarr metadata.
+			@param ignoreWritesFolder Defines if an existing writes folder should get ignored and data gets written directly to the chunk file.
+			*/
 			template<typename pixel_t>
 			void writeSingleChunk(Image<pixel_t>& imgChunk, std::string filename,
 				AABoxc updateRegion, const ZarrMetadata& metadata, const bool ignoreWritesFolder = false)
@@ -559,38 +600,31 @@ namespace itl2
 					filename = writesFile(filename, writesBefore, updateRegion);
 				}
 				writeBytesToFile(buffer, filename);
-
 			}
 
-			template<typename pixel_t>
-			void printImg(Image<pixel_t>& img){
-				for (int i = 0; i < img.dimension(0); ++i)
-				{
-					for (int j = 0; j < img.dimension(1); ++j)
-					{
-						cout << "(";
-						for (int k = 0; k < img.dimension(2); ++k)
-						{
-							cout << img(i,j,k) << ",";
-						}
-						cout << "), ";
-					}
-					cout << endl;
-				}
-				cout << endl;
-			}
 
+			/**
+			Writes a block of an image to the chunks.
+			@param img Data that should get written.
+			@param path Path to the zarr file to write to.
+			@param imgPosition Position of the img within the output file.
+			@param fileDimensions Total dimensions of the output file.
+			@param blockPosition Position of the block that should get written within the output file
+			@param blockDimensions Dimensions of the block that should get written.
+			@param metadata Zarr metadata.
+			*/
 			template<typename pixel_t>
-			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path, const ZarrMetadata& metadata,
+			void writeChunksInRange(const Image<pixel_t>& img, const std::string& path,
 				const Vec3c& imgPosition,
 				const Vec3c& fileDimensions,
 				const Vec3c& blockPosition,
-				const Vec3c& blockDimensions)
+				const Vec3c& blockDimensions,
+				const ZarrMetadata& metadata)
 			{
 				const AABoxc selectedBlock = AABoxc::fromPosSize(blockPosition, blockDimensions);
-				forAllChunks(fileDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkStart)
+				forAllChunks(fileDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 				{
-				  AABoxc currentChunk = AABoxc::fromPosSize(chunkStart, metadata.chunkSize);
+				  AABoxc currentChunk = AABoxc::fromPosSize(chunkPosition, metadata.chunkSize);
 				  if (selectedBlock.overlapsExclusive(currentChunk))
 				  {
 					  AABoxc updateRegion = selectedBlock
@@ -598,7 +632,7 @@ namespace itl2
 						  .intersection(AABoxc::fromPosSize(imgPosition, img.dimensions()));
 
 					  Image<pixel_t> chunk(metadata.chunkSize, metadata.fillValue);
-					  readBlock(chunk, path, chunkStart); //TODO: use readChunkInBlock
+					  readBlock(chunk, path, chunkPosition); //TODO: use readSingleChunk
 					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
 					  //write all pixels of chunk in img to imgChunk
 					  forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
@@ -612,16 +646,20 @@ namespace itl2
 			}
 		}
 		/**
-		Writes a block of an image to the specified location in an .zarr dataset.
+		Writes a block of an image to the specified location in an zarr dataset.
 		The output dataset is not truncated if it exists.
 		If the output file does not exist, it is created and values outside the block
 		are filled with fillValue
-		@param targetImg Image to write.
-		@param filename Name of file to write.
-		@param filePosition Position in the file to write to.
-		@param fileDimension Total dimensions of the entire output file.
-		@param imagePosition Position in the image where the block to be written starts.
-		@param blockDimensions Dimensions of the block of the source image to write.
+		@param img Data that should get written.
+		@param path Path to the zarr file to write to.
+		@param imgPosition Position of the img within the output file.
+		@param fileDimensions Total dimensions of the output file.
+		@param blockPosition Position of the block that should get written within the output file
+		@param blockDimensions Dimensions of the block that should get written.
+		@param chunkSize Chunk size for the zarr dataset.
+		@param codecs Codecs for the zarr dataset.
+		@param fillValue Fill value for the zarr dataset.
+		@param separator File path separator for the zarr dataset.
 		*/
 		template<typename pixel_t>
 		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& imgPosition,
@@ -633,21 +671,22 @@ namespace itl2
 			fillValue_t fillValue = DEFAULT_FILLVALUE,
 			const string& separator = DEFAULT_SEPARATOR)
 		{
-			ZarrMetadata metadata = {img.dataType(), chunkSize, codecs, fillValue, separator};
+			ZarrMetadata metadata = { img.dataType(), chunkSize, codecs, fillValue, separator };
 			writeBlock(img, path, imgPosition, fileDimensions, blockPosition, blockDimensions, metadata);
 		}
 
 		/**
-		Writes a block of an image to the specified location in an .zarr dataset.
+		Writes a block of an image to the specified location in a zarr dataset.
 		The output dataset is not truncated if it exists.
 		If the output file does not exist, it is created and values outside the block
 		are filled with fillValue
-		@param targetImg Image to write.
-		@param filename Name of file to write.
-		@param filePosition Position in the file to write to.
-		@param fileDimension Total dimensions of the entire output file.
-		@param imagePosition Position in the image where the block to be written starts.
-		@param blockDimensions Dimensions of the block of the source image to write.
+		@param img Data that should get written.
+		@param path Path to the zarr file to write to.
+		@param imgPosition Position of the img within the output file.
+		@param fileDimensions Total dimensions of the output file.
+		@param blockPosition Position of the block that should get written within the output file
+		@param blockDimensions Dimensions of the block that should get written.
+		@param metadata Zarr metadata.
 		*/
 		template<typename pixel_t>
 		void writeBlock(const Image<pixel_t>& img, const std::string& path, const Vec3c& imgPosition,
@@ -656,17 +695,21 @@ namespace itl2
 			const Vec3c& blockDimensions,
 			const ZarrMetadata metadata)
 		{
-			if (metadata.chunkSize.min()<=0)
+			if (metadata.chunkSize.min() <= 0)
 				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			fs::create_directories(path);
 			internals::writeMetadata(path, fileDimensions, metadata);
-			internals::writeChunksInRange(img, path, metadata, imgPosition, fileDimensions, blockPosition, blockDimensions);
+			internals::writeChunksInRange(img, path, imgPosition, fileDimensions, blockPosition, blockDimensions, metadata);
 		}
 
 		/**
 		Write an image to a zarr dataset.
-		@param targetImg Image to write.
-		@param path Name of the top directory of the nn5 dataset.
+		@param img Data that should get written.
+		@param path Path to the zarr file to write to.
+		@param chunkSize Chunk size for the zarr dataset.
+		@param codecs Codecs for the zarr dataset.
+		@param separator File path Separator for the zarr dataset.
+		@param fillValue Fill value for the zarr dataset.
 		*/
 		template<typename pixel_t>
 		void write(const Image<pixel_t>& img,
@@ -682,8 +725,9 @@ namespace itl2
 
 		/**
 		Write an image to a zarr dataset.
-		@param targetImg Image to write.
-		@param path Name of the top directory of the nn5 dataset.
+		@param img Data that should get written.
+		@param path Path to the zarr file to write to.
+		@param metadata Zarr metadata.
 		*/
 		template<typename pixel_t>
 		void write(const Image<pixel_t>& img,
@@ -698,25 +742,26 @@ namespace itl2
 		}
 
 		/**
-		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
+		Enables concurrent access from multiple processes for an existing or a new zarr dataset.
 		This function should be called before the processes are started.
-		@param imageDimensions Dimensions of the image to be saved into the NN5 dataset.
+		@param imageDimensions Dimensions of the image to be saved into the zarr dataset.
 		@param imageDataType Data type of the image.
-		@param path Path to the NN5 dataset.
-		@param chunkSize Chunk size for the NN5 dataset.
-		@param compression Compression method to be used.
+		@param path Path to the zarr dataset.
+		@param chunkSize Chunk size for the zarr dataset.
 		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
+		@param codecs Zarr Codecs to be used.
 		@return Number of chunks that require special processing in endConcurrentWrite.
 		*/
 		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const codecs::Pipeline& codecs=DEFAULT_CODECS);
 
 		/**
-		Enables concurrent access from multiple processes for an existing or a new NN5 dataset.
+		Enables concurrent access from multiple processes for an existing or a new zarr dataset.
 		This function should be called before the processes are started.
-		@param targetImg Image that is to be saved into the NN5 dataset by the processes.
-		@param path Path to the NN5 dataset.
-		@param chunkSize Chunk size for the NN5 dataset.
+		@param img Image that is to be saved into the zarr dataset by the processes.
+		@param path Path to the zarr dataset.
+		@param chunkSize Chunk size for the zarr dataset.
 		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
+		@param codecs Zarr Codecs to be used.
 		*/
 		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const codecs::Pipeline& codecs=DEFAULT_CODECS)
 		{
@@ -735,8 +780,8 @@ namespace itl2
 		void endConcurrentWrite(const std::string& path);
 
 		/**
-		Used to test if a block in the given NN5 dataset requires calling endConcurrentWrite after concurrent access by multiple processes.
-		@param path Path to the NN5 dataset.
+		Used to test if a block in the given zarr dataset requires calling endConcurrentWrite after concurrent access by multiple processes.
+		@param path Path to the zarr dataset.
 		@param chunkIndex Index of the chunk to finalize.
 		*/
 		bool needsEndConcurrentWrite(const std::string& path, const Vec3c& chunkIndex);
@@ -747,12 +792,12 @@ namespace itl2
 		std::vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path);
 
 		/**
-		Finalizes concurrent access from multiple processes for a single chunk in an NN5 dataset.
+		Finalizes concurrent access from multiple processes for a single chunk in an zarr dataset.
 		This function can be used instead of the other endConcurrentWrite overload, but it must be called for
 		all chunks in the dataset.
 		The function can be called concurrently for different chunk indices.
 		Processing might involve doing nothing, or reading and re-writing the chunk.
-		@param path Path to the NN5 dataset.
+		@param path Path to the zarr dataset.
 		@param chunkIndex Index of the chunk to finalize.
 		*/
 		void endConcurrentWrite(const std::string& path, const Vec3c& chunkIndex);
