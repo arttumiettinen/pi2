@@ -37,6 +37,7 @@ class NonGridStitchSettings:
         self.allow_local_shifts = True
         self.allow_local_deformations = True
         self.zeroes_are_missing_values = True
+        self.output_format = "raw"
 
 
 
@@ -103,6 +104,7 @@ def main():
     argsparser.add_argument('--max_block_size', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--cluster', type=str, help='Overrides corresponding setting read from the configuration file.')
     argsparser.add_argument('--zeroes_are_missing_values', type=str, help='Overrides corresponding setting read from the configuration file.')
+    argsparser.add_argument('--output_format', type=str, help='Overrides corresponding setting read from the configuration file.')
 
 
     args = argsparser.parse_args()
@@ -209,7 +211,13 @@ def main():
     if args.zeroes_are_missing_values:
         sval = args.zeroes_are_missing_values
     settings.zeroes_are_missing_values = to_bool(sval)
-    
+
+    # output format for stitching
+    settings.output_format = get(config, 'output_format', 'raw')
+    if args.output_format:
+        settings.output_format = args.output_format
+    assert settings.output_format in ["raw", "zarr"]
+
     # Threshold for displacement filtering
     sval = get(config, 'displacement_filter_threshold', '3')
     if args.displacement_filter_threshold:
@@ -314,7 +322,7 @@ def main():
         
     read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle_diameter, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.zeroes_are_missing_values)
+    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle_diameter, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.zeroes_are_missing_values, output_format)
 
     wait_for_cluster_jobs()
 

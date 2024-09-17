@@ -126,6 +126,9 @@ cluster = None
 # If set to false, the script will return after submitting jobs.
 wait_for_jobs = True
 
+# Defines the output format
+# Candidates are: zarr, raw
+output_format = raw
 
 # Maximum size of image block that is processed in one process is max_block_size^3.
 # Set to zero to determine the value automatically based on available RAM.
