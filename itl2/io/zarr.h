@@ -632,8 +632,8 @@ namespace itl2
 						  .intersection(AABoxc::fromPosSize(imgPosition, img.dimensions()));
 
 					  Image<pixel_t> chunk(metadata.chunkSize, metadata.fillValue);
-					  readBlock(chunk, path, chunkPosition); //TODO: use readSingleChunk
 					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
+					  readSingleChunk(chunk, filename, metadata);
 					  //write all pixels of chunk in img to imgChunk
 					  forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
 					  {
