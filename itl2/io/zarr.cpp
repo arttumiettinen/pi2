@@ -16,7 +16,7 @@ namespace itl2
 		{
 			std::vector<char> readBytesOfFile(const std::string& filename)
 			{
-				std::ifstream ifs(filename, std::ios_base::binary | std::ios::ate);
+				std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in | std::ios::ate);
 				if (!ifs)
 				{
 					throw ITLException(std::string("Unable to open ") + filename + std::string(", ") + getStreamErrorMessage());
@@ -207,30 +207,50 @@ namespace itl2
 
 			void writeBlockTest(Vec3c chunkSize, uint16_t changeValue)
 			{
-				string path = "./testoutput/writeBlock.zarr";
 				Vec3c size = Vec3c(2, 3, 4);
 				Vec3c startBlock(1, 2, 3);
 				Vec3c blockSize(2, 2, 2);
 
-				Image<uint16_t> img(size, 42);
-				zarr::write(img, path, chunkSize);
-				drawAll(img, changeValue);
-				zarr::writeBlock(img, path, startBlock, blockSize, chunkSize);
-
-				Image<uint16_t> fromDisk;
-				zarr::read(fromDisk, path);
-
 				Image<uint16_t> expected(size, 42);
 				draw(expected, AABoxsc::fromPosSize(Vec3<int>(startBlock), Vec3<int>(blockSize)), changeValue);
 
-				bool imgEquals = equals(expected, fromDisk);
-				testAssert(imgEquals, string("zarr test writeBlock chunkSize=" + toString(chunkSize)));
+				//test with img same size as expected
+				string path = "./testoutput/writeBlock1.zarr";
+				fs::remove_all(path);
 
+				Vec3c imgPosition = Vec3c(0,0,0);
+				Image<uint16_t> img(size, 42);
+				zarr::write(img, path, chunkSize);
+				drawAll(img, changeValue);
+				zarr::writeBlock(img, path, imgPosition, size, startBlock, blockSize, chunkSize);
+
+				Image<uint16_t> fromDisk1;
+				zarr::read(fromDisk1, path);
+				bool imgEquals = equals(expected, fromDisk1);
 				if(!imgEquals)
 				{
 					internals::printImg(expected);
-					internals::printImg(fromDisk);
+					internals::printImg(fromDisk1);
 				}
+				testAssert(imgEquals, string("zarr test writeBlock chunkSize=" + toString(chunkSize)));
+
+
+				//test with img same size as block
+				path = "./testoutput/writeBlock2.zarr";
+				fs::remove_all(path);
+				zarr::writeBlock(Image<uint16_t>(blockSize, changeValue), path, startBlock, size, startBlock, blockSize, chunkSize, DEFAULT_CODECS, 42);
+
+				Image<uint16_t> fromDisk2;
+				zarr::read(fromDisk2, path);
+				bool imgEquals2 = equals(expected, fromDisk2);
+				if(!imgEquals)
+				{
+					internals::printImg(expected);
+					internals::printImg(fromDisk2);
+				}
+				testAssert(imgEquals2, string("zarr test 2 for writeBlock chunkSize=" + toString(chunkSize)));
+				fs::remove_all(path);
+
 			}
 
 			void writeBlock()
@@ -294,6 +314,7 @@ namespace itl2
 			void blosc()
 			{
 				string path = "./testoutput/test_blosc.zarr";
+				fs::remove_all(path);
 
 				Image<uint16_t> img(Vec3c(2, 5, 10));
 				ramp(img, 0);
@@ -345,8 +366,9 @@ namespace itl2
 			}
 
 			void shardingTest(std::string indexLocation, bool withBlosc, Vec3c imgShape = Vec3c(2, 5, 10), Vec3c shardShape = Vec3c(2, 5, 1), Vec3c chunkShape = Vec3c(2, 1, 1)){
-
 				string path = "./testoutput/test_sharding_" + indexLocation;
+				fs::remove_all(path);
+
 				if(withBlosc) path+="_withBlosc";
 				path+=".zarr";
 
@@ -498,8 +520,8 @@ namespace itl2
 					processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
 
 					zarr::startConcurrentWrite(img, imageFilename, chunkSize, processes, codecs);
-					zarr::writeBlock(img, imageFilename, block1Start, block1Size, metadata);
-					zarr::writeBlock(img, imageFilename, block2Start, block2Size, metadata);
+					zarr::writeBlock(img, imageFilename, Vec3c(0,0,0), img.dimensions(), block1Start, block1Size, metadata);
+					zarr::writeBlock(img, imageFilename, Vec3c(0,0,0), img.dimensions(), block2Start, block2Size, metadata);
 					zarr::endConcurrentWrite(imageFilename);
 
 					Image<uint16_t> entireFromDisk;
@@ -520,7 +542,7 @@ namespace itl2
 					zarr::startConcurrentWrite(img, imageFilename, chunkSize, processes, codecs);
 					forAllChunks(dimensions, processBlockSize,  [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
 						{
-							zarr::writeBlock(img, imageFilename, processBlockStart, processBlockSize, metadata);
+							zarr::writeBlock(img, imageFilename,Vec3c(0,0,0), img.dimensions(),  processBlockStart, processBlockSize, metadata);
 						});
 					zarr::endConcurrentWrite(imageFilename);
 

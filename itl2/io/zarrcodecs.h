@@ -365,10 +365,9 @@ namespace itl2
 		{
 			Vec3c shape = image.dimensions();
 			std::vector<pixel_t> temp(shape.product());
-			std::memcpy(temp.data(), buffer.data(), buffer.size());
-
 			if(shape.product() * sizeof(pixel_t) != buffer.size())
-				throw ITLException("wrong buffer size for decoding bytes codec");
+				throw ITLException("wrong buffer size for decoding bytes codec. buffersize=" + toString(buffer.size())+ " chunkSize=" + toString(shape.product()));
+			std::memcpy(temp.data(), buffer.data(), buffer.size());
 			size_t n = 0;
 			for (coord_t x = 0; x < shape.x; x++)
 			{
