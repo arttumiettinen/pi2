@@ -20,7 +20,6 @@
 #define JSON_SIGNED_t int64_t
 #define JSON_FLOAT_t double
 
-
 namespace itl2
 {
 	using std::cout, std::endl, std::ifstream;
@@ -56,7 +55,8 @@ namespace itl2
 		{
 			//TODO: remove this debug method
 			template<typename pixel_t>
-			void printImg(Image<pixel_t>& img){
+			void printImg(Image<pixel_t>& img)
+			{
 				for (int i = 0; i < img.dimension(0); ++i)
 				{
 					for (int j = 0; j < img.dimension(1); ++j)
@@ -64,7 +64,7 @@ namespace itl2
 						cout << "(";
 						for (int k = 0; k < img.dimension(2); ++k)
 						{
-							cout << img(i,j,k) << ",";
+							cout << img(i, j, k) << ",";
 						}
 						cout << "), ";
 					}
@@ -128,12 +128,13 @@ namespace itl2
 
 			inline std::string writesFile(const std::string& chunkFile, const uint indexOfWrites, const AABoxc updateRegion)
 			{
-				return writesFolder(chunkFile) + "/"+ toString(indexOfWrites) + "_" + toString(updateRegion);
+				return writesFolder(chunkFile) + "/" + toString(indexOfWrites) + "_" + toString(updateRegion);
 			}
 
-			inline AABoxc updateRegionOfWritesFile(std::string writesFile){
+			inline AABoxc updateRegionOfWritesFile(std::string writesFile)
+			{
 				auto delimiter = writesFile.rfind('_');
-				writesFile.erase(0, delimiter+1);
+				writesFile.erase(0, delimiter + 1);
 				return AABoxc::fromString(writesFile);
 			}
 
@@ -528,8 +529,8 @@ namespace itl2
 		};
 		inline const nlohmann::json DEFAULT_SHARDING_CONFIG = {
 			{ "chunk_shape", { DEFAULT_INNER_CHUNK_SIZE.x, DEFAULT_INNER_CHUNK_SIZE.y, DEFAULT_INNER_CHUNK_SIZE.z }},
-			{ "codecs", DEFAULT_SHARDING_CODECS_JSON},
-			{ "index_codecs", BASIC_CODECS_JSON}
+			{ "codecs", DEFAULT_SHARDING_CODECS_JSON },
+			{ "index_codecs", BASIC_CODECS_JSON }
 		};
 		inline const codecs::Pipeline DEFAULT_CODECS = {
 			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG)
@@ -539,7 +540,7 @@ namespace itl2
 			codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(R"({"order": [0, 2, 1]})")).toJSON(),
 			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG).toJSON()
 		};
-		inline const ZarrMetadata DEFAULT_METADATA = {DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR};
+		inline const ZarrMetadata DEFAULT_METADATA = { DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR };
 
 		/**
 		Reads a part of a zarr dataset to the given image.
@@ -613,7 +614,8 @@ namespace itl2
 				}
 				std::vector<char> buffer;
 				encodePipeline(metadata.codecs, imgChunk, buffer, metadata.fillValue);
-				if(unsafe){
+				if (unsafe)
+				{
 					// Unsafe chunk: write to separate writes folder.
 					int writesBefore = countFiles(writesFolder);
 					//the filename consists of the order in which writesFiles got written and the updated region
@@ -621,7 +623,6 @@ namespace itl2
 				}
 				writeBytesToFile(buffer, filename);
 			}
-
 
 			/**
 			Writes a block of an image to the chunks.
@@ -755,7 +756,7 @@ namespace itl2
 			ZarrMetadata metadata)
 		{
 			Vec3c dimensions = img.dimensions();
-			if (metadata.chunkSize.min()<=0)
+			if (metadata.chunkSize.min() <= 0)
 				throw ITLException("Illegal chunk size: " + toString(metadata.chunkSize));
 			internals::handleExisting(dimensions, path, metadata, false);
 			writeBlock(img, path, Vec3c(0, 0, 0), dimensions, Vec3c(0, 0, 0), dimensions, metadata);
@@ -772,7 +773,12 @@ namespace itl2
 		@param codecs Zarr Codecs to be used.
 		@return Number of chunks that require special processing in endConcurrentWrite.
 		*/
-		size_t startConcurrentWrite(const Vec3c& imageDimensions, ImageDataType imageDataType, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const codecs::Pipeline& codecs=DEFAULT_CODECS);
+		size_t startConcurrentWrite(const Vec3c& imageDimensions,
+			ImageDataType imageDataType,
+			const std::string& path,
+			const Vec3c& chunkSize,
+			const std::vector<io::DistributedImageProcess>& processes,
+			const codecs::Pipeline& codecs = DEFAULT_CODECS);
 
 		/**
 		Enables concurrent access from multiple processes for an existing or a new zarr dataset.
@@ -783,12 +789,15 @@ namespace itl2
 		@param processes A list of DistributedImageProcess objects that define the block that where each process will have read and write access. The blocks may overlap.
 		@param codecs Zarr Codecs to be used.
 		*/
-		template<typename pixel_t> void startConcurrentWrite(const Image<pixel_t>& img, const std::string& path, const Vec3c& chunkSize, const std::vector<io::DistributedImageProcess>& processes, const codecs::Pipeline& codecs=DEFAULT_CODECS)
+		template<typename pixel_t>
+		void startConcurrentWrite(const Image<pixel_t>& img,
+			const std::string& path,
+			const Vec3c& chunkSize,
+			const std::vector<io::DistributedImageProcess>& processes,
+			const codecs::Pipeline& codecs = DEFAULT_CODECS)
 		{
 			startConcurrentWrite(img.dimensions(), img.dataType(), path, chunkSize, processes, codecs);
 		}
-
-
 
 		/**
 		Finalizes concurrent access from multiple processes.

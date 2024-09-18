@@ -44,7 +44,6 @@ namespace itl2
 			}
 		}
 
-
 		size_t startConcurrentWrite(const Vec3c& imageDimensions,
 			ImageDataType imageDataType,
 			const std::string& path,
@@ -70,21 +69,17 @@ namespace itl2
 
 			size_t unsafeChunkCount = 0;
 			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
-				{
-					string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex, metadata.separator);
-					//TODO: will that happen later? fs::create_directories(chunkFile);
-
-					string writesFolder = internals::writesFolder(chunkFile);
-
-					AABoxc chunkBox = AABoxc::fromPosSize(chunkPosition, metadata.chunkSize);
-
-					if (!io::isChunkSafe(chunkBox, processes))
-					{
-						// Mark the chunk as unsafe by creating writes folder.
-						fs::create_directories(writesFolder);
-						unsafeChunkCount++;
-					}
-				});
+			{
+			  string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex, metadata.separator);
+			  string writesFolder = internals::writesFolder(chunkFile);
+			  AABoxc chunkBox = AABoxc::fromPosSize(chunkPosition, metadata.chunkSize);
+			  if (!io::isChunkSafe(chunkBox, processes))
+			  {
+				  // Mark the chunk as unsafe by creating writes folder.
+				  fs::create_directories(writesFolder);
+				  unsafeChunkCount++;
+			  }
+			});
 			return unsafeChunkCount;
 		}
 
@@ -107,7 +102,7 @@ namespace itl2
 			return needsEndConcurrentWrite(path, getDimensionality(imageDimensions), chunkIndex, metadata.separator);
 		}
 
-		vector<Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path)
+		vector <Vec3c> getChunksThatNeedEndConcurrentWrite(const std::string& path)
 		{
 			Vec3c imageDimensions;
 			ZarrMetadata metadata;
@@ -119,26 +114,25 @@ namespace itl2
 			size_t dimensionality = getDimensionality(imageDimensions);
 			vector<Vec3c> result;
 			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
-				{
-					if (needsEndConcurrentWrite(path, dimensionality, chunkIndex, metadata.separator))
-						result.push_back(chunkIndex);
-				});
+			{
+			  if (needsEndConcurrentWrite(path, dimensionality, chunkIndex, metadata.separator))
+				  result.push_back(chunkIndex);
+			});
 			return result;
 		}
 
-		template<typename pixel_t> struct CombineChunkWrites
+		template<typename pixel_t>
+		struct CombineChunkWrites
 		{
-		public:
+		 public:
 			static void run(const string& path, const Vec3c& datasetSize, const ZarrMetadata& metadata, const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 			{
 				string chunkFile = internals::chunkFile(path, getDimensionality(datasetSize), chunkIndex, metadata.separator);
 				string writesFolder = internals::writesFolder(chunkFile);
-
 				if (fs::exists(writesFolder))
 				{
 					// Find all files in the writes folder
 					vector<string> sortedWritesFiles = buildFileList(writesFolder + "/");
-
 					if (!sortedWritesFiles.empty())
 					{
 						Image<pixel_t> imgChunk(metadata.chunkSize);
@@ -168,14 +162,15 @@ namespace itl2
 			ZarrMetadata metadata;
 			std::string reason;
 			Vec3c dimensions;
-			if(!internals::getInfo(path, dimensions, metadata, reason)){
+			if (!internals::getInfo(path, dimensions, metadata, reason))
+			{
 				throw ITLException("Unable to read zarr dataset. path: " + path + " reason: " + reason);
 			}
 
 			forAllChunks(dimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
-				{
-				  pick<CombineChunkWrites>(metadata.dataType, path, dimensions, metadata, chunkIndex, chunkPosition);
-				});
+			{
+			  pick<CombineChunkWrites>(metadata.dataType, path, dimensions, metadata, chunkIndex, chunkPosition);
+			});
 
 			// Remove concurrent tag file after all blocks are processed such that if exception is thrown during processing,
 			// the endConcurrentWrite can continue simply by re-running it.
@@ -205,7 +200,6 @@ namespace itl2
 				testAssert(equals(img, fromDisk), string("zarr test read and write"));
 			}
 
-
 			void writeBlockTest(Vec3c chunkSize, uint16_t changeValue)
 			{
 				Vec3c size = Vec3c(2, 3, 4);
@@ -228,7 +222,7 @@ namespace itl2
 				Image<uint16_t> fromDisk1;
 				zarr::read(fromDisk1, path);
 				bool imgEquals = equals(expected, fromDisk1);
-				if(!imgEquals)
+				if (!imgEquals)
 				{
 					internals::printImg(expected);
 					internals::printImg(fromDisk1);
@@ -239,19 +233,19 @@ namespace itl2
 				//test with img same size as block
 				path = "./testoutput/writeBlock2.zarr";
 				fs::remove_all(path);
-				zarr::writeBlock(Image<uint16_t>(blockSize, changeValue), path, startBlock, size, startBlock, blockSize, chunkSize, DEFAULT_CODECS, 42);
+				zarr::writeBlock(Image<uint16_t>(blockSize, changeValue), path, startBlock, size, startBlock, blockSize, chunkSize, BASIC_CODECS, 42);
 
 				Image<uint16_t> fromDisk2;
 				zarr::read(fromDisk2, path);
 				bool imgEquals2 = equals(expected, fromDisk2);
-				if(!imgEquals)
+				if (!imgEquals)
 				{
 					internals::printImg(expected);
 					internals::printImg(fromDisk2);
 				}
 				testAssert(imgEquals2, string("zarr test 2 for writeBlock chunkSize=" + toString(chunkSize)));
 				fs::remove_all(path);
-				cout << "success: writeblock chunkSize=" <<toString(chunkSize) << " changeValue=" << toString(changeValue);
+				cout << "success: writeblock chunkSize=" << toString(chunkSize) << " changeValue=" << toString(changeValue);
 			}
 
 			void writeBlock()
@@ -331,10 +325,11 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
-			void zarrMetadataEquals(){
-				ZarrMetadata metadata = {ImageDataType::Int32, Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
-				ZarrMetadata equalMetadata = {ImageDataType::Int32, Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/"};
-				ZarrMetadata differentMetadata = {ImageDataType::Int32, Vec3c(1,1,1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/"};
+			void zarrMetadataEquals()
+			{
+				ZarrMetadata metadata = { ImageDataType::Int32, Vec3c(1, 1, 1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/" };
+				ZarrMetadata equalMetadata = { ImageDataType::Int32, Vec3c(1, 1, 1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/" };
+				ZarrMetadata differentMetadata = { ImageDataType::Int32, Vec3c(1, 1, 1), { codecs::ZarrCodec(codecs::Name::Blosc) }, 0, "/" };
 				testAssert(metadata == equalMetadata, string("zarr test equal metadata equals"));
 				testAssert(!(metadata == differentMetadata), string("zarr test different metadata doesnt equal"));
 			}
@@ -360,49 +355,51 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test read and write with separator " + separator + " read failed"));
 			}
-			void separator(){
+			void separator()
+			{
 				separatorTest(".", "dot");
 				separatorTest("/", "slash");
 				separatorTest("-", "minus");
 			}
 
-			void shardingTest(std::string indexLocation, bool withBlosc, Vec3c imgShape = Vec3c(2, 5, 10), Vec3c shardShape = Vec3c(2, 5, 1), Vec3c chunkShape = Vec3c(2, 1, 1)){
+			void shardingTest(std::string indexLocation, bool withBlosc, Vec3c imgShape = Vec3c(2, 5, 10), Vec3c shardShape = Vec3c(2, 5, 1), Vec3c chunkShape = Vec3c(2, 1, 1))
+			{
 				string path = "./testoutput/test_sharding_" + indexLocation;
 				fs::remove_all(path);
 
-				if(withBlosc) path+="_withBlosc";
-				path+=".zarr";
+				if (withBlosc) path += "_withBlosc";
+				path += ".zarr";
 
 				Image<uint16_t> img(imgShape);
 				ramp(img, 0);
 				add(img, 10);
 				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
 
-				nlohmann::json codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()};
-				if (withBlosc) codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()};
+				nlohmann::json codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
+				if (withBlosc) codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON() };
 
 				nlohmann::json shardingCodecConfigJSON = {
-					{"chunk_shape", { chunkShape.x, chunkShape.y, chunkShape.z }},
-					{"codecs", codecs},
+					{ "chunk_shape", { chunkShape.x, chunkShape.y, chunkShape.z }},
+					{ "codecs", codecs },
 					//{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
-					{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON()}},
-					{"index_location", indexLocation}
+					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
+					{ "index_location", indexLocation }
 				};
 
 				zarr::write(img,
 					path,
 					shardShape,
-					{ codecs::ZarrCodec(codecs::Name::Sharding,  shardingCodecConfigJSON)});
+					{ codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) });
 
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
 
-				testAssert(equals(img, fromDisk), string("zarr test write sharding with indexLocation=" + indexLocation + " withBlosc="+ toString(withBlosc)));
+				testAssert(equals(img, fromDisk), string("zarr test write sharding with indexLocation=" + indexLocation + " withBlosc=" + toString(withBlosc)));
 			}
 
 			void shardingEmptyInnerChunksTest(string indexLocation)
 			{
-				Vec3c imgShape = Vec3c(10, 10,10);
+				Vec3c imgShape = Vec3c(10, 10, 10);
 				Vec3c shardShape = Vec3c(10, 10, 10);
 				Vec3c chunkShape = Vec3c(5, 5, 5);
 
@@ -444,12 +441,12 @@ namespace itl2
 				shardingEmptyInnerChunksTest("start");
 				shardingEmptyInnerChunksTest("end");
 			}
-			void emptyChunks(){
+			void emptyChunks()
+			{
 				string path = "./testoutput/test_empty_chunks";
-				Image<uint16_t> img(Vec3c(8, 8, 8));
-				add(img, DEFAULT_FILLVALUE);
+				Image<uint16_t> img(Vec3c(8, 8, 8), DEFAULT_FILLVALUE);
 
-				bool expectedFiles[4][4][4] = {false};
+				bool expectedFiles[4][4][4] = { false };
 
 				img(0, 0, 0) = 1;
 				expectedFiles[0][0][0] = true;
@@ -471,7 +468,7 @@ namespace itl2
 					{
 						for (int k = 0; k < 4; ++k)
 						{
-							string filename = internals::chunkFile(path, 3, Vec3c(i,j,k), DEFAULT_SEPARATOR);
+							string filename = internals::chunkFile(path, 3, Vec3c(i, j, k), DEFAULT_SEPARATOR);
 							testAssert(fs::exists(filename) == expectedFiles[i][j][k], "test emptyChunks at " + toString(i) + " " + toString(j) + " " + toString(k));
 
 						}
@@ -524,8 +521,8 @@ namespace itl2
 					processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(block2Start, block2Size), AABoxc::fromPosSize(block2Start, block2Size) });
 
 					zarr::startConcurrentWrite(img, imageFilename, chunkSize, processes, codecs);
-					zarr::writeBlock(img, imageFilename, Vec3c(0,0,0), img.dimensions(), block1Start, block1Size, metadata);
-					zarr::writeBlock(img, imageFilename, Vec3c(0,0,0), img.dimensions(), block2Start, block2Size, metadata);
+					zarr::writeBlock(img, imageFilename, Vec3c(0, 0, 0), img.dimensions(), block1Start, block1Size, metadata);
+					zarr::writeBlock(img, imageFilename, Vec3c(0, 0, 0), img.dimensions(), block2Start, block2Size, metadata);
 					zarr::endConcurrentWrite(imageFilename);
 
 					Image<uint16_t> entireFromDisk;
@@ -539,15 +536,16 @@ namespace itl2
 
 					Vec3c processBlockSize(30, 31, 32);
 					forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
-						{
-							processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)), AABoxc::fromPosSize(processBlockStart, processBlockSize) });
-						});
+					{
+					  processes.push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(processBlockStart, processBlockSize + Vec3c(10, 10, 10)),
+																	   AABoxc::fromPosSize(processBlockStart, processBlockSize) });
+					});
 
 					zarr::startConcurrentWrite(img, imageFilename, chunkSize, processes, codecs);
-					forAllChunks(dimensions, processBlockSize,  [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
-						{
-							zarr::writeBlock(img, imageFilename,Vec3c(0,0,0), img.dimensions(),  processBlockStart, processBlockSize, metadata);
-						});
+					forAllChunks(dimensions, processBlockSize, [&](const Vec3c& processBlockIndex, const Vec3c& processBlockStart)
+					{
+					  zarr::writeBlock(img, imageFilename, Vec3c(0, 0, 0), img.dimensions(), processBlockStart, processBlockSize, metadata);
+					});
 					zarr::endConcurrentWrite(imageFilename);
 
 					Image<uint16_t> entireFromDisk;

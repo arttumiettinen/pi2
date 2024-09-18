@@ -12,7 +12,8 @@ namespace itl2
 {
 	using std::cout, std::endl;
 
-	namespace zarr{
+	namespace zarr
+	{
 		typedef coord_t fillValue_t; //TODO: allow other fillValue types
 	}
 	namespace zarr::codecs
@@ -42,8 +43,10 @@ namespace itl2
 				bitshuffle = 2,
 			};
 		}
-		namespace sharding{
-			enum class indexLocation{
+		namespace sharding
+		{
+			enum class indexLocation
+			{
 				start,
 				end,
 			};
@@ -236,7 +239,8 @@ namespace itl2
 			friend std::ostream& operator<<(std::ostream& stream, const Pipeline& p)
 			{
 				stream << "[";
-				for (const ZarrCodec c: p){
+				for (const ZarrCodec c : p)
+				{
 					stream << c;
 					if (!(c == (*p.rbegin())))
 						stream << ", ";
@@ -297,10 +301,10 @@ namespace itl2
 			return true;
 		}
 		template<typename pixel_t>
-		void encodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue);
+		void encodePipeline(const Pipeline& codecs, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue);
 
 		template<typename pixel_t>
-		void decodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue);
+		void decodePipeline(const Pipeline& codecs, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue);
 
 		template<typename pixel_t>
 		void encodeTransposeCodec(const ZarrCodec& codec, Image<pixel_t>& image, fillValue_t fillValue)
@@ -311,7 +315,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeTransposeCodec(const ZarrCodec& codec, Image <pixel_t>& image, fillValue_t fillValue)
+		void decodeTransposeCodec(const ZarrCodec& codec, Image<pixel_t>& image, fillValue_t fillValue)
 		{
 			Vec3c order;
 			codec.getTransposeConfiguration(order);
@@ -361,12 +365,12 @@ namespace itl2
 
 		//todo: use swapByteOrder(img); depending on endian
 		template<typename pixel_t>
-		void decodeBytesCodec(Image < pixel_t > &image, std::vector<char> & buffer)
+		void decodeBytesCodec(Image<pixel_t>& image, std::vector<char>& buffer)
 		{
 			Vec3c shape = image.dimensions();
 			std::vector<pixel_t> temp(shape.product());
-			if(shape.product() * sizeof(pixel_t) != buffer.size())
-				throw ITLException("wrong buffer size for decoding bytes codec. buffersize=" + toString(buffer.size())+ " chunkSize=" + toString(shape.product()));
+			if (shape.product() * sizeof(pixel_t) != buffer.size())
+				throw ITLException("wrong buffer size for decoding bytes codec. buffersize=" + toString(buffer.size()) + " chunkSize=" + toString(shape.product()));
 			std::memcpy(temp.data(), buffer.data(), buffer.size());
 			size_t n = 0;
 			for (coord_t x = 0; x < shape.x; x++)
@@ -382,7 +386,7 @@ namespace itl2
 			}
 		}
 		template<typename pixel_t>
-		void encodeBytesCodec(const Image <pixel_t>& image, std::vector<char>& buffer, size_t pixelSize = sizeof(pixel_t))
+		void encodeBytesCodec(const Image<pixel_t>& image, std::vector<char>& buffer, size_t pixelSize = sizeof(pixel_t))
 		{
 			Vec3c shape = image.dimensions();
 			std::vector<pixel_t> temp(shape.product());
@@ -418,7 +422,7 @@ namespace itl2
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
 			int chunkCount = chunksPerShard.product();
 			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
-			if(indexCodecs != allowedIndexCodecPipeline)
+			if (indexCodecs != allowedIndexCodecPipeline)
 			{
 				//TODO implement decode other index_codecs
 				std::stringstream s;
@@ -442,7 +446,7 @@ namespace itl2
 
 			//decode indexArray buffer into shardIndexArrayOffsets and shardIndexArrayNBytes
 			//TODO: extract to decodeBytesCodec
-			std::vector<index_t> temp(chunkCount*2);
+			std::vector<index_t> temp(chunkCount * 2);
 			std::memcpy(temp.data(), indexBuffer.data(), indexBuffer.size());
 
 			size_t n = 0;
@@ -464,13 +468,15 @@ namespace itl2
 
 			  //TODO: check both variables. for testing nBytes is sufficient as the library used to test against had partially wrong offset values
 			  //if(nBytes==-1 && offset==-1){
-			  if(nBytes==-1){
+			  if (nBytes == -1)
+			  {
 				  size_t ndrawn = draw(shard, AABoxc::fromMinMax(chunkStart, chunkStart + innerChunkShape), static_cast<pixel_t>(fillValue));
 #if defined(_DEBUG) || defined(BOUNDS_CHECK)
 				  assert(ndrawn==innerChunkShape.product());
 #endif
 
-			  }else
+			  }
+			  else
 			  {
 				  std::vector<char> chunkBuffer;
 				  auto chunkBegin = buffer.begin() + offset;
@@ -495,7 +501,7 @@ namespace itl2
 		inline void encodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer);
 
 		template<typename pixel_t>
-		void encodeShardingCodec(const ZarrCodec& codec, const Image <pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
+		void encodeShardingCodec(const ZarrCodec& codec, const Image<pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
 		{
 			typedef u_int64_t index_t;
 
@@ -506,7 +512,7 @@ namespace itl2
 			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
 
 			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
-			if(indexCodecs != allowedIndexCodecPipeline)
+			if (indexCodecs != allowedIndexCodecPipeline)
 			{
 				//TODO implement decode other index_codecs
 				std::stringstream s;
@@ -514,9 +520,10 @@ namespace itl2
 				throw ITLException(s.str());
 			}
 
-			if(!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape " + toString(shard.dimensions()));
+			if (!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape " + toString(shard.dimensions()));
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
-			if(!(chunksPerShard.componentwiseMultiply(innerChunkShape) == shard.dimensions())) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not evenly divide shard shape " + toString(shard.dimensions()));
+			if (!(chunksPerShard.componentwiseMultiply(innerChunkShape) == shard.dimensions()))
+				throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not evenly divide shard shape " + toString(shard.dimensions()));
 
 			int chunkCount = chunksPerShard.product();
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
@@ -563,16 +570,17 @@ namespace itl2
 			});
 
 			//apply encodePipeline for shardIndexArray, but we do not support 4d arrays
-			if(std::find_if(indexCodecs.begin(), indexCodecs.end(), [](ZarrCodec codec){return codec.type == Type::ArrayArrayCodec;}) != indexCodecs.end())
+			if (std::find_if(indexCodecs.begin(), indexCodecs.end(), [](ZarrCodec codec)
+			{ return codec.type == Type::ArrayArrayCodec; }) != indexCodecs.end())
 				throw ITLException("This zarr implementation does not support ArrayArrayCodecs within the sharding index_codecs");
 			auto indexCodec = indexCodecs.begin();
-			if(indexCodec->name!=Name::Bytes)
+			if (indexCodec->name != Name::Bytes)
 				throw ITLException("This zarr implementation only supports the Bytes Codec at the first position of the sharding index_codecs");
 
 			//apply encodeBytesCodec for shardIndexArrayOffsets and shardIndexArrayNBytes combined
 			//TODO: extract to encodeBytesCodec
 			std::vector<char> indexBuffer;
-			std::vector<index_t> temp(chunkCount*2);
+			std::vector<index_t> temp(chunkCount * 2);
 			size_t n = 0;
 			for (coord_t x = 0; x < chunksPerShard.x; x++)
 			{
@@ -619,7 +627,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
+		void decodeArrayBytesCodec(const ZarrCodec& codec, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayBytesCodec);
 			if (codec.name == codecs::Name::Bytes)
@@ -634,7 +642,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, fillValue_t fillValue)
+		void decodeArrayArrayCodec(const ZarrCodec& codec, Image<pixel_t>& image, fillValue_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayArrayCodec);
 			if (codec.name == codecs::Name::Transpose)
@@ -656,7 +664,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void encodeArrayBytesCodec(const ZarrCodec& codec, Image <pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
+		void encodeArrayBytesCodec(const ZarrCodec& codec, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayBytesCodec);
 			if (codec.name == codecs::Name::Bytes)
@@ -671,7 +679,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void encodeArrayArrayCodec(const ZarrCodec& codec, Image <pixel_t>& image, fillValue_t fillValue)
+		void encodeArrayArrayCodec(const ZarrCodec& codec, Image<pixel_t>& image, fillValue_t fillValue)
 		{
 			assert(codec.type == codecs::Type::ArrayArrayCodec);
 			if (codec.name == codecs::Name::Transpose)
@@ -682,7 +690,8 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void encodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue){
+		void encodePipeline(const Pipeline& codecs, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
+		{
 			codecs::Pipeline::const_iterator codec = codecs.begin();
 			for (; codec->type == codecs::Type::ArrayArrayCodec; ++codec)
 			{
@@ -697,7 +706,7 @@ namespace itl2
 		}
 
 		template<typename pixel_t>
-		void decodePipeline(const Pipeline& codecs, Image <pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
+		void decodePipeline(const Pipeline& codecs, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue)
 		{
 			//todo: does this work with const codecs
 			codecs::Pipeline::const_reverse_iterator codec = codecs.rbegin();
