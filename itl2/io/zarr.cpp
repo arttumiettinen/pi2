@@ -219,11 +219,11 @@ namespace itl2
 				string path = "./testoutput/writeBlock1.zarr";
 				fs::remove_all(path);
 
-				Vec3c imgPosition = Vec3c(0,0,0);
+				Vec3c imgPosition = Vec3c(0, 0, 0);
 				Image<uint16_t> img(size, 42);
-				zarr::write(img, path, chunkSize);
+				zarr::write(img, path, chunkSize, BASIC_CODECS);
 				drawAll(img, changeValue);
-				zarr::writeBlock(img, path, imgPosition, size, startBlock, blockSize, chunkSize);
+				zarr::writeBlock(img, path, imgPosition, size, startBlock, blockSize, chunkSize, BASIC_CODECS);
 
 				Image<uint16_t> fromDisk1;
 				zarr::read(fromDisk1, path);
@@ -251,7 +251,7 @@ namespace itl2
 				}
 				testAssert(imgEquals2, string("zarr test 2 for writeBlock chunkSize=" + toString(chunkSize)));
 				fs::remove_all(path);
-
+				cout << "success: writeblock chunkSize=" <<toString(chunkSize) << " changeValue=" << toString(changeValue);
 			}
 
 			void writeBlock()
@@ -288,8 +288,8 @@ namespace itl2
 
 			void readBlock()
 			{
-				readBlockTest(Vec3c(1, 1, 1));
-				readBlockTest(Vec3c(2, 2, 2));
+				readBlockTest(DEFAULT_INNER_CHUNK_SIZE);
+				readBlockTest(DEFAULT_INNER_CHUNK_SIZE.componentwiseMultiply(Vec3c(2, 2, 2)));
 				readBlockTest(DEFAULT_CHUNK_SIZE);
 			}
 
@@ -303,7 +303,7 @@ namespace itl2
 				string transposeCodecConfig = R"({"order": [0, 2, 1]})";
 				zarr::write(img,
 					path,
-					zarr::DEFAULT_CHUNK_SIZE,
+					Vec3c(10, 10, 10),
 					{ codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(transposeCodecConfig)), codecs::ZarrCodec(codecs::Name::Bytes), });
 
 				Image<uint16_t> fromDisk;
@@ -323,7 +323,7 @@ namespace itl2
 				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
 				zarr::write(img,
 					path,
-					zarr::DEFAULT_CHUNK_SIZE,
+					DEFAULT_INNER_CHUNK_SIZE,
 					{ codecs::ZarrCodec(codecs::Name::Bytes), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)) });
 
 				Image<uint16_t> fromDisk;
@@ -349,7 +349,7 @@ namespace itl2
 				zarr::write(img,
 					path,
 					Vec3c(1, 1, 1),
-					zarr::DEFAULT_CODECS,
+					zarr::BASIC_CODECS,
 					separator
 				);
 				Image<uint16_t> fromDisk;
@@ -439,7 +439,8 @@ namespace itl2
 				shardingTest("start", false);
 				shardingTest("end", true);
 				shardingTest("start", true);
-				shardingTest("start", true, Vec3c(10, 10, 10), DEFAULT_CHUNK_SIZE, Vec3c(8,8,8));
+				shardingTest("end", true, Vec3c(100, 100, 100), DEFAULT_CHUNK_SIZE, DEFAULT_INNER_CHUNK_SIZE);
+				shardingTest("start", true, Vec3c(100, 100, 100), DEFAULT_CHUNK_SIZE, DEFAULT_INNER_CHUNK_SIZE);
 				shardingEmptyInnerChunksTest("start");
 				shardingEmptyInnerChunksTest("end");
 			}
@@ -461,7 +462,8 @@ namespace itl2
 
 				zarr::write(img,
 					path,
-					Vec3c(2,2,2));
+					Vec3c(2, 2, 2),
+					BASIC_CODECS);
 
 				for (int i = 0; i < 4; ++i)
 				{
@@ -556,18 +558,22 @@ namespace itl2
 			void concurrency()
 			{
 				nlohmann::json shardingCodecConfigJSON = {
-					{ "chunk_shape", { 20, 10, 20 }},
+					{ "chunk_shape", { DEFAULT_INNER_CHUNK_SIZE.x, DEFAULT_INNER_CHUNK_SIZE.y, DEFAULT_INNER_CHUNK_SIZE.z }},
 					{ "codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
 					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
 					{ "index_location", "end" }
 				};
 				codecs::Pipeline codecsWithSharding = { codecs::ZarrCodec(codecs::Name::Sharding, shardingCodecConfigJSON) };
 
-				concurrencyOneTest(DEFAULT_CODECS,   Vec3c(40, 200, 300));
-				concurrencyOneTest(codecsWithSharding,Vec3c(40, 200, 300));
+				Vec3c chunkSize = DEFAULT_INNER_CHUNK_SIZE.componentwiseMultiply(Vec3c(2, 2, 2));
+				concurrencyOneTest(BASIC_CODECS, chunkSize);
+				concurrencyOneTest(codecsWithSharding, chunkSize);
+				concurrencyOneTest(DEFAULT_CODECS, chunkSize);
 
-				concurrencyOneTest(DEFAULT_CODECS,   Vec3c(40, 30, 20));
-				concurrencyOneTest(codecsWithSharding,Vec3c(40, 30, 20));
+				chunkSize = DEFAULT_INNER_CHUNK_SIZE.componentwiseMultiply(Vec3c(2, 5, 6));
+				concurrencyOneTest(BASIC_CODECS, chunkSize);
+				concurrencyOneTest(codecsWithSharding, chunkSize);
+				concurrencyOneTest(DEFAULT_CODECS, chunkSize);
 			}
 		}
 	}

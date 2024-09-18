@@ -513,12 +513,32 @@ namespace itl2
 			return valid;
 		}
 
-		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(256, 256, 256);
+		inline const Vec3c DEFAULT_CHUNK_SIZE = Vec3c(1024, 1024, 1024);
+		inline const Vec3c DEFAULT_INNER_CHUNK_SIZE = Vec3c(32, 32, 32);
 		inline const string DEFAULT_SEPARATOR = "/";
 		inline const fillValue_t DEFAULT_FILLVALUE = 0;
 		inline const ImageDataType DEFAULT_DATATYPE = ImageDataType::Int32;
-		inline const codecs::Pipeline DEFAULT_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
-		inline const nlohmann::json DEFAULT_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
+		inline const codecs::Pipeline BASIC_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
+		inline const nlohmann::json BASIC_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
+
+		inline const nlohmann::json DEFAULT_SHARDING_CODECS_JSON = {
+			codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(R"({"order": [2, 1, 0]})")).toJSON(),
+			codecs::ZarrCodec(codecs::Name::Bytes, nlohmann::json::parse(R"({"endian": "little"})")).toJSON(),
+			codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(R"({"cname": "zstd", "clevel": 5, "shuffle": "noshuffle", "blocksize": 1})")).toJSON()
+		};
+		inline const nlohmann::json DEFAULT_SHARDING_CONFIG = {
+			{ "chunk_shape", { DEFAULT_INNER_CHUNK_SIZE.x, DEFAULT_INNER_CHUNK_SIZE.y, DEFAULT_INNER_CHUNK_SIZE.z }},
+			{ "codecs", DEFAULT_SHARDING_CODECS_JSON},
+			{ "index_codecs", BASIC_CODECS_JSON}
+		};
+		inline const codecs::Pipeline DEFAULT_CODECS = {
+			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG)
+		};
+		//TODO: implement and use toJSON(DEFAULT_CODECS)
+		inline const nlohmann::json DEFAULT_CODECS_JSON = {
+			codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(R"({"order": [0, 2, 1]})")).toJSON(),
+			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG).toJSON()
+		};
 		inline const ZarrMetadata DEFAULT_METADATA = {DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR};
 
 		/**

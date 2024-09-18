@@ -729,13 +729,13 @@ inline void itl2::zarr::codecs::ZarrCodec::getShardingConfiguration(Vec3c& chunk
 			chunkShape[2] = chunkShapeJSON[2].get<size_t>();
 
 		string reason;
-		if (!fromJSON(codecs, this->configuration["codecs"], reason))
+		if (!this->configuration.contains("codecs") || !fromJSON(codecs, this->configuration["codecs"], reason))
 		{
-			throw ITLException(reason);
+			throw ITLException("could not decode sharding codecs " + reason);
 		}
-		if (!fromJSON(indexCodecs, this->configuration["index_codecs"], reason))
+		if (!this->configuration.contains("index_codecs") || !fromJSON(indexCodecs, this->configuration["index_codecs"], reason))
 		{
-			throw ITLException(reason);
+			throw ITLException("could not decode sharding index_codecs " + reason);
 		}
 		indexLocation = sharding::indexLocation::end;
 		if (this->configuration.contains("index_location"))
