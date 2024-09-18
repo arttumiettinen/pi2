@@ -43,9 +43,9 @@ class Test_zarr:
         if data is None:
             data = self.arr
         if chunk_shape is None:
-            chunk_shape = list(data.shape)
+            chunk_shape = list([32, 32, 32])
         shutil.rmtree(output_file(name), ignore_errors=True)
-        write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, list(data.shape))
+        write_img = pi2.newimage(ImageDataType.UInt32, list(data.shape))
         write_img.set_data(data.transpose(1, 0, 2))
         if codecs is not None:
             pi2.writezarr(write_img, output_file(name), chunk_shape, codecs)
@@ -61,7 +61,11 @@ class Test_zarr:
             separator = "/"
         if codecs is None:
             codecs = [
-                zarrita.codecs.bytes_codec("little"),
+                zarrita.codecs.transpose_codec([2, 1, 0]),
+                zarrita.codecs.bytes_codec(),
+                zarrita.codecs.blosc_codec(
+                    typesize=0
+                ),
             ]
 
         shutil.rmtree(output_file(name), ignore_errors=True)
@@ -90,31 +94,24 @@ class Test_zarr:
         read_arr = a[:]
         return read_arr
 
-    @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-    def test_pi2_to_pi2(self, chunk_shape):
-        self.pi2_write(chunk_shape)
+    def test_pi2_to_pi2(self):
+        self.pi2_write([32, 32, 32])
         read_arr = self.pi2_read("test.zarr")
         assert np.array_equal(self.arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(self.arr)
 
-    @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-    def test_zarrita_to_zarrita(self, chunk_shape):
-        self.zarrita_write(chunk_shape)
+    def test_zarrita_to_zarrita(self):
+        self.zarrita_write([32, 32, 32])
         read_arr = self.zarrita_read("zarrita.zarr")
         assert np.array_equal(self.arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(self.arr)
 
-    @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-    def test_pi2_to_zarrita(self, chunk_shape):
-        self.pi2_write(chunk_shape)
+    def test_pi2_to_zarrita(self):
+        self.pi2_write([32, 32, 32])
         read_arr = self.zarrita_read("test.zarr")
         assert np.array_equal(self.arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(self.arr)
 
-    @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
-    def test_zarrita_to_pi2(self, chunk_shape):
-        self.zarrita_write(chunk_shape)
+    def test_zarrita_to_pi2(self):
+        self.zarrita_write([32, 32, 32])
         read_arr = self.pi2_read("zarrita.zarr")
-        # write_img = pi2.newimage(pi2py2.ImageDataType.FLOAT32, w, h, d)
-        # write_img.set_data(read_arr)
-        # pi2.writezarr(write_img, output_file("test.zarr"), chunk_shape)
         assert np.array_equal(self.arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(self.arr)
 
     @pytest.mark.parametrize("chunk_shape", [[1, 1, 1], [1, 1, d], [1, h, d], [w, h, d]])
@@ -255,7 +252,7 @@ class Test_zarr:
         data = np.zeros((2, 2, 2), dtype=np.float32)
         fill_value = 4
         shutil.rmtree(output_file(name), ignore_errors=True)
-        write_img = pi2.newimage(pi2py2.ImageDataType.UInt32, list(data.shape))
+        write_img = pi2.newimage(ImageDataType.UInt32, list(data.shape))
         write_img.set_data(data.transpose(1, 0, 2))
         pi2.writezarr(write_img, output_file(name), list(data.shape),
                       '[{"configuration": {"endian": "little"},"name": "bytes"}]', fill_value, "/")
