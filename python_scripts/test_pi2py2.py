@@ -27,7 +27,7 @@ class Test_zarr:
     def output_file(self, name):
         return "testoutput/" + name
 
-    fill_value = 42
+    fill_value = 0
     full_arr = np.arange(10 * 10 * 10, dtype=np.float32).reshape(10, 10, 10)
     w = 2
     h = 3
@@ -35,7 +35,7 @@ class Test_zarr:
     arr = full_arr[:w, :h, :d]
     arr0 = np.zeros_like(arr)
     arr42 = np.zeros_like(arr)
-    arr42[:, :, 1] = fill_value
+    arr42[:, :, 1] = 42
 
     def pi2_write(self, chunk_shape=None, codecs=None, data=None, name="test.zarr"):
         pi2 = self.pi2
@@ -61,11 +61,23 @@ class Test_zarr:
             separator = "/"
         if codecs is None:
             codecs = [
-                zarrita.codecs.transpose_codec([2, 1, 0]),
-                zarrita.codecs.bytes_codec(),
-                zarrita.codecs.blosc_codec(
-                    typesize=0
-                ),
+                zarrita.codecs.sharding_codec(
+                    chunk_shape=chunk_shape,
+                    codecs=(
+                        [
+                            zarrita.codecs.transpose_codec([2, 1, 0]),
+                            zarrita.codecs.bytes_codec(),
+                            zarrita.codecs.blosc_codec(
+                                typesize=0
+                            ),
+                        ]
+                    ),
+                    index_codecs=(
+                        [
+                            zarrita.codecs.bytes_codec(),
+                        ]
+                    )
+                )
             ]
 
         shutil.rmtree(output_file(name), ignore_errors=True)
@@ -186,7 +198,7 @@ class Test_zarr:
 
     @pytest.mark.parametrize("separator", [".", "/", "-"])
     def test_read_separator(self, separator):
-        self.zarrita_write(separator=separator)
+        self.zarrita_write([32, 32, 32], separator=separator)
         read_arr = self.pi2_read("zarrita.zarr")
         assert np.array_equal(self.arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(self.arr)
 
