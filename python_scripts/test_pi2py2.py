@@ -20,8 +20,8 @@ def input_file_bin():
 def output_file(name):
     return '../test_output_data/pi2py2/' + name
 
-class Test_zarr:
 
+class Test_zarr:
     pi2 = Pi2(library_path='../x64/Release no OpenCL')
 
     def output_file(self, name):
@@ -130,7 +130,7 @@ class Test_zarr:
     @pytest.mark.parametrize("order", [[0, 1, 2], [1, 0, 2], [0, 2, 1], [1, 2, 0], [2, 0, 1], [2, 1, 0], ])
     def test_read_transpose(self, order, chunk_shape):
         self.zarrita_write(codecs=[zarrita.codecs.transpose_codec(order), zarrita.codecs.bytes_codec("little")],
-                      chunk_shape=chunk_shape)
+                           chunk_shape=chunk_shape)
         read_arr = self.pi2_read("zarrita.zarr")
         assert np.array_equal(self.arr, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(self.arr)
 
@@ -141,7 +141,7 @@ class Test_zarr:
     # todo: blocksize
     def test_read_blosc(self, cname, chunk_shape, typesize, data):
         self.zarrita_write(codecs=[zarrita.codecs.bytes_codec("little"), zarrita.codecs.blosc_codec(typesize)],
-                      chunk_shape=chunk_shape, data=data)
+                           chunk_shape=chunk_shape, data=data)
         read_arr = self.pi2_read("zarrita.zarr")
         assert np.array_equal(data, read_arr), "read_arr:\n " + str(read_arr) + " \n\narr:\n " + str(data)
 
@@ -248,7 +248,8 @@ class Test_zarr:
     @pytest.mark.parametrize("bytes_bytes_codecs", ["", blosc_codec])
     @pytest.mark.parametrize("index_location", ["start", "end"])
     @pytest.mark.parametrize("data", [arr, arr0, arr42])
-    def test_read_write_sharding(self, inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data, request):
+    def test_read_write_sharding(self, inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data,
+                                 request):
         filename = request.node.name.replace('"', '') + ".zarr"
         config = '{"chunk_shape":' + str(
             inner_chunk_shape) + ',"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}' + bytes_bytes_codecs + '],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"' + index_location + '"}'
@@ -273,11 +274,7 @@ class Test_zarr:
         a = a.resize((3, 3, 3))
         assert a[:][2, 2, 2] == fill_value
 
-    def test_dummy(self):
-        pass
 
-
-@pytest.mark.skip()
 class Test_basic:
 
     pi2 = Pi2(library_path='../x64/Release')
