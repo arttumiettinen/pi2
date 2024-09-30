@@ -1638,6 +1638,8 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
     - makes index file for pi2, runs pi2 stitching in blocks
     """
 
+    print(f"Run stitching for: {[scan.rec_file for scan in comp]}")
+
     if not nx.is_directed_acyclic_graph(comp):
         raise RuntimeError("Connected component is not directed acyclic graph.")
 
@@ -1800,6 +1802,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     Calls run_stitching for each connected component in relations network.
     """
 
+    print("Run stitching for all connected components...")
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
