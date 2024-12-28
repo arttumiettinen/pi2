@@ -2,6 +2,27 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Build and Test",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "build with TESTS and NO_OPENCL",
+            "postDebugTask": "run pytest",
+            "program": "${workspaceFolder}/bin-linux64/release-nocl/itl2testsmain",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "run nn5",
             "type": "cppdbg",
             "request": "launch",
@@ -18,28 +39,9 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ],
-            "preLaunchTask": "build run_nn5",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "logging": {
-                "moduleLoad": false,
-                "programOutput": true,
-                "trace": false,
-                "engineLogging": false
-            },
-            "sourceFileMap": {
-                "/mnt/c": "${workspaceFolder}"
-            },
-            "windows": {
-                "miDebuggerPath": "C:/mingw-w64/mingw64/bin/gdb.exe"
-            },
-            "osx": {
-                "miDebuggerPath": "/usr/bin/lldb"
-            },
-            "linux": {
-                "miDebuggerPath": "/usr/bin/gdb"
-            }
+            ]
         },
+        
         {
             "name": "Debug no OpenCL",
             "type": "cppdbg",
