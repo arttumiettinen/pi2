@@ -1264,18 +1264,18 @@ float csZPerturbation(float projectionZ, float projectionHeight, float csZSlope)
 }
 
 kernel void backproject(read_only image3d_t transmissionProjections,
-						global read_only float3* pss,				// Source positions
-						global read_only float3* pds,				// Detector center point positions
-						global read_only float3* us,				// Detector right vectors
-						global read_only float3* vs,				// Detector up vectors
-						global read_only float3* ws,				// Detector normal vectors, w = u x w
+						global float3* pss,				// Source positions
+						global float3* pds,				// Detector center point positions
+						global float3* us,				// Detector right vectors
+						global float3* vs,				// Detector up vectors
+						global float3* ws,				// Detector normal vectors, w = u x w
 
-						read_only int firstAngleIndex,				// Index in pss, pds, us, vs, and ws arrays of the first projection in transmissionProjections
-						read_only float2 projectionShift,
-						read_only float2 fullProjectionHalfSize,	// Projection size divided by 2
+						int firstAngleIndex,				// Index in pss, pds, us, vs, and ws arrays of the first projection in transmissionProjections
+						float2 projectionShift,
+						float2 fullProjectionHalfSize,	// Projection size divided by 2
 
-						read_only float3 center,					// Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter) - Vec3f(0.5, 0.5, 0.5)
-						read_only float sourceToRA,
+						float3 center,					// Vec3f(settings.roiSize) / 2.0f - Vec3f(settings.roiCenter) - Vec3f(0.5, 0.5, 0.5)
+						float sourceToRA,
 
 						read_only image3d_t initialValue,
 						write_only image3d_t output)
