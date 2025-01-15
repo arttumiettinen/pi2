@@ -57,6 +57,7 @@
     <ClInclude Include="io\json.h" />
     <ClInclude Include="io\nn5.h" />
     <ClInclude Include="io\nn5compression.h" />
+    <ClInclude Include="io\zarrcodecs.h" />
     <ClInclude Include="io\nrrd.h" />
     <ClInclude Include="io\pcr.h" />
     <ClInclude Include="io\vectorio.h" />

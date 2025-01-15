@@ -393,6 +393,9 @@
     <ClInclude Include="io\nn5compression.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
+    <ClInclude Include="io\zarrcodecs.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
     <ClInclude Include="math\aabox.h">
       <Filter>Header Files\math</Filter>
     </ClInclude>

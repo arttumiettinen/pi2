@@ -1629,7 +1629,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
     return changed
 
 
-def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values):
+def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format):
     """
     Prepares and runs pi2 stitching process for connected component 'comp' of scan relations tree 'tree'.
     - determines final world to image transformations
@@ -1637,6 +1637,8 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
     - determines bounds of the stitched image
     - makes index file for pi2, runs pi2 stitching in blocks
     """
+
+    print(f"Run stitching for: {[scan.rec_file for scan in comp]}")
 
     if not nx.is_directed_acyclic_graph(comp):
         raise RuntimeError("Connected component is not directed acyclic graph.")
@@ -1749,12 +1751,24 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
                 curr_width = min(block_size, out_width - (xstart - minx))
                 curr_height = min(block_size, out_height - (ystart - miny))
                 curr_depth = min(block_size, out_depth - (zstart - minz))
-                
+
+                position = f"[{xstart - minx}, {ystart - miny}, {zstart - minz}]"
+                dimensions = f"[{out_width}, {out_height}, {out_depth}]"
+                #TODO This sets the parameter "source block size" of writerawblock to zero and thus writes the entire source image in each iteration, right?
+                # is that intended? if so -> also set the parameter for zarr to zero
+                write_command = f"writerawblock(outimg, {out_file}, {position}, {dimensions});"
+                write_goodness_command = f"writerawblock(goodnessimg, {out_goodness_file}, {position}, {dimensions});"
+                if output_format == "zarr":
+                    #writezarrblock(image, filename, image position, file dimensions, block position, block size)
+                    source_block_size = f"[{block_size}, {block_size}, {block_size}]"
+                    write_command = f"writezarrblock(outimg, {out_file}, {position}, {dimensions}, {position}, {source_block_size});"
+                    write_goodness_command = f"writezarrblock(goodnessimg, {out_goodness_file}, {position}, {dimensions}, {position}, {source_block_size});"
+
                 if not create_goodness_file:
                     pi_script = (f"echo;"
                                  f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                                  f"stitch_ver2(outimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle_diameter}, {block_size}, {zeroes_are_missing_values});"
-                                 f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
+                                 f"{write_command}"
                                  f"newimage(marker, uint8, 1, 1, 1);"
                                  f"writetif(marker, {out_template}_{jobs_started}_done);"
                                 )
@@ -1763,8 +1777,8 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
                              f"newlikefile(outimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"newlikefile(goodnessimg, {first_file_name}, Unknown, 1, 1, 1);"
                              f"stitch_ver3(outimg, goodnessimg, {index_file}, {xstart}, {ystart}, {zstart}, {curr_width}, {curr_height}, {curr_depth}, {normalize}, {max_circle_diameter}, {block_size}, {zeroes_are_missing_values});"
-                             f"writerawblock(outimg, {out_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
-                             f"writerawblock(goodnessimg, {out_goodness_file}, [{xstart - minx}, {ystart - miny}, {zstart - minz}], [{out_width}, {out_height}, {out_depth}]);"
+                             f"{write_command}"
+                             f"{write_goodness_command}"
                              f"newimage(marker, uint8, 1, 1, 1);"
                              f"writetif(marker, {out_template}_{jobs_started}_done);"
                             )
@@ -1783,15 +1797,16 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
     return jobs_started
 
 
-def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values):
+def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format):
     """
     Calls run_stitching for each connected component in relations network.
     """
 
+    print("Run stitching for all connected components...")
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
-        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values)
+        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format)
 
     if (jobs_started > 0) and is_use_cluster():
         return False

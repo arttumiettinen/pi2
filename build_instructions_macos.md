@@ -55,6 +55,7 @@ Install the required libraries using commands
 brew install fftw
 brew install libpng
 brew install libtiff
+brew install libblosc
 ```
 
 Optionally also

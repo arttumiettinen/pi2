@@ -59,6 +59,16 @@ namespace itl2
 		}
 	}
 
+	/**
+	Sets all pixel values in an image to a constant.
+	@param img Image.
+	@param locations List of locations to set.
+	@param value Drawing color.
+	*/
+	template<typename pixel_t> void drawAll(Image<pixel_t>& img , pixel_t value)
+	{
+		draw(img, AABoxc::fromMinMax(Vec3c(), img.dimensions()), value);
+	}
 
 	/**
 	Sets pixel values in an image to a constant.

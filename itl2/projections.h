@@ -333,6 +333,24 @@ namespace itl2
 	}
 
 	/**
+	Determines if all pixel values equal value v.
+	@param img Image to compare
+	@param v value to compare
+	*/
+	template<typename pixel_t> bool allEquals(const Image<pixel_t>& img, const pixel_t& v)
+	{
+		bool eq = true;
+		#pragma omp parallel for if(img.pixelCount() > PARALLELIZATION_THRESHOLD)
+		for (coord_t n = 0; n < img.pixelCount(); n++)
+		{
+			if (eq && img(n) != v)
+				eq = false;
+		}
+
+		return eq;
+	}
+
+	/**
 	Determines if pixel values in the two images are not equal.
 	@param a, b Images to compare
 	*/

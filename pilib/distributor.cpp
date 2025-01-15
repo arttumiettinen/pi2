@@ -144,7 +144,7 @@ namespace pilib
 
 	Distributor::Distributor(PISystem* piSystem) :
 		piSystem(piSystem),
-		nn5ChunkSize(nn5::DEFAULT_CHUNK_SIZE),
+		distributedImageChunkSize(nn5::DEFAULT_CHUNK_SIZE),
 		showSubmittedScripts(false),
 		allowDelaying(false)
 	{
@@ -187,7 +187,7 @@ namespace pilib
             fs::path directory = fp;
             directory.remove_filename();
             fs::path filename = fp.filename();
-            
+
 			string fs = std::regex_replace(filename.string(), std::regex("any"), "*");
 			string exp = fs.substr(filenameTemplate.length() + 1, fs.length() - string(".txt").length() - filenameTemplate.length() - 1);
 
@@ -290,7 +290,7 @@ namespace pilib
 		const DistributedImageBase* img = getDistributedImage(args[refIndex]);
 		Vec3c refDims = img->dimensions();
 
-		nn5::internals::forAllChunks(refDims, blockSize, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
+		forAllChunks(refDims, blockSize, [&](const Vec3c& chunkIndex, const Vec3c& refStart)
 			{
 
 				// Add margins to the reference block
@@ -691,6 +691,7 @@ namespace pilib
 			// NOTE: Here we list the files that support distribution in all directions. This way it is not possible
 			// to induce a bug here by adding new DistributedImageStorageTypes.
 			if (img->currentWriteTargetType() != DistributedImageStorageType::NN5 &&
+				img->currentWriteTargetType() != DistributedImageStorageType::Zarr &&
 				img->currentWriteTargetType() != DistributedImageStorageType::Raw)
 			{
 				return false;
@@ -719,7 +720,8 @@ namespace pilib
 		Vec3c preferredBlockSizeMultiple(1, 1, 1);
 		for (DistributedImageBase* p : outputImages)
 		{
-			if (p->currentWriteTargetType() == DistributedImageStorageType::NN5)
+			if (p->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
+				p->currentWriteTargetType() == DistributedImageStorageType::Zarr)
 			{
 				preferredBlockSizeMultiple = p->getChunkSize();
 			}
@@ -988,6 +990,7 @@ namespace pilib
 		case ArgumentDataType::Bool: return itl2::toString(get<bool>(value));
 		case ArgumentDataType::Vect3d: return itl2::toString(get<Vec3d>(value));
 		case ArgumentDataType::Vect3c: return itl2::toString(get<Vec3c>(value));
+		case ArgumentDataType::JSON: return nlohmann::to_string(get<nlohmann::json>(value));
 		case ArgumentDataType::ImageUInt8:
 		case ArgumentDataType::ImageUInt16:
 		case ArgumentDataType::ImageUInt32:
@@ -1154,6 +1157,7 @@ namespace pilib
 
 				// TODO: NN5 should be able to support concurrent reading and writing. Is there some bug somewhere?
 				if (//img->currentWriteTargetType() == DistributedImageStorageType::NN5 ||
+					//img->currentWriteTargetType() == DistributedImageStorageType::Zarr ||
 					margin != Vec3c(0, 0, 0))
 				{
 					if (img->currentReadSource() == img->currentWriteTarget())
@@ -1343,7 +1347,7 @@ namespace pilib
 		TimingFlag timingFlag(TimeClass::WritePreparation);
 
 		// Prepare images for concurrent writing
-		map<DistributedImageBase*, vector<nn5::NN5Process>> nn5processes;
+		map<DistributedImageBase*, vector<io::DistributedImageProcess>> distributedImageProcesses;
 		for (size_t i = 0; i < jobCount; i++)
 		{
 			if (std::find(skippedJobs.begin(), skippedJobs.end(), i) == skippedJobs.end())
@@ -1365,17 +1369,16 @@ namespace pilib
 						{
 							// We are reading and writing the same file.
 							// AND the image is used as input and output.
-							// => The NN5Process must contain both read and write region.
+							// => The DistributedImageProcess must contain both read and write region.
+							//cout << "DEBUG: DistributedImageProcess will contain both read and write region." << endl;
 
-							//cout << "DEBUG: NN5Process will contain both read and write region." << endl;
-
-							nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
+							distributedImageProcesses[img].push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(readStart, readSize), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
 						else
 						{
 							// We are reading and writing different file.
-							// => The NN5Process must contain only the write region as no reads are made from the same file.
-							nn5processes[img].push_back(nn5::NN5Process{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize) });
+							// => The DistributedImageProcess must contain only the write region as no reads are made from the same file.
+							distributedImageProcesses[img].push_back(io::DistributedImageProcess{ AABoxc::fromPosSize(Vec3c(-1, -1, -1), Vec3c(0, 0, 0)), AABoxc::fromPosSize(writeFilePos, writeSize) });
 						}
 					}
 				}
@@ -1385,7 +1388,7 @@ namespace pilib
 		// Check for overlapping writes. Those must not happen.
 		for (DistributedImageBase* img : outputImages)
 		{
-			const auto& list = nn5processes[img];
+			const auto& list = distributedImageProcesses[img];
 			for (size_t n = 0; n < list.size(); n++)
 			{
 				const auto& p1 = list[n];
@@ -1401,7 +1404,7 @@ namespace pilib
 		// Call startConcurrentWrite for all output images.
 		for (DistributedImageBase* img : outputImages)
 		{
-			const auto& list = nn5processes[img];
+			const auto& list = distributedImageProcesses[img];
 			size_t unsafeCount = img->startConcurrentWrite(list);
 			if (unsafeCount > 0)
 				cout << "Image " << img->varName() << " has " << unsafeCount << " unsafe chunks." << endl;
@@ -1415,7 +1418,6 @@ namespace pilib
 		size_t originalJobCount = jobsToSubmit.size();
 		if (maxSubmittedJobCount > 0)
 		{
-			
 			if (jobsToSubmit.size() > maxSubmittedJobCount)
 			{
 				// Add clear command and job start marker to all the job scripts.

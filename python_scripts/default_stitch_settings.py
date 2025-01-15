@@ -122,7 +122,9 @@ cluster = {cluster_name}
 # (tile_pixel_size + 12) * max_block_size^3 < (available_memory_in_bytes).
 max_block_size = 0
 
-
+# Defines the output format 
+# candidates are: zarr, raw
+output_format = raw
 
 
 [positions]

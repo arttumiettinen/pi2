@@ -347,7 +347,23 @@ namespace itl2
 		return filenames;
 	}
 
-	vector<string> buildFilteredFileList(const string& templ)
+
+	int countFiles(const string& directory)
+	{
+		auto dirIterator = std::filesystem::directory_iterator(directory);
+		int fileCount = 0;
+
+		for (auto& entry : dirIterator)
+		{
+			if (entry.is_regular_file())
+			{
+				++fileCount;
+			}
+		}
+		return fileCount;
+	}
+
+	vector <string> buildFilteredFileList(const string& templ)
 	{
 		vector<string> results = buildFileList(templ);
 
