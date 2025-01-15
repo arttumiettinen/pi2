@@ -12,6 +12,8 @@
 namespace itl2
 {
 
+	// TODO: This platform-dependent stuff could probaly be replaced by std::chrono (as such a thing is well available nowadays).
+
 #if defined(__linux__) || defined(__APPLE__)
 
 	/**
