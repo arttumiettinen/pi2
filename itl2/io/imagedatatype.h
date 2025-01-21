@@ -162,7 +162,7 @@ namespace itl2
 
 	inline bool isFloat(ImageDataType dt)
 	{
-		return dt ==ImageDataType::Float32;
+		return dt == ImageDataType::Float32;
 	}
 
 	inline string toString(ImageDataType dt)

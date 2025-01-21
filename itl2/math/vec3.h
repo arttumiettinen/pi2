@@ -422,36 +422,54 @@ namespace itl2
 			}
 
 			/**
-			Returns if is a permutation of [0, 1, 2] and therefore a valid order for transposing
+			Returns true if this vector is a permutation of [0, 1, 2] and therefore a valid order for transposing.
+			Floating-point values are rounded to the nearest integer.
 			*/
 			const bool isPermutation() const
 			{
-				if(max()>2 || min()<0)
+				if(max() > 2 || min() < 0)
 					return false;
 				Vec3<T> counter(0,0,0);
-				counter[x]++;
-				counter[y]++;
-				counter[z]++;
-				return counter==Vec3<T>(1,1,1);
+				size_t ix = pixelRound<size_t>(x);
+				size_t iy = pixelRound<size_t>(y);
+				size_t iz = pixelRound<size_t>(z);
+				counter[ix]++;
+				counter[iy]++;
+				counter[iz]++;
+				return counter == Vec3<T>(1,1,1);
 			}
 
-			Vec3<T> transposed(Vec3<T> order)
+			/**
+			Returns a new vector that contains the elements of this vector but in the order given.
+			@param order The order of elements of this vector in the returned vector. The order must be a permutation of [0, 1, 2].
+			*/
+			Vec3<T> transposed(const Vec3<T>& order) const
 			{
-				if(!order.isPermutation()) throw ITLException("invalid order: "+ toString(order) + "expected a permutation of [0, 1, 2]");
+				if (!order.isPermutation())
+					throw ITLException(toString(order) + " is not a permutation of [0, 1, 2].");
+				
+				size_t ix = pixelRound<size_t>(order.x);
+				size_t iy = pixelRound<size_t>(order.y);
+				size_t iz = pixelRound<size_t>(order.z);
+
 				Vec3<T> transposed(0, 0, 0);
-				transposed.x = operator[](order.x);
-				transposed.y = operator[](order.y);
-				transposed.z = operator[](order.z);
+				transposed.x = (*this)[ix];
+				transposed.y = (*this)[iy];
+				transposed.z = (*this)[iz];
 				return transposed;
 			}
 
-			const Vec3<T> inverseOrder()const
+			const Vec3<T> inverseOrder() const
 			{
-				if(!isPermutation()) throw ITLException("invalid order: "+ toString(this) + "expected a permutation of [0, 1, 2]");
+				if(!isPermutation())
+					throw ITLException(toString(this) + " is not a permutation of [0, 1, 2] and cannot be inverted.");
 				Vec3<T> inverse(0,0,0);
-				inverse[x] = 0;
-				inverse[y] = 1;
-				inverse[z] = 2;
+				size_t ix = pixelRound<size_t>(x);
+				size_t iy = pixelRound<size_t>(y);
+				size_t iz = pixelRound<size_t>(z);
+				inverse[ix] = 0;
+				inverse[iy] = 1;
+				inverse[iz] = 2;
 				return inverse;
 			}
 

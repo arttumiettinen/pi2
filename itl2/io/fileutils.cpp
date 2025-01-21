@@ -350,7 +350,7 @@ namespace itl2
 
 	int countFiles(const string& directory)
 	{
-		auto dirIterator = std::filesystem::directory_iterator(directory);
+		auto dirIterator = fs::directory_iterator(directory);
 		int fileCount = 0;
 
 		for (auto& entry : dirIterator)

@@ -411,7 +411,7 @@ namespace itl2
 		template<typename pixel_t>
 		void decodeShardingCodec(const ZarrCodec& codec, Image<pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
 		{
-			typedef u_int64_t index_t;
+			typedef uint64_t index_t;
 
 			Vec3c innerChunkShape;
 			Pipeline codecs;
@@ -420,7 +420,7 @@ namespace itl2
 			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
 
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
-			int chunkCount = chunksPerShard.product();
+			coord_t chunkCount = chunksPerShard.product();
 			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
 			if (indexCodecs != allowedIndexCodecPipeline)
 			{
@@ -429,7 +429,7 @@ namespace itl2
 				s << "This zarr implementation only supports this sharding index_codec: " << allowedIndexCodecPipeline << " but got: " << indexCodecs;
 				throw ITLException(s.str());
 			}
-			int indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for index_codec only containing bytesCodec
+			coord_t indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for index_codec only containing bytesCodec
 			std::vector<char> indexBuffer;
 
 			switch (indexLocation)
@@ -470,7 +470,7 @@ namespace itl2
 			  //if(nBytes==-1 && offset==-1){
 			  if (nBytes == -1)
 			  {
-				  size_t ndrawn = draw(shard, AABoxc::fromMinMax(chunkStart, chunkStart + innerChunkShape), static_cast<pixel_t>(fillValue));
+				  size_t ndrawn = draw(shard, AABoxc::fromMinMax(chunkStart, chunkStart + innerChunkShape), pixelRound<pixel_t>(fillValue));
 #if defined(_DEBUG) || defined(BOUNDS_CHECK)
 				  assert(ndrawn==innerChunkShape.product());
 #endif
@@ -503,7 +503,7 @@ namespace itl2
 		template<typename pixel_t>
 		void encodeShardingCodec(const ZarrCodec& codec, const Image<pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
 		{
-			typedef u_int64_t index_t;
+			typedef uint64_t index_t;
 
 			Vec3c innerChunkShape;
 			Pipeline codecs;
@@ -525,10 +525,10 @@ namespace itl2
 			if (!(chunksPerShard.componentwiseMultiply(innerChunkShape) == shard.dimensions()))
 				throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not evenly divide shard shape " + toString(shard.dimensions()));
 
-			int chunkCount = chunksPerShard.product();
+			coord_t chunkCount = chunksPerShard.product();
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
 			Image<index_t> shardIndexArrayNBytes(chunksPerShard);
-			int indexSize = 2 * sizeof(index_t) * chunkCount; //will change if other index codecs are allowed
+			coord_t indexSize = 2 * sizeof(index_t) * chunkCount; //will change if other index codecs are allowed
 			Image<std::vector<char>> chunkBytes(chunksPerShard);
 
 			//TODO: concurrency needed? then working with fixed nbytes would be necessary
@@ -544,7 +544,7 @@ namespace itl2
 			  {
 				Vec3c pos = Vec3c(x, y, z) + chunkStart;
 				innerChunk(x, y, z) = shard(pos);
-				if (!(shard(pos) == static_cast<pixel_t>(fillValue)))
+				if (!(shard(pos) == pixelRound<pixel_t>(fillValue)))
 				{
 					innerChunkEmpty = false;
 				}
@@ -737,15 +737,28 @@ inline void itl2::zarr::codecs::ZarrCodec::getShardingConfiguration(Vec3c& chunk
 		if (chunkShapeJSON.size() >= 3)
 			chunkShape[2] = chunkShapeJSON[2].get<size_t>();
 
-		string reason;
-		if (!this->configuration.contains("codecs") || !fromJSON(codecs, this->configuration["codecs"], reason))
+		if (this->configuration.contains("codecs"))
 		{
-			throw ITLException("could not decode sharding codecs " + reason);
+			string reason;
+			if(!fromJSON(codecs, this->configuration["codecs"], reason))
+				throw ITLException("Could not decode sharding codecs " + reason);
 		}
-		if (!this->configuration.contains("index_codecs") || !fromJSON(indexCodecs, this->configuration["index_codecs"], reason))
+		else
 		{
-			throw ITLException("could not decode sharding index_codecs " + reason);
+			throw ITLException("No sharding codecs.");
 		}
+
+		if (this->configuration.contains("index_codecs"))
+		{
+			string reason;
+			if(!fromJSON(indexCodecs, this->configuration["index_codecs"], reason))
+				throw ITLException("could not decode sharding index_codecs " + reason);
+		}
+		else
+		{
+			throw ITLException("No sharding index_codecs.");
+		}
+
 		indexLocation = sharding::indexLocation::end;
 		if (this->configuration.contains("index_location"))
 		{
