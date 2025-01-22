@@ -411,7 +411,7 @@ namespace itl2
 		template<typename pixel_t>
 		void decodeShardingCodec(const ZarrCodec& codec, Image<pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
 		{
-			typedef u_int64_t index_t;
+			typedef uint64_t index_t;
 
 			Vec3c innerChunkShape;
 			Pipeline codecs;
@@ -503,7 +503,7 @@ namespace itl2
 		template<typename pixel_t>
 		void encodeShardingCodec(const ZarrCodec& codec, const Image<pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
 		{
-			typedef u_int64_t index_t;
+			typedef uint64_t index_t;
 
 			Vec3c innerChunkShape;
 			Pipeline codecs;

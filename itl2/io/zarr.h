@@ -126,7 +126,7 @@ namespace itl2
 				return chunkFile + "_writes";
 			}
 
-			inline std::string writesFile(const std::string& chunkFile, const uint indexOfWrites, const AABoxc updateRegion)
+			inline std::string writesFile(const std::string& chunkFile, const int indexOfWrites, const AABoxc updateRegion)
 			{
 				return writesFolder(chunkFile) + "/" + toString(indexOfWrites) + "_" + toString(updateRegion);
 			}
