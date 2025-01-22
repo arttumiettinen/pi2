@@ -423,10 +423,13 @@
     <ClInclude Include="io\itldicom.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
+    <ClInclude Include="heaps.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="io\zarr.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
-    <ClInclude Include="io\zarrcodecs.h">
+    <ClInclude Include="io\distributedimageprocess.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
   </ItemGroup>
@@ -657,6 +660,9 @@
       <Filter>Source Files\math</Filter>
     </ClCompile>
     <ClCompile Include="interpolation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="heaps.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="io\zarr.cpp">

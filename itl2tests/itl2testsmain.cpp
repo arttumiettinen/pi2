@@ -206,6 +206,7 @@ int main()
 	//test(itl2::tests::growPriority, "Meyer's growing algorithm");
 	//test(itl2::tests::growAll, "region growing");
 	//test(itl2::tests::growComparison, "region growing algorithm comparison");
+	test(itl2::tests::growCustomHeap, "region growing custom heap algorithm");
 
 
 	//test(itl2::tests::fillSkeleton, "skeleton filling");

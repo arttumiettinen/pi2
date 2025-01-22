@@ -23,11 +23,13 @@
 namespace itl2
 {
 	using std::cout, std::endl, std::ifstream;
+
 	namespace io
 	{
 		// Forward declaration of io::getInfo to avoid header loop.
 		bool getInfo(const std::string& filename, Vec3c& dimensions, ImageDataType& dataType, std::string& reason);
 	}
+
 	namespace zarr
 	{
 		typedef std::variant<uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, float32_t, complex32_t> ImageValue;
@@ -177,7 +179,7 @@ namespace itl2
 					}
 					else
 					{
-						drawAll<pixel_t>(imgChunk, static_cast<pixel_t>(metadata.fillValue));
+						drawAll<pixel_t>(imgChunk, pixelRound<pixel_t>(metadata.fillValue));
 					}
 				}
 			}
@@ -203,6 +205,7 @@ namespace itl2
 				  imgChunk(pos) = temp(pos);
 				});
 			}
+
 			/**
 			Reads a block of an image.
 			@param outputBlock Target for data that will be read.
@@ -471,7 +474,7 @@ namespace itl2
 						{
 							isKnownImage = io::getInfo(path, oldDimensions, oldMetadata.dataType, dummyReason);
 						}
-						catch (ITLException& e)
+						catch (ITLException)
 						{}
 						if (!isKnownImage)
 							throw ITLException(string("Unable to write zarr image as the output folder already exists but cannot be verified to be an image: ") + path
@@ -527,19 +530,23 @@ namespace itl2
 			codecs::ZarrCodec(codecs::Name::Bytes, nlohmann::json::parse(R"({"endian": "little"})")).toJSON(),
 			codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(R"({"cname": "zstd", "clevel": 5, "shuffle": "noshuffle", "blocksize": 0, "typesize": 0})")).toJSON()
 		};
+
 		inline const nlohmann::json DEFAULT_SHARDING_CONFIG = {
 			{ "chunk_shape", { DEFAULT_INNER_CHUNK_SIZE.x, DEFAULT_INNER_CHUNK_SIZE.y, DEFAULT_INNER_CHUNK_SIZE.z }},
 			{ "codecs", DEFAULT_SHARDING_CODECS_JSON },
 			{ "index_codecs", BASIC_CODECS_JSON },
 			{ "index_location", "end"}
 		};
+
 		inline const codecs::Pipeline DEFAULT_CODECS = {
 			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG)
 		};
+
 		//TODO: implement and use toJSON(DEFAULT_CODECS)
 		inline const nlohmann::json DEFAULT_CODECS_JSON = {
 			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG).toJSON()
 		};
+
 		inline const ZarrMetadata DEFAULT_METADATA = { DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR };
 
 		/**
@@ -565,6 +572,7 @@ namespace itl2
 
 			internals::readChunksInRange(img, path, datasetShape, fileStart, metadata);
 		}
+
 		/**
 		Reads a zarr dataset file to the given image.
 		@param img Image where the data is placed. The size of the image will be set based on the dataset contents.
@@ -574,7 +582,6 @@ namespace itl2
 		void read(Image<pixel_t>& img, const std::string& path)
 		{
 			Vec3c dimensions;
-			ImageDataType dataType;
 			ZarrMetadata metadata;
 			string reason;
 			if (!itl2::zarr::internals::getInfo(path, dimensions, metadata, reason))
@@ -603,7 +610,7 @@ namespace itl2
 				string writesFolder = internals::writesFolder(filename);
 				bool unsafe = !ignoreWritesFolder && fs::exists(writesFolder);
 
-				if (!unsafe && allEquals(imgChunk, static_cast<pixel_t>(metadata.fillValue)))
+				if (!unsafe && allEquals(imgChunk, pixelRound<pixel_t>(metadata.fillValue)))
 				{
 					//chunk is safe and empty, so we can delete the chunk file
 					if (fs::exists(filename))
@@ -652,7 +659,7 @@ namespace itl2
 						  .intersection(currentChunk)
 						  .intersection(AABoxc::fromPosSize(imgPosition, img.dimensions()));
 
-					  Image<pixel_t> chunk(metadata.chunkSize, metadata.fillValue);
+					  Image<pixel_t> chunk(metadata.chunkSize, pixelRound<pixel_t>(metadata.fillValue));
 					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
 					  readSingleChunk(chunk, filename, metadata);
 					  //write all pixels of chunk in img to imgChunk

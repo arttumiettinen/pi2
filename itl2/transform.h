@@ -290,6 +290,7 @@ namespace itl2
 			out(x, y, z) = interpolate(in, xs, ys, zs);
 		});
 	}
+
 	/**
 	Transposes the input image and stores the result in the output image.
 	@param in Image to be transposed.
@@ -300,7 +301,7 @@ namespace itl2
 	void transpose(Image<pixel_t>& in, const Vec3c& order, fillValue_t fillValue)
 	{
 		Vec3c transposedShape = in.dimensions().transposed(order);
-		Image<pixel_t> temp(transposedShape, static_cast<pixel_t>(fillValue));
+		Image<pixel_t> temp(transposedShape, pixelRound<pixel_t>(fillValue));
 		forAllPixels(in, [&](coord_t x, coord_t y, coord_t z)
 		{
 		  Vec3c cords(x, y, z);

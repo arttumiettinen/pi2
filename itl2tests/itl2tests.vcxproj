@@ -71,23 +71,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)gdcm\include\gdcm-3.0;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include</IncludePath>
-    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)jpeg-9e\x64\Release</LibraryPath>
+    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug no OpenCL|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)gdcm\include\gdcm-3.0;</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)jpeg-9e\x64\Release</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)gdcm\include\gdcm-3.0;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include</IncludePath>
-    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)jpeg-9e\x64\Release</LibraryPath>
+    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release no OpenCL|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\itl2\;$(SolutionDir)libpng-1.6.34;$(SolutionDir)\fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)gdcm\include\gdcm-3.0;</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)jpeg-9e\x64\Release</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration)</LibraryPath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
