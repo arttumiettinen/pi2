@@ -11,7 +11,7 @@ Before building, FFTW, libpng, zlib, libtiff, libjpeg, and libblosc libraries ar
 <!--TODO: add libblosc to binary download page-->
 It's easiest to download all the dependencies from the [binary download page](https://github.com/arttumiettinen/pi2/releases).
 Either
-* use pre-built binaries and place them to folders `fftw-3.3.5-dll64`, `libpng-1.6.34`, `zlib-1.2.11`, `tiff-4.0.10`, and `jpeg-9e`, or
+* use pre-built binaries and place them to folders `fftw-3.3.5-dll64`, `libpng-1.6.34`, `zlib-1.2.11`, `tiff-4.0.10`, `jpeg-9e`, 'c-blosc' or
 * build them from sources using default Release Library x64 build settings.
 
 In particular, libtiff must be built with `nmake` from the x64 Developer Command Prompt using command

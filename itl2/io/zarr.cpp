@@ -184,6 +184,7 @@ namespace itl2
 				Image<int32_t> fromDisk;
 				zarr::read(fromDisk, "./testdata/zarrita.zarr");
 			}
+
 			void write()
 			{
 				string path = "./testoutput/test_write.zarr";
@@ -325,6 +326,7 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test write transpose"));
 			}
+
 			void zarrMetadataEquals()
 			{
 				ZarrMetadata metadata = { ImageDataType::Int32, Vec3c(1, 1, 1), { codecs::ZarrCodec(codecs::Name::Bytes) }, 0, "/" };
@@ -355,6 +357,7 @@ namespace itl2
 
 				testAssert(equals(img, fromDisk), string("zarr test read and write with separator " + separator + " read failed"));
 			}
+
 			void separator()
 			{
 				separatorTest(".", "dot");
@@ -430,6 +433,7 @@ namespace itl2
 
 				testAssert(sizeEmptyChunks < sizeFullChunks, "shardingEmptyInnerChunksTest" + indexLocation);
 			}
+
 			void sharding()
 			{
 				shardingTest("end", false);
@@ -441,6 +445,7 @@ namespace itl2
 				shardingEmptyInnerChunksTest("start");
 				shardingEmptyInnerChunksTest("end");
 			}
+
 			void emptyChunks()
 			{
 				string path = "./testoutput/test_empty_chunks";
@@ -475,6 +480,7 @@ namespace itl2
 					}
 				}
 			}
+
 			void concurrencyOneTest(const codecs::Pipeline& codecs, const Vec3c& chunkSize)
 			{
 				cout << "Chunk size = " << chunkSize << endl;
@@ -553,6 +559,7 @@ namespace itl2
 					testAssert(equals(entireFromDisk, img), "Zarr entire image read/write cycle with pseudo-concurrent blocks");
 				}
 			}
+
 			void concurrency()
 			{
 				nlohmann::json shardingCodecConfigJSON = {
