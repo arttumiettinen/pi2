@@ -523,7 +523,7 @@ namespace itl2
 		inline const fillValue_t DEFAULT_FILLVALUE = 0;
 		inline const ImageDataType DEFAULT_DATATYPE = ImageDataType::Int32;
 		inline const codecs::Pipeline BASIC_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
-		inline const nlohmann::json BASIC_CODECS_JSON = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
+		inline const nlohmann::json BASIC_CODECS_JSON = nlohmann::json::array({ codecs::ZarrCodec(codecs::Name::Bytes).toJSON() });
 
 		inline const nlohmann::json DEFAULT_SHARDING_CODECS_JSON = {
 			codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(R"({"order": [2, 1, 0]})")).toJSON(),

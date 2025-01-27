@@ -195,6 +195,7 @@ namespace itl2
 				zarr::write(img,
 					path,
 					zarr::DEFAULT_CHUNK_SIZE);
+
 				Image<uint16_t> fromDisk;
 				zarr::read(fromDisk, path);
 
