@@ -673,7 +673,7 @@ namespace itl2
 			float32_t gammamax0 = internals::calculateGammaMax0((float32_t)projectionWidth, settings.sourceToRA);
 			float32_t centralAngle = internals::calculateTrueCentralAngle(settings.centralAngleFor180degScan, settings.angles, gammamax0);
 
-			float32_t rotMul = 1 + (settings.angleTweak / (max(settings.angles) - min(settings.angles));
+			float32_t rotMul = 1 + settings.angleTweak / (itl2::max(settings.angles) - itl2::min(settings.angles));
 			if (settings.rotationDirection == RotationDirection::Counterclockwise)
 				rotMul *= -1;
 
