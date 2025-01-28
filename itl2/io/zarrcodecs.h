@@ -371,10 +371,10 @@ namespace itl2
 		void decodeBytesCodec(Image<pixel_t>& image, std::vector<char>& buffer)
 		{
 			Vec3c shape = image.dimensions();
-			std::vector<pixel_t> temp(shape.product());
 			if (shape.product() * sizeof(pixel_t) != buffer.size())
 				throw ITLException("wrong buffer size for decoding bytes codec. buffersize=" + toString(buffer.size()) + " chunkSize=" + toString(shape.product()));
-			std::memcpy(temp.data(), buffer.data(), buffer.size());
+
+			pixel_t* buffer2 = (pixel_t*)buffer.data();
 			size_t n = 0;
 			for (coord_t x = 0; x < shape.x; x++)
 			{
@@ -383,16 +383,19 @@ namespace itl2
 					for (coord_t z = 0; z < shape.z; z++)
 					{
 						//todo: might be faster to read data sequentially
-						image(x, y, z) = temp[n++];
+						image(x, y, z) = buffer2[n++];
 					}
 				}
 			}
 		}
+
 		template<typename pixel_t>
 		void encodeBytesCodec(const Image<pixel_t>& image, std::vector<char>& buffer, size_t pixelSize = sizeof(pixel_t))
 		{
 			Vec3c shape = image.dimensions();
-			std::vector<pixel_t> temp(shape.product());
+			size_t bufferSize = shape.product() * pixelSize;
+			buffer = std::vector<char>(bufferSize);
+			pixel_t* buffer2 = (pixel_t*)buffer.data();
 
 			size_t n = 0;
 			for (coord_t x = 0; x < shape.x; x++)
@@ -401,14 +404,10 @@ namespace itl2
 				{
 					for (coord_t z = 0; z < shape.z; z++)
 					{
-						temp[n++] = image(x, y, z);
+						buffer2[n++] = image(x, y, z);
 					}
 				}
 			}
-
-			size_t bufferSize = shape.product() * pixelSize;
-			buffer = std::vector<char>(bufferSize);
-			std::memcpy(buffer.data(), temp.data(), buffer.size());
 		}
 
 		template<typename pixel_t>
