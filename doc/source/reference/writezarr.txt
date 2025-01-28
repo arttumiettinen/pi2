@@ -1,0 +1,65 @@
+.. _writezarr:
+
+writezarr
+*********
+
+
+**Syntax:** :code:`writezarr(input image, path, chunk size, codecs, fillValue, separator)`
+
+Write an image to an .zarr dataset.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+input image [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** uint8 image, uint16 image, uint32 image, uint64 image, int8 image, int16 image, int32 image, int64 image, float32 image
+
+Image to save.
+
+path [input]
+~~~~~~~~~~~~
+
+**Data type:** string
+
+Name (and path) of the dataset to write. If the dataset exists, its current contents are erased.
+
+chunk size [input]
+~~~~~~~~~~~~~~~~~~
+
+**Data type:** 3-component integer vector
+
+**Default value:** "[1024, 1024, 1024]"
+
+Chunk size for the Zarr dataset to be written.
+
+codecs [input]
+~~~~~~~~~~~~~~
+
+**Data type:** json format
+
+**Default value:** [{"configuration":{"chunk_shape":[32,32,32],"codecs":[{"configuration":{"order":[2,1,0]},"name":"transpose"},{"configuration":{"endian":"little"},"name":"bytes"},{"configuration":{"blocksize":0,"clevel":5,"cname":"zstd","shuffle":"noshuffle","typesize":0},"name":"blosc"}],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"end"},"name":"sharding_indexed"}]
+
+zarr codecs as string using doubleqoutes (") in json format
+
+fillValue [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** integer
+
+**Default value:** 0
+
+Value filling empty pixels (currently only integers are supported)
+
+separator [input]
+~~~~~~~~~~~~~~~~~
+
+**Data type:** string
+
+**Default value:** /
+
+Character separating dimensions in the chunkfile names
+
