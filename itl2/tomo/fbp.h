@@ -39,7 +39,7 @@ namespace itl2
 	}
 
 	template<>
-	inline RotationDirection fromString(const string& str0) 
+	inline RotationDirection fromString(const string& str0)
 	{
 		string str = str0;
 		toLower(str);
