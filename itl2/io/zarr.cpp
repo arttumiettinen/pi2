@@ -247,7 +247,7 @@ namespace itl2
 				}
 				testAssert(imgEquals2, string("zarr test 2 for writeBlock chunkSize=" + toString(chunkSize)));
 				fs::remove_all(path);
-				cout << "success: writeblock chunkSize=" << toString(chunkSize) << " changeValue=" << toString(changeValue);
+				cout << "success zarr test writeblock with chunkSize=" << toString(chunkSize) << " changeValue=" << toString(changeValue);
 			}
 
 			void writeBlock()
@@ -379,14 +379,14 @@ namespace itl2
 				add(img, 10);
 				string bloscCodecConfig = R"({"cname": "lz4", "clevel": 1, "shuffle": "shuffle", "typesize": 4, "blocksize": 0})";
 
-				nlohmann::json codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() };
-				if (withBlosc) codecs = { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON() };
+				nlohmann::json codecs = nlohmann::json::array({ codecs::ZarrCodec(codecs::Name::Bytes).toJSON() });
+				if (withBlosc) codecs = nlohmann::json::array({ codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON() });
 
 				nlohmann::json shardingCodecConfigJSON = {
 					{ "chunk_shape", { chunkShape.x, chunkShape.y, chunkShape.z }},
 					{ "codecs", codecs },
 					//{"index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON(), codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(bloscCodecConfig)).toJSON()}},
-					{ "index_codecs", { codecs::ZarrCodec(codecs::Name::Bytes).toJSON() }},
+					{ "index_codecs", nlohmann::json::array({ codecs::ZarrCodec(codecs::Name::Bytes).toJSON() })},
 					{ "index_location", indexLocation }
 				};
 
@@ -399,6 +399,7 @@ namespace itl2
 				zarr::read(fromDisk, path);
 
 				testAssert(equals(img, fromDisk), string("zarr test write sharding with indexLocation=" + indexLocation + " withBlosc=" + toString(withBlosc)));
+				cout << "success zarr test write sharding with indexLocation=" << indexLocation << " withBlosc=" << toString(withBlosc) << endl;
 			}
 
 			void shardingEmptyInnerChunksTest(string indexLocation)
@@ -433,6 +434,7 @@ namespace itl2
 				auto sizeFullChunks = fileSize(internals::chunkFile(path + "_full", 3, Vec3c(0, 0, 0), DEFAULT_SEPARATOR));
 
 				testAssert(sizeEmptyChunks < sizeFullChunks, "shardingEmptyInnerChunksTest" + indexLocation);
+				cout << "success shardingEmptyInnerChunksTes with indexLocation=" << indexLocation << endl;
 			}
 
 			void sharding()
@@ -484,8 +486,6 @@ namespace itl2
 
 			void concurrencyOneTest(const codecs::Pipeline& codecs, const Vec3c& chunkSize)
 			{
-				cout << "Chunk size = " << chunkSize << endl;
-
 				Vec3c dimensions(100, 200, 300);
 
 				Image<uint16_t> img(dimensions);

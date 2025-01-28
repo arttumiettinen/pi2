@@ -39,18 +39,19 @@ class Test_zarr:
 
     def pi2_write(self, chunk_shape=None, codecs=None, data=None, name="test.zarr"):
         pi2 = self.pi2
+        args = []
 
         if data is None:
             data = self.arr
         if chunk_shape is None:
             chunk_shape = list([32, 32, 32])
+        if codecs is not None:
+            args.append(codecs)
+
         shutil.rmtree(output_file(name), ignore_errors=True)
         write_img = pi2.newimage(ImageDataType.UInt32, list(data.shape))
         write_img.set_data(data.transpose(1, 0, 2))
-        if codecs is not None:
-            pi2.writezarr(write_img, output_file(name), chunk_shape, codecs)
-        else:
-            pi2.writezarr(write_img, output_file(name), chunk_shape)
+        pi2.writezarr(write_img, output_file(name), chunk_shape, *args)
 
     def zarrita_write(self, chunk_shape=None, codecs=None, data=None, separator=None, name="zarrita.zarr"):
         if data is None:
@@ -59,27 +60,9 @@ class Test_zarr:
             chunk_shape = data.shape
         if separator is None:
             separator = "/"
-        if codecs is None:
-            codecs = [
-                zarrita.codecs.sharding_codec(
-                    chunk_shape=chunk_shape,
-                    codecs=(
-                        [
-                            zarrita.codecs.transpose_codec([2, 1, 0]),
-                            zarrita.codecs.bytes_codec(),
-                            zarrita.codecs.blosc_codec(
-                                typesize=0
-                            ),
-                        ]
-                    ),
-                    index_codecs=(
-                        [
-                            zarrita.codecs.bytes_codec(),
-                        ]
-                    )
-                )
-            ]
-
+        kwargs = {}
+        if codecs is not None:
+            kwargs["codecs"] = codecs
         shutil.rmtree(output_file(name), ignore_errors=True)
         store = zarrita.LocalStore(output_file(name))
         a = zarrita.Array.create(
@@ -89,8 +72,8 @@ class Test_zarr:
             chunk_shape=tuple(chunk_shape),
             fill_value=self.fill_value,
             chunk_key_encoding=("default", separator),
-            codecs=codecs,
-        )
+            **kwargs
+            )
         a[:] = data
 
     def pi2_read(self, name):

@@ -13,13 +13,13 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     # MacOS, assuming gcc compiler installed with homebrew
     $(info Detected MacOS)
-    CXXFLAGS := -fopenmp -O0 -std=c++17 -fvisibility=hidden -I/opt/homebrew/include -I/opt/homebrew/opt/opencl-clhpp-headers/include
+    CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I/opt/homebrew/include -I/opt/homebrew/opt/opencl-clhpp-headers/include
     LDFLAGS := -fopenmp -lblosc -L/opt/homebrew/lib/
 	PLATFORM := macos
 else
     # Linux
     $(info Detected Linux)
-    CXXFLAGS := -fopenmp -O0 -std=c++17 -fvisibility=hidden
+    CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
     LDFLAGS := -fopenmp -lblosc
 	PLATFORM := linux64
 endif

@@ -285,3 +285,5 @@ ModelManifest.xml
 /testoutput
 /zarrita_write.py
 /.vscode
+
+CppProperties.json

@@ -200,8 +200,11 @@ namespace itl2
 					else if (shuffleName == "shuffle") shuffle = blosc::shuffle::shuffle;
 					else if (shuffleName == "bitshuffle") shuffle = blosc::shuffle::bitshuffle;
 					else throw ITLException("invalid blosc shuffle parameter: " + shuffleName);
-					if (shuffle != blosc::shuffle::noshuffle)
+					if (this->configuration.contains("typesize")) {
 						typesize = this->configuration["typesize"];
+						if (typesize < 1) typesize = 1;
+					}
+					else typesize = 1;
 					blocksize = this->configuration["blocksize"];
 				}
 				catch (nlohmann::json::exception ex)

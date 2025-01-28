@@ -525,11 +525,11 @@ namespace itl2
 		inline const codecs::Pipeline BASIC_CODECS = { codecs::ZarrCodec(codecs::Name::Bytes) };
 		inline const nlohmann::json BASIC_CODECS_JSON = nlohmann::json::array({ codecs::ZarrCodec(codecs::Name::Bytes).toJSON() });
 
-		inline const nlohmann::json DEFAULT_SHARDING_CODECS_JSON = {
+		inline const nlohmann::json DEFAULT_SHARDING_CODECS_JSON = nlohmann::json::array({
 			codecs::ZarrCodec(codecs::Name::Transpose, nlohmann::json::parse(R"({"order": [2, 1, 0]})")).toJSON(),
 			codecs::ZarrCodec(codecs::Name::Bytes, nlohmann::json::parse(R"({"endian": "little"})")).toJSON(),
 			codecs::ZarrCodec(codecs::Name::Blosc, nlohmann::json::parse(R"({"cname": "zstd", "clevel": 5, "shuffle": "noshuffle", "blocksize": 0, "typesize": 0})")).toJSON()
-		};
+		});
 
 		inline const nlohmann::json DEFAULT_SHARDING_CONFIG = {
 			{ "chunk_shape", { DEFAULT_INNER_CHUNK_SIZE.x, DEFAULT_INNER_CHUNK_SIZE.y, DEFAULT_INNER_CHUNK_SIZE.z }},
@@ -543,9 +543,9 @@ namespace itl2
 		};
 
 		//TODO: implement and use toJSON(DEFAULT_CODECS)
-		inline const nlohmann::json DEFAULT_CODECS_JSON = {
+		inline const nlohmann::json DEFAULT_CODECS_JSON = nlohmann::json::array({
 			codecs::ZarrCodec(codecs::Name::Sharding, DEFAULT_SHARDING_CONFIG).toJSON()
-		};
+		});
 
 		inline const ZarrMetadata DEFAULT_METADATA = { DEFAULT_DATATYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CODECS, DEFAULT_FILLVALUE, DEFAULT_SEPARATOR };
 
