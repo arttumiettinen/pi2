@@ -8,6 +8,7 @@
 #include "io/nrrd.h"
 #include "io/pcr.h"
 #include "io/nn5.h"
+#include "io/zarr.h"
 
 namespace itl2
 {
@@ -23,6 +24,7 @@ namespace itl2
 				const std::string& nrrdReason,
 				const std::string& pcrReason,
 				const std::string& nn5Reason,
+				const std::string& zarrReason,
 				const std::string& lz4Reason,
 				const std::string& dicomReason)
 			{
@@ -34,6 +36,7 @@ namespace itl2
 					"nrrd: " + nrrdReason + "\n" +
 					"pcr: " + pcrReason + "\n" +
 					"nn5: " + nn5Reason + "\n" +
+					"zarr: " + zarrReason + "\n" +
 					"lz4raw: " + lz4Reason + "\n" +
 					"DICOM: " + dicomReason;
 			}
@@ -46,6 +49,7 @@ namespace itl2
 				const std::string& nrrdReason,
 				const std::string& pcrReason,
 				const std::string& nn5Reason,
+				const std::string& zarrReason,
 				const std::string& lz4Reason)
 			{
 				return std::string() +
@@ -56,6 +60,7 @@ namespace itl2
 					"nrrd: " + nrrdReason + "\n" +
 					"pcr: " + pcrReason + "\n" +
 					"nn5: " + nn5Reason + "\n" +
+					"zarr: " + zarrReason + "\n" +
 					"lz4raw: " + lz4Reason;
 			}
 		}
@@ -69,7 +74,7 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dt;
 			
-			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, lz4Reason, dicomReason;
+			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, zarrReason, lz4Reason, dicomReason;
 			if (vol::getInfo(filename, dimensions, dt, volReason))
 			{
 				vol::read(img, filename);
@@ -98,6 +103,10 @@ namespace itl2
 			{
 				nn5::read(img, filename);
 			}
+			else if (zarr::getInfo(filename, dimensions, dt, zarrReason))
+			{
+				zarr::read(img, filename);
+			}
 			else if (lz4::getInfo(filename, dimensions, dt, lz4Reason))
 			{
 				lz4::read(img, filename);
@@ -109,7 +118,7 @@ namespace itl2
 			else
 			{
 				throw ITLException(std::string("Unsupported file type, file not found, or cannot be read: ") + filename + "\n" +
-					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason, dicomReason));
+					internals::combineReasons(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, zarrReason, lz4Reason, dicomReason));
 			}
 		}
 
@@ -130,7 +139,7 @@ namespace itl2
 			Vec3c dimensions;
 			ImageDataType dt;
 
-			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, lz4Reason;
+			std::string volReason, tiffReason, nrrdReason, sequenceReason, rawReason, pcrReason, nn5Reason, zarrReason, lz4Reason;
 			if (vol::getInfo(filename, dimensions, dt, volReason))
 			{
 				vol::readBlock(img, filename, blockStart);
@@ -159,7 +168,11 @@ namespace itl2
 			{
 				nn5::readBlock(img, filename, blockStart);
 			}
-			else if (lz4::getInfo(filename, dimensions, dt, lz4Reason))
+			else if (zarr::getInfo(filename, dimensions, dt, zarrReason))
+			{
+				zarr::readBlock(img, filename, blockStart);
+			}
+			else if (lz4::getInfo(filename, dimensions, dt, lz4Reason)) //TODO: is this supposed to be lz4Reason?
 			{
 				lz4::readBlock(img, filename, blockStart);
 			}
@@ -167,7 +180,7 @@ namespace itl2
 			else
 			{
 				throw ITLException(std::string("Unsupported file type, file not found, or cannot be read: ") + filename + "\n" +
-					internals::combineReasonsNoDICOM(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, lz4Reason));
+					internals::combineReasonsNoDICOM(rawReason, tiffReason, sequenceReason, volReason, nrrdReason, pcrReason, nn5Reason, zarrReason, lz4Reason));
 			}
 		}
 

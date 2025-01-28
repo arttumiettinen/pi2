@@ -90,9 +90,9 @@ namespace pilib
 		ImageDataType pixelDataType;
 		
 		/**
-		Chunk size to use when the backing store is an NN5 dataset.
+		Chunk size to use when the backing store is an NN5 or Zarr dataset.
 		*/
-		Vec3c nn5ChunkSize;
+		Vec3c distributedImageChunkSize;
 
 		/**
 		Generate filename for temporary storage.
@@ -134,11 +134,11 @@ namespace pilib
 		}
 
 		/**
-		Retrieves NN5 chunk size.
+		Retrieves Zarr and NN5 chunk size.
 		*/
 		Vec3c getChunkSize() const
 		{
-			return nn5ChunkSize;
+			return distributedImageChunkSize;
 		}
 
         /**
@@ -286,7 +286,7 @@ namespace pilib
 		/**
 		Start concurrent write process for given processes.
 		*/
-		size_t startConcurrentWrite(const std::vector<itl2::nn5::NN5Process>& processes);
+		size_t startConcurrentWrite(const std::vector<itl2::io::DistributedImageProcess>& processes);
 
 		/**
 		Retrieve a list of chunks for which it is necessary to execute pi2 code retrieved using emitEndConcurrentWrite.
@@ -636,13 +636,19 @@ namespace pilib
 			ensureSize(img.dimensions());
 
 			TimingFlag flag(TimeClass::IO);
-			
+
 			switch (currentWriteTargetType())
 			{
 			case DistributedImageStorageType::NN5:
 			{
 				// TODO: NN5 compression default
 				itl2::nn5::internals::write(img, currentWriteTarget(), getChunkSize(), itl2::nn5::NN5Compression::LZ4, true);
+				break;
+			}
+			case DistributedImageStorageType::Zarr:
+			{
+
+				itl2::zarr::write(img, currentWriteTarget(), getChunkSize());
 				break;
 			}
 			case DistributedImageStorageType::Raw:

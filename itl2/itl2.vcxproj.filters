@@ -393,6 +393,9 @@
     <ClInclude Include="io\nn5compression.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
+    <ClInclude Include="io\zarrcodecs.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
     <ClInclude Include="math\aabox.h">
       <Filter>Header Files\math</Filter>
     </ClInclude>
@@ -422,6 +425,12 @@
     </ClInclude>
     <ClInclude Include="heaps.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io\zarr.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="io\distributedimageprocess.h">
+      <Filter>Header Files\io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -655,6 +664,9 @@
     </ClCompile>
     <ClCompile Include="heaps.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io\zarr.cpp">
+      <Filter>Source Files\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

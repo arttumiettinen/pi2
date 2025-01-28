@@ -139,6 +139,14 @@ namespace itl2
                 return *this;
             }
 
+			/**
+			Comparison of greater or equal in all components
+			*/
+			bool operator>=(const Vec3& r)
+			{
+				return x >= r.x && y >= r.y && z >= r.z;
+			}
+
 
             /**
             Addition of constant in-place
@@ -413,6 +421,58 @@ namespace itl2
 				return Vec3<T>(x / r.x, y / r.y, z / r.z);
 			}
 
+			/**
+			Returns true if this vector is a permutation of [0, 1, 2] and therefore a valid order for transposing.
+			Floating-point values are rounded to the nearest integer.
+			*/
+			const bool isPermutation() const
+			{
+				if(max() > 2 || min() < 0)
+					return false;
+				Vec3<T> counter(0,0,0);
+				size_t ix = pixelRound<size_t>(x);
+				size_t iy = pixelRound<size_t>(y);
+				size_t iz = pixelRound<size_t>(z);
+				counter[ix]++;
+				counter[iy]++;
+				counter[iz]++;
+				return counter == Vec3<T>(1,1,1);
+			}
+
+			/**
+			Returns a new vector that contains the elements of this vector but in the order given.
+			@param order The order of elements of this vector in the returned vector. The order must be a permutation of [0, 1, 2].
+			*/
+			Vec3<T> transposed(const Vec3<T>& order) const
+			{
+				if (!order.isPermutation())
+					throw ITLException(toString(order) + " is not a permutation of [0, 1, 2].");
+				
+				size_t ix = pixelRound<size_t>(order.x);
+				size_t iy = pixelRound<size_t>(order.y);
+				size_t iz = pixelRound<size_t>(order.z);
+
+				Vec3<T> transposed(0, 0, 0);
+				transposed.x = (*this)[ix];
+				transposed.y = (*this)[iy];
+				transposed.z = (*this)[iz];
+				return transposed;
+			}
+
+			const Vec3<T> inverseOrder() const
+			{
+				if(!isPermutation())
+					throw ITLException(toString(this) + " is not a permutation of [0, 1, 2] and cannot be inverted.");
+				Vec3<T> inverse(0,0,0);
+				size_t ix = pixelRound<size_t>(x);
+				size_t iy = pixelRound<size_t>(y);
+				size_t iz = pixelRound<size_t>(z);
+				inverse[ix] = 0;
+				inverse[iy] = 1;
+				inverse[iz] = 2;
+				return inverse;
+			}
+
             /**
             Converts this object to string.
             */
@@ -422,6 +482,19 @@ namespace itl2
                 return stream;
             }
     };
+
+	template<typename T>
+	std::istream& operator>>(std::istream& i, Vec3<T>& out)
+	{
+		i.ignore(1, '[');
+		i >> out.x;
+		i.ignore(2, ',');
+		i >> out.y;
+		i.ignore(2, ',');
+		i >> out.z;
+		i.ignore(1, ']');
+		return i;
+	}
 
 	extern template class Vec3<itl2::float32_t>;
 	extern template class Vec3<double>;

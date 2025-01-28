@@ -1446,8 +1446,8 @@ namespace itl2
 							for (const auto& p : finalPoints)
 								std::cout << p << std::endl;
 
-							throw logic_error("edge contains non-unique points.");
-						}
+						throw std::logic_error("edge contains non-unique points.");
+					}
 #endif
 					}
 					progress.step();

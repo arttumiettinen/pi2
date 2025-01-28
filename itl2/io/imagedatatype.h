@@ -144,6 +144,27 @@ namespace itl2
 		return ImageDataType::Unknown;
 	}
 
+	inline bool isUnsignedInt(ImageDataType dt)
+	{
+		return dt == ImageDataType::UInt8 ||
+		dt == ImageDataType::UInt16 ||
+		dt == ImageDataType::UInt32 ||
+		dt == ImageDataType::UInt64;
+	}
+
+	inline bool isSignedInt(ImageDataType dt)
+	{
+		return dt == ImageDataType::Int8 ||
+		dt == ImageDataType::Int16 ||
+		dt == ImageDataType::Int32 ||
+		dt == ImageDataType::Int64;
+	}
+
+	inline bool isFloat(ImageDataType dt)
+	{
+		return dt == ImageDataType::Float32;
+	}
+
 	inline string toString(ImageDataType dt)
 	{
 		switch (dt)
@@ -160,6 +181,14 @@ namespace itl2
 		case ImageDataType::Complex32: return "complex32";
 		default: return "Unknown";
 		}
+	}
+
+	/**
+	 * converting int to value in enum ImageDataType an invalid int outside the range of ImageDataType will be ImageDataType::Unknown
+	 */
+	template<typename T> ImageDataType imageDataTypeFromInt(T dt){
+		ImageDataType dataType = static_cast<ImageDataType>(dt);
+		return fromString<ImageDataType>(toString(dataType));
 	}
 
 	inline size_t pixelSize(ImageDataType dt)

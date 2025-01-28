@@ -1,3 +1,7 @@
+venv/
+testoutput/
+
+.idea/
 
 *.raw
 __pycache__
@@ -9,6 +13,7 @@ libpng-1.6.34/*
 tiff-4.0.10/*
 zlib-1.2.11/*
 jpeg-9e/*
+c-blosc/*
 
 # Test data folders
 test_input_data/*
@@ -272,3 +277,13 @@ ModelManifest.xml
 .fake/
 /exp_table.txt
 /testing/N0098_B525_B526_510x510x512_block_match.mat
+
+/venv
+/.idea
+/.run
+/testdata
+/testoutput
+/zarrita_write.py
+/.vscode
+
+CppProperties.json

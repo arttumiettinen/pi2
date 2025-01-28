@@ -48,6 +48,7 @@
     <ClInclude Include="heaps.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="imagemetadata.h" />
+    <ClInclude Include="io\distributedimageprocess.h" />
     <ClInclude Include="io\fopen_s.h" />
     <ClInclude Include="io\ini.h" />
     <ClInclude Include="io\inireader.h" />
@@ -57,6 +58,8 @@
     <ClInclude Include="io\json.h" />
     <ClInclude Include="io\nn5.h" />
     <ClInclude Include="io\nn5compression.h" />
+    <ClInclude Include="io\zarr.h" />
+    <ClInclude Include="io\zarrcodecs.h" />
     <ClInclude Include="io\nrrd.h" />
     <ClInclude Include="io\pcr.h" />
     <ClInclude Include="io\vectorio.h" />
@@ -158,6 +161,7 @@
     <ClCompile Include="io\itljpeg.cpp" />
     <ClCompile Include="io\itllz4.cpp" />
     <ClCompile Include="io\nn5.cpp" />
+    <ClCompile Include="io\zarr.cpp" />
     <ClCompile Include="listandimage.cpp" />
     <ClCompile Include="lz4\lz4.c" />
     <ClCompile Include="lz4\lz4frame.c" />
@@ -281,20 +285,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include</IncludePath>
-    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\lib\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;</LibraryPath>
+    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;$(SolutionDir)c-blosc\build\blosc\Release</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug no OpenCL|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;$(SolutionDir)c-blosc\build\blosc\Release</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include</IncludePath>
-    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\lib\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;</LibraryPath>
+    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc</IncludePath>
+    <LibraryPath>$(CUDA_PATH)\lib\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;$(SolutionDir)c-blosc\build\blosc\Release</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release no OpenCL|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)itl2;$(SolutionDir)libpng-1.6.34;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e;$(SolutionDir)c-blosc\blosc;</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)x64\$(Configuration);$(SolutionDir)libpng-1.6.34\projects\vstudio\x64\Release Library;$(SolutionDir)fftw-3.3.5-dll64;$(SolutionDir)tiff-4.0.10\libtiff;$(SolutionDir)jpeg-9e\Release\x64;$(SolutionDir)c-blosc\build\blosc\Release</LibraryPath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -316,7 +320,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <Lib>
-      <AdditionalDependencies>opencl.lib;libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib</AdditionalDependencies>
+      <AdditionalDependencies>opencl.lib;libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib;blosc.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug no OpenCL|x64'">
@@ -338,7 +342,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <Lib>
-      <AdditionalDependencies>libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib</AdditionalDependencies>
+      <AdditionalDependencies>libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib;blosc.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -363,7 +367,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>opencl.lib;libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib</AdditionalDependencies>
+      <AdditionalDependencies>opencl.lib;libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib;blosc.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release no OpenCL|x64'">
@@ -388,7 +392,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib</AdditionalDependencies>
+      <AdditionalDependencies>libpng16.lib;zlib.lib;libfftw3f-3.lib;libtiff.lib;jpeg.lib;blosc.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

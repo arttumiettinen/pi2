@@ -3,14 +3,14 @@ Building pi2 in Linux
 
 The overall build process is as follows:
 * Make sure that gcc 8.4.0 or newer is installed. Often you also need to install build-essential or corresponding package.
-* Make sure that FFTW 3 library, libpng, libtiff, libjpeg, and their development packages are installed.
+* Make sure that FFTW 3 library, libpng, libtiff, libjpeg, libblosc, and their development packages are installed.
 * For Python support make sure that Python 3 is installed.
 * For OpenCL support make sure that you have suitable OpenCL development files installed.
 * Run `make` to generate OpenCL-enabled build or `make NO_OPENCL=1` if no OpenCL is desired.
 
 Typically in an Ubuntu-like system you would run something like this:
 ```
-sudo apt install build-essential libfftw3-dev libpng-dev libtiff-dev libjpeg-dev 
+sudo apt install build-essential libfftw3-dev libpng-dev libtiff-dev libjpeg-dev libblosc-dev
 git clone https://github.com/arttumiettinen/pi2.git
 cd pi2
 make NO_OPENCL=1
