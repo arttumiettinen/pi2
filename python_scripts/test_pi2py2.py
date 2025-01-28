@@ -22,7 +22,7 @@ def output_file(name):
 
 
 class Test_zarr:
-    pi2 = Pi2(library_path='../x64/Release no OpenCL')
+    pi2 = Pi2(library_path='../x64/Release')
 
     def output_file(self, name):
         return "testoutput/" + name
@@ -193,7 +193,7 @@ class Test_zarr:
     @pytest.mark.parametrize("index_location", ["start", "end"])
     @pytest.mark.parametrize("data", [arr, arr0, arr42])
     def test_write_sharding(self, inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data, request):
-        filename = request.node.name.replace('"', '') + ".zarr"
+        filename = request.node.name.replace('"', '').replace(':', '-') + ".zarr"
         config = '{"chunk_shape":' + str(
             inner_chunk_shape) + ',"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}' + bytes_bytes_codecs + '],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"' + index_location + '"}'
         codecs = '[{"name": "sharding_indexed", "configuration":' + config + '}]'
@@ -208,7 +208,7 @@ class Test_zarr:
     @pytest.mark.parametrize("index_location", ["start", "end"])
     @pytest.mark.parametrize("data", [arr, arr0, arr42])
     def test_read_sharding(self, inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data, request):
-        filename = request.node.name.replace('"', '') + ".zarr"
+        filename = request.node.name.replace('"', '').replace(':', '-') + ".zarr"
         print(filename)
         self.zarrita_write(codecs=[
             zarrita.codecs.sharding_codec(
@@ -233,7 +233,7 @@ class Test_zarr:
     @pytest.mark.parametrize("data", [arr, arr0, arr42])
     def test_read_write_sharding(self, inner_chunk_shape, shard_shape, bytes_bytes_codecs, index_location, data,
                                  request):
-        filename = request.node.name.replace('"', '') + ".zarr"
+        filename = request.node.name.replace('"', '').replace(':', '-') + ".zarr"
         config = '{"chunk_shape":' + str(
             inner_chunk_shape) + ',"codecs":[{"configuration":{"endian":"little"},"name":"bytes"}' + bytes_bytes_codecs + '],"index_codecs":[{"configuration":{"endian":"little"},"name":"bytes"}],"index_location":"' + index_location + '"}'
         codecs = '[{"name": "sharding_indexed", "configuration":' + config + '}]'
