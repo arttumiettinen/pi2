@@ -213,6 +213,38 @@ namespace itl2
 	void createFilter(Image<float32_t>& filter, FilterType filterType, float32_t cutoff);
 
 
+	/**
+	Enumerates supported ring removal algorithms.
+	*/
+	enum class RingAlgorithm
+	{
+		None,
+		HarjupatanaGamma
+	};
+
+	inline std::ostream& operator<<(std::ostream& stream, const RingAlgorithm& x)
+	{
+		switch (x)
+		{
+		case RingAlgorithm::None: stream << "None"; return stream;
+		case RingAlgorithm::HarjupatanaGamma: stream << "Harjupatana-Gamma"; return stream;
+		}
+		throw ITLException("Invalid ring removal algorithm type.");
+	}
+
+	template<>
+	inline RingAlgorithm fromString(const string& str0)
+	{
+		string str = str0;
+		toLower(str);
+		if (str == "none")
+			return RingAlgorithm::None;
+		if (str == "harjupatana-gamma")
+			return RingAlgorithm::HarjupatanaGamma;
+
+		throw ITLException("Invalid ring removal algorithm type: " + str0);
+	}
+
 	struct RecSettings
 	{
 
@@ -398,6 +430,16 @@ namespace itl2
 		*/
 		float32_t mu = 1e-7f;
 
+
+		/**
+		Ring removal algorithm.
+		*/
+		RingAlgorithm ringAlgorithm = RingAlgorithm::None;
+		
+		/**
+		Median filtering kernel size in ring removal.
+		*/
+		int ringKernelSize = 1;
 
 		
 

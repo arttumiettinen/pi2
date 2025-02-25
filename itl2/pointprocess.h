@@ -316,7 +316,6 @@ namespace itl2
 		*/
 		template<typename pixel_t, typename th_t> pixel_t thresholdOp(pixel_t a, th_t b)
 		{
-			//if (a > pixelRound<pixel_t>(b))
 			if(intuitive::gt(a, b))
 				return (pixel_t)1;
 			else
@@ -405,10 +404,8 @@ namespace itl2
 			intermediate_t newmin = (intermediate_t)bounds.z;
 			intermediate_t newmax = (intermediate_t)bounds.w;
 
-			//if (a < min)
 			if(intuitive::lt(a, min))
 				a = (pixel_t)min;
-			//else if (a > max)
 			else if(intuitive::gt(a, max))
 				a = (pixel_t)max;
 
@@ -423,6 +420,25 @@ namespace itl2
 			if (NumberUtils<pixel_t>::equals(a, data.x) || (NumberUtils<pixel_t>::isnan(a) && NumberUtils<pixel_t>::isnan(data.x)))
 				return data.y;
 
+			return a;
+		}
+
+		/**
+		Clamps pixel value to range [limits.x, limits.y].
+		*/
+		template<typename pixel_t> pixel_t clampOp(pixel_t a, const Vec2<pixel_t> limits)
+		{
+			clamp<pixel_t>(a, limits.x, limits.y);
+			return a;
+		}
+
+		/**
+		Returns a if it is finite and not nan. Otherwise, returns replacement.
+		*/
+		template<typename pixel_t> pixel_t ensurefiniteOp(pixel_t a, const pixel_t replacement)
+		{
+			if (isnan(a) || isinf(a))
+				return replacement;
 			return a;
 		}
 	}
@@ -930,6 +946,23 @@ namespace itl2
 	template<typename pixel_t> void replace(Image<pixel_t>& img, const Vec2<pixel_t>& v)
 	{
 		pointProcessImageParam<pixel_t, Vec2<pixel_t>, pixel_t, internals::replaceOp<pixel_t> >(img, v);
+	}
+
+	/**
+	Clamps pixel values to range [minLimit, maxLimit]
+	*/
+	template<typename pixel_t> void clamp(Image<pixel_t>& img, const pixel_t& minLimit, const pixel_t& maxLimit)
+	{
+		Vec2<pixel_t> v(minLimit, maxLimit);
+		pointProcessImageParam<pixel_t, Vec2<pixel_t>, pixel_t, internals::clampOp<pixel_t> >(img, v);
+	}
+
+	/**
+	Replaces nan and inf pixel values by given value.
+	*/
+	template<typename pixel_t> void ensurefinite(Image<pixel_t>& img, const pixel_t& replace)
+	{
+		pointProcessImageParam<pixel_t, pixel_t, pixel_t, internals::ensurefiniteOp<pixel_t> >(img, replace);
 	}
 
 

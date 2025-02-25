@@ -159,6 +159,9 @@ namespace itl2
 		meta.set("source_shifts", sourceShifts);
 		meta.set("camera_shifts", cameraShifts);
 		meta.set("rotation_axis_shifts", rotationAxisShifts);
+
+		meta.set("ring_algorithm", ringAlgorithm);
+		meta.set("ring_kernel_size", ringKernelSize);
 	}
 
 	void checkMetaItem(const string& item, const ImageMetadata& meta)
@@ -221,6 +224,9 @@ namespace itl2
 		s.useShifts = meta.get("use_shifts", s.useShifts);
 		s.rotationAxisHShiftTilt = meta.get("ra_h_shift_tilt", s.rotationAxisHShiftTilt);
 		s.rotationAxisVShiftTilt = meta.get("ra_v_shift_tilt", s.rotationAxisVShiftTilt);
+
+		s.ringAlgorithm = meta.get("ring_algorithm", s.ringAlgorithm);
+		s.ringKernelSize = meta.get("ring_kernel_size", s.ringKernelSize);
 
 		std::vector<float32_t> emptyV1;
    		s.angles = meta.getList<float32_t>(anglesName, emptyV1, true);
@@ -1040,6 +1046,8 @@ namespace itl2
 				settings.mu *= b;
 
 				settings.deadPixelMedianRadius = std::max((coord_t)1, (coord_t)round(settings.deadPixelMedianRadius / b));
+
+				// TODO: Should ringKernelSize be scaled or not?
 			}
 		}
 	}
@@ -1112,11 +1120,10 @@ namespace itl2
 		{
 			Image<float32_t> med;
 			Image<float32_t> tmp;
-			FilterSettings filterSettings(settings.padFraction, preprocessedProjections.width(), settings.filterType, settings.filterCutOff);
-
+			
 			Image<float32_t> cropTmp(croppedSize.x, croppedSize.y);
 
-			#pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
 			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
 			{
 				//cout << "Processing slice " << z << endl;
@@ -1145,12 +1152,12 @@ namespace itl2
 					// No binning, no cropping
 					setValue(slice, origSlice);
 				}
-				
+
 				// NOTE: In the Direct mode no values are out of range.
-				if(settings.phaseMode != PhaseMode::Direct)
+				if (settings.phaseMode != PhaseMode::Direct)
 					replaceOutOfRangeValues(slice);
 
-				if(settings.removeDeadPixels)
+				if (settings.removeDeadPixels)
 				{
 					size_t badPixelCount = deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
 #pragma omp critical(badpixelsslice)
@@ -1161,7 +1168,36 @@ namespace itl2
 				}
 
 				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
-				
+
+			}
+		}
+
+		// Ring artefact correction
+		// Note that we need the -log image for ring correction, so it must be done after phaseRetrieval.
+		if (settings.ringAlgorithm == RingAlgorithm::HarjupatanaGamma)
+		{
+			Image<float32_t> avg;
+			mean(preprocessedProjections, 2, avg);
+			Image<float32_t> med;
+			medianFilter(avg, med, settings.ringKernelSize, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
+			Image<float32_t> gamma;
+			setValue(gamma, med);
+			divide(gamma, avg);
+			clamp<float32_t>(gamma, -0.5, 1.5);
+			ensurefinite<float32_t>(gamma, 1.0);
+			multiply(preprocessedProjections, gamma, true);
+		}
+
+
+		#pragma omp parallel num_threads(8)
+		{
+			FilterSettings filterSettings(settings.padFraction, preprocessedProjections.width(), settings.filterType, settings.filterCutOff);
+
+			#pragma omp for schedule(dynamic)
+			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
+			{
+				Image<float32_t> slice(preprocessedProjections, z, z);
+
 				if(!NumberUtils<float32_t>::equals(settings.bhc, 0))
 					beamHardeningCorrection(slice, settings.bhc);
 

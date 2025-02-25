@@ -58,6 +58,9 @@ namespace pilib
 		ADD_REAL(LinearMapCommand);
 
 		ADD_ALL2(CopyCommand);
-		ADD_REAL(SetEdgesCommand)
+		ADD_REAL(SetEdgesCommand);
+
+		ADD_REAL(ClampCommand);
+		CommandList::add<EnsureFiniteCommand<float32_t> >();
 	}
 }

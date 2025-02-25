@@ -374,7 +374,7 @@ namespace pilib
 	protected:
 		friend class CommandList;
 
-		ReplaceCommand() :InPlacePointProcess<pixel_t>("replace", "Finds pixels that have value a and sets their values to b.",
+		ReplaceCommand() : InPlacePointProcess<pixel_t>("replace", "Finds pixels that have value a and sets their values to b.",
 			{
 				CommandArgument<double>(ParameterDirection::In, "a", "Value to be replaced by b."),
 				CommandArgument<double>(ParameterDirection::In, "b", "Value that replaces a.")
@@ -389,6 +389,52 @@ namespace pilib
 			double a = pop<double>(args);
 			double b = pop<double>(args);
 			replace(img, Vec2<pixel_t>(pixelRound<pixel_t>(a), pixelRound<pixel_t>(b)));
+		}
+	};
+
+
+	template<typename pixel_t> class ClampCommand : public InPlacePointProcess<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		ClampCommand() : InPlacePointProcess<pixel_t>("clamp", "Ensures that all pixel values are in the given range by replacing values less than the lower bound or greater than the larger bound by the bound value.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "lower bound", "Lower bound."),
+				CommandArgument<double>(ParameterDirection::In, "upper bound", "Upper bound.")
+			})
+		{
+
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& img, std::vector<ParamVariant>& args) const override
+		{
+			double a = pop<double>(args);
+			double b = pop<double>(args);
+			clamp(img, pixelRound<pixel_t>(a), pixelRound<pixel_t>(b));
+		}
+	};
+
+
+	template<typename pixel_t> class EnsureFiniteCommand : public InPlacePointProcess<pixel_t>
+	{
+	protected:
+		friend class CommandList;
+
+		EnsureFiniteCommand() : InPlacePointProcess<pixel_t>("ensurefinite", "Ensures that all pixel values are finite and not NaN by replacing inf and NaN values with the given replacement value.",
+			{
+				CommandArgument<double>(ParameterDirection::In, "replacement", "Value that will replace infinite and not-a-number values.", 0),
+			})
+		{
+
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& img, std::vector<ParamVariant>& args) const override
+		{
+			double a = pop<double>(args);
+			ensurefinite(img, pixelRound<pixel_t>(a));
 		}
 	};
 
