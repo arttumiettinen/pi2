@@ -1,6 +1,7 @@
 
 #include "thickmap.h"
 
+#include "io/sequence.h"
 #include "io/raw.h"
 
 #include "sphere.h"
@@ -609,7 +610,7 @@ namespace itl2
 			timer.stop();
 			cout << "Distance ridge took " << timer.getTime() << " ms." << endl;
 
-			raw::writed(ridge2, "./localthickness/ridge2");
+			//raw::writed(ridge2, "./localthickness/ridge2");
 
 			
 
@@ -619,7 +620,7 @@ namespace itl2
 			itl2::standard::thickmap2(dmap2, thicknessSimpleDmap);
 			timer.stop();
 			cout << "Simple algorithm using dmap took " << timer.getTime() << " ms." << endl;
-			raw::writed(thicknessSimpleDmap, "./localthickness/thickness2_simple_dmap");
+			//raw::writed(thicknessSimpleDmap, "./localthickness/thickness2_simple_dmap");
 
 
 			// Calculate local thickness using simple sphere plotting algorithm from distance ridge
@@ -628,7 +629,7 @@ namespace itl2
 			itl2::standard::thickmap2(ridge2, thicknessSimpleRidge);
 			timer.stop();
 			cout << "Simple algorithm using ridge took " << timer.getTime() << " ms." << endl;
-			raw::writed(thicknessSimpleRidge, "./localthickness/thickness2_simple_ridge");
+			//raw::writed(thicknessSimpleRidge, "./localthickness/thickness2_simple_ridge");
 
 
 
@@ -639,7 +640,7 @@ namespace itl2
 			itl2::optimized::thickmap2(thicknessOptDmap);
 			timer.stop();
 			cout << "Optimized algorithm using dmap took " << timer.getTime() << " ms." << endl;
-			raw::writed(thicknessOptDmap, "./localthickness/thickness2_optimized_dmap");
+			//raw::writed(thicknessOptDmap, "./localthickness/thickness2_optimized_dmap");
 
 
 			// Calculate local thickness using optimized sphere plotting algorithm from distance ridge
@@ -649,7 +650,7 @@ namespace itl2
 			itl2::optimized::thickmap2(thicknessOptRidge);
 			timer.stop();
 			cout << "Optimized algorithm using ridge took " << timer.getTime() << " ms." << endl;
-			raw::writed(thicknessOptRidge, "./localthickness/thickness2_optimized_ridge");
+			//raw::writed(thicknessOptRidge, "./localthickness/thickness2_optimized_ridge");
 
 
 
@@ -659,7 +660,7 @@ namespace itl2
 			itl2::dimredsuper::thickmap2(dmap2, thicknessDimRedSuperDmap);
 			timer.stop();
 			cout << "DimRedSuper algorithm using dmap took " << timer.getTime() << " ms." << endl;
-			raw::writed(thicknessDimRedSuperDmap, "./localthickness/thickness2_dimredsuper_dmap");
+			//raw::writed(thicknessDimRedSuperDmap, "./localthickness/thickness2_dimredsuper_dmap");
 
 			// Calculate local thickness using dimensionality reduction algorithm from distance ridge
 			Image<int32_t> thicknessDimRedSuperRidge;
@@ -667,7 +668,7 @@ namespace itl2
 			itl2::dimredsuper::thickmap2(ridge2, thicknessDimRedSuperRidge);
 			timer.stop();
 			cout << "DimRedSuper algorithm using ridge took " << timer.getTime() << " ms." << endl;
-			raw::writed(thicknessDimRedSuperRidge, "./localthickness/thickness2_dimredsuper_ridge");
+			//raw::writed(thicknessDimRedSuperRidge, "./localthickness/thickness2_dimredsuper_ridge");
 
 
 
@@ -714,7 +715,7 @@ namespace itl2
 				Image<uint8_t> geom(w, h, d);
 				generateSimpleGeometry(geom, (unsigned int)n);
 
-				raw::writed(geom, string("./localthickness/geom_") + toString(n));
+				sequence::write(geom, string("./localthickness/geom_") + toString(n));
 				testThickmapEquality(geom);
 
 
@@ -722,7 +723,7 @@ namespace itl2
 				cout << "Image size = " << w << " x " << h << " x " << d << endl;
 
 				linearMap(geom, Vec4d(0, 1, 1, 0));
-				raw::writed(geom, string("./localthickness/geom_") + toString(n + 1));
+				sequence::write(geom, string("./localthickness/geom_") + toString(n + 1));
 				testThickmapEquality(geom);
 
 			}
