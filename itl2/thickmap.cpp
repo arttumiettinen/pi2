@@ -11,6 +11,7 @@
 #include "transform.h"
 
 #include <map>
+#include <random>
 
 using namespace std;
 
@@ -695,23 +696,34 @@ namespace itl2
 		{
 			//throwOnFailedAssertion(true);
 
-			//for (size_t n = 0; n < 100; n+=2)
-			size_t n = 0;
-			{
-				cout << "Test " << n << endl;
+			unsigned int randSeed = 123;
+			std::mt19937 gen(randSeed);
+			std::uniform_int_distribution dist(50, 1000);
 
-				Image<uint8_t> geom(200, 200, 200);
+			for (size_t n = 0; n < 100; n+=2)
+			//size_t n = 0;
+			{
+				int w = dist(gen);
+				int h = dist(gen);
+				int d = dist(gen);
+
+				cout << "Test " << n << endl;
+				cout << "Image size = " << w << " x " << h << " x " << d << endl;
+				
+
+				Image<uint8_t> geom(w, h, d);
 				generateSimpleGeometry(geom, (unsigned int)n);
 
-				raw::writed(geom, "./localthickness/geom");
+				raw::writed(geom, string("./localthickness/geom_") + toString(n));
 				testThickmapEquality(geom);
 
 
-				//cout << "Test " << (n + 1) << endl;
+				cout << "Test " << (n + 1) << endl;
+				cout << "Image size = " << w << " x " << h << " x " << d << endl;
 
-				//linearMap(geom, Vec4d(0, 1, 1, 0));
-				//raw::writed(geom, "./localthickness/geom");
-				//testThickmapEquality(geom);
+				linearMap(geom, Vec4d(0, 1, 1, 0));
+				raw::writed(geom, string("./localthickness/geom_") + toString(n + 1));
+				testThickmapEquality(geom);
 
 			}
 		}
