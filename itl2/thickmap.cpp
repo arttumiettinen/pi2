@@ -700,7 +700,7 @@ namespace itl2
 			std::mt19937 gen(randSeed);
 			std::uniform_int_distribution dist(50, 1000);
 
-			for (size_t n = 0; n < 100; n+=2)
+			for (size_t n = 0; n < 10000; n+=2)
 			//size_t n = 0;
 			{
 				int w = dist(gen);
