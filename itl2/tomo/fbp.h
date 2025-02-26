@@ -245,6 +245,41 @@ namespace itl2
 		throw ITLException("Invalid ring removal algorithm type: " + str0);
 	}
 
+
+	enum class PreSmoothing
+	{
+		None,
+		Gauss,
+		Median
+	};
+
+	inline std::ostream& operator<<(std::ostream& stream, const PreSmoothing& x)
+	{
+		switch (x)
+		{
+		case PreSmoothing::None: stream << "None"; return stream;
+		case PreSmoothing::Gauss: stream << "Gauss"; return stream;
+		case PreSmoothing::Median: stream << "Median"; return stream;
+		}
+		throw ITLException("Invalid pre-smoothing type.");
+	}
+
+	template<>
+	inline PreSmoothing fromString(const string& str0)
+	{
+		string str = str0;
+		toLower(str);
+		if (str == "none")
+			return PreSmoothing::None;
+		if (str == "gauss")
+			return PreSmoothing::Gauss;
+		if (str == "median")
+			return PreSmoothing::Median;
+
+		throw ITLException("Invalid pre-smoothing algorithm type: " + str0);
+	}
+
+
 	struct RecSettings
 	{
 
@@ -307,9 +342,14 @@ namespace itl2
 		Vec2c cropSize = Vec2c(0, 0);
 
 		/**
-		Use to bin projection data before reconstruction (for faster reconstruction, better signal-to-noise ratio and lower resolution).
+		Use to bin projection data before reconstruction in width and height directions (for faster reconstruction, better signal-to-noise ratio and lower resolution).
 		*/
 		size_t binning = 1;
+
+		/**
+		Use to combine consecutive projection images into one by averaging them (for faster reconstruction if there are many projections).
+		*/
+		size_t angularBinning = 1;
 
 		/**
 		Should dead/stuck pixels be corrected?
@@ -441,6 +481,16 @@ namespace itl2
 		*/
 		int ringKernelSize = 1;
 
+
+		/**
+		Pre-smoothing type.
+		*/
+		PreSmoothing preSmoothing = PreSmoothing::None;
+
+		/**
+		Pre-smoothing kernel size.
+		*/
+		float32_t preSmoothingKernelSize = 1;
 		
 
 

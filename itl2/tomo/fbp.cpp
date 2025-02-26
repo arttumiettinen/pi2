@@ -38,82 +38,7 @@ using namespace std;
 
 namespace itl2
 {
-	
 
-
-	//ostream& operator<<(ostream& stream, const RecSettings& s)
-	//{
-	//	// TODO: Do this through ImageMetaData object
-	//	stream << "source_to_ra = " << s.sourceToRA << endl;
-	//	stream << "rotation_direction = " << s.rotationDirection << endl;
-	//	stream << "bhc = " << s.bhc << endl;
-	//	stream << "rec_as_180_deg_scan = " << s.reconstructAs180degScan << endl;
-	//	stream << "central_angle = " << s.centralAngleFor180degScan << endl;
-	//	stream << "angle_tweak = " << s.angleTweak << endl;
-	//	stream << "hswp = " << s.heuristicSinogramWindowingParameter << endl;
-	//	stream << "rotation = " << s.rotation << endl;
-	//	stream << "roi_center = " << s.roiCenter << endl;
-	//	stream << "roi_size = " << s.roiSize << endl;
-	//	stream << "crop_size = " << s.cropSize << endl;
-	//	stream << "binning = " << s.binning << endl;
-	//	stream << "remove_dead_pixels = " << s.removeDeadPixels << endl;
-	//	stream << "dead_pixel_median_radius = " << s.deadPixelMedianRadius << endl;
-	//	stream << "dead_pixel_std_dev_count = " << s.deadPixelStdDevCount << endl;
-	//	stream << endl;
-	//	stream << "center_shift = " << s.centerShift << endl;
-	//	stream << "camera_z_shift = " << s.cameraZShift << endl;
-	//	stream << "camera_rotation = " << s.cameraRotation << endl;
-	//	stream << "cs_angle_slope = " << s.csAngleSlope << endl;
-	//	stream << endl;
-	//	stream << "pad_type = " << s.padType << endl;
-	//	stream << "pad_size = " << s.padFraction << endl;
-	//	stream << "filter_type = " << s.filterType << endl;
-	//	stream << "filter_cut_off = " << s.filterCutOff << endl;
-	//	stream << endl;
-	//	stream << "phase_mode = " << s.phaseMode << endl;
-	//	stream << "phase_pad_type = " << s.phasePadType << endl;
-	//	stream << "phase_pad_size = " << s.phasePadFraction << endl;
-	//	stream << "propagation_distance = " << s.objectCameraDistance << endl;
-	//	stream << "delta = " << s.delta << endl;
-	//	stream << "mu = " << s.mu << endl;
-	//	stream << endl;
-	//	stream << "range_min = " << s.dynMin << endl;
-	//	stream << "range_max = " << s.dynMax << endl;
-	//	stream << endl;
-	//	stream << "shift_scale = " << s.shiftScaling << endl;
-	//	stream << "use_shifts = " << s.useShifts << endl;
-	//	stream << endl;
-	//	stream << "angles" << endl;
-
-	//	stream.precision(17);
-	//	for (size_t n = 0; n < s.angles.size(); n++)
-	//		stream << fixed << s.angles[n] << endl;
-	//	stream << endl;
-
-	//	stream << "sample_shifts" << endl;
-	//	for (size_t n = 0; n < s.sampleShifts.size(); n++)
-	//		stream << fixed << s.sampleShifts[n] << endl;
-	//	stream << endl;
-
-	//	stream << "source_shifts" << endl;
-	//	for (size_t n = 0; n < s.sourceShifts.size(); n++)
-	//		stream << fixed << s.sourceShifts[n] << endl;
-	//	stream << endl;
-
-	//	stream << "camera_shifts" << endl;
-	//	for (size_t n = 0; n < s.cameraShifts.size(); n++)
-	//		stream << fixed << s.cameraShifts[n] << endl;
-	//	stream << endl;
-
-	//	stream << "rotation_axis_shifts" << endl;
-	//	for (size_t n = 0; n < s.rotationAxisShifts.size(); n++)
-	//		stream << fixed << s.rotationAxisShifts[n] << endl;
-	//	stream << endl;
-
-	//	return stream;
-	//}
-
-	
 	void RecSettings::toMeta(ImageMetadata& meta) const
 	{
 		
@@ -128,6 +53,7 @@ namespace itl2
 		meta.set("roi_size", roiSize);
 		meta.set("crop_size", cropSize);
 		meta.set("binning", binning);
+		meta.set("angular_binning", angularBinning);
 		meta.set("remove_dead_pixels", removeDeadPixels);
 		meta.set("dead_pixel_median_radius", deadPixelMedianRadius);
 		meta.set("dead_pixel_std_dev_count", deadPixelStdDevCount);
@@ -162,6 +88,9 @@ namespace itl2
 
 		meta.set("ring_algorithm", ringAlgorithm);
 		meta.set("ring_kernel_size", ringKernelSize);
+
+		meta.set("pre_smoothing", preSmoothing);
+		meta.set("pre_smoothing_kernel_size", preSmoothingKernelSize);
 	}
 
 	void checkMetaItem(const string& item, const ImageMetadata& meta)
@@ -199,6 +128,7 @@ namespace itl2
 		s.roiSize = meta.get("roi_size", s.roiSize);
 		s.cropSize = meta.get("crop_size", s.cropSize);
 		s.binning = meta.get("binning", s.binning);
+		s.angularBinning = meta.get("angular_binning", s.angularBinning);
 		s.removeDeadPixels = meta.get("remove_dead_pixels", s.removeDeadPixels);
 		s.deadPixelMedianRadius = meta.get("dead_pixel_median_radius", s.deadPixelMedianRadius);
 		s.deadPixelStdDevCount = meta.get("dead_pixel_std_dev_count", s.deadPixelStdDevCount);
@@ -227,6 +157,9 @@ namespace itl2
 
 		s.ringAlgorithm = meta.get("ring_algorithm", s.ringAlgorithm);
 		s.ringKernelSize = meta.get("ring_kernel_size", s.ringKernelSize);
+
+		s.preSmoothing = meta.get("pre_smoothing", s.preSmoothing);
+		s.preSmoothingKernelSize = meta.get("pre_smoothing_kernel_size", s.preSmoothingKernelSize);
 
 		std::vector<float32_t> emptyV1;
    		s.angles = meta.getList<float32_t>(anglesName, emptyV1, true);
@@ -494,6 +427,15 @@ namespace itl2
 
 			if (settings.binning < 1)
 				throw ITLException("Binning must be at least 1.");
+
+			if (settings.angularBinning < 1)
+				throw ITLException("Angular binning must be at least 1.");
+
+			if (settings.ringKernelSize <= 0)
+				throw ITLException("Ring kernel size must be positive.");
+
+			if (settings.preSmoothingKernelSize <= 0)
+				throw ITLException("Pre-smoothing kernel size must be positive.");
 
 			// Roi size and position
 			if (settings.roiSize.x <= 0)
@@ -1045,7 +987,8 @@ namespace itl2
 				settings.delta *= b;
 				settings.mu *= b;
 
-				settings.deadPixelMedianRadius = std::max((coord_t)1, (coord_t)round(settings.deadPixelMedianRadius / b));
+				// Don't scale dead pixel removal parameters, as those are applied before binning.
+				//settings.deadPixelMedianRadius = std::max((coord_t)1, (coord_t)round(settings.deadPixelMedianRadius / b));
 
 				// TODO: Should ringKernelSize be scaled or not?
 			}
@@ -1123,14 +1066,49 @@ namespace itl2
 			
 			Image<float32_t> cropTmp(croppedSize.x, croppedSize.y);
 
+			// This is original slice where angular averaging and bad pixel removal has been applied.
+			Image<float32_t> origSlice(transmissionProjections.width(), transmissionProjections.height());
+
 #pragma omp for schedule(dynamic)
 			for (coord_t z = 0; z < preprocessedProjections.depth(); z++)
 			{
 				//cout << "Processing slice " << z << endl;
 
-				Image<float32_t> origSlice(transmissionProjections, z, z);
+				// Dead pixel removal and angular binning
+				setValue(origSlice, 0.0f);
+				for(coord_t bi = 0; (size_t)bi < settings.angularBinning; bi++)
+				{
+					// This is the original raw slice from the camera, where dead pixel removal is to be applied.
+					Image<float32_t> tempSlice(transmissionProjections.width(), transmissionProjections.height());
+
+					coord_t abz = z * settings.angularBinning + bi;
+
+					if (abz > transmissionProjections.depth())
+						abz = transmissionProjections.depth();
+
+					crop(transmissionProjections, tempSlice, Vec3c(0, 0, abz));
+
+					if (settings.removeDeadPixels)
+					{
+						size_t badPixelCount = deadPixelRemovalSlice(tempSlice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
+#pragma omp critical(badpixelsslice)
+						{
+							averageBadPixels += badPixelCount;
+							maxBadPixels = std::max(maxBadPixels, badPixelCount);
+						}
+					}
+
+					add(origSlice, tempSlice);
+				}
+
+				if (settings.angularBinning > 1)
+					divide(origSlice, (float32_t)settings.angularBinning);
+
+
+				// This is the output of this stage of processing
 				Image<float32_t> slice(preprocessedProjections, z, z);
 
+				// Cropping and xy projection binning
 				if (settings.cropSize.max() > 0 && origBinning <= 1)
 				{
 					// Cropping but no binning
@@ -1157,25 +1135,31 @@ namespace itl2
 				if (settings.phaseMode != PhaseMode::Direct)
 					replaceOutOfRangeValues(slice);
 
-				if (settings.removeDeadPixels)
+				// Pre-smoothing
+				if (settings.preSmoothing == PreSmoothing::Gauss)
 				{
-					size_t badPixelCount = deadPixelRemovalSlice(slice, med, tmp, settings.deadPixelMedianRadius, settings.deadPixelStdDevCount);
-#pragma omp critical(badpixelsslice)
-					{
-						averageBadPixels += badPixelCount;
-						maxBadPixels = std::max(maxBadPixels, badPixelCount);
-					}
+					gaussFilter(slice, settings.preSmoothingKernelSize, BoundaryCondition::Nearest);
+				}
+				else if (settings.preSmoothing == PreSmoothing::Median)
+				{
+					medianFilter(slice, tmp, pixelRound<coord_t>(settings.preSmoothingKernelSize));
+					setValue(slice, tmp);
 				}
 
-				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
 
+				phaseRetrievalSlice(slice, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.sourceToRA, settings.objectCameraDistance, settings.delta, settings.mu);
 			}
 		}
+
+		if (settings.removeDeadPixels)
+			printBadPixelInfo(averageBadPixels / (float)preprocessedProjections.depth(), maxBadPixels);
 
 		// Ring artefact correction
 		// Note that we need the -log image for ring correction, so it must be done after phaseRetrieval.
 		if (settings.ringAlgorithm == RingAlgorithm::HarjupatanaGamma)
 		{
+			cout << "Ring correction with " << toString(settings.ringAlgorithm) << " algorithm." << endl;
+
 			Image<float32_t> avg;
 			mean(preprocessedProjections, 2, avg);
 			Image<float32_t> med;
@@ -1209,35 +1193,7 @@ namespace itl2
 			}
 		}
 
-		if (settings.removeDeadPixels)
-			printBadPixelInfo(averageBadPixels / (float)preprocessedProjections.depth(), maxBadPixels);
-
-
-		//setValue(preprocessedProjections, transmissionProjections);
-
-		//// Perform dead pixel correction
-		//if (settings.removeDeadPixels)
-		//{
-		//	cout << "Dead pixel removal..." << endl;
-		//	deadPixelRemoval(preprocessedProjections);
-		//}
-
-		//// Calculate -log or phase retrieval
-		//if (settings.phaseMode == PhaseMode::Absorption)
-		//	cout << "Negative logarithm..." << endl;
-		//else
-		//	cout << "Phase retrieval..." << endl;
-		//phaseRetrieval(preprocessedProjections, settings.phaseMode, settings.phasePadType, settings.phasePadFraction, settings.objectCameraDistance, settings.delta, settings.mu);
-
-		//cout << "Beam hardening correction..." << endl;
-		//beamHardeningCorrection(preprocessedProjections, settings.bhc);
-
-		//
-		//cout << "Weighting..." << endl;
-		//fbpWeighting(preprocessedProjections, settings.reconstructAs180degScan, settings.angles, settings.centerShift, settings.csAngleSlope, settings.sourceToRA, settings.cameraZShift, settings.csZSlope, centralAngle, gammamax0, settings.heuristicSinogramWindowingParameter);
-
-		//cout << "Filter..." << endl;
-		//filter(preprocessedProjections, settings.padType, settings.padFraction, settings.filterType);
+		
 	}
 
 
