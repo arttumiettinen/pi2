@@ -1176,7 +1176,9 @@ namespace itl2
 		// Note that we need the -log image for ring correction, so it must be done after phaseRetrieval.
 		if (settings.ringAlgorithm == RingAlgorithm::HarjupatanaGamma)
 		{
-			Image<float32_t> avg;
+            cout << "Ring correction with " << toString(settings.ringAlgorithm) << " algorithm." << endl;
+			
+            Image<float32_t> avg;
 			mean(preprocessedProjections, 2, avg);
 			Image<float32_t> med;
 			medianFilter(avg, med, settings.ringKernelSize, NeighbourhoodType::Rectangular, BoundaryCondition::Nearest);
