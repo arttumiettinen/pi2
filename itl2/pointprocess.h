@@ -437,7 +437,7 @@ namespace itl2
 		*/
 		template<typename pixel_t> pixel_t ensurefiniteOp(pixel_t a, const pixel_t replacement)
 		{
-			if (isnan(a) || isinf(a))
+			if (std::isnan(a) || std::isinf(a))
 				return replacement;
 			return a;
 		}
