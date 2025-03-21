@@ -592,7 +592,7 @@ namespace itl2
 		/**
 		Tests that dimred version of local thickness calculation gives the same result than simple version.
 		*/
-		void testThickmapEquality(const Image<uint8_t>& geom)
+		void testThickmapEquality(const Image<uint8_t>& geom, const Image<float32_t>* pGroundTruth = 0)
 		{
 			Timer timer;
 
@@ -679,6 +679,8 @@ namespace itl2
 			checkDifference(thicknessSimpleDmap, thicknessDimRedSuperDmap, "simple local thickness algorithm and dimensionality reduction super algorithm (dmap) do not give the same results.");
 			checkDifference(thicknessSimpleDmap, thicknessDimRedSuperRidge, "simple local thickness algorithm and dimensionality reduction super algorithm (ridge) do not give the same results.");
 			
+			if(pGroundTruth)
+				checkDifference(*pGroundTruth, thicknessDimRedSuperRidge, "ground truth and dimensionality reduction super algorithm (ridge) result are not equal.");
 
 			// DEBUG: output difference automatically
 			//subtract(thicknessDimRedBlocksRidge, thicknessSimpleDmap);
@@ -695,37 +697,126 @@ namespace itl2
 
 		void thickmapsEquality()
 		{
-			//throwOnFailedAssertion(true);
+			throwOnFailedAssertion(true);
 
-			unsigned int randSeed = 123;
-			std::mt19937 gen(randSeed);
-			std::uniform_int_distribution dist(50, 1000);
-
-			for (size_t n = 0; n < 10000; n+=2)
-			//size_t n = 0;
+			if (false)
 			{
-				int w = dist(gen);
-				int h = dist(gen);
-				int d = dist(gen);
+				// Test with andom geometries
 
-				cout << "Test " << n << endl;
-				cout << "Image size = " << w << " x " << h << " x " << d << endl;
-				
+				unsigned int randSeed = 123;
+				std::mt19937 gen(randSeed);
+				std::uniform_int_distribution dist(50, 1000);
 
-				Image<uint8_t> geom(w, h, d);
-				generateSimpleGeometry(geom, (unsigned int)n);
+				for (size_t n = 0; n < 10000; n += 2)
+					//size_t n = 0;
+				{
+					int w = dist(gen);
+					int h = dist(gen);
+					int d = dist(gen);
 
-				sequence::write(geom, string("./localthickness/geom_") + toString(n));
-				testThickmapEquality(geom);
+					cout << "Test " << n << endl;
+					cout << "Image size = " << w << " x " << h << " x " << d << endl;
 
 
-				cout << "Test " << (n + 1) << endl;
-				cout << "Image size = " << w << " x " << h << " x " << d << endl;
+					Image<uint8_t> geom(w, h, d);
+					generateSimpleGeometry(geom, (unsigned int)n);
 
-				linearMap(geom, Vec4d(0, 1, 1, 0));
-				sequence::write(geom, string("./localthickness/geom_") + toString(n + 1));
-				testThickmapEquality(geom);
+					sequence::write(geom, string("./localthickness/geom_") + toString(n));
+					testThickmapEquality(geom);
 
+
+					cout << "Test " << (n + 1) << endl;
+					cout << "Image size = " << w << " x " << h << " x " << d << endl;
+
+					linearMap(geom, Vec4d(0, 1, 1, 0));
+					sequence::write(geom, string("./localthickness/geom_") + toString(n + 1));
+					testThickmapEquality(geom);
+
+				}
+			}
+			else
+			{
+				// Generate ground truth spheres, then geometry from that, then test equality of thickmap implementations
+				unsigned int randSeed = 123;
+				std::mt19937 gen(randSeed);
+				std::uniform_int_distribution dist(50, 1000);
+				std::uniform_int_distribution sphereCountDist(1, 1000);
+				std::uniform_int_distribution sphereRadiusDist(1, 100);
+
+				for (size_t n = 0; n < 10000; n++)
+					//size_t n = 0;
+				{
+					int w = dist(gen);
+					int h = dist(gen);
+					int d = dist(gen);
+
+					cout << "Test " << n << endl;
+					cout << "Image size = " << w << " x " << h << " x " << d << endl;
+
+					// Generate ground truth
+					Image<float32_t> groundTruth(w, h, d);
+					coord_t sphereCount = sphereCountDist(gen);
+
+					std::cout << "Generating " << sphereCount << " spheres..." << std::endl;
+					for (coord_t n = 0; n < sphereCount; n++)
+					{
+						int r = sphereRadiusDist(gen);
+						std::uniform_int_distribution<int> xdist(-r, (int)groundTruth.width() + r);
+						std::uniform_int_distribution<int> ydist(-r, (int)groundTruth.height() + r);
+						std::uniform_int_distribution<int> zdist(-r, (int)groundTruth.depth() + r);
+						int x = xdist(gen);
+						int y = ydist(gen);
+						int z = zdist(gen);
+
+						draw(groundTruth, Sphere<float32_t>(Vec3f((float32_t)x, (float32_t)y, (float32_t)z), (float32_t)r), (float32_t)(2*r));
+					}
+
+					sequence::write(groundTruth, string("./localthickness_labels/gt_") + toString(n + 1));
+
+					// Generate geometry
+					Image<uint8_t> geometry(w, h, d);
+					setValue(geometry, groundTruth);
+					threshold(geometry, 0);
+					sequence::write(groundTruth, string("./localthickness_labels/geometry_") + toString(n + 1));
+
+					Timer timer;
+
+					// Distance tranform
+					Image<int32_t> dmap2;
+					timer.start();
+					distanceTransform2(geometry, dmap2);
+					timer.stop();
+					cout << "Distance map took " << timer.getTime() << " ms." << endl;
+
+
+					// Distance ridge
+					Image<int32_t> ridge2;
+					timer.start();
+					centersOfLocallyMaximalSpheres(dmap2, ridge2);
+					timer.stop();
+					cout << "Distance ridge took " << timer.getTime() << " ms." << endl;
+
+
+					// Calculate local thickness using optimized sphere plotting algorithm from distance ridge
+					Image<int32_t> thicknessOptRidge;
+					timer.start();
+					setValue(thicknessOptRidge, ridge2);
+					itl2::optimized::thickmap2(thicknessOptRidge);
+					timer.stop();
+					cout << "Optimized algorithm using ridge took " << timer.getTime() << " ms." << endl;
+
+					// Calculate local thickness using dimensionality reduction algorithm from distance ridge
+					Image<int32_t> thicknessDimRedSuperRidge;
+					timer.start();
+					itl2::dimredsuper::thickmap2(ridge2, thicknessDimRedSuperRidge);
+					timer.stop();
+					cout << "DimRedSuper algorithm using ridge took " << timer.getTime() << " ms." << endl;
+
+
+					checkDifference(groundTruth, thicknessOptRidge, "difference: ground truth <-> optimized HR (ridge).");
+					checkDifference(groundTruth, thicknessDimRedSuperRidge, "difference: ground truth <-> dimensionality reduction super algorithm (ridge).");
+
+				}
 			}
 		}
 
