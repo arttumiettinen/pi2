@@ -138,6 +138,37 @@ namespace itl2
 
 			return filledCount;
 		}
+
+
+        inline bool isSphereZeroes2(Image<int32_t>& image, const Vec3c& center, int32_t r2)
+		{
+			Vec3c minPos = round(Vec3d(center) - sqrt(r2) * Vec3d(1, 1, 1));
+			Vec3c maxPos = round(Vec3d(center) + sqrt(r2) * Vec3d(1, 1, 1));
+
+			clamp(minPos, Vec3c(0, 0, 0), image.dimensions() - Vec3c(1, 1, 1));
+			clamp(maxPos, Vec3c(0, 0, 0), image.dimensions() - Vec3c(1, 1, 1));
+
+			//#pragma omp parallel for if(!omp_in_parallel() && AABoxc::fromMinMax(minPos, maxPos).volume() > PARALLELIZATION_THRESHOLD) reduction(+:filledCount)
+			for (coord_t z = minPos.z; z <= maxPos.z; z++)
+			{
+				for (coord_t y = minPos.y; y <= maxPos.y; y++)
+				{
+					for (coord_t x = minPos.x; x <= maxPos.x; x++)
+					{
+						Vec3c d = center - Vec3c(x, y, z);
+
+						if (d.x * d.x + d.y * d.y + d.z * d.z < r2)
+						{
+							int32_t& p = image(x, y, z);
+							if(p != 0)
+                                return false;
+						}
+					}
+				}
+			}
+
+			return true;
+		}
 	}
 
 
@@ -699,6 +730,7 @@ namespace itl2
 		{
 			throwOnFailedAssertion(true);
 
+            /*
 			if (false)
 			{
 				// Test with andom geometries
@@ -735,49 +767,72 @@ namespace itl2
 				}
 			}
 			else
+            */
 			{
+                std::cout << "Thickmap implementations vs ground truth" << std::endl;
+
 				// Generate ground truth spheres, then geometry from that, then test equality of thickmap implementations
 				unsigned int randSeed = 123;
 				std::mt19937 gen(randSeed);
-				std::uniform_int_distribution dist(50, 1000);
+				std::uniform_int_distribution sizeDist(50, 500);
 				std::uniform_int_distribution sphereCountDist(1, 1000);
-				std::uniform_int_distribution sphereRadiusDist(1, 100);
+				std::uniform_int_distribution sphereRadiusDist(1, 25);
 
 				for (size_t n = 0; n < 10000; n++)
 					//size_t n = 0;
 				{
-					int w = dist(gen);
-					int h = dist(gen);
-					int d = dist(gen);
+					int w = sizeDist(gen);
+					int h = sizeDist(gen);
+					int d = sizeDist(gen);
+                    int minsize = w;
+                    minsize = std::min(minsize, h);
+                    minsize = std::min(minsize, d); 
 
 					cout << "Test " << n << endl;
 					cout << "Image size = " << w << " x " << h << " x " << d << endl;
 
 					// Generate ground truth
-					Image<float32_t> groundTruth(w, h, d);
+					Image<int32_t> groundTruth32(w, h, d);
 					coord_t sphereCount = sphereCountDist(gen);
 
 					std::cout << "Generating " << sphereCount << " spheres..." << std::endl;
 					for (coord_t n = 0; n < sphereCount; n++)
 					{
-						int r = sphereRadiusDist(gen);
-						std::uniform_int_distribution<int> xdist(-r, (int)groundTruth.width() + r);
-						std::uniform_int_distribution<int> ydist(-r, (int)groundTruth.height() + r);
-						std::uniform_int_distribution<int> zdist(-r, (int)groundTruth.depth() + r);
-						int x = xdist(gen);
-						int y = ydist(gen);
-						int z = zdist(gen);
 
-						draw(groundTruth, Sphere<float32_t>(Vec3f((float32_t)x, (float32_t)y, (float32_t)z), (float32_t)r), (float32_t)(2*r));
+						int r = sphereRadiusDist(gen);
+                        //std::cout << "r = " << r << std::endl;
+                        if(2*r < minsize - 4)
+                        {
+						    std::uniform_int_distribution<int> xdist(r+1, (int)groundTruth32.width() - r - 1);
+						    std::uniform_int_distribution<int> ydist(r+1, (int)groundTruth32.height() - r - 1);
+						    std::uniform_int_distribution<int> zdist(r+1, (int)groundTruth32.depth() - r - 1);
+                            
+						    int x = xdist(gen);
+						    int y = ydist(gen);
+						    int z = zdist(gen);
+
+                            //std::cout << "x = " << x << std::endl;
+                            //std::cout << "y = " << y << std::endl;
+                            //std::cout << "z = " << z << std::endl;
+
+                            bool isFree = internals::isSphereZeroes2(groundTruth32, Vec3c(x, y, z), (r+1)*(r+1));
+                            //std::cout << n << " is free: " << isFree << std::endl;
+                            if(isFree)
+                                internals::drawMax2(groundTruth32, Vec3c(x, y, z), r*r);
+                        }
 					}
 
-					sequence::write(groundTruth, string("./localthickness_labels/gt_") + toString(n + 1));
+
+                    Image<uint16_t> groundTruth(groundTruth32.dimensions());
+                    convert(groundTruth32, groundTruth);
+
+					raw::writed(groundTruth, string("./localthickness_labels/gt2_") + toString(n + 1));
 
 					// Generate geometry
 					Image<uint8_t> geometry(w, h, d);
 					setValue(geometry, groundTruth);
 					threshold(geometry, 0);
-					sequence::write(groundTruth, string("./localthickness_labels/geometry_") + toString(n + 1));
+					sequence::write(geometry, string("./localthickness_labels/geometry_") + toString(n + 1));
 
 					Timer timer;
 
@@ -787,6 +842,7 @@ namespace itl2
 					distanceTransform2(geometry, dmap2);
 					timer.stop();
 					cout << "Distance map took " << timer.getTime() << " ms." << endl;
+                    raw::writed(dmap2, string("./localthickness_labels/dmap2_") + toString(n + 1));
 
 
 					// Distance ridge
@@ -795,6 +851,7 @@ namespace itl2
 					centersOfLocallyMaximalSpheres(dmap2, ridge2);
 					timer.stop();
 					cout << "Distance ridge took " << timer.getTime() << " ms." << endl;
+                    raw::writed(ridge2, string("./localthickness_labels/ridge2_") + toString(n + 1));
 
 
 					// Calculate local thickness using optimized sphere plotting algorithm from distance ridge
@@ -804,6 +861,7 @@ namespace itl2
 					itl2::optimized::thickmap2(thicknessOptRidge);
 					timer.stop();
 					cout << "Optimized algorithm using ridge took " << timer.getTime() << " ms." << endl;
+                    raw::writed(thicknessOptRidge, string("./localthickness_labels/optimized_") + toString(n + 1));
 
 					// Calculate local thickness using dimensionality reduction algorithm from distance ridge
 					Image<int32_t> thicknessDimRedSuperRidge;
@@ -811,7 +869,7 @@ namespace itl2
 					itl2::dimredsuper::thickmap2(ridge2, thicknessDimRedSuperRidge);
 					timer.stop();
 					cout << "DimRedSuper algorithm using ridge took " << timer.getTime() << " ms." << endl;
-
+                    raw::writed(thicknessOptRidge, string("./localthickness_labels/dimredwuper_") + toString(n + 1));
 
 					checkDifference(groundTruth, thicknessOptRidge, "difference: ground truth <-> optimized HR (ridge).");
 					checkDifference(groundTruth, thicknessDimRedSuperRidge, "difference: ground truth <-> dimensionality reduction super algorithm (ridge).");
