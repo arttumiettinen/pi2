@@ -7,8 +7,7 @@ This page contains some examples on how to use pi2 for simple (and some not so s
 All the examples are given in Python 3.6.
 They can be found in a single Python file `here <https://github.com/arttumiettinen/pi2/blob/experimental/python_scripts/pi2py2_examples.py>`__.
 
-The examples require a few small images that can be downloaded from `here <http://users.jyu.fi/~arilmiet/pi2-downloads/test_input_data.zip>`__, or from `GitHub <http://github.com/arttumiettinen/pi2/releases>`__.
-
+The examples require a few small images that can be downloaded from `GitHub <https://github.com/arttumiettinen/pi2/releases/download/v4/examples_and_test_data_v4.zip>`__.
 
 In order to run the examples, please run this initialization first (make sure that the file paths point to correct locations)::
 
@@ -27,7 +26,6 @@ In order to run the examples, please run this initialization first (make sure th
 	def output_file(name):
 		return '../../test_output_data/pi2py2/' + name
 
-
 .. toctree::
    :maxdepth: 1
    :titlesonly:
@@ -35,4 +33,3 @@ In order to run the examples, please run this initialization first (make sure th
    :glob:
    
    ex_*
-
