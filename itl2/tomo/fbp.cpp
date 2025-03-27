@@ -23,7 +23,14 @@
 	// TODO: CL version seems to be different in MacOS, size_t template is missing.
 	// TODO: Update code to the newest version in Windows and Linux, and check if
 	// that works in MacOS, too.
-#else
+
+#elif defined(_WIN32)
+
+	#define __CL_ENABLE_EXCEPTIONS
+	#include <CL/cl.hpp>
+
+#elif defined(__linux__)
+
 	#define CL_HPP_ENABLE_EXCEPTIONS
 	// Target OpenCL version. TODO: What does Windows support?
 	#define CL_HPP_TARGET_OPENCL_VERSION 200
@@ -32,6 +39,11 @@
 	// This enables old-format program source definition. TODO: Replace with the new one.
 	#define CL_HPP_ENABLE_PROGRAM_CONSTRUCTION_FROM_ARRAY_COMPATIBILITY
 	#include <CL/opencl.hpp>
+
+#else
+
+	#error fbp.cpp not configured for this platform (with OpenCL support).
+
 #endif
 
 #endif

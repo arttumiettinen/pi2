@@ -1,0 +1,1 @@
+This folder is for libraries used by pi2. It is only necessary for Windows builds.

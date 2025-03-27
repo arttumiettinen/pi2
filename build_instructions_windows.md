@@ -4,21 +4,103 @@ Building pi2 in Windows
 **Note**
 Typically, in Windows you don't need to build from source. Just download the latest version from the [download page](https://github.com/arttumiettinen/pi2/releases).
 
-In Windows, pi2 can be built with Visual Studio (Community edition).
+In Windows, pi2 can be built with Visual Studio (Community edition). Before building, FFTW, libpng, libtiff, libjpeg, and libblosc libraries are required.
 
-Before building, FFTW, libpng, zlib, libtiff, libjpeg, and libblosc libraries are required.
-
-<!--TODO: add libblosc to binary download page-->
 It's easiest to download all the dependencies from the [binary download page](https://github.com/arttumiettinen/pi2/releases).
 Either
-* use pre-built binaries and place them to folders `fftw-3.3.5-dll64`, `libpng-1.6.34`, `zlib-1.2.11`, `tiff-4.0.10`, `jpeg-9e`, 'c-blosc' or
-* build them from sources using default Release Library x64 build settings.
+* use pre-built binaries and place them to the `deps` subfolder, or
+* build them from sources using default build settings (release, static library, 64-bit). Some notes below.
 
-In particular, libtiff must be built with `nmake` from the x64 Developer Command Prompt using command
-```
-[path-to-base-folder]\tiff-4.0.10> nmake /f makefile.vc
-```
-Before building, edit `nmake.opt` file and change `OPTFLAGS` value `/MD` and `/MDd` to `/MT` and `/MTd`, for debug and release builds, respectively.
-
-Finally, build everything in `itl2.sln` solution file in Visual Studio, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available.
+After the dependencies are sorted out, build everything in `itl2.sln` solution file in Visual Studio, selecting either Release or Release no OpenCL configuration depending on whether you have OpenCL available.
 The output is placed to the `x64` folder.
+
+
+
+zlib
+----
+
+Build zlib from source cloned from GitHub, using the `contrib/vstudio/vc17/zlibvc.sln` file.
+
+
+libpng
+------
+
+Build libpng from the source downloaded from SourceForge, use the `projects/vstudio/vstudio.sln` file and Release Library build settings.
+In some cases it appears to be necessary to set the Target Platform to x64 manually using the Configuration Manager.
+
+The output will be in
+projects\vstudio\x64\Release Library
+
+
+
+
+libjpeg
+-------
+
+The jpeg library is from https://www.ijg.org/.
+
+To build, Open Developer Command Prompt, go to jpeg library directory, and run
+nmake nodebug=1 /f makefile.vs setup-v16
+
+Open jpeg.sln
+Set platform to x64
+Set Runtime library to "Multi Threaded"
+Build all
+
+The output will be in
+Release\x64\jpeg.lib
+
+Optionally, to build test apps,
+Open apps.sln
+Set platform to x64
+Build all
+
+
+
+
+libtiff
+-------
+
+Libtiff is from https://download.osgeo.org/libtiff/.
+
+To build, Open Developer Command Prompt, go to libtiff library directory, and run
+cmake -DBUILD_SHARED_LIBS=OFF .
+Open tiff.sln.
+Go to project tiff.
+Select Release build.
+Change Runtime Library to Multi-threaded.
+Build.
+
+The output will be in
+libtiff\Release\tiff.lib
+
+
+blosc
+-----
+
+c-blosc source is from https://github.com/Blosc/c-blosc.
+
+To build, Open Developer Command Prompt, go to c-blosc library directory, and run
+cmake .
+Open blosc.sln
+Go to project blosc_static
+Select Release build.
+Change Runtime Library to Multi-threaded.
+Build.
+
+The output will be in
+blosc\Release
+
+
+fftw
+----
+
+FFTW dependency is the default Windows build from https://www.fftw.org/install/windows.html
+
+Don't forget to make import libraries using commands
+lib /def:libfftw3-3.def
+lib /def:libfftw3f-3.def
+lib /def:libfftw3l-3.def
+
+
+
