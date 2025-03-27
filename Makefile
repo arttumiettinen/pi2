@@ -41,6 +41,10 @@ ifdef NO_OPENCL
     OPENCL_LIB=
 endif
 
+ifdef OLD_OPENCL
+    CXXFLAGS += -DOLD_OPENCL
+endif
+
 ifdef DDEBUG
     CXXFLAGS += -DDEBUG -g
     CCFLAGS += -DDEBUG -g

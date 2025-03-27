@@ -38,7 +38,12 @@
 	#define CL_HPP_ENABLE_SIZE_T_COMPATIBILITY
 	// This enables old-format program source definition. TODO: Replace with the new one.
 	#define CL_HPP_ENABLE_PROGRAM_CONSTRUCTION_FROM_ARRAY_COMPATIBILITY
-	#include <CL/opencl.hpp>
+
+    #if defined(OLD_OPENCL)
+        #include <CL/cl2.hpp>
+    #else
+	    #include <CL/opencl.hpp>
+    #endif
 
 #else
 
