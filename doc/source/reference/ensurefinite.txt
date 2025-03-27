@@ -1,0 +1,31 @@
+.. _ensurefinite:
+
+ensurefinite
+************
+
+
+**Syntax:** :code:`ensurefinite(image, replacement)`
+
+Ensures that all pixel values are finite and not NaN by replacing inf and NaN values with the given replacement value.
+
+This command can be used in the distributed processing mode. Use :ref:`distribute` command to change processing mode from local to distributed.
+
+Arguments
+---------
+
+image [input & output]
+~~~~~~~~~~~~~~~~~~~~~~
+
+**Data type:** float32 image
+
+Image to process.
+
+replacement [input]
+~~~~~~~~~~~~~~~~~~~
+
+**Data type:** real
+
+**Default value:** 0
+
+Value that will replace infinite and not-a-number values.
+

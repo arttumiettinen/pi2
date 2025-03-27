@@ -16,11 +16,6 @@ The output is placed to the `x64` folder.
 
 
 
-zlib
-----
-
-Build zlib from source cloned from GitHub, using the `contrib/vstudio/vc17/zlibvc.sln` file.
-
 
 libpng
 ------
