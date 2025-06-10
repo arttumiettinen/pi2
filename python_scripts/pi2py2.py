@@ -878,6 +878,37 @@ class Pi2:
         return argument
 
 
+    def str_nice(self, arg, temp_images):
+        
+        if isinstance(arg, np.ndarray):
+            # Argument is numpy array. Copy it to PI system.
+
+            # Create temporary image name
+            temp_image = self.newimage()
+            temp_images.append(temp_image)
+
+            # Set data of that image to the numpy array
+            #temp_image.set_data(arg) # NOTE: This was the old way of doing the same.
+            # NOTE: This change is a breaking change for Python scripts taking advantage of the old set_data, get_data and
+            # this Numpy interoperability functionality.
+            temp_image.from_numpy(arg)
+
+            arg_as_string = temp_image.name
+
+        elif isinstance(arg, Pi2Object):
+            arg_as_string = arg.name
+
+        elif isinstance(arg, list):
+            arg_as_string = ', '.join(map(lambda x: self.str_nice(x, temp_images), arg))
+            arg_as_string = f"[{arg_as_string}]"
+
+        else:
+            # Argument is something else... Just convert it to string.
+            arg_as_string = str(arg)
+
+        return arg_as_string
+
+
     def run_command(self, cmd_name, args):
         """
         Runs pilib command, given its name and arguments.
@@ -890,30 +921,8 @@ class Pi2:
         temp_images = []
         arg_line = ""
         for arg in args:
-            arg_as_string = ""
-
-            if isinstance(arg, np.ndarray):
-                # Argument is numpy array. Copy it to PI system.
-
-                # Create temporary image name
-                temp_image = self.newimage()
-                temp_images.append(temp_image)
-
-                # Set data of that image to the numpy array
-                #temp_image.set_data(arg) # NOTE: This was the old way of doing the same.
-                # NOTE: This change is a breaking change for Python scripts taking advantage of the old set_data, get_data and
-                # this Numpy interoperability functionality.
-                temp_image.from_numpy(arg)
-
-                arg_as_string = temp_image.name
-
-            elif isinstance(arg, Pi2Object):
-                arg_as_string = arg.name
-
-            else:
-                # Argument is something else... Just convert it to string.
-                arg_as_string = str(arg)
-
+            arg_as_string = self.str_nice(arg, temp_images)
+            
             # Remove newlines
             arg_as_string = self.make_safe(arg_as_string)
             
