@@ -1,14 +1,14 @@
-.. _pi2_colab_quickstart:
+.. _usage_colab:
 
-Pi2 Quick Start with Google Colab
-=================================
+Quick Start with Google Colab
+=============================
 
-This page introduces a Google Colab notebook designed to help you get started with the Pi2 image processing library quickly and easily, without the need for a local installation.
+This page introduces a `Google Colab <https://colab.research.google.com>`_ `notebook <https://github.com/arttumiettinen/pi2/tree/master/python_scripts/Pi2_Colab_Installation_and_Usage.ipynb>`_ designed to help you get started with the Pi2 image processing library quickly and easily, without the need for a local installation.
 
 Why Use the Pi2 Colab Notebook?
 -------------------------------
 
-Setting up a development environment with C++ dependencies can sometimes be challenging. The Pi2 Colab notebook offers several advantages:
+Setting up a development environment with C++ dependencies can sometimes be challenging. The `Pi2 Colab notebook <https://github.com/arttumiettinen/pi2/tree/master/python_scripts/Pi2_Colab_Installation_and_Usage.ipynb>`_ offers several advantages:
 
 *   **Zero Local Installation:** All dependencies and the Pi2 library itself are compiled and run within the Google Colab cloud environment. You only need a web browser.
 *   **Pre-Configured:** The notebook guides you through installing necessary Linux packages and compiling Pi2 specifically for the Colab environment.
@@ -19,20 +19,20 @@ Setting up a development environment with C++ dependencies can sometimes be chal
 Get Started with the Notebook
 -----------------------------
 
-The Colab notebook itself contains all the step-by-step instructions and executable code cells. It is divided into two main parts:
+The `Pi2 Colab notebook <https://github.com/arttumiettinen/pi2/tree/master/python_scripts/Pi2_Colab_Installation_and_Usage.ipynb>`_ itself contains all the step-by-step instructions and executable code cells. It is divided into two main parts:
 
 1.  **First-Time Setup:** This section is run **only once** to compile the Pi2 library and save it to your Google Drive.
 2.  **Session Startup:** These cells are run at the beginning of **every subsequent Colab session** to load your pre-compiled Pi2 library and prepare the environment.
 
 **Access the Notebook:**
 
-You can open and run the Pi2 Quick Start notebook directly in Google Colab by clicking the link below: `ColabNotebook <https://github.com/arttumiettinen/pi2/tree/master/Pi2_Colab_Installation_and_Usage.ipynb>`_.    
+You can open or download the Pi2 Quick Start notebook here: `Pi2 Colab notebook <https://github.com/arttumiettinen/pi2/tree/master/python_scripts/Pi2_Colab_Installation_and_Usage.ipynb>`_
 
 
 What You'll Do in the Notebook
 ------------------------------
 
-Within the Colab notebook, you will be guided through:
+Within the `Pi2 Colab notebook <https://github.com/arttumiettinen/pi2/tree/master/python_scripts/Pi2_Colab_Installation_and_Usage.ipynb>`_, you will be guided through:
 
 *   Mounting your Google Drive.
 *   Installing essential Linux dependencies (for compilation).
@@ -44,7 +44,7 @@ Within the Colab notebook, you will be guided through:
 
 The notebook's markdown cells provide detailed explanations for each step.
 
-After Setting Up in Colab
+After setting up in Colab
 -------------------------
 
 Once you have completed the "First-Time Setup" in the Colab notebook, you will have a functional Pi2 environment accessible with a few quick "Session Startup" steps each time you use Colab. You can then adapt the example pipelines or write your own Pi2 scripts directly within the notebook.
@@ -53,5 +53,5 @@ This approach allows you to leverage the full power of Pi2 for your image proces
 
 .. seealso::
 
-    * For detailed documentation on specific Pi2 functions and modules, please refer to the main Pi2 documentation sections.
-    * The Colab notebook provides practical examples; for a conceptual understanding of operations like :ref:`binning <bin>`, consult the relevant example pages (e.g., your `binning.txt`).
+    * For detailed documentation on specific Pi2 functions and modules, please refer to the main Pi2 documentation.
+    * The Colab notebook provides a practical example; for a conceptual understanding of operations like :ref:`binning <bin>`, consult the relevant example pages.

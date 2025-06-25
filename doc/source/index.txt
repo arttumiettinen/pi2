@@ -11,6 +11,7 @@ terapixel-scale volume images :ref:`locally or on a computer cluster <cluster_co
 
 The pi2 environment can be used from e.g.
 :ref:`Python <usage_python>`,
+:ref:`Google Colab <usage_colab>`,
 :ref:`C/C++ <usage_cpp>`, and
 :ref:`.NET <usage_cs>` programs, and as a
 :ref:`standalone executable <usage_standalone>` (like ImageMagick).
@@ -90,6 +91,7 @@ Further reading
    :maxdepth: 1
    
    usage_python
+   usage_colab
    usage_command_line
    usage_cs
    usage_c_cpp

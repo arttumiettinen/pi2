@@ -66,7 +66,7 @@ After you are done, the pi2 system should be torn down by passing the handle to
 
 More information and API documentation can be found in source files
 
-	* C/C++ https://github.com/arttumiettinen/pi2/blob/master/pilib/pilib.h.
+	* C/C++: https://github.com/arttumiettinen/pi2/blob/master/pilib/pilib.h.
 	* C#: https://github.com/arttumiettinen/pi2/blob/master/pi2cs/PiLib.cs
 	
 

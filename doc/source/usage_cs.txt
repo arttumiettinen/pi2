@@ -3,6 +3,9 @@
 Using pi2 from .NET programs
 ============================
 
+.. warning::
+	Pi2 is available for .NET programs through pi2cs library, but that is currently under rewrite. Therefore, the instructions below do not work at the moment!
+
 Pi2 can be used from .NET languages like C# and Visual Basic .NET.
 In short, you will need to add a reference to pi2cs library and create an instance of the Pi2 class.
 The methods of the class can then be used to access Pi2 functionality.
