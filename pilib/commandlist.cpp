@@ -40,6 +40,9 @@ namespace pilib
 	void addDistributeCommands();
 	void addInpaintCommands();
 	void addFloodfillCommands();
+	void addSegmentationCommands();
+	void addSegmentationMetricsCommands();
+	//void addLoggingCommands();
 
 	vector<unique_ptr<Command> > CommandList::commands;
 
@@ -74,6 +77,9 @@ namespace pilib
 		addEvalCommands();
 		addDistributeCommands();
 		addInpaintCommands();
+		addSegmentationCommands();
+		addSegmentationMetricsCommands();
+		//void addLoggingCommands();
 	}
 
 
