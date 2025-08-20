@@ -65,6 +65,7 @@
     <ClInclude Include="io\vectorio.h" />
     <ClInclude Include="iteration.h" />
     <ClInclude Include="listandimage.h" />
+    <ClInclude Include="logger.h" />
     <ClInclude Include="lz4\lz4.h" />
     <ClInclude Include="lz4\lz4frame.h" />
     <ClInclude Include="lz4\lz4hc.h" />
@@ -83,6 +84,8 @@
     <ClInclude Include="pathopening.h" />
     <ClInclude Include="progress.h" />
     <ClInclude Include="sdmap.h" />
+    <ClInclude Include="segmentationmetrics.h" />
+    <ClInclude Include="sfcm.h" />
     <ClInclude Include="surfaceskeleton2.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="indexforest.h" />

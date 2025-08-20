@@ -20,5 +20,6 @@ namespace pilib
 		ADD_REAL(CapsuleCommand);
 		ADD_REAL(DrawGraphCommand);
 		ADD_REAL(DrawGraph2Command);
+		ADD_REAL(GenerateEllipsoidTestImageCommand);
 	}
 }

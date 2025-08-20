@@ -12,6 +12,9 @@
 #include "network.h"
 #include "pointprocess.h"
 #include "projections.h"
+#include <random>
+
+//#include "logger.h"
 
 #include <iostream>
 #include <vector>
@@ -496,4 +499,101 @@ namespace itl2
 			std::cout << ((double)filledPixels / geom.pixelCount()) << " / " << (targetVolumeFraction) << "\r" << std::flush;
 		} while (filledPixels < geom.pixelCount() * targetVolumeFraction); // Generate until specified volume fraction
 	}
+
+
+	/// <summary>
+	/// Generates a synthetic 3D image of randomly placed, randomly oriented ellipsoids with integer class-labels 1, ..., classCount.
+	/// </summary>
+	/// <typeparam name="pixel_t"></typeparam>
+	/// <param name="img">Target image</param>
+	/// <param name="minCount">Minimum number of ellipsoids to draw.</param>
+	/// <param name="maxCount">Maximum number of ellipsoids to draw.</param>
+	/// <param name="minSemiAxisLength">Minimum semi axis length multiplier [0-1].</param>
+	/// <param name="maxSemiAxisLength">Maximum semi axis length multiplier [0-1].</param>
+	/// <param name="minFrac">Minimum brightness label a class can have.</param>
+	/// <param name="maxFrac">Maximum brightness label a class can have.</param>
+	/// <param name="classCount">Number of distinct class label-values/brightness-values.</param>
+	/// <param name="seed">Seed for rand()</param>
+	template<typename pixel_t>
+	void generateEllipsoidTestImage(Image<pixel_t>& img, size_t minCount, size_t maxCount, size_t classCount, double minSemiAxisLength = 0.05, double maxSemiAxisLength = 0.25, double minFrac = 0.2, double maxFrac = 0.85, size_t seed = time(0)) {
+
+		if (minCount <= 0 || maxCount < minCount || classCount <= 0)
+		{
+			throw ITLException("Invalid parameters for generateEllipsoidTestImage.");
+		}
+		if (minSemiAxisLength <= 0 || maxSemiAxisLength < minSemiAxisLength) {
+			throw ITLException("Invalid semi-axis length parameters for generateEllipsoidTestImage.");
+		}
+
+		std::mt19937 rng(static_cast<uint32_t>(seed));
+		std::uniform_int_distribution<int> objectDist((int)minCount, (int)maxCount);
+		std::uniform_int_distribution<int> classIndexDist(0, static_cast<int>(classCount) - 1);
+
+
+		int objectCount = objectDist(rng);
+		double minDimension = std::min(std::min(img.width(), img.height()), img.depth());
+		double minAxis = minDimension * minSemiAxisLength;
+		double maxAxis = minDimension * maxSemiAxisLength;
+		double maxVal = static_cast<double>(std::numeric_limits<pixel_t>::max());
+		double minVal = maxVal * minFrac;
+		double maxClassVal = maxVal * maxFrac;
+		std::vector<pixel_t> classValues;
+		if (classCount == 1) {
+			double val = (minVal + maxClassVal) / 2.0;
+			classValues.push_back(pixelRound<pixel_t>(val));
+		}
+		else {
+			for (size_t c = 0; c < classCount; c++) {
+				double val = minVal + (maxClassVal - minVal) * (static_cast<double>(c) / (classCount - 1));
+				classValues.push_back(pixelRound<pixel_t>(val));
+			}
+		}
+
+		std::uniform_real_distribution<double> axisDist(minAxis, maxAxis);
+		std::uniform_real_distribution<double> angleDist(0.0, 2.0 * PI);
+		std::uniform_real_distribution<double> cosDist(-1.0, 1.0);
+		std::uniform_real_distribution<double> xDist, yDist, zDist;
+
+		for (int i = 0; i < objectCount; i++)
+		{
+			double lengthX = axisDist(rng);
+			double lengthY = axisDist(rng);
+			double lengthZ = axisDist(rng);
+
+			double phi1 = angleDist(rng);
+			double cos1 = cosDist(rng);
+			double theta1 = std::acos(cos1);
+
+			double phi2 = angleDist(rng);
+			double cos2 = cosDist(rng);
+			double theta2 = std::acos(cos2);
+
+			std::uniform_real_distribution<double> centerXDist(-lengthX, img.width() + lengthX);
+			std::uniform_real_distribution<double> centerYDist(-lengthY, img.height() + lengthY);
+			std::uniform_real_distribution<double> centerZDist(-lengthZ, img.depth() + lengthZ);
+
+			Vec3d center(centerXDist(rng), centerYDist(rng), centerZDist(rng));
+			Vec3d axes(lengthX, lengthY, lengthZ);
+
+			Ellipsoid ellipsoid(center, axes, phi1, theta1, phi2, theta2);
+			pixel_t val = classValues[classIndexDist(rng)];
+			draw(img, ellipsoid, val);
+		}
+
+		/*
+		if (logging) {
+			log_value("seed", seed);
+			log_value("minDimension", minDimension);
+			log_value("minCount", minCount);
+			log_value("maxCount", maxCount);
+			log_value("objectCount", objectCount);
+			log_value("classCount", classCount);
+			log_value("minSemiAxisLength", minSemiAxisLength);
+			log_value("maxSemiAxisLength", maxSemiAxisLength);
+			log_value("minFrac", minFrac);
+			log_value("maxFrac", maxFrac);
+		}
+		*/
+	}
+
 }
