@@ -186,6 +186,15 @@
     <ClInclude Include="parsedargtype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="loggingcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="segmentationmetricscommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="segmentationcommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command.cpp">
@@ -321,6 +330,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\itl2\interpolation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loggingcommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="segmentationmetricscommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="segmentationcommands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

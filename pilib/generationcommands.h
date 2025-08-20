@@ -968,4 +968,42 @@ namespace pilib
 			return d->getCorrespondingBlock(args, argIndex, readStart, readSize, writeFilePos, writeImPos, writeSize);
 		}
 	};
+
+	template<typename pixel_t> class GenerateEllipsoidTestImageCommand : public OneImageInPlaceCommand<pixel_t> {
+	protected:
+		friend class CommandList;
+
+		GenerateEllipsoidTestImageCommand()
+			: OneImageInPlaceCommand<pixel_t>(
+				"generateEllipsoidTestImage",
+				"Generates a synthetic 3D image of multiple rotated ellipsoids with varying sizes and class labels.",
+				{
+					CommandArgument<size_t>(ParameterDirection::In, "min_count", "Minimum number of ellipsoids to generate."),
+					CommandArgument<size_t>(ParameterDirection::In, "max_count", "Maximum number of ellipsoids to generate."),
+					CommandArgument<size_t>(ParameterDirection::In, "class_count", "Number of distinct label classes to use."),
+					CommandArgument<double>(ParameterDirection::In, "minAxis", "Minimum relative semi-axis length [0-1].", 0.05),
+					CommandArgument<double>(ParameterDirection::In, "maxAxis", "Maximum relative semi-axis length [0-1].", 0.25),
+					CommandArgument<double>(ParameterDirection::In, "minFrac", "Minimum brightness label a class can have [0-1].", 0.2),
+					CommandArgument<double>(ParameterDirection::In, "maxFrac", "Maximum brightness label a class can have [0-1].", 0.85),
+					CommandArgument<size_t>(ParameterDirection::In, "seed", "Seed for RNG. 0 gives a time-based seed.", 0)
+				})
+		{
+		}
+
+	public:
+		virtual void run(Image<pixel_t>& img, std::vector<ParamVariant>& args) const override
+		{
+			size_t minCount = pop<size_t>(args);
+			size_t maxCount = pop<size_t>(args);
+			size_t classCount = pop<size_t>(args);
+			double minAxis = pop<double>(args);
+			double maxAxis = pop<double>(args);
+			double minFrac = pop<double>(args);
+			double maxFrac = pop<double>(args);
+			size_t seedArg = pop<size_t>(args);
+			size_t seed = seedArg == 0 ? static_cast<size_t>(time(0))
+				: seedArg;
+			generateEllipsoidTestImage(img, minCount, maxCount, classCount, minAxis, maxAxis, minFrac, maxFrac, seed);
+		}
+	};
 }
