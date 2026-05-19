@@ -1,7 +1,10 @@
 
 
 import os.path
+import os
 import struct
+import re
+import shutil
 import networkx as nx
 from pyquaternion import Quaternion
 import math
@@ -157,6 +160,9 @@ class Scan:
         # Filename prefix used while storing world to local transformation grid.
         self.world_to_local_prefix = ''
 
+        # Directory where per-binning output files (transformations, world_to_local) are written.
+        self.output_dir = '.'
+
         # Approximate position of the first pixel of the image in world coordinates.
         # This member is used as initial guess of the position to determine approximately overlapping regions
         # of the sub-images.
@@ -208,10 +214,11 @@ def raw_exists(prefix):
 
 
 
-def auto_binning(relations, binning, redo_all):
+def auto_binning(relations, binning, redo_all, out_dir=None):
     """
     Makes binned versions of the original input files if they do not exist yet.
     Returns true if all binned files are already done.
+    out_dir: if given, binned files are written into that directory.
     """
 
     if binning < 1:
@@ -236,6 +243,9 @@ def auto_binning(relations, binning, redo_all):
                 binned_file = binned_file[1:]
             binned_file = binned_file.replace('\\', '-').replace('/', '-')
             binned_file = f"bin{binning}_{binned_file}"
+
+            if out_dir:
+                binned_file = os.path.join(out_dir, binned_file)
 
             node.binned_file = binned_file
 
@@ -367,7 +377,7 @@ def delete_transformations_file(scan):
     Deletes xxx_transformations.txt file corresponding to the given scan.
     """
 
-    scan_name = fix_directories(scan.rec_file)
+    scan_name = os.path.join(scan.output_dir, fix_directories(scan.rec_file))
     filename = f"{scan_name}_transformation.txt"
     delete_file(filename)
 
@@ -439,7 +449,181 @@ def filter_displacement_field(sample_name, scan1, scan2, filter_threshold):
 
 
 
-def read_displacement_field(sample_name, scan1, scan2):
+def scale_displacement_fields(src_sample_name, dst_sample_name, from_binning, to_binning, settings):
+    """
+    Creates scaled copies of displacement fields so they can be used at a different binning.
+    Scales grid coordinates and deformation vectors by from_binning / to_binning.
+    Called when displacement_binning differs from the output binning.
+    """
+
+    if from_binning == to_binning:
+        return
+
+    scale = from_binning / to_binning
+
+    out_point_spacing = int(np.round(settings.point_spacing / to_binning))
+    out_coarse_block_radius = np.round(settings.coarse_block_radius / to_binning).astype(int)
+    out_coarse_binning = np.maximum(1, np.round(settings.coarse_binning / to_binning).astype(int))
+    out_fine_block_radius = np.round(settings.fine_block_radius / to_binning).astype(int)
+    out_fine_binning = np.maximum(1, np.round(settings.fine_binning / to_binning).astype(int))
+    refpoints_settings_str = f"{out_point_spacing}, {out_coarse_block_radius}, {out_coarse_binning}, {out_fine_block_radius}, {out_fine_binning}, {settings.normalize_in_blockmatch}"
+    filter_threshold_str = str(settings.filter_threshold / to_binning)
+
+    src_dir = os.path.dirname(src_sample_name) or '.'
+    dst_dir = os.path.dirname(dst_sample_name) or '.'
+    src_base = os.path.basename(src_sample_name)
+    dst_base = os.path.basename(dst_sample_name)
+
+    os.makedirs(dst_dir, exist_ok=True)
+
+    disp_files = [f for f in sorted(os.listdir(src_dir))
+                  if f.startswith(src_base + '_') and re.search(r'_\d+-\d+', f)]
+
+    # Pass 1: scale refpoints files. Scale vmin, vmax, vstep independently, then
+    # recompute the actual count (may change by ±1 due to integer rounding). Clamp
+    # new_count to src_count so we never request more points than the raw file has.
+    # Set new_vmax = new_vmin + (new_count-1)*new_vstep so grid stays within tile bounds.
+    # Also store vmin/vstep arrays for both grids so Pass 2 can interpolate correctly.
+    dims_map = {}
+    for basename in disp_files:
+        if not basename.endswith('_refpoints.txt'):
+            continue
+        m = re.search(r'_(\d+-\d+)_', basename)
+        if not m:
+            continue
+        pair = m.group(1)
+        src_path = os.path.join(src_dir, basename)
+        with open(src_path, 'r') as f:
+            lines = f.readlines()
+        new_lines = []
+        src_counts = []
+        src_vmins = []
+        src_vsteps = []
+        new_counts = []
+        new_vmins = []
+        new_vsteps = []
+        for i, line in enumerate(lines[:3]):
+            parts = line.strip().split(',')
+            vmin, vmax, vstep = int(parts[0]), int(parts[1]), int(parts[2])
+            src_count = int((vmax - vmin) // vstep) + 1
+            new_vmin = int(round(vmin * scale))
+            new_vmax = int(round(vmax * scale))
+            new_vstep = max(1, int(round(vstep * scale)))
+            new_count = min(src_count, int((new_vmax - new_vmin) // new_vstep) + 1)
+            new_vmax_adj = new_vmin + (new_count - 1) * new_vstep
+            new_lines.append(f'{new_vmin},{new_vmax_adj},{new_vstep}\n')
+            src_counts.append(src_count)
+            src_vmins.append(vmin)
+            src_vsteps.append(vstep)
+            new_counts.append(new_count)
+            new_vmins.append(new_vmin)
+            new_vsteps.append(new_vstep)
+        new_lines.extend(lines[3:])
+        dst_basename = basename.replace(src_base, dst_base, 1)
+        dst_path = os.path.join(dst_dir, dst_basename)
+        with open(dst_path, 'w') as f:
+            f.writelines(new_lines)
+        dims_map[pair] = {
+            'src_counts': tuple(src_counts), 'src_vmin': tuple(src_vmins), 'src_vstep': tuple(src_vsteps),
+            'dst_counts': tuple(new_counts), 'dst_vmin': tuple(new_vmins), 'dst_vstep': tuple(new_vsteps),
+        }
+
+    # Pass 2: process data files. Use interpolation for defpoints/gof so that the
+    # displacement values are sampled at the correct physical positions of the new grid
+    # rather than just copying by index (which causes step-accumulation errors when
+    # round(step*scale) != step*scale exactly).
+    from scipy.interpolate import RegularGridInterpolator
+    for basename in disp_files:
+        if basename.endswith('_refpoints.txt'):
+            continue
+
+        src_path = os.path.join(src_dir, basename)
+        m = re.search(r'_(\d+-\d+)_', basename)
+        pair = m.group(1) if m else None
+        dst_basename = basename.replace(src_base, dst_base, 1)
+
+        if basename.endswith('.raw') and pair in dims_map:
+            nx, ny, nz = dims_map[pair]['dst_counts']
+            dst_basename = re.sub(r'_\d+x\d+x\d+\.raw$', f'_{nx}x{ny}x{nz}.raw', dst_basename)
+
+        dst_path = os.path.join(dst_dir, dst_basename)
+
+        if '_defpoints_' in basename and basename.endswith('.raw') and pair in dims_map:
+            sx, sy, sz = dims_map[pair]['src_counts']
+            src_xmin, src_ymin, src_zmin = dims_map[pair]['src_vmin']
+            src_xstep, src_ystep, src_zstep = dims_map[pair]['src_vstep']
+            nx, ny, nz = dims_map[pair]['dst_counts']
+            dst_xmin, dst_ymin, dst_zmin = dims_map[pair]['dst_vmin']
+            dst_xstep, dst_ystep, dst_zstep = dims_map[pair]['dst_vstep']
+
+            raw = np.frombuffer(open(src_path, 'rb').read(), dtype=np.float64)
+            src_arr = raw.reshape(sz, sy, sx, 3)
+
+            # Physical grid coordinates of the source (from_binning) grid
+            src_x = src_xmin + np.arange(sx) * src_xstep
+            src_y = src_ymin + np.arange(sy) * src_ystep
+            src_z = src_zmin + np.arange(sz) * src_zstep
+
+            # Destination grid coordinates converted to source pixel space
+            # (dst pixels * to_binning / from_binning = dst pixels / scale)
+            dst_x_in_src = np.clip((dst_xmin + np.arange(nx) * dst_xstep) / scale, src_x[0], src_x[-1])
+            dst_y_in_src = np.clip((dst_ymin + np.arange(ny) * dst_ystep) / scale, src_y[0], src_y[-1])
+            dst_z_in_src = np.clip((dst_zmin + np.arange(nz) * dst_zstep) / scale, src_z[0], src_z[-1])
+
+            out_arr = np.empty((nz, ny, nx, 3), dtype=np.float64)
+            if sz < 2 or sy < 2 or sx < 2:
+                # Fall back to simple slice for tiny grids (shouldn't happen in practice)
+                out_arr[:, :, :, :] = src_arr[:nz, :ny, :nx, :]
+            else:
+                zz, yy, xx = np.meshgrid(dst_z_in_src, dst_y_in_src, dst_x_in_src, indexing='ij')
+                pts = np.stack([zz.ravel(), yy.ravel(), xx.ravel()], axis=-1)
+                for comp in range(3):
+                    interp = RegularGridInterpolator(
+                        (src_z, src_y, src_x), src_arr[:, :, :, comp],
+                        method='linear', bounds_error=False, fill_value=None)
+                    out_arr[:, :, :, comp] = interp(pts).reshape(nz, ny, nx)
+            out_arr *= scale
+            out_arr.tofile(dst_path)
+        elif '_gof_' in basename and basename.endswith('.raw') and pair in dims_map:
+            sx, sy, sz = dims_map[pair]['src_counts']
+            src_xmin, src_ymin, src_zmin = dims_map[pair]['src_vmin']
+            src_xstep, src_ystep, src_zstep = dims_map[pair]['src_vstep']
+            nx, ny, nz = dims_map[pair]['dst_counts']
+            dst_xmin, dst_ymin, dst_zmin = dims_map[pair]['dst_vmin']
+            dst_xstep, dst_ystep, dst_zstep = dims_map[pair]['dst_vstep']
+
+            raw = np.frombuffer(open(src_path, 'rb').read(), dtype=np.float32)
+            src_arr = raw.reshape(sz, sy, sx).astype(np.float64)
+
+            src_x = src_xmin + np.arange(sx) * src_xstep
+            src_y = src_ymin + np.arange(sy) * src_ystep
+            src_z = src_zmin + np.arange(sz) * src_zstep
+
+            dst_x_in_src = np.clip((dst_xmin + np.arange(nx) * dst_xstep) / scale, src_x[0], src_x[-1])
+            dst_y_in_src = np.clip((dst_ymin + np.arange(ny) * dst_ystep) / scale, src_y[0], src_y[-1])
+            dst_z_in_src = np.clip((dst_zmin + np.arange(nz) * dst_zstep) / scale, src_z[0], src_z[-1])
+
+            if sz < 2 or sy < 2 or sx < 2:
+                out_arr = src_arr[:nz, :ny, :nx].astype(np.float32)
+            else:
+                zz, yy, xx = np.meshgrid(dst_z_in_src, dst_y_in_src, dst_x_in_src, indexing='ij')
+                pts = np.stack([zz.ravel(), yy.ravel(), xx.ravel()], axis=-1)
+                interp = RegularGridInterpolator(
+                    (src_z, src_y, src_x), src_arr,
+                    method='linear', bounds_error=False, fill_value=None)
+                out_arr = interp(pts).reshape(nz, ny, nx).astype(np.float32)
+            out_arr.tofile(dst_path)
+        elif basename.endswith('_filtered_refpoints_settings.txt'):
+            write_contents(dst_path, filter_threshold_str)
+        elif basename.endswith('_refpoints_settings.txt'):
+            write_contents(dst_path, refpoints_settings_str)
+        else:
+            shutil.copy2(src_path, dst_path)
+
+    print(f"Scaled displacement fields from bin{from_binning} to bin{to_binning}.")
+
+
+def read_displacement_field(sample_name, scan1, scan2, coord_scale=1.0):
     """
     Reads displacement field between scan1 and scan 2 from files saved by pi2 program.
 
@@ -506,6 +690,14 @@ def read_displacement_field(sample_name, scan1, scan2):
                 z1[zi, yi, xi] = defpoints_data[3 * ind + 2]
 
 
+
+    if coord_scale != 1.0:
+        x  *= coord_scale
+        y  *= coord_scale
+        z  *= coord_scale
+        x1 *= coord_scale
+        y1 *= coord_scale
+        z1 *= coord_scale
 
     return x, y, z, x1, y1, z1, gof, norm_fact, norm_fact_std, mean_def
 
@@ -698,9 +890,10 @@ def calculate_displacement_fields(sample_name, relations, point_spacing, coarse_
 
 
 
-def read_displacement_fields(sample_name, relations, allow_rotation):
+def read_displacement_fields(sample_name, relations, allow_rotation, coord_scale=1.0):
     """
     Reads all displacement fields and determines similarity transformation for each field.
+    coord_scale converts displacement-binning coordinates to output-binning coordinates.
     """
 
     print("Reading displacement fields...")
@@ -713,7 +906,7 @@ def read_displacement_fields(sample_name, relations, allow_rotation):
 
         print(f"{scan1.index} -> {scan2.index} ({scan1.rec_file} -> {scan2.rec_file})")
 
-        x, y, z, x1, y1, z1, gof, norm_fact, norm_fact_std, mean_def = read_displacement_field(sample_name, scan1, scan2)
+        x, y, z, x1, y1, z1, gof, norm_fact, norm_fact_std, mean_def = read_displacement_field(sample_name, scan1, scan2, coord_scale=coord_scale)
         u = x1 - x
         v = y1 - y
         w = z1 - z
@@ -1468,7 +1661,7 @@ def fix_directories(path):
     return path
 
 
-def save_transformation(sample_name, scan, relations):
+def save_transformation(sample_name, scan, relations, disp_sample_name=None):
     """
     Saves world to local similarity tranformation of node at given position.
     """
@@ -1480,7 +1673,7 @@ def save_transformation(sample_name, scan, relations):
     norm_fact_std = scan.norm_fact_std
     mean_def = scan.mean_def
 
-    scan_name = fix_directories(scan.rec_file)
+    scan_name = os.path.join(scan.output_dir, fix_directories(scan.rec_file))
     file = f"{scan_name}_transformation.txt"
     with open(file, 'wb') as f:
         # Write world to local similarity transformation of this node
@@ -1497,9 +1690,9 @@ def save_transformation(sample_name, scan, relations):
         # Write count of parent nodes
         np.savetxt(f, np.array([len(parents)]))
         for parent_scan in parents:
-            parent_scan_name = fix_directories(parent_scan.rec_file)
+            parent_scan_name = os.path.join(parent_scan.output_dir, fix_directories(parent_scan.rec_file))
 
-            prefix = displacement_file_prefix(sample_name, parent_scan, scan)
+            prefix = displacement_file_prefix(disp_sample_name if disp_sample_name else sample_name, parent_scan, scan)
 
             np.savetxt(f, np.array([f"{parent_scan_name}_world_to_local"]), fmt="%s")
             np.savetxt(f, np.array([f"{prefix}_filtered"]), fmt="%s")
@@ -1514,7 +1707,7 @@ def is_transformation_ok(scan):
     Assigns filename to scan.transformation_file if the file is OK.
     """
 
-    scan_name = fix_directories(scan.rec_file)
+    scan_name = os.path.join(scan.output_dir, fix_directories(scan.rec_file))
     filename = f"{scan_name}_transformation.txt"
     if os.path.isfile(filename):
         scan.transformation_file = filename
@@ -1562,7 +1755,7 @@ def delete_world_to_local_file(scan):
     Deletes world to local transformation result.
     """
 
-    scan_name = fix_directories(scan.rec_file)
+    scan_name = os.path.join(scan.output_dir, fix_directories(scan.rec_file))
     filename = f"{scan_name}_world_to_local_refpoints.txt"
     delete_file(filename)
 
@@ -1605,7 +1798,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
                     #print(scan.rec_file)
                     done[scan] = True
 
-                    scan_name = fix_directories(scan.rec_file)
+                    scan_name = os.path.join(scan.output_dir, fix_directories(scan.rec_file))
 
                     # Calculate world to local grid transform using pi
                     scan.world_to_local_prefix = f"{scan_name}_world_to_local"
@@ -1629,7 +1822,7 @@ def calculate_world_to_local(tree, allow_local_deformations):
     return changed
 
 
-def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format):
+def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format, disp_sample_name=None):
     """
     Prepares and runs pi2 stitching process for connected component 'comp' of scan relations tree 'tree'.
     - determines final world to image transformations
@@ -1674,7 +1867,7 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
         # Note that we also delete ALL world to local results such that they are forcibly re-calculated,
         # as they become obsolete if world to local transformations change.
         for node in comp.nodes:
-            save_transformation(sample_name, node, comp)
+            save_transformation(sample_name, node, comp, disp_sample_name=disp_sample_name)
             delete_world_to_local_file(node)
 
 
@@ -1727,6 +1920,10 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
     if create_goodness_file and (not os.path.isfile(out_goodness_file)):
         print(f"Goodness file {out_goodness_file} is missing.")
         redo_mosaic = True
+
+    if not redo_mosaic:
+        print(f"Output {out_file} already exists and nothing has changed. Skipping stitching.")
+        return 0
 
     # Make index file
     index_file = out_template + "_index.txt"
@@ -1797,7 +1994,7 @@ def run_stitching(comp, sample_name, normalize, max_circle_diameter, global_opti
     return jobs_started
 
 
-def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format):
+def run_stitching_for_all_connected_components(relations, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format, disp_sample_name=None):
     """
     Calls run_stitching for each connected component in relations network.
     """
@@ -1806,7 +2003,7 @@ def run_stitching_for_all_connected_components(relations, sample_name, normalize
     jobs_started = 0
     comps = (relations.subgraph(c) for c in nx.weakly_connected_components(relations))
     for comp in comps:
-        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format)
+        jobs_started = jobs_started + run_stitching(comp, sample_name, normalize, max_circle_diameter, global_optimization, allow_rotation, allow_local_deformations, create_goodness_file, zeroes_are_missing_values, output_format, disp_sample_name=disp_sample_name)
 
     if (jobs_started > 0) and is_use_cluster():
         return False

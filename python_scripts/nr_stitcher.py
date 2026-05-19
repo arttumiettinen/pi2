@@ -23,6 +23,7 @@ class NonGridStitchSettings:
     def __init__(self):
         self.sample_name = ''
         self.binning = 1
+        self.displacement_binning = 1
         self.dimensions = np.array([0, 0, 0])
         self.point_spacing = 0
         self.coarse_block_radius = ['', '', '']
@@ -135,6 +136,9 @@ def main():
     if args.binning:
         sval = args.binning
     settings.binning = int(sval)
+
+    # Binning used for displacement field computation (reused across output binnings)
+    settings.displacement_binning = int(get(config, 'displacement_binning', str(settings.binning)))
 
     # Space between reference points in the deformation field in pixels
     settings.point_spacing = 1
@@ -268,33 +272,59 @@ def main():
 
     write_contents(settingsfile, settings_contents)
 
-    # Perform binning
+    output_binning = settings.binning
+    disp_binning = settings.displacement_binning
+
+    # Create per-binning output directories up front
+    disp_outdir = f"{settings.sample_name}_bin{disp_binning}"
+    output_outdir = f"{settings.sample_name}_bin{output_binning}"
+    os.makedirs(disp_outdir, exist_ok=True)
+    if output_outdir != disp_outdir:
+        os.makedirs(output_outdir, exist_ok=True)
+
+    # Save original node state before any binning changes
+    for node in relations.nodes():
+        node.orig_rec_file = node.rec_file
+        node.orig_dimensions = node.dimensions.copy()
+        node.orig_position = node.position.copy()
+
+    # --- Phase 1: bin images at displacement_binning for displacement field computation ---
     redo_all_binning = redo_all
     while True:
-        if auto_binning(relations, settings.binning, redo_all_binning):
-            break;
-
-        redo_all_binning = False;
+        if auto_binning(relations, disp_binning, redo_all_binning, out_dir=disp_outdir):
+            break
+        redo_all_binning = False
         wait_for_cluster_jobs()
-        
-    if settings.binning != 1:
-        for node in relations.nodes():
-            node.rec_file = node.binned_file
-            node.dimensions = node.dimensions / settings.binning
-            node.position = node.position / settings.binning
 
-    settings.point_spacing = int(np.round(settings.point_spacing / settings.binning))
-    settings.coarse_block_radius = np.round(settings.coarse_block_radius / settings.binning).astype(int)
-    settings.coarse_binning = np.maximum(1, np.round(settings.coarse_binning / settings.binning).astype(int))
-    settings.fine_block_radius = np.round(settings.fine_block_radius / settings.binning).astype(int)
-    settings.fine_binning = np.maximum(1, np.round(settings.fine_binning / settings.binning).astype(int))
+    for node in relations.nodes():
+        node.disp_rec_file = node.binned_file if disp_binning != 1 else node.orig_rec_file
 
-    settings.filter_threshold /= settings.binning
+    # --- Phase 2: bin images at output_binning for final stitching (skip if same as disp) ---
+    if output_binning != disp_binning:
+        redo_all_binning = redo_all
+        while True:
+            if auto_binning(relations, output_binning, redo_all_binning, out_dir=output_outdir):
+                break
+            redo_all_binning = False
+            wait_for_cluster_jobs()
 
-    if settings.binning != 1:
-        settings.sample_name = f"bin{settings.binning}_{settings.sample_name}"
+    for node in relations.nodes():
+        node.output_rec_file = node.binned_file if output_binning != 1 else node.orig_rec_file
 
+    # --- Compute displacement fields at disp_binning ---
+    disp_point_spacing = int(np.round(settings.point_spacing / disp_binning))
+    disp_coarse_block_radius = np.round(settings.coarse_block_radius / disp_binning).astype(int)
+    disp_coarse_binning = np.maximum(1, np.round(settings.coarse_binning / disp_binning).astype(int))
+    disp_fine_block_radius = np.round(settings.fine_block_radius / disp_binning).astype(int)
+    disp_fine_binning = np.maximum(1, np.round(settings.fine_binning / disp_binning).astype(int))
+    disp_filter_threshold = settings.filter_threshold / disp_binning
+    disp_sample_name = f"{disp_outdir}/bin{disp_binning}_{settings.sample_name}" if disp_binning != 1 else settings.sample_name
 
+    # Set nodes to disp_binning space for overlap detection and displacement calculation
+    for node in relations.nodes():
+        node.rec_file = node.disp_rec_file
+        node.dimensions = node.orig_dimensions / disp_binning
+        node.position = node.orig_position / disp_binning
 
     # Find overlapping images
     for node1 in relations.nodes():
@@ -311,21 +341,44 @@ def main():
     #plt.show()
     #plt.savefig('network.png')
 
-    # Calculate displacement fields
+    # Calculate displacement fields at disp_binning
     redo_all_displacements = redo_all
-    while True:
-        if calculate_displacement_fields(settings.sample_name, relations, settings.point_spacing, settings.coarse_block_radius, settings.coarse_binning, settings.fine_block_radius, settings.fine_binning, settings.normalize_in_blockmatch, settings.filter_threshold, redo_all_displacements):
-            break
+    if not redo_all_displacements:
+        if calculate_displacement_fields(disp_sample_name, relations, disp_point_spacing, disp_coarse_block_radius, disp_coarse_binning, disp_fine_block_radius, disp_fine_binning, settings.normalize_in_blockmatch, disp_filter_threshold, redo_all_displacements):
+            print("All displacement fields already exist. Skipping displacement calculation.")
+        else:
+            while True:
+                if calculate_displacement_fields(disp_sample_name, relations, disp_point_spacing, disp_coarse_block_radius, disp_coarse_binning, disp_fine_block_radius, disp_fine_binning, settings.normalize_in_blockmatch, disp_filter_threshold, redo_all_displacements):
+                    break
+                redo_all_displacements = False
+                wait_for_cluster_jobs()
+    else:
+        while True:
+            if calculate_displacement_fields(disp_sample_name, relations, disp_point_spacing, disp_coarse_block_radius, disp_coarse_binning, disp_fine_block_radius, disp_fine_binning, settings.normalize_in_blockmatch, disp_filter_threshold, redo_all_displacements):
+                break
+            redo_all_displacements = False
+            wait_for_cluster_jobs()
 
-        redo_all_displacements = False
-        wait_for_cluster_jobs()
-        
-    read_displacement_fields(settings.sample_name, relations, settings.allow_rotation)
+    # --- Switch nodes to output_binning space for stitching ---
+    # Displacement files must be in output_binning coordinate space for pi2 to apply them correctly.
+    # Scale from disp_binning files if needed (fast file I/O, no blockmatch rerun).
+    output_disp_sample_name = f"{output_outdir}/bin{output_binning}_{settings.sample_name}" if output_binning != 1 else settings.sample_name
+    if output_binning != disp_binning:
+        scale_displacement_fields(disp_sample_name, output_disp_sample_name, disp_binning, output_binning, settings)
 
-    run_stitching_for_all_connected_components(relations, settings.sample_name, settings.normalize_while_stitching, settings.max_circle_diameter, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.zeroes_are_missing_values, settings.output_format)
+    output_sample_name = f"{output_outdir}/{settings.sample_name}"
+
+    for node in relations.nodes():
+        node.rec_file = node.output_rec_file
+        node.dimensions = node.orig_dimensions / output_binning
+        node.position = node.orig_position / output_binning
+        node.output_dir = output_outdir
+
+    read_displacement_fields(output_disp_sample_name, relations, settings.allow_rotation)
+
+    run_stitching_for_all_connected_components(relations, output_sample_name, settings.normalize_while_stitching, settings.max_circle_diameter, settings.global_optimization, settings.allow_rotation, settings.allow_local_deformations, settings.create_goodness_file, settings.zeroes_are_missing_values, settings.output_format, disp_sample_name=output_disp_sample_name)
 
     wait_for_cluster_jobs()
-
 
 if __name__ == "__main__":
     start = time.time()
