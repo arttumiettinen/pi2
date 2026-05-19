@@ -26,6 +26,14 @@ point_spacing = 30
 coarse_block_radius = 60
 
 
+# Binning at which displacement fields are computed.
+# Displacement fields are calculated once at this binning and reused (with coordinate scaling)
+# for any output binning value. Set to the binning you want to use for expensive blockmatch
+# computation, then freely change 'binning' above to stitch at different resolutions without
+# rerunning blockmatch. Defaults to the value of 'binning' if not set.
+displacement_binning = 4
+
+
 # Amount of binning for coarse matching
 # If set to 1, no fine matching is performed.
 # Set to value greater than one to make a coarse match first and then a fine match using settings below.
