@@ -359,6 +359,15 @@ def main():
             redo_all_displacements = False
             wait_for_cluster_jobs()
 
+    # --- Universal tile bounds from the canonical disp_binning displacement fields ---
+    # Nodes are currently in disp_binning space (position = orig_position / disp_binning).
+    # Reading the un-scaled displacement files and running optimization here gives
+    # coordinates that are anchored to exactly the same source data regardless of what
+    # output_binning is used later, so the CSV is consistent across all resolution runs.
+    read_displacement_fields(disp_sample_name, relations, settings.allow_rotation)
+    save_universal_tile_bounds(relations, settings.sample_name, disp_binning,
+                               settings.global_optimization, settings.allow_rotation)
+
     # --- Switch nodes to output_binning space for stitching ---
     # Displacement files must be in output_binning coordinate space for pi2 to apply them correctly.
     # Scale from disp_binning files if needed (fast file I/O, no blockmatch rerun).

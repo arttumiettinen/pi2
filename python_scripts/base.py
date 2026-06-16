@@ -1634,6 +1634,72 @@ def determine_bounds(comp):
     return xmin, ymin, zmin, xmax, ymax, zmax
 
 
+def save_universal_tile_bounds(relations, sample_name, disp_binning, global_optimization, allow_rotation):
+    """
+    Computes and saves per-tile bounding boxes in universal (full-resolution) coordinates.
+
+    This function MUST be called while the relations nodes are already set to the
+    displacement_binning coordinate space (position = orig_position / disp_binning,
+    dimensions = orig_dimensions / disp_binning) and after read_displacement_fields
+    has been called with the disp_binning displacement files.
+
+    Universal coordinate = world_coord_in_disp_binning_space * disp_binning.
+
+    Because the computation is always anchored to the same displacement_binning source
+    files (never to scaled copies), the output is independent of output_binning.
+    Running the stitcher with binning=1, binning=2, or binning=4 will always produce
+    identical values in this file as long as displacement_binning is kept constant.
+
+    The tile name column uses orig_rec_file (the original, un-binned path) so the CSV
+    is comparable across runs with different output binnings.
+    """
+    bounds_file = f"{sample_name}_tile_bounds.csv"
+    print(f"Computing universal tile bounds (displacement_binning={disp_binning}) -> {bounds_file}")
+
+    all_rows = []
+    comps = list(relations.subgraph(c) for c in nx.weakly_connected_components(relations))
+    for comp in comps:
+        root = find_first_node(comp)
+        root.R = np.eye(3, 3)
+        root.a = 1
+        root.c = -root.position.reshape(-1, 1)
+
+        determine_average_transformations(comp)
+        if global_optimization:
+            optimize_transformations(comp, allow_rotation)
+
+        for scan in comp:
+            width  = float(scan.dimensions[0])
+            height = float(scan.dimensions[1])
+            depth  = float(scan.dimensions[2])
+
+            corners = np.array([
+                [0,     0,      0     ],
+                [width, 0,      0     ],
+                [width, height, 0     ],
+                [0,     height, 0     ],
+                [0,     0,      depth ],
+                [width, 0,      depth ],
+                [width, height, depth ],
+                [0,     height, depth ],
+            ])
+
+            xs, ys, zs = [], [], []
+            for corner in corners:
+                p = scan.a * np.matmul(scan.R, corner - scan.c.flatten())
+                xs.append(p[0] * disp_binning)
+                ys.append(p[1] * disp_binning)
+                zs.append(p[2] * disp_binning)
+
+            tile_name = getattr(scan, 'orig_rec_file', scan.rec_file)
+            all_rows.append(f"{tile_name},{min(xs):.4f},{max(xs):.4f},"
+                            f"{min(ys):.4f},{max(ys):.4f},{min(zs):.4f},{max(zs):.4f}\n")
+
+    with open(bounds_file, 'w') as f:
+        f.write("tile,x_min,x_max,y_min,y_max,z_min,z_max\n")
+        f.writelines(all_rows)
+
+    print(f"Tile bounds saved to {bounds_file}")
 
 
 def find_first_node(comp):
