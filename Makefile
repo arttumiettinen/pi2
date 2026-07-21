@@ -14,13 +14,13 @@ ifeq ($(UNAME_S),Darwin)
     # MacOS, assuming gcc compiler installed with homebrew
     $(info Detected MacOS)
     CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden -I/opt/homebrew/include -I/opt/homebrew/opt/opencl-clhpp-headers/include
-    LDFLAGS := -fopenmp -lblosc -L/opt/homebrew/lib/
+    LDFLAGS := -fopenmp -lblosc -lzstd -L/opt/homebrew/lib/
 	PLATFORM := macos
 else
     # Linux
     $(info Detected Linux)
     CXXFLAGS := -fopenmp -O3 -std=c++17 -fvisibility=hidden
-    LDFLAGS := -fopenmp -lblosc
+    LDFLAGS := -fopenmp -lblosc -lzstd
 	PLATFORM := linux64
 endif
 
