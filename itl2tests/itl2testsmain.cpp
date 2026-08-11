@@ -262,6 +262,7 @@ int main()
 	//test(itl2::lz4::tests::lz4blockIo, "LZ4 block");
 
 	//test(itl2::zarr::tests::read, "Zarr read");
+	//test(itl2::zarr::tests::readLeadingSingleton, "Zarr read leading singleton dimension");
 	//test(itl2::zarr::tests::write, "Zarr write");
 	//test(itl2::zarr::tests::transpose, "zarr test transpose codec");
 	//test(itl2::zarr::tests::blosc, "zarr test blosc codec");
