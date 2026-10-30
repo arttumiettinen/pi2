@@ -70,7 +70,7 @@ namespace itl2
 			size_t unsafeChunkCount = 0;
 			forAllChunks(imageDimensions, metadata.chunkSize, [&](const Vec3c& chunkIndex, const Vec3c& chunkPosition)
 			{
-			  string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex, metadata.separator);
+			  string chunkFile = internals::chunkFile(path, getDimensionality(imageDimensions), chunkIndex, metadata.separator, metadata.numLeadingSingletons);
 			  string writesFolder = internals::writesFolder(chunkFile);
 			  AABoxc chunkBox = AABoxc::fromPosSize(chunkPosition, metadata.chunkSize);
 			  if (!io::isChunkSafe(chunkBox, processes))
@@ -183,6 +183,49 @@ namespace itl2
 			{
 				Image<int32_t> fromDisk;
 				zarr::read(fromDisk, "./testdata/zarrita.zarr");
+			}
+
+			void readLeadingSingleton()
+			{
+				// Write an ordinary 3D array, then rewrite its metadata and chunk keys to
+				// emulate a >3-dimensional zarr array with a leading singleton axis, and
+				// verify that it reads back as the original 3D image.
+				string path = "./testoutput/leadingSingleton.zarr";
+				fs::remove_all(path);
+
+				Vec3c size(2, 3, 4);
+				Vec3c chunkSize(2, 2, 2);
+				Image<uint16_t> img(size);
+				ramp3(img);
+				add(img, 10);
+				zarr::write(img, path, chunkSize, BASIC_CODECS);
+
+				// Prepend a leading singleton axis to shape and chunk_shape in zarr.json.
+				string metadataFilename = internals::zarrMetadataFilename(path);
+				nlohmann::json j;
+				{
+					ifstream in(metadataFilename);
+					in >> j;
+				}
+				j["shape"] = { 1, size[0], size[1], size[2] };
+				j["chunk_grid"]["configuration"]["chunk_shape"] = { 1, chunkSize[0], chunkSize[1], chunkSize[2] };
+				{
+					ofstream out(metadataFilename, std::ios_base::trunc | std::ios_base::out);
+					out << std::setw(4) << j << endl;
+				}
+
+				// Move all chunk files under c/ into a new c/0/ prefix so keys become c/0/i/j/k.
+				string chunkRoot = path + "/c";
+				string tempRoot = path + "/c_tmp0";
+				fs::rename(chunkRoot, tempRoot);
+				fs::create_directories(chunkRoot);
+				fs::rename(tempRoot, chunkRoot + "/0");
+
+				Image<uint16_t> fromDisk;
+				zarr::read(fromDisk, path);
+
+				testAssert(fromDisk.dimensions() == size, string("zarr leading singleton dimensions"));
+				testAssert(equals(img, fromDisk), string("zarr test read leading singleton dimension"));
 			}
 
 			void write()

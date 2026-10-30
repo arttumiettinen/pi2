@@ -1202,9 +1202,9 @@ def optimize_transformations_3d_trans_rot(relations):
 
             q = Quaternion(matrix=scan.R)
 
-            initial_pose[7 * scan_index + 0] = scan.c[0] / scan.dimensions[0]
-            initial_pose[7 * scan_index + 1] = scan.c[1] / scan.dimensions[1]
-            initial_pose[7 * scan_index + 2] = scan.c[2] / scan.dimensions[2]
+            initial_pose[7 * scan_index + 0] = scan.c.flat[0] / scan.dimensions[0]
+            initial_pose[7 * scan_index + 1] = scan.c.flat[1] / scan.dimensions[1]
+            initial_pose[7 * scan_index + 2] = scan.c.flat[2] / scan.dimensions[2]
             initial_pose[7 * scan_index + 3] = q[0]
             initial_pose[7 * scan_index + 4] = q[1]
             initial_pose[7 * scan_index + 5] = q[2]
@@ -1257,9 +1257,9 @@ def optimize_transformations_3d_trans(relations):
         if scan != root:
             scan_to_index[scan] = scan_index
 
-            initial_pose[3 * scan_index + 0] = scan.c[0] / scan.dimensions[0]
-            initial_pose[3 * scan_index + 1] = scan.c[1] / scan.dimensions[1]
-            initial_pose[3 * scan_index + 2] = scan.c[2] / scan.dimensions[2]
+            initial_pose[3 * scan_index + 0] = scan.c.flat[0] / scan.dimensions[0]
+            initial_pose[3 * scan_index + 1] = scan.c.flat[1] / scan.dimensions[1]
+            initial_pose[3 * scan_index + 2] = scan.c.flat[2] / scan.dimensions[2]
 
             scan_index = scan_index + 1
 
@@ -1306,8 +1306,8 @@ def optimize_transformations_2d_trans_rot(relations):
 
             angle = math.atan2(scan.R[1, 0], scan.R[0, 0])
 
-            initial_pose[3 * scan_index + 0] = scan.c[0] / scan.dimensions[0]
-            initial_pose[3 * scan_index + 1] = scan.c[1] / scan.dimensions[1]
+            initial_pose[3 * scan_index + 0] = scan.c.flat[0] / scan.dimensions[0]
+            initial_pose[3 * scan_index + 1] = scan.c.flat[1] / scan.dimensions[1]
             initial_pose[3 * scan_index + 2] = angle
 
             scan_index = scan_index + 1
@@ -1357,8 +1357,8 @@ def optimize_transformations_2d_trans(relations):
         if scan != root:
             scan_to_index[scan] = scan_index
 
-            initial_pose[2 * scan_index + 0] = scan.c[0] / scan.dimensions[0]
-            initial_pose[2 * scan_index + 1] = scan.c[1] / scan.dimensions[1]
+            initial_pose[2 * scan_index + 0] = scan.c.flat[0] / scan.dimensions[0]
+            initial_pose[2 * scan_index + 1] = scan.c.flat[1] / scan.dimensions[1]
 
             scan_index = scan_index + 1
 

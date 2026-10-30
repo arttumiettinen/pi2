@@ -42,6 +42,10 @@ namespace itl2
 			codecs::Pipeline codecs;
 			fillValue_t fillValue;
 			std::string separator;
+			// Number of leading size-1 axes that were squeezed away when reading a
+			// >3-dimensional zarr array as a 3D image. Chunk keys must prepend this
+			// many "0" index components (the squeezed axes always have chunk index 0).
+			size_t numLeadingSingletons = 0;
 		};
 
 		inline bool operator==(const ZarrMetadata& lhs, const ZarrMetadata& rhs)
@@ -50,7 +54,8 @@ namespace itl2
 				lhs.dataType == rhs.dataType &&
 				lhs.codecs == rhs.codecs &&
 				lhs.fillValue == rhs.fillValue &&
-				lhs.separator == rhs.separator;
+				lhs.separator == rhs.separator &&
+				lhs.numLeadingSingletons == rhs.numLeadingSingletons;
 		}
 
 		namespace internals
@@ -113,9 +118,12 @@ namespace itl2
 				of << std::setw(4) << j << endl;
 			}
 
-			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex, const string& separator)
+			inline std::string chunkFile(const std::string& path, size_t dimensionality, const Vec3c& chunkIndex, const string& separator, size_t numLeadingSingletons = 0)
 			{
 				string filename = path + string("/c");
+				// Squeezed leading singleton axes always have chunk index 0.
+				for (size_t n = 0; n < numLeadingSingletons; n++)
+					filename += separator + string("0");
 				for (size_t n = 0; n < dimensionality; n++)
 					filename += separator + toString(chunkIndex[n]);
 				return filename;
@@ -237,7 +245,7 @@ namespace itl2
 				  AABox<coord_t> chunkRegion = AABox<coord_t>::fromPosSize(chunkPosition, metadata.chunkSize);
 				  if (blockRegion.overlapsExclusive(chunkRegion))
 				  {
-					  string filename = chunkFile(path, getDimensionality(fileDimensions), chunkIndex, metadata.separator);
+					  string filename = chunkFile(path, getDimensionality(fileDimensions), chunkIndex, metadata.separator, metadata.numLeadingSingletons);
 					  Image<pixel_t> imgChunk(transposedChunkShape);
 					  readSingleChunk(imgChunk, filename, metadata);
 
@@ -317,19 +325,27 @@ namespace itl2
 				}
 
 				auto dims = j["shape"];
-				if (dims.size() > 3)
+
+				// Squeeze leading size-1 axes so that datasets with more than 3
+				// dimensions but at most 3 non-singleton leading axes (e.g. a shape
+				// like [1, y, x, z] with a channel/time axis of size 1) can be read
+				// as a 3D image. The squeezed axes always have chunk index 0, which is
+				// accounted for when building chunk keys via numLeadingSingletons.
+				size_t numLeadingSingletons = 0;
+				while (dims.size() - numLeadingSingletons > 3 && dims[numLeadingSingletons].get<size_t>() == 1)
+					numLeadingSingletons++;
+				if (dims.size() - numLeadingSingletons > 3)
 				{
-					reason = "This zarr implementation supports only 1-, 2-, or 3-dimensional datasets.";
+					reason = "This zarr implementation supports only datasets with at most 3 non-singleton leading dimensions.";
 					return false;
 				}
+				metadata.numLeadingSingletons = numLeadingSingletons;
+				size_t squeezedDims = dims.size() - numLeadingSingletons;
 
 				//transpose xyz -> yxz
 				shape = Vec3c(1, 1, 1);
-				shape[0] = dims[0].get<size_t>();
-				if (dims.size() >= 2)
-					shape[1] = dims[1].get<size_t>();
-				if (dims.size() >= 3)
-					shape[2] = dims[2].get<size_t>();
+				for (size_t n = 0; n < squeezedDims; n++)
+					shape[n] = dims[numLeadingSingletons + n].get<size_t>();
 
 				if (!j.contains("data_type"))
 				{
@@ -367,12 +383,10 @@ namespace itl2
 						throw ITLException("Chunk shape and dataset shape contain different number of elements.");
 					}
 
+					// Apply the same leading-singleton squeeze as for the shape.
 					metadata.chunkSize = Vec3c(1, 1, 1);
-					metadata.chunkSize[0] = chunkDims[0].get<size_t>();
-					if (chunkDims.size() >= 2)
-						metadata.chunkSize[1] = chunkDims[1].get<size_t>();
-					if (chunkDims.size() >= 3)
-						metadata.chunkSize[2] = chunkDims[2].get<size_t>();
+					for (size_t n = 0; n < squeezedDims; n++)
+						metadata.chunkSize[n] = chunkDims[numLeadingSingletons + n].get<size_t>();
 				}
 
 				if (!j.contains("chunk_key_encoding"))
@@ -390,10 +404,12 @@ namespace itl2
 						reason = "This zarr implementation supports only default chunk_key_encoding.";
 						return false;
 					}
-					if (j["chunk_key_encoding"].contains("configuration")
-						&& !j["chunk_key_encoding"]["configuration"].contains("separator"))
+					if (!j["chunk_key_encoding"].contains("configuration")
+						|| !j["chunk_key_encoding"]["configuration"].contains("separator"))
 					{
-						throw ITLException("chunk_key_encoding configuration separator is missing in zarr metadata");
+						// The configuration and/or separator are optional. Per the zarr v3
+						// spec, the default chunk key encoding separator is "/".
+						metadata.separator = "/";
 					}
 					else
 					{
@@ -426,6 +442,10 @@ namespace itl2
 				}
 				else
 				{
+					// Drop squeezed leading singleton axes from the codec configurations
+					// (e.g. transpose "order" and sharding inner "chunk_shape") so they
+					// match the squeezed 3D shape.
+					codecs::squeezeLeadingSingletons(j["codecs"], numLeadingSingletons);
 					if (!codecs::fromJSON(metadata.codecs, j["codecs"], reason))
 					{
 						return false;
@@ -660,7 +680,7 @@ namespace itl2
 						  .intersection(AABoxc::fromPosSize(imgPosition, img.dimensions()));
 
 					  Image<pixel_t> chunk(metadata.chunkSize, pixelRound<pixel_t>(metadata.fillValue));
-					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator);
+					  string filename = chunkFile(path, getDimensionality(img.dimensions()), chunkIndex, metadata.separator, metadata.numLeadingSingletons);
 					  readSingleChunk(chunk, filename, metadata);
 					  //write all pixels of chunk in img to imgChunk
 					  forAllInBox(updateRegion, [&](coord_t x, coord_t y, coord_t z)
@@ -841,6 +861,7 @@ namespace itl2
 		namespace tests
 		{
 			void read();
+			void readLeadingSingleton();
 			void write();
 			void transpose();
 			void blosc();

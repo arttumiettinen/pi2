@@ -2,7 +2,10 @@
 
 #include <string>
 #include <sstream> // Ensure you include this for stringstream
+#include <cstring>
+#include <cstdint>
 #include <blosc.h>
+#include <zstd.h>
 
 #include "json.h"
 #include "utilities.h"
@@ -32,6 +35,8 @@ namespace itl2
 			Transpose,
 			Blosc,
 			Sharding,
+			Zstd,
+			Crc32c,
 		};
 		//TODO save codec in struct instead of json
 		namespace blosc
@@ -66,6 +71,10 @@ namespace itl2
 			return "blosc";
 		case zarr::codecs::Name::Sharding:
 			return "sharding_indexed";
+		case zarr::codecs::Name::Zstd:
+			return "zstd";
+		case zarr::codecs::Name::Crc32c:
+			return "crc32c";
 		}
 		throw ITLException("Invalid zarr codec name.");
 	}
@@ -83,6 +92,10 @@ namespace itl2
 			return zarr::codecs::Name::Blosc;
 		if (str == "sharding_indexed")
 			return zarr::codecs::Name::Sharding;
+		if (str == "zstd")
+			return zarr::codecs::Name::Zstd;
+		if (str == "crc32c")
+			return zarr::codecs::Name::Crc32c;
 		throw ITLException(std::string("Invalid zarr codec name: ") + str);
 	}
 
@@ -119,6 +132,15 @@ namespace itl2
 					this->type = Type::ArrayBytesCodec;
 					parseShardingCodecConfig(config);
 					break;
+				case Name::Zstd:
+					this->type = Type::BytesBytesCodec;
+					parseZstdCodecConfig(config);
+					break;
+				case Name::Crc32c:
+					this->type = Type::BytesBytesCodec;
+					// crc32c has no configuration.
+					this->configuration = config;
+					break;
 				default:
 					throw ITLException(std::string("Invalid zarr codec"));
 				}
@@ -147,6 +169,19 @@ namespace itl2
 			{
 				//TODO: validate
 				this->configuration = config;
+			}
+
+			void parseZstdCodecConfig(nlohmann::json config = nlohmann::json())
+			{
+				//TODO: validate
+				this->configuration = config;
+			}
+
+			void getZstdConfiguration(int& level, bool& checksum) const
+			{
+				if (this->name != Name::Zstd) throw ITLException("only zstd codec has zstd config");
+				level = this->configuration.contains("level") ? this->configuration["level"].get<int>() : 0;
+				checksum = this->configuration.contains("checksum") && this->configuration["checksum"].get<bool>();
 			}
 
 			void parseBytesCodecConfig(nlohmann::json config = nlohmann::json())
@@ -303,6 +338,55 @@ namespace itl2
 			}
 			return true;
 		}
+
+		// Rewrites a codecs JSON pipeline (in place) to drop the leading singleton axes
+		// that were squeezed away when reading a >3-dimensional array as 3D. This keeps
+		// the codec configurations consistent with the squeezed 3D shape:
+		//  - transpose: remove the leading axes from the "order" and renumber the rest.
+		//    Valid because size-1 axes do not affect the byte layout of the other axes.
+		//  - sharding_indexed: squeeze the inner "chunk_shape" and recurse into its inner
+		//    "codecs". The "index_codecs" operate on the shard index grid and are left
+		//    unchanged.
+		inline void squeezeLeadingSingletons(nlohmann::json& codecsJSON, size_t numLeadingSingletons)
+		{
+			if (numLeadingSingletons == 0)
+				return;
+			for (auto& codec : codecsJSON)
+			{
+				if (!codec.contains("name"))
+					continue;
+				string name = codec["name"].get<string>();
+				toLower(name);
+				if (name == "transpose"
+					&& codec.contains("configuration")
+					&& codec["configuration"].contains("order"))
+				{
+					nlohmann::json squeezed = nlohmann::json::array();
+					for (auto& e : codec["configuration"]["order"])
+					{
+						size_t axis = e.get<size_t>();
+						if (axis >= numLeadingSingletons)
+							squeezed.push_back(axis - numLeadingSingletons);
+					}
+					codec["configuration"]["order"] = squeezed;
+				}
+				else if (name == "sharding_indexed" && codec.contains("configuration"))
+				{
+					auto& cfg = codec["configuration"];
+					if (cfg.contains("chunk_shape"))
+					{
+						nlohmann::json squeezedShape = nlohmann::json::array();
+						auto& cs = cfg["chunk_shape"];
+						for (size_t axis = numLeadingSingletons; axis < cs.size(); axis++)
+							squeezedShape.push_back(cs[axis]);
+						cfg["chunk_shape"] = squeezedShape;
+					}
+					if (cfg.contains("codecs"))
+						squeezeLeadingSingletons(cfg["codecs"], numLeadingSingletons);
+				}
+			}
+		}
+
 		template<typename pixel_t>
 		void encodePipeline(const Pipeline& codecs, Image<pixel_t>& image, std::vector<char>& buffer, fillValue_t fillValue);
 
@@ -366,6 +450,85 @@ namespace itl2
 			std::memcpy(buffer.data(), temp.data(), realDestSize);
 		}
 
+		inline void encodeZstdCodec(const ZarrCodec& codec, std::vector<char>& buffer)
+		{
+			int level;
+			bool checksum;
+			codec.getZstdConfiguration(level, checksum);
+			if (level == 0)
+				level = ZSTD_CLEVEL_DEFAULT;
+
+			size_t destBound = ZSTD_compressBound(buffer.size());
+			std::vector<char> temp(destBound);
+
+			ZSTD_CCtx* cctx = ZSTD_createCCtx();
+			if (cctx == nullptr)
+				throw ITLException("zstd: could not create compression context.");
+			ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, level);
+			ZSTD_CCtx_setParameter(cctx, ZSTD_c_checksumFlag, checksum ? 1 : 0);
+			size_t realDestSize = ZSTD_compress2(cctx, temp.data(), destBound, buffer.data(), buffer.size());
+			ZSTD_freeCCtx(cctx);
+			if (ZSTD_isError(realDestSize))
+				throw ITLException(string("zstd compression error: ") + ZSTD_getErrorName(realDestSize));
+
+			buffer.resize(realDestSize);
+			std::memcpy(buffer.data(), temp.data(), realDestSize);
+		}
+
+		inline void decodeZstdCodec(const ZarrCodec& codec, std::vector<char>& buffer)
+		{
+			unsigned long long destSize = ZSTD_getFrameContentSize(buffer.data(), buffer.size());
+			if (destSize == ZSTD_CONTENTSIZE_ERROR)
+				throw ITLException("zstd: buffer does not contain a valid zstd frame.");
+			if (destSize == ZSTD_CONTENTSIZE_UNKNOWN)
+				throw ITLException("zstd: decompressed size is not stored in the frame header, which this implementation requires.");
+
+			std::vector<char> temp(destSize);
+			size_t realDestSize = ZSTD_decompress(temp.data(), destSize, buffer.data(), buffer.size());
+			if (ZSTD_isError(realDestSize))
+				throw ITLException(string("zstd decompression error: ") + ZSTD_getErrorName(realDestSize));
+
+			buffer.resize(realDestSize);
+			std::memcpy(buffer.data(), temp.data(), realDestSize);
+		}
+
+		// Software CRC32C (Castagnoli polynomial, reflected form 0x82F63B78).
+		inline uint32_t crc32c(const uint8_t* data, size_t length)
+		{
+			uint32_t crc = 0xFFFFFFFFu;
+			for (size_t i = 0; i < length; i++)
+			{
+				crc ^= data[i];
+				for (int k = 0; k < 8; k++)
+					crc = (crc >> 1) ^ (0x82F63B78u & (0u - (crc & 1u)));
+			}
+			return crc ^ 0xFFFFFFFFu;
+		}
+
+		// crc32c codec appends a 4-byte little-endian CRC32C of the preceding bytes.
+		inline void encodeCrc32cCodec(std::vector<char>& buffer)
+		{
+			uint32_t crc = crc32c(reinterpret_cast<const uint8_t*>(buffer.data()), buffer.size());
+			char crcBytes[4];
+			for (int i = 0; i < 4; i++)
+				crcBytes[i] = static_cast<char>((crc >> (8 * i)) & 0xFFu);
+			buffer.insert(buffer.end(), crcBytes, crcBytes + 4);
+		}
+
+		inline void decodeCrc32cCodec(std::vector<char>& buffer)
+		{
+			if (buffer.size() < 4)
+				throw ITLException("crc32c: buffer too small to contain a checksum.");
+			size_t dataLen = buffer.size() - 4;
+			uint32_t stored = 0;
+			for (int i = 0; i < 4; i++)
+				stored |= static_cast<uint32_t>(static_cast<uint8_t>(buffer[dataLen + i])) << (8 * i);
+			uint32_t computed = crc32c(reinterpret_cast<const uint8_t*>(buffer.data()), dataLen);
+			if (stored != computed)
+				throw ITLException("crc32c checksum mismatch: the data is corrupt or the checksum is invalid.");
+			buffer.resize(dataLen);
+		}
+
 		//todo: use swapByteOrder(img); depending on endian
 		template<typename pixel_t>
 		void decodeBytesCodec(Image<pixel_t>& image, std::vector<char>& buffer)
@@ -410,6 +573,28 @@ namespace itl2
 			}
 		}
 
+		//forward declaration (defined below)
+		inline void decodeBytesBytesCodec(const ZarrCodec& codec, std::vector<char>& buffer);
+
+		// Validates that a sharding index_codecs pipeline is one this implementation
+		// supports: a single Bytes (ArrayBytes) codec optionally followed by BytesBytes
+		// codecs (e.g. crc32c). Returns the number of extra bytes those BytesBytes
+		// codecs append to the encoded index (e.g. 4 bytes for crc32c).
+		inline coord_t validateShardingIndexCodecs(const Pipeline& indexCodecs)
+		{
+			if (indexCodecs.empty() || indexCodecs.begin()->name != Name::Bytes)
+				throw ITLException("This zarr implementation requires the Bytes codec at the first position of the sharding index_codecs.");
+			coord_t overhead = 0;
+			for (auto it = std::next(indexCodecs.begin()); it != indexCodecs.end(); ++it)
+			{
+				if (it->name == Name::Crc32c)
+					overhead += 4;
+				else
+					throw ITLException("This zarr implementation only supports the Bytes codec optionally followed by crc32c in the sharding index_codecs, but got: " + toString(it->name) + ".");
+			}
+			return overhead;
+		}
+
 		template<typename pixel_t>
 		void decodeShardingCodec(const ZarrCodec& codec, Image<pixel_t>& shard, std::vector<char>& buffer, fillValue_t fillValue)
 		{
@@ -423,15 +608,9 @@ namespace itl2
 
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
 			coord_t chunkCount = chunksPerShard.product();
-			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
-			if (indexCodecs != allowedIndexCodecPipeline)
-			{
-				//TODO implement decode other index_codecs
-				std::stringstream s;
-				s << "This zarr implementation only supports this sharding index_codec: " << allowedIndexCodecPipeline << " but got: " << indexCodecs;
-				throw ITLException(s.str());
-			}
-			coord_t indexSize = 2 * sizeof(index_t) * chunkCount; //only valid for index_codec only containing bytesCodec
+			coord_t indexCodecOverhead = validateShardingIndexCodecs(indexCodecs);
+			coord_t rawIndexSize = 2 * sizeof(index_t) * chunkCount;
+			coord_t indexSize = rawIndexSize + indexCodecOverhead;
 			std::vector<char> indexBuffer;
 
 			switch (indexLocation)
@@ -443,13 +622,18 @@ namespace itl2
 				indexBuffer.insert(indexBuffer.end(), buffer.end() - indexSize, buffer.end());
 			}
 
+			// Apply the BytesBytes index codecs in reverse to verify and strip any
+			// trailing data (e.g. the crc32c checksum), leaving the raw index bytes.
+			for (auto it = indexCodecs.rbegin(); it != indexCodecs.rend() && it->type == Type::BytesBytesCodec; ++it)
+				decodeBytesBytesCodec(*it, indexBuffer);
+
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
 			Image<index_t> shardIndexArrayNBytes(chunksPerShard);
 
 			//decode indexArray buffer into shardIndexArrayOffsets and shardIndexArrayNBytes
 			//TODO: extract to decodeBytesCodec
 			std::vector<index_t> temp(chunkCount * 2);
-			std::memcpy(temp.data(), indexBuffer.data(), indexBuffer.size());
+			std::memcpy(temp.data(), indexBuffer.data(), rawIndexSize);
 
 			size_t n = 0;
 			for (coord_t x = 0; x < chunksPerShard.x; x++)
@@ -513,14 +697,7 @@ namespace itl2
 			sharding::indexLocation indexLocation;
 			codec.getShardingConfiguration(innerChunkShape, codecs, indexCodecs, indexLocation);
 
-			Pipeline allowedIndexCodecPipeline = Pipeline{ codecs::ZarrCodec(codecs::Name::Bytes) };
-			if (indexCodecs != allowedIndexCodecPipeline)
-			{
-				//TODO implement decode other index_codecs
-				std::stringstream s;
-				s << "This zarr implementation only supports this sharding index_codec: " << allowedIndexCodecPipeline << " but got: " << indexCodecs;
-				throw ITLException(s.str());
-			}
+			coord_t indexCodecOverhead = validateShardingIndexCodecs(indexCodecs);
 
 			if (!(shard.dimensions() >= innerChunkShape)) throw ITLException("inner chunk shape " + toString(innerChunkShape) + " does not fit into shard shape " + toString(shard.dimensions()));
 			Vec3c chunksPerShard = shard.dimensions().componentwiseDivide(innerChunkShape);
@@ -530,7 +707,7 @@ namespace itl2
 			coord_t chunkCount = chunksPerShard.product();
 			Image<index_t> shardIndexArrayOffsets(chunksPerShard);
 			Image<index_t> shardIndexArrayNBytes(chunksPerShard);
-			coord_t indexSize = 2 * sizeof(index_t) * chunkCount; //will change if other index codecs are allowed
+			coord_t indexSize = 2 * sizeof(index_t) * chunkCount + indexCodecOverhead; //includes overhead of BytesBytes index codecs (e.g. crc32c)
 			Image<std::vector<char>> chunkBytes(chunksPerShard);
 
 			//TODO: concurrency needed? then working with fixed nbytes would be necessary
@@ -625,6 +802,14 @@ namespace itl2
 			{
 				decodeBloscCodec(codec, buffer);
 			}
+			else if (codec.name == codecs::Name::Zstd)
+			{
+				decodeZstdCodec(codec, buffer);
+			}
+			else if (codec.name == codecs::Name::Crc32c)
+			{
+				decodeCrc32cCodec(buffer);
+			}
 			else throw ITLException("BytesBytesCodec: " + toString(codec.name) + " not yet implemented");
 		}
 
@@ -661,6 +846,14 @@ namespace itl2
 			if (codec.name == codecs::Name::Blosc)
 			{
 				encodeBloscCodec(codec, buffer);
+			}
+			else if (codec.name == codecs::Name::Zstd)
+			{
+				encodeZstdCodec(codec, buffer);
+			}
+			else if (codec.name == codecs::Name::Crc32c)
+			{
+				encodeCrc32cCodec(buffer);
 			}
 			else throw ITLException("BytesBytesCodec: " + toString(codec.name) + " not yet implemented");
 		}
